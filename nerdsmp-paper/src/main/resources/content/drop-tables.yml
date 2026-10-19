@@ -1,0 +1,373 @@
+schema: 2
+
+# Vanilla survival drops remain authoritative. These narrow rules trim only repeatable junk.
+vanilla-adjustments:
+  undead-remains:
+    entities: [ZOMBIE, HUSK, DROWNED, ZOMBIE_VILLAGER, CAMEL_HUSK, ZOMBIE_NAUTILUS, ZOGLIN]
+    items:
+      ROTTEN_FLESH:
+        keep-chance: 0.45
+        maximum: 1
+  piglin-remains:
+    entities: [ZOMBIFIED_PIGLIN]
+    items:
+      ROTTEN_FLESH:
+        keep-chance: 0.30
+        maximum: 1
+  witch-junk:
+    entities: [WITCH]
+    items:
+      STICK:
+        keep-chance: 0.0
+        maximum: 0
+
+# Every player-killed hostile can roll sealed gear. Entity pools keep finds thematically coherent.
+hostile-gear:
+  standard:
+    chance: 0.008
+    minimum-affixes: 1
+    maximum-affixes: 2
+    rolls: 1
+  elite:
+    chance: 0.10
+    minimum-affixes: 2
+    maximum-affixes: 3
+    rolls: 1
+  boss:
+    chance: 1.0
+    minimum-affixes: 2
+    maximum-affixes: 3
+    rolls: 2
+  default-items: [ironroot_blade, ironroot_pickaxe, ironroot_helm, ironroot_plate, ironroot_boots,
+    wildwood_axe, wildwood_sickle, wildwood_hood, wildwood_coat, wildwood_boots,
+    riftglass_edge, riftglass_pickaxe, riftglass_visor, riftglass_cuirass, riftglass_boots]
+  pools:
+    undead:
+      entities: [ZOMBIE, HUSK, DROWNED, ZOMBIE_VILLAGER, CAMEL_HUSK, ZOMBIE_NAUTILUS, ZOGLIN]
+      items: [hollowfang_blade, hollowfang_mask, hollowfang_coat,
+        ironroot_blade, ironroot_helm, ironroot_plate, ironroot_boots]
+    bonebound:
+      entities: [SKELETON, STRAY, BOGGED, PARCHED, WITHER_SKELETON]
+      items: [hollowfang_blade, hollowfang_mask, hollowfang_coat,
+        starfall_focus, starfall_circlet, starfall_boots]
+    wild:
+      entities: [SPIDER, CAVE_SPIDER, SILVERFISH, CREEPER, SLIME, PHANTOM, CREAKING]
+      items: [wildwood_axe, wildwood_sickle, wildwood_hood, wildwood_coat, wildwood_boots,
+        verdant_sickle, verdant_crown, verdant_raiment]
+    raiders:
+      entities: [PILLAGER, VINDICATOR, EVOKER, ILLUSIONER, RAVAGER, VEX, WITCH]
+      items: [ironroot_blade, ironroot_helm, ironroot_plate, ironroot_boots,
+        hollowfang_blade, hollowfang_mask, hollowfang_coat]
+    nether:
+      entities: [BLAZE, GHAST, MAGMA_CUBE, SULFUR_CUBE, HOGLIN, PIGLIN, PIGLIN_BRUTE, ZOMBIFIED_PIGLIN, WITHER]
+      items: [emberforged_pickaxe, emberforged_mantle, emberforged_greaves,
+        riftglass_edge, riftglass_visor, riftglass_cuirass, riftglass_boots]
+    end:
+      entities: [ENDERMAN, ENDERMITE, SHULKER, ENDER_DRAGON]
+      items: [riftglass_edge, riftglass_pickaxe, riftglass_visor, riftglass_cuirass, riftglass_boots,
+        starfall_focus, starfall_circlet, starfall_boots, veilwalker_compass, veilwalker_hood, veilwalker_boots]
+    ocean:
+      entities: [GUARDIAN, ELDER_GUARDIAN]
+      items: [tideglass_rod, tideglass_coat, tideglass_boots,
+        verdant_sickle, verdant_crown, verdant_raiment]
+    ancient:
+      entities: [WARDEN, BREEZE]
+      items: [starfall_focus, starfall_circlet, starfall_boots,
+        veilwalker_compass, veilwalker_hood, veilwalker_boots]
+
+# Purses are physical, account-safe currency drops. Pickup credits the immutable economy ledger.
+coin-purses:
+  standard:
+    chance: 0.20
+    min-marks: 1
+    max-marks: 4
+  elite:
+    chance: 1.0
+    min-marks: 12
+    max-marks: 20
+  boss:
+    chance: 1.0
+    min-marks: 75
+    max-marks: 125
+
+custom-loot:
+  chest:
+    chance: 0.08
+    unidentified-chance: 0.35
+    minimum-affixes: 1
+    maximum-affixes: 3
+    items: [ironroot_blade, ironroot_pickaxe, ironroot_helm, ironroot_plate, ironroot_boots,
+      wildwood_axe, wildwood_sickle, wildwood_hood, wildwood_coat, wildwood_boots,
+      riftglass_edge, riftglass_pickaxe, riftglass_visor, riftglass_cuirass, riftglass_boots]
+
+# Supplemental player-kill rolls. Base drops such as food, pearls, rods, skulls, shells, and
+# progression items remain intact unless explicitly listed in vanilla-adjustments above.
+tables:
+  common-undead:
+    entities: [ZOMBIE, HUSK, DROWNED, ZOMBIE_VILLAGER, CAMEL_HUSK, ZOMBIE_NAUTILUS, ZOGLIN]
+    rolls:
+      - material: IRON_NUGGET
+        chance: 0.14
+        looting-bonus: 0.02
+        min: 1
+        max: 3
+      - material: LEATHER
+        chance: 0.06
+        looting-bonus: 0.01
+        min: 1
+        max: 1
+
+  skeletons:
+    entities: [SKELETON, STRAY, BOGGED, PARCHED]
+    rolls:
+      - material: FLINT
+        chance: 0.12
+        looting-bonus: 0.02
+        min: 1
+        max: 2
+      - material: FEATHER
+        chance: 0.08
+        looting-bonus: 0.01
+        min: 1
+        max: 2
+
+  spiders:
+    entities: [SPIDER, CAVE_SPIDER]
+    rolls:
+      - material: FERMENTED_SPIDER_EYE
+        chance: 0.08
+        looting-bonus: 0.015
+        min: 1
+        max: 1
+      - material: COBWEB
+        chance: 0.012
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  burrowers:
+    entities: [SILVERFISH, ENDERMITE]
+    rolls:
+      - material: AMETHYST_SHARD
+        chance: 0.09
+        looting-bonus: 0.015
+        min: 1
+        max: 2
+
+  volatile:
+    entities: [CREEPER]
+    rolls:
+      - material: REDSTONE
+        chance: 0.20
+        looting-bonus: 0.03
+        min: 1
+        max: 3
+      - special: rough_geode
+        chance: 0.012
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  ender:
+    entities: [ENDERMAN, SHULKER]
+    rolls:
+      - material: CHORUS_FRUIT
+        chance: 0.18
+        looting-bonus: 0.025
+        min: 1
+        max: 3
+      - material: AMETHYST_SHARD
+        chance: 0.05
+        looting-bonus: 0.01
+        min: 1
+        max: 2
+      - special: rough_geode
+        chance: 0.018
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  nether-raiders:
+    entities: [PIGLIN, PIGLIN_BRUTE, ZOMBIFIED_PIGLIN, HOGLIN]
+    rolls:
+      - material: GOLD_NUGGET
+        chance: 0.30
+        looting-bonus: 0.04
+        min: 1
+        max: 5
+      - material: QUARTZ
+        chance: 0.14
+        looting-bonus: 0.02
+        min: 1
+        max: 3
+
+  blaze:
+    entities: [BLAZE]
+    rolls:
+      - material: MAGMA_CREAM
+        chance: 0.12
+        looting-bonus: 0.02
+        min: 1
+        max: 2
+      - special: rough_geode
+        chance: 0.02
+        looting-bonus: 0.004
+        min: 1
+        max: 1
+
+  withered:
+    entities: [WITHER_SKELETON]
+    rolls:
+      - material: SOUL_SAND
+        chance: 0.12
+        looting-bonus: 0.02
+        min: 1
+        max: 2
+      - special: rough_geode
+        chance: 0.022
+        looting-bonus: 0.004
+        min: 1
+        max: 1
+
+  nether-casters:
+    entities: [GHAST]
+    rolls:
+      - material: FIRE_CHARGE
+        chance: 0.18
+        looting-bonus: 0.025
+        min: 1
+        max: 2
+      - material: GLOWSTONE_DUST
+        chance: 0.12
+        looting-bonus: 0.02
+        min: 1
+        max: 3
+
+  magma-family:
+    entities: [MAGMA_CUBE, SULFUR_CUBE]
+    rolls:
+      - material: GLOWSTONE_DUST
+        chance: 0.16
+        looting-bonus: 0.025
+        min: 1
+        max: 3
+
+  slime-family:
+    entities: [SLIME]
+    rolls:
+      - material: CLAY_BALL
+        chance: 0.10
+        looting-bonus: 0.015
+        min: 1
+        max: 3
+      - special: rough_geode
+        chance: 0.006
+        looting-bonus: 0.002
+        min: 1
+        max: 1
+
+  illagers:
+    entities: [PILLAGER, VINDICATOR, EVOKER, ILLUSIONER, RAVAGER]
+    rolls:
+      - material: EMERALD
+        chance: 0.14
+        looting-bonus: 0.025
+        min: 1
+        max: 2
+      - material: IRON_NUGGET
+        chance: 0.18
+        looting-bonus: 0.025
+        min: 1
+        max: 3
+      - special: rough_geode
+        chance: 0.018
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  occult:
+    entities: [WITCH, VEX, CREAKING]
+    rolls:
+      - material: AMETHYST_SHARD
+        chance: 0.13
+        looting-bonus: 0.02
+        min: 1
+        max: 2
+      - special: rough_geode
+        chance: 0.016
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  ocean-hunters:
+    entities: [DROWNED, GUARDIAN, ELDER_GUARDIAN]
+    rolls:
+      - material: PRISMARINE_CRYSTALS
+        chance: 0.18
+        looting-bonus: 0.025
+        min: 1
+        max: 3
+      - material: NAUTILUS_SHELL
+        chance: 0.015
+        looting-bonus: 0.003
+        min: 1
+        max: 1
+
+  phantoms:
+    entities: [PHANTOM]
+    rolls:
+      - material: GLOW_INK_SAC
+        chance: 0.12
+        looting-bonus: 0.02
+        min: 1
+        max: 2
+
+  trial-chambers:
+    entities: [BREEZE]
+    rolls:
+      - material: AMETHYST_SHARD
+        chance: 0.20
+        looting-bonus: 0.025
+        min: 1
+        max: 3
+      - special: rough_geode
+        chance: 0.025
+        looting-bonus: 0.004
+        min: 1
+        max: 1
+
+  dragon-reward:
+    entities: [ENDER_DRAGON]
+    rolls:
+      - material: DRAGON_BREATH
+        chance: 1.0
+        min: 8
+        max: 16
+      - material: END_CRYSTAL
+        chance: 1.0
+        min: 2
+        max: 4
+
+  elder-reward:
+    entities: [ELDER_GUARDIAN]
+    rolls:
+      - material: HEART_OF_THE_SEA
+        chance: 1.0
+        min: 1
+        max: 1
+
+  wither-reward:
+    entities: [WITHER]
+    rolls:
+      - material: WITHER_ROSE
+        chance: 1.0
+        min: 2
+        max: 4
+
+  warden-reward:
+    entities: [WARDEN]
+    rolls:
+      - material: ECHO_SHARD
+        chance: 1.0
+        min: 2
+        max: 4

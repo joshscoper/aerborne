@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block description %}{{ item.summary }}{% endblock %}
+{% block content %}
+<div class="wrap companion-layout">
+  <p class="crumbs"><a href="{{ url_for('public.companions') }}">Companions</a></p>
+  <article class="companion-profile">
+    <figure class="companion-figure">
+      {{ m.picture(item.image, item.image_alt, 'companion-big', 320, 320, lazy=False) }}
+      {% if item.concept_art %}<figcaption>Concept art.</figcaption>{% endif %}
+    </figure>
+    <div class="companion-text">
+      <p>{{ m.availability(item.availability) }} {{ m.concept(item.concept_art) }}</p>
+      <h1>{{ item.name }}</h1>
+      {% if item.species %}<p class="companion-species-big">{{ item.species }}</p>{% endif %}
+      <p class="lede">{{ item.summary }}</p>
+      <dl class="facts">
+        {% if item.temperament %}<dt>Temperament</dt><dd>{{ item.temperament }}</dd>{% endif %}
+        <dt>How to get it</dt><dd>{{ item.acquisition or 'Not announced yet' }}</dd>
+        <dt>Earned or purchased</dt><dd>{{ option_label('companions', 'access', item.access) }}</dd>
+        {% if variants %}<dt>Colour variants</dt><dd>{{ variants | join(', ') }}</dd>{% endif %}
+        {% if animations %}<dt>Animations</dt><dd>{{ animations | join(', ') }}</dd>{% endif %}
+      </dl>
+    </div>
+  </article>
+  {% if others %}
+  <section class="others">
+    <h2>More companions</h2>
+    <ul class="companion-row">
+      {% for pet in others %}
+      <li><a class="companion-tile" href="{{ url_for('public.companion', slug=pet.slug) }}">{{ m.picture(pet.image, pet.image_alt, 'companion-portrait', 120, 120) }}<span class="companion-name">{{ pet.name }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

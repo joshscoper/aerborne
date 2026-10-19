@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Edit your profile{% endblock %}
+{% block body_class %}profile-page profile-editor{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><script src="{{ url_for('static', filename='js/profile.js') }}" defer></script>{% endblock %}
+{% block content %}
+<header class="editor-heading wrap"><div><p class="eyebrow">Your corner of Aerborne</p><h1>Make yourself at home.</h1><p class="fine">A face, a little story, a place in the community.</p></div><a class="btn btn-ghost" href="{{ url_for('community.member_profile', username=member.username) }}">View your profile ↗</a></header>
+<div class="wrap editor-layout">
+  <div>{{ c.flashes() }}
+    <form class="profile-form editor-form" method="post" data-profile-editor>
+      {{ c.csrf() }}<input type="hidden" name="action" value="profile">
+      <div class="editor-toolbar"><span class="fine" data-save-state role="status">Changes appear on your profile after saving.</span><button class="btn btn-primary" type="submit">Save profile</button></div>
+      <nav class="editor-tabs" aria-label="Profile editor sections" data-editor-tabs hidden><button type="button" id="tab-appearance" data-editor-tab="appearance">Appearance</button><button type="button" id="tab-about" data-editor-tab="about-you">About you</button><button type="button" id="tab-links" data-editor-tab="social-links">Links &amp; privacy</button></nav>
+      <section id="appearance" class="editor-section" data-editor-panel>
+        <div class="editor-section-head"><p class="eyebrow">A familiar face</p><h2>Choose your character</h2><p class="fine">Pick a companion for your profile and forum posts.</p></div>
+        <fieldset class="avatar-picker"><legend class="sr-only">Profile avatar</legend><div class="avatar-gallery">
+          {% for key, label, path in avatars %}<label class="avatar-choice"><input type="radio" name="avatar" value="{{ key }}"{% if selected_avatar == key %} checked{% endif %}><img src="{{ url_for('static', filename=path) }}" alt="" width="96" height="96" loading="lazy"><span>{{ label }}</span></label>{% endfor %}
+        </div></fieldset>
+        <details class="legacy-avatar-options"{% if selected_avatar in legacy_avatars | map('first') | list %} open{% endif %}><summary>Classic avatars &amp; Aspects</summary><div class="avatar-gallery avatar-gallery-small">
+          {% for key, label, path in legacy_avatars %}<label class="avatar-choice"><input type="radio" name="avatar" value="{{ key }}"{% if selected_avatar == key %} checked{% endif %}><img src="{{ url_for('static', filename=path) }}" alt="" width="72" height="72" loading="lazy"><span>{{ label }}</span></label>{% endfor %}
+        </div></details>
+        <fieldset class="banner-picker"><legend>Set the scene</legend><p class="fine">Your banner sits behind your public profile.</p><div class="banner-gallery">
+          {% for key, label, path in banners %}<label class="banner-choice"><input type="radio" name="banner" value="{{ key }}"{% if (member.banner or 'sky') == key %} checked{% endif %}><img src="{{ url_for('static', filename=path) }}" alt="" width="180" height="80" loading="lazy"><span>{{ label }}</span></label>{% endfor %}
+        </div></fieldset>
+      </section>
+      <section id="about-you" class="editor-section" data-editor-panel>
+        <div class="editor-section-head"><p class="eyebrow">Beyond the username</p><h2>Tell your story</h2><p class="fine">Share as much or as little as you like. These details are public.</p></div>
+        <label>Headline <input name="headline" value="{{ member.headline }}" maxlength="80" placeholder="Building a little corner of the sky."><small>A short introduction under your name.</small></label>
+        <label>About you <textarea name="bio" rows="5" maxlength="1000" placeholder="Your latest project, favourite adventure, or what brings you here…">{{ member.bio }}</textarea></label>
+        <div class="form-pair"><label>Island name <input name="island_name" value="{{ member.island_name }}" maxlength="40" placeholder="Cloudberry Cottage"></label><label>Favourite skill <select name="favorite_skill"><option value="">Not chosen</option>{% for key, label in skills %}<option value="{{ key }}"{% if member.favorite_skill == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label></div>
+        <label>Forum signature <textarea name="signature" rows="2" maxlength="200" placeholder="A little sign-off for your posts.">{{ member.signature }}</textarea><small>Plain text, up to 200 characters.</small></label>
+      </section>
+      <section id="social-links" class="editor-section" data-editor-panel>
+        <div class="editor-section-head"><p class="eyebrow">Keep in touch</p><h2>Links &amp; privacy</h2><p class="fine">Social links are optional and visible to everyone.</p></div>
+        <label>Discord username <input name="discord_handle" value="{{ member.discord_handle }}" maxlength="32" placeholder="yourname"></label>
+        <label>YouTube channel <input name="youtube_url" type="url" value="{{ member.youtube_url }}" maxlength="200" placeholder="https://youtube.com/@yourname"></label>
+        <label>Twitch channel <input name="twitch_url" type="url" value="{{ member.twitch_url }}" maxlength="200" placeholder="https://twitch.tv/yourname"></label>
+        <div class="profile-privacy"><h3>Game stats</h3><label class="check"><input type="checkbox" name="show_stats" value="1"{% if member.show_stats %} checked{% endif %}> Show my in-game stats on my public profile</label><p class="fine">Your profile and forum activity stay public.</p></div>
+      </section>
+    </form>
+  </div>
+  <aside class="editor-aside">
+    <section class="identity-preview" aria-label="Profile preview"><div class="identity-preview-banner"><img data-preview-banner src="{{ banner_url(member.banner) }}" alt=""></div>{{ c.framed(member.avatar, member.rank_frame, 160, 'identity-preview-avatar', preview=True) }}<div class="identity-preview-body"><p class="eyebrow">Your member card</p><h2>{{ c.name(member.username, member.rank_slug, link=False) }}</h2><p>{{ c.rank_tag(member.rank_slug, member.rank_name) if member.rank_slug else 'Member' }}</p><p class="preview-headline" data-preview-headline>{{ member.headline or 'Your next adventure starts here.' }}</p><span class="fine">Preview · save to update your profile</span></div></section>
+    <section class="account-connection"><h2>Minecraft account</h2>{% if member.mc_uuid %}<p class="connection-state">✓ Linked to {{ member.mc_name }}</p><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">View game stats ↗</a>{% else %}<p class="fine">Link Minecraft to post on the forum and earn Arcade Marks.</p><a class="btn btn-ghost" href="{{ url_for('community.link') }}">Link Minecraft</a>{% endif %}</section>
+    <details class="account-security"><summary>Password &amp; security</summary><form method="post">{{ c.csrf() }}<input type="hidden" name="action" value="password"><label>Current password <input name="current" type="password" autocomplete="current-password" required></label><label>New password <input name="new" type="password" autocomplete="new-password" required minlength="10"><small>At least 10 characters.</small></label><button class="btn btn-ghost" type="submit">Change password</button></form></details>
+    <form method="post" action="{{ url_for('community.logout') }}" class="account-signout">{{ c.csrf() }}<button class="linkish" type="submit">Sign out</button></form>
+  </aside>
+</div>
+{% endblock %}

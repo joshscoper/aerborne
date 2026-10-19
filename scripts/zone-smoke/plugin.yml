@@ -1,0 +1,5 @@
+name: ZoneSmoke
+version: '1'
+main: net.nerdsmp.smoke.ZoneSmokePlugin
+api-version: '26.2'
+depend: [NerdSMP]

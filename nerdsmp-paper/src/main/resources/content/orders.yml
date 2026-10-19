@@ -1,0 +1,20 @@
+schema-version: 1
+orders:
+  road_stone:
+    title: Road Repairs
+    material: cobblestone
+    unit-size: 16
+    marks-per-unit: 3
+    item-cap: 4096
+  frontier_provisions:
+    title: Food Stockpile
+    material: bread
+    unit-size: 8
+    marks-per-unit: 10
+    item-cap: 1024
+  iron_relief:
+    title: Iron Stockpile
+    material: iron_ingot
+    unit-size: 8
+    marks-per-unit: 28
+    item-cap: 1024

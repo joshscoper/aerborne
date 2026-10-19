@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block description %}{{ item.summary }}{% endblock %}
+{% block body_class %}reading-page{% endblock %}
+{% block content %}
+<article class="article">
+  <header class="article-head">
+    <div class="wrap-narrow">
+      <p class="crumbs"><a href="{{ url_for('public.news') }}">News</a> / <a href="{{ url_for('public.news', category=item.category) }}">{{ option_label('news', 'category', item.category) }}</a></p>
+      <h1>{{ item.title }}</h1>
+      <p class="meta">
+        <time datetime="{{ (item.publish_at or item.created_at) | isodate }}">{{ (item.publish_at or item.created_at) | date }}</time>
+        {% if item.author %} by {{ item.author }}{% endif %}
+        {% if item.version_tag %} <span class="version">{{ item.version_tag }}</span>{% endif %}
+      </p>
+      <p class="lede">{{ item.summary }}</p>
+    </div>
+  </header>
+  <div class="wrap-narrow">
+    {% if item.image %}<figure class="article-figure">{{ m.picture(item.image, item.image_alt, lazy=False) }}</figure>{% endif %}
+    <div class="prose">{{ item.body | markdown }}</div>
+    {{ m.related_list(related) }}
+  </div>
+</article>
+{% if more %}
+<section class="band band-paper">
+  <div class="wrap">
+    <h2>More news</h2>
+    <div class="news-grid">{% for n in more %}{{ m.news_card(n) }}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

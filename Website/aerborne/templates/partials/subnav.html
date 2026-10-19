@@ -1,0 +1,10 @@
+{# Tabs for the pages in one nav group, shown under the page heading. Usage: {% include "partials/subnav.html" %} with group set. #}
+{% for item in nav if item.id == group %}
+<nav class="subnav" aria-label="{{ item.label }}">
+  <div class="wrap subnav-inner">
+    {% for endpoint, label, hint in item.links %}
+    <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint or (endpoint == 'public.guide' and request.endpoint in ('public.guide_section', 'public.guide_article')) or (endpoint == 'community.forum' and request.endpoint in ('community.category', 'community.thread', 'community.new_thread')) or (endpoint == 'community.leaderboards' and request.endpoint == 'community.player_profile') or (endpoint == 'public.news' and request.endpoint == 'public.news_article') or (endpoint == 'public.companions' and request.endpoint == 'public.companion') %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+</nav>
+{% endfor %}

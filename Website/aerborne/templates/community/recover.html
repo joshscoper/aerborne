@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Reset your password{% endblock %}
+{% block content %}
+<div class="wrap auth-layout">
+  <form class="auth-card" method="post">
+    <h1>Reset your password</h1>
+    <p>If your account is linked to Minecraft, you can prove it's yours from in game. Join the server, type <code>/weblink</code>, and enter the code below.</p>
+    {{ c.flashes() }}
+    {% if error %}<p class="notice notice-warn" role="alert">{{ error }}</p>{% endif %}
+    {% if not available %}<p class="notice notice-warn">Password resets need the game server connection, which isn't switched on yet. Ask staff on Discord for help.</p>{% endif %}
+    {{ c.csrf() }}
+    <label>Website username <input name="username" autocomplete="username" required></label>
+    <label>Code from <code>/weblink</code> <input name="code" placeholder="ABCD-2345" autocomplete="one-time-code" maxlength="12" required></label>
+    <label>New password <input name="new" type="password" autocomplete="new-password" required minlength="10"><small>At least 10 characters.</small></label>
+    <button class="btn btn-primary btn-large" type="submit"{% if not available %} disabled{% endif %}>Reset password</button>
+    <p class="fine">Not linked? Ask staff on Discord; they can confirm it's you another way.</p>
+  </form>
+</div>
+{% endblock %}

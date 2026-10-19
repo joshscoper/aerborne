@@ -1,0 +1,32 @@
+# Staff Console (Watchdog panel) settings. This template cannot accept logins until configured.
+# Existing files are never replaced by the plugin.
+# To keep an existing login, upload your private settings file to:
+# plugins/NerdSMP/security/watchdog-panel.yml
+# Or run scripts/configure-watchdog-panel.ps1 -Rotate on your computer,
+# then upload the generated file. Never put a plaintext password here.
+# Restart the server after changing these settings.
+schema: 1
+enabled: false
+# Use '0.0.0.0' to listen on all IPv4 interfaces. HTTP is unencrypted;
+# use a trusted network, VPN or HTTPS reverse proxy for remote access.
+bind: '127.0.0.1'
+port: 9029
+username: 'admin'
+salt: ''
+hash: ''
+iterations: 600000
+# Exact extra Host authorities, including the port for direct access.
+# Behind the HTTPS reverse proxy use ['panel.aerborne.net'].
+allowed-hosts: []
+
+# Let website administrators sign in with their website username and password.
+# The panel fetches the admin list from the website once per interval. The shared token is created
+# in security/watchdog-website-token.txt on first start; copy it into the website's
+# AERBORNE_PANEL_SYNC_TOKEN setting. With sync on, the salt and hash above may stay blank;
+# if set, that login keeps working as a break-glass account when the website is down.
+website-sync:
+  enabled: false
+  url: 'https://aerborne.net/admin/api/panel-accounts'
+  interval-seconds: 60
+  # Website admins are refused once the website hasn't confirmed them for this long.
+  max-age-hours: 24

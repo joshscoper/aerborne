@@ -1,0 +1,214 @@
+# Separate, additive crafting catalog. All ingredients are ordinary items, not named equipment.
+schema-version: 1
+recipes:
+  skyforge_copperfield_helm:
+    introduced: 1
+    result: copperfield_helm
+    skill: farming
+    level: 10
+    shape: ["MMM", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot}
+  skyforge_copperfield_coat:
+    introduced: 1
+    result: copperfield_coat
+    skill: farming
+    level: 10
+    shape: ["M M", "MCM", "MGM"]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot}
+  skyforge_copperfield_greaves:
+    introduced: 1
+    result: copperfield_greaves
+    skill: farming
+    level: 10
+    shape: ["MCM", "M M", "MGM"]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot}
+  skyforge_copperfield_boots:
+    introduced: 1
+    result: copperfield_boots
+    skill: farming
+    level: 10
+    shape: ["M M", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot}
+  skyforge_copperfield_hoe:
+    introduced: 1
+    result: copperfield_hoe
+    skill: farming
+    level: 10
+    shape: ["MMC", " S ", " G "]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot, S: stick}
+  skyforge_copperfield_buckler:
+    introduced: 1
+    result: copperfield_buckler
+    skill: farming
+    level: 10
+    shape: ["WMW", "WGW", " C "]
+    ingredients: {M: iron_ingot, C: hay_block, G: copper_ingot, W: oak_planks}
+  skyforge_quarryward_helm:
+    introduced: 1
+    result: quarryward_helm
+    skill: mining
+    level: 12
+    shape: ["MMM", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone}
+  skyforge_quarryward_coat:
+    introduced: 1
+    result: quarryward_coat
+    skill: mining
+    level: 12
+    shape: ["M M", "MCM", "MGM"]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone}
+  skyforge_quarryward_greaves:
+    introduced: 1
+    result: quarryward_greaves
+    skill: mining
+    level: 12
+    shape: ["MCM", "M M", "MGM"]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone}
+  skyforge_quarryward_boots:
+    introduced: 1
+    result: quarryward_boots
+    skill: mining
+    level: 12
+    shape: ["M M", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone}
+  skyforge_quarryward_pickaxe:
+    introduced: 1
+    result: quarryward_pickaxe
+    skill: mining
+    level: 12
+    shape: ["MMM", "CSC", " G "]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone, S: stick}
+  skyforge_quarryward_buckler:
+    introduced: 1
+    result: quarryward_buckler
+    skill: mining
+    level: 12
+    shape: ["WMW", "WGW", " C "]
+    ingredients: {M: iron_ingot, C: redstone_block, G: cobblestone, W: spruce_planks}
+  skyforge_brinewatch_helm:
+    introduced: 1
+    result: brinewatch_helm
+    skill: fishing
+    level: 22
+    shape: ["MMM", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: nautilus_shell, G: prismarine_crystals}
+  skyforge_brinewatch_coat:
+    introduced: 1
+    result: brinewatch_coat
+    skill: fishing
+    level: 22
+    shape: ["M M", "MCM", "MGM"]
+    ingredients: {M: iron_ingot, C: nautilus_shell, G: prismarine_crystals}
+  skyforge_brinewatch_greaves:
+    introduced: 1
+    result: brinewatch_greaves
+    skill: fishing
+    level: 22
+    shape: ["MCM", "M M", "MGM"]
+    ingredients: {M: iron_ingot, C: nautilus_shell, G: prismarine_crystals}
+  skyforge_brinewatch_boots:
+    introduced: 1
+    result: brinewatch_boots
+    skill: fishing
+    level: 22
+    shape: ["M M", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: nautilus_shell, G: prismarine_crystals}
+  skyforge_brinewatch_rod:
+    introduced: 1
+    result: brinewatch_rod
+    skill: fishing
+    level: 22
+    shape: ["  S", " SC", "SWG"]
+    ingredients: {C: nautilus_shell, G: prismarine_crystals, W: dark_oak_planks, S: string}
+  skyforge_brinewatch_buckler:
+    introduced: 1
+    result: brinewatch_buckler
+    skill: fishing
+    level: 22
+    shape: ["WMW", "WGW", " C "]
+    ingredients: {M: iron_ingot, C: nautilus_shell, G: prismarine_crystals, W: dark_oak_planks}
+  skyforge_briarpath_helm:
+    introduced: 1
+    result: briarpath_helm
+    skill: forestry
+    level: 25
+    shape: ["MMM", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block}
+  skyforge_briarpath_coat:
+    introduced: 1
+    result: briarpath_coat
+    skill: forestry
+    level: 25
+    shape: ["M M", "MCM", "MGM"]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block}
+  skyforge_briarpath_greaves:
+    introduced: 1
+    result: briarpath_greaves
+    skill: forestry
+    level: 25
+    shape: ["MCM", "M M", "MGM"]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block}
+  skyforge_briarpath_boots:
+    introduced: 1
+    result: briarpath_boots
+    skill: forestry
+    level: 25
+    shape: ["M M", "MCM", " G "]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block}
+  skyforge_briarpath_hatchet:
+    introduced: 1
+    result: briarpath_hatchet
+    skill: forestry
+    level: 25
+    shape: ["MMC", "MS ", " G "]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block, S: stick}
+  skyforge_briarpath_buckler:
+    introduced: 1
+    result: briarpath_buckler
+    skill: forestry
+    level: 25
+    shape: ["WMW", "WGW", " C "]
+    ingredients: {M: iron_ingot, C: honeycomb_block, G: moss_block, W: birch_planks}
+  skyforge_cobblebreak_pickaxe:
+    introduced: 1
+    result: cobblebreak_pickaxe
+    skill: mining
+    level: 5
+    shape: ["III", "CSC", " S "]
+    ingredients: {I: iron_ingot, C: cobblestone, S: stick}
+  skyforge_rootcut_hatchet:
+    introduced: 1
+    result: rootcut_hatchet
+    skill: forestry
+    level: 5
+    shape: ["IIM", "IS ", " S "]
+    ingredients: {I: iron_ingot, M: moss_block, S: stick}
+  skyforge_furrowkeeper_hoe:
+    introduced: 1
+    result: furrowkeeper_hoe
+    skill: farming
+    level: 8
+    shape: ["IIM", " S ", " S "]
+    ingredients: {I: iron_ingot, M: hay_block, S: stick}
+  skyforge_river_reed_rod:
+    introduced: 1
+    result: river_reed_rod
+    skill: fishing
+    level: 8
+    shape: ["  B", " BS", "BSC"]
+    ingredients: {B: bamboo, S: string, C: copper_ingot}
+  skyforge_surveyors_shovel:
+    introduced: 1
+    result: surveyors_shovel
+    skill: excavation
+    level: 8
+    shape: [" I ", "CSC", " S "]
+    ingredients: {I: iron_ingot, C: flint, S: stick}
+  skyforge_watchmans_sword:
+    introduced: 1
+    result: watchmans_sword
+    skill: smithing
+    level: 10
+    shape: [" I ", " I ", "SC "]
+    ingredients: {I: iron_ingot, C: copper_ingot, S: stick}
+

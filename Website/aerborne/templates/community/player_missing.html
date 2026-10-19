@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Player not found{% endblock %}
+{% block content %}
+<header class="page-head page-missing">
+  <div class="wrap">
+    <h1>No adventurer called {{ name }}</h1>
+    <p class="lede">Nobody with that name has played on {{ site.SITE_NAME }} yet, or they've changed their name. New players show up within a minute of their first visit.</p>
+    <p><a class="btn btn-primary" href="{{ url_for('community.leaderboards') }}">Back to the leaderboards</a></p>
+  </div>
+</header>
+{% endblock %}

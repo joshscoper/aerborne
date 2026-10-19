@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}Forum members{% endblock %}
+{% block content %}
+<h1>Forum members</h1>
+<form class="filter-row" method="get">
+  <label>Search <input type="search" name="q" value="{{ q }}" placeholder="Username or Minecraft name"></label>
+  <button class="btn btn-quiet" type="submit">Search</button>
+</form>
+{% if rows %}
+<table>
+  <thead><tr><th>Member</th><th>Minecraft</th><th>Posts</th><th>Role and status</th></tr></thead>
+  <tbody>
+    {% for m in rows %}
+    <tr>
+      <td><a href="{{ url_for('community.member_profile', username=m.username) }}" target="_blank" rel="noopener">{{ m.username }}</a><br><span class="fine">Joined {{ m.created_at | date }}</span></td>
+      <td>{{ m.mc_name or '–' }}</td>
+      <td>{{ m.post_count }}</td>
+      <td>
+        <form class="inline-form" method="post" action="{{ url_for('admin.forum_member_update', member_id=m.id, q=q or None) }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <select name="rank_id" aria-label="Rank for {{ m.username }}"><option value="">No rank</option>{% for r in ranks %}<option value="{{ r.id }}"{% if m.rank_id == r.id %} selected{% endif %}>{{ r.name }}</option>{% endfor %}</select>
+          <input name="custom_title" value="{{ m.custom_title }}" maxlength="40" placeholder="Title, e.g. Game Designer" aria-label="Title for {{ m.username }}">
+          <select name="role" aria-label="Role for {{ m.username }}">{% for key, label in roles %}<option value="{{ key }}"{% if m.role == key %} selected{% endif %}>{{ label.split(':')[0] }}</option>{% endfor %}</select>
+          <label class="check"><input type="checkbox" name="banned" value="1"{% if m.status == 'banned' %} checked{% endif %}> Banned</label>
+          <input name="ban_reason" value="{{ m.ban_reason }}" placeholder="Ban reason (staff only)" aria-label="Ban reason for {{ m.username }}">
+          {% if m.mc_uuid %}<label class="check"><input type="checkbox" name="unlink" value="1"> Unlink Minecraft</label>{% endif %}
+          <button class="btn btn-quiet" type="submit">Save</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No members{% if q %} match "{{ q }}"{% endif %}.</p>{% endif %}
+<dl class="roles">{% for key, label in roles %}<dt>{{ label.split(':')[0] }}</dt><dd>{{ label.split(': ', 1)[1] if ': ' in label else 'Can post once their Minecraft account is linked.' }}</dd>{% endfor %}</dl>
+{% endblock %}

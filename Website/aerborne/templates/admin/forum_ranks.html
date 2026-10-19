@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}Ranks{% endblock %}
+{% block content %}
+<h1>Ranks</h1>
+<p class="fine">Ranks are the coloured tags shown beside names on the forum and profiles. Give them to members under Forum → Members. Each rank picks an avatar frame, shown around the member's avatar on posts and profiles; members without a rank get the Member frame. Ranks can also let members moderate or post announcements.</p>
+<link rel="stylesheet" href="{{ url_for('community.ranks_css') }}">
+{% for r in rows %}
+<form class="card cat-form" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="id" value="{{ r.id }}">
+  <p><span class="rank-preview rank-{{ r.slug }}">{{ r.name }}</span> <span class="fine">{{ r.holders }} member{{ '' if r.holders == 1 else 's' }}</span></p>
+  <div class="cat-grid rank-grid">
+    <label>Tag <input name="name" value="{{ r.name }}" required maxlength="16"></label>
+    <label>Slug <input name="slug" value="{{ r.slug }}" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*"></label>
+    <label>Colour <input name="color" type="color" value="{{ r.color }}"></label>
+    <label>Text colour <input name="text_color" type="color" value="{{ r.text_color }}"></label>
+    <label>Order <input name="priority" value="{{ r.priority }}" inputmode="numeric"><small>Higher shows first.</small></label>
+    <label>Avatar frame <select name="frame">{% for key, label in frames %}<option value="{{ key }}"{% if (r.frame or 'member') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Description <input name="description" value="{{ r.description }}" maxlength="120"></label>
+  <label>Store item slug <input name="product_slug" value="{{ r.product_slug }}" maxlength="80"><small>For supporter ranks: the store item that grants it, once Tebex delivery is connected.</small></label>
+  <div class="checks">
+    <label class="check"><input type="checkbox" name="staff" value="1"{% if r.staff %} checked{% endif %}> Staff rank</label>
+    <label class="check"><input type="checkbox" name="can_moderate" value="1"{% if r.can_moderate %} checked{% endif %}> Can moderate the forum</label>
+    <label class="check"><input type="checkbox" name="can_announce" value="1"{% if r.can_announce %} checked{% endif %}> Can post announcements</label>
+  </div>
+  <p class="inline-form">
+    <button class="btn btn-quiet" type="submit">Save</button>
+    <button class="linkish danger-text" type="submit" name="action" value="delete" formnovalidate>Delete rank</button>
+  </p>
+</form>
+{% endfor %}
+<h2>Add a rank</h2>
+<form class="card cat-form" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="cat-grid rank-grid">
+    <label>Tag <input name="name" required maxlength="16" placeholder="VIP"></label>
+    <label>Slug <input name="slug" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="vip"></label>
+    <label>Colour <input name="color" type="color" value="#77C8F5"></label>
+    <label>Text colour <input name="text_color" type="color" value="#17243B"></label>
+    <label>Order <input name="priority" value="0" inputmode="numeric"></label>
+    <label>Avatar frame <select name="frame">{% for key, label in frames %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Description <input name="description" maxlength="120"></label>
+  <label>Store item slug <input name="product_slug" maxlength="80"></label>
+  <div class="checks">
+    <label class="check"><input type="checkbox" name="staff" value="1"> Staff rank</label>
+    <label class="check"><input type="checkbox" name="can_moderate" value="1"> Can moderate the forum</label>
+    <label class="check"><input type="checkbox" name="can_announce" value="1"> Can post announcements</label>
+  </div>
+  <button class="btn" type="submit">Add rank</button>
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "community/forum_base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Edit post{% endblock %}
+{% block content %}
+<div class="wrap compose-layout">
+  <p class="crumbs"><a href="{{ thread_url(thread) }}">{{ thread.title }}</a></p>
+  <h1>Edit your post</h1>
+  {% if error %}<p class="notice notice-warn" role="alert">{{ error }}</p>{% endif %}
+  <form class="compose" method="post">
+    {{ c.csrf() }}
+    <label class="sr-only" for="body">Post</label>
+    <textarea id="body" name="body" rows="12" required maxlength="{{ max_post }}">{{ body }}</textarea>
+    <button class="btn btn-primary" type="submit">Save changes</button>
+    <a class="text-link" href="{{ thread_url(thread) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

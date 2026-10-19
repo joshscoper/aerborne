@@ -1,0 +1,32 @@
+schema-version: 1
+quests:
+  seam_work:
+    title: Seam Work
+    description: Mine 32 natural ore blocks.
+    action: mine_ore
+    target: 32
+    marks: 120
+  timber_run:
+    title: Timber Run
+    description: Chop 64 naturally grown logs or stems.
+    action: chop_log
+    target: 64
+    marks: 110
+  clear_the_road:
+    title: Clear the Road
+    description: Defeat 20 hostile creatures.
+    action: slay_monster
+    target: 20
+    marks: 140
+  workshop_order:
+    title: Workshop Order
+    description: Craft 24 items.
+    action: craft_item
+    target: 24
+    marks: 115
+  fresh_catch:
+    title: Fresh Catch
+    description: Catch 10 fish.
+    action: catch_fish
+    target: 10
+    marks: 130

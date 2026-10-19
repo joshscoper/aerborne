@@ -1,0 +1,11 @@
+# Last releases that support Python 3.6. Don't upgrade past these on a 3.6 host.
+Flask==2.0.3
+Werkzeug==2.0.3
+Jinja2==3.0.3
+MarkupSafe==2.0.1
+itsdangerous==2.0.1
+click==8.0.4
+Markdown==3.3.7
+bleach==4.1.0
+# Optional but recommended: re-encodes uploads and makes WebP sizes. The site works without it.
+Pillow==8.4.0

@@ -1,0 +1,284 @@
+season:
+  id: local-season
+  masteries-per-player: 2
+  mastery-level: 25
+  mastery-respec-cooldown-days: 14
+  mastery-respec-cost-marks: 10000
+
+progression:
+  xp:
+    mining-ore: 12
+    forestry-log: 6
+    farming-crop: 5
+    # Base values are multiplied for verified harvests, including older saved configs.
+    # Defaults: field crops/berries 15, wart/cocoa 18, specialty crops 24, stalks 9 XP.
+    farming-multiplier: 3.0
+    # Optional per-crop base XP before the multiplier, e.g. { WHEAT: 5, COCOA: 6 }.
+    farming-items: {}
+    fishing-catch: 25
+    hunting-base: 8
+    excavation-block: 3
+    smithing-craft: 8
+    smithing-smelt-iron: 4
+    smithing-smelt-copper: 4
+    smithing-smelt-gold: 6
+    smithing-smelt-netherite: 12
+    alchemy-craft: 6
+    alchemy-brew: 18
+    building-structure: 3
+    building-detail: 5
+    building-landmark: 8
+
+economy:
+  starter-marks: 250
+  transfer-tax-percent: 0
+  market-listing-fee: 10
+  market-sales-tax-percent: 5
+  remote-grave-recovery-cost: 250
+  claim-expansion-cost: 500
+
+jobs:
+  full-rate-units: 200
+  half-rate-units: 200
+  quarter-rate-units: 400
+
+mobs:
+  ambient-conversion-chance: 0.03
+  party-boss-reward-percent: 0.60
+  party-reward-radius: 48
+  scaling:
+    blocks-per-level: 128
+    health-per-level: 0.01
+    damage-per-level: 0.006
+    reward-per-level: 0.008
+    elite-chance-per-level: 0.0005
+    maximum-combatants: 8
+    combat-radius: 64
+    combat-timeout-seconds: 20
+    maximum-health: 1024
+    elite-health-per-extra-player: 0.30
+    elite-damage-per-extra-player: 0.06
+    elite-reward-per-extra-player: 0.25
+    boss-health-per-extra-player: 0.35
+    boss-damage-per-extra-player: 0.03
+    boss-reward-per-extra-player: 0.35
+  boss-mechanics:
+    enabled: true
+    phase-timeout-seconds: 90
+
+forge:
+  geodes:
+    mining-chance: 0.08
+    excavation-chance: 0.02
+  enchantments:
+    custom-mob-tome-chance: 0.25
+    boss-tome-chance: 1.0
+
+# Local testing turns every Arcane Forge feature on. Production keeps them off until rollout.
+arcane-forge:
+  enabled: true
+  codex:
+    enabled: true
+  research:
+    enabled: true
+  imbuement:
+    enabled: true
+  overcharge:
+    enabled: true
+  signatures:
+    enabled: true
+    stormwake:
+      enabled: true
+    heart-of-the-mountain:
+      enabled: true
+      threshold: 8
+    last-bastion:
+      enabled: true
+      cooldown-seconds: 60
+  effects:
+    bloodletter:
+      enabled: true
+    veinseeker:
+      enabled: true
+    chain-harvest:
+      enabled: true
+  corruption:
+    enabled: true
+  attunement:
+    enabled: true
+  anticheat-bridge:
+    enabled: true
+
+combat:
+  critical-hit-multiplier: 1.5
+
+anti-cheat:
+  mode: autonomous
+  alert-score: 12
+  setback-score: 24
+  kick-score: 50
+  decay-per-second: 0.10
+
+identification:
+  base-cost-marks: 25
+  per-affix-cost-marks: 10
+
+bank:
+  default-slots: 9
+  maximum-slots: 54
+  slot-base-cost-marks: 50
+  slot-cost-increment-marks: 25
+
+repairs:
+  base-cost: 20
+  per-item-cost: 15
+  per-durability-point: 0.20
+  maximum-cost: 25000
+
+starter-kit:
+  version: 2
+  auto-equip: true
+  items:
+    - frontier_hood
+    - frontier_coat
+    - frontier_trousers
+    - frontier_boots
+    - frontier_blade
+    - frontier_pickaxe
+    - frontier_hatchet
+    - frontier_shovel
+    - frontier_hoe
+  food:
+    material: cooked_beef
+    amount: 16
+  health-potions: 3
+  torches: 16
+
+claims:
+  starter-capacity: 4
+  maximum-capacity: 64
+  maximum-residents: 32
+  spawn-buffer-blocks: 0
+  spawn-worlds: [world]
+  reserved-regions: []
+
+parties:
+  maximum-size: 5
+  invite-lifetime-seconds: 60
+
+social:
+  friend-request-seconds: 120
+
+chat:
+  local-radius: 100
+
+trading:
+  request-seconds: 60
+
+travel:
+  request-seconds: 60
+  warmup-seconds: 3
+  cooldown-seconds: 15
+
+tips:
+  initial-delay-seconds: 90
+  interval-seconds: 300
+  messages:
+    - '<gray>Choose two skill masteries after level 25. Open <white>/skills</white> to plan ahead.</gray>'
+    - '<gray>Physical grave recovery is free. <white>/grave recover</white> is the paid shortcut.</gray>'
+    - '<gray>Geodes can hold socket gems. Hold matching gems and open <white>/forge</white> to merge them.</gray>'
+    - '<gray>Local chat reaches players within 100 blocks. Switch with <white>/channel local</white>.</gray>'
+    - '<gray>Claim the chunk beneath your base with <white>/claim create</white>.</gray>'
+    - '<gray>Find a settlement in <white>/claim directory</white>. Applications wait for approval before granting access.</gray>'
+    - '<gray>Manage your homes, plots, and neighbors through <white>/claim mine</white>.</gray>'
+    - '<gray>Daily contracts and server orders are reliable ways to earn Marks.</gray>'
+    - '<gray>Custom gear rolls NerdSMP enchantments at a normal enchanting table. Shelves and Smithing improve the offers.</gray>'
+    - '<gray>Brewing stands or <white>/alchemy</white> open twenty potion families, arcane brews, and eight poisons.</gray>'
+    - '<gray>Catch streaks improve fishing rewards. Track yours with <white>/fishing</white>.</gray>'
+    - '<gray>Quick excavation chains improve buried finds. Player-placed blocks never count.</gray>'
+    - '<gray>Unidentified loot grants no stats until Nyra reveals it with <white>/identify</white>.</gray>'
+    - '<gray>Your account bank starts with nine slots. Open it with <white>/bank</white>.</gray>'
+    - '<gray>Prismatic Gems are exceptionally strong and exceptionally rare. Luminous geodes offer the best chance.</gray>'
+    - '<gray>NPC stores buy limited commodity bundles each day. Right-click a listed item to sell.</gray>'
+    - '<gray>Torren can repair every damaged item you carry, or use <white>/repairall</white>.</gray>'
+    - '<gray>Cato, Lyra, and Garrick offer rotating daily, weekly, and monthly work for faction reputation.</gray>'
+
+engagement:
+  daily-quests-per-day: 3
+  daily-rotation-seed: 76123
+  active-timeout-seconds: 300
+  sample-seconds: 20
+  save-interval-minutes: 5
+  playtime-rewards:
+    '30': 75
+    '120': 175
+    '300': 350
+    '600': 600
+
+npcs:
+  maximum-instances: 100
+  assault-reputation-loss: 10
+  assault-cooldown-seconds: 60
+  reputation-contract-rotation-seed: 89021
+  reputation-contract-save-minutes: 5
+
+moderation:
+  report-cooldown-seconds: 60
+  default-mute-minutes: 30
+
+graves:
+  lifetime-hours: 24
+
+campaign:
+  id: veil-awakening
+  title: The Veil Awakens
+  duration-days: 14
+  daily-contribution-cap: 2500
+  categories: [gathering, crafting, hunting, exploration]
+  milestones:
+    first-ripple: 10000
+    broken-seal: 30000
+    rift-opened: 60000
+  progression:
+    world-events: first-ripple
+    nether: broken-seal
+    end: rift-opened
+
+storage:
+  mode: memory
+  postgres:
+    jdbc-url: ${NERDSMP_DB_JDBC_URL}
+    username: ${NERDSMP_DB_USERNAME}
+    password: ${NERDSMP_DB_PASSWORD}
+    maximum-pool-size: 8
+
+resource-pack:
+  provider: none
+  require-provider-plugin: false
+  custom-models: false
+
+presentation:
+  refresh-ticks: 20
+  sidebar-enabled: true
+  tab-list-enabled: true
+  nameplates-enabled: true
+  chat-format-enabled: true
+  damage-displays:
+    enabled: true
+    lifetime-ticks: 24
+    fade-in-ticks: 4
+    fade-out-ticks: 8
+    vertical-rise-per-tick: 0.018
+    max-active-per-player: 24
+  mob-health-bars:
+    enabled: true
+    update-interval-ticks: 2
+    overhead-lifetime-ticks: 100
+    overhead-viewer-range: 32
+    boss-viewer-range: 64
+    display-view-range: 0.75
+    segments: 12
+    maximum-overhead-bars: 64
+
+compliance:
+  disclaimer: NOT AN OFFICIAL MINECRAFT SERVER. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT

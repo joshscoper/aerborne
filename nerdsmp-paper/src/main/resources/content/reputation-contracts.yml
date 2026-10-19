@@ -1,0 +1,293 @@
+schema-version: 2
+
+contracts:
+  warden_story_missing_lanterns:
+    faction: frontier_wardens
+    cadence: story
+    chapter: I
+    title: The Missing Lanterns
+    description: Mara's road lanterns are vanishing. Cut fresh timber so the Wardens can replace the posts and mark the theft sites.
+    action: chop_log
+    target: 24
+    reputation: 25
+    marks: 100
+    minimum-adventurer-level: 1
+  warden_story_road_in_red:
+    faction: frontier_wardens
+    cadence: story
+    chapter: II
+    prerequisite: warden_story_missing_lanterns
+    title: A Road Marked Red
+    description: The broken posts point toward an organized hostile camp. Clear the route before the next caravan leaves the city.
+    action: slay_monster
+    target: 30
+    reputation: 40
+    marks: 200
+    minimum-adventurer-level: 5
+  warden_story_last_bridge:
+    faction: frontier_wardens
+    cadence: story
+    chapter: III
+    prerequisite: warden_story_road_in_red
+    title: The Last Bridge
+    description: With the road reclaimed, craft the fittings and field supplies needed to reopen its final bridge.
+    action: craft_item
+    target: 96
+    reputation: 75
+    marks: 400
+    minimum-adventurer-level: 10
+
+  scholar_story_silent_shard:
+    faction: rift_scholars
+    cadence: story
+    chapter: I
+    title: The Silent Shard
+    description: Lyra found a shard that absorbs nearby sound. Mine fresh samples so the archive can learn what woke it.
+    action: mine_ore
+    target: 20
+    reputation: 25
+    marks: 100
+    minimum-adventurer-level: 1
+  scholar_story_echo_pattern:
+    faction: rift_scholars
+    cadence: story
+    chapter: II
+    prerequisite: scholar_story_silent_shard
+    title: Pattern in the Echo
+    description: The samples resonate in sequence. Craft field instruments so Elian can map where the pattern converges.
+    action: craft_item
+    target: 48
+    reputation: 40
+    marks: 200
+    minimum-adventurer-level: 5
+  scholar_story_thin_place:
+    faction: rift_scholars
+    cadence: story
+    chapter: III
+    prerequisite: scholar_story_echo_pattern
+    title: The Thin Place
+    description: The pattern ends beneath an unstable crossing. Gather a final mineral survey before the seal is disturbed.
+    action: mine_ore
+    target: 120
+    reputation: 75
+    marks: 400
+    minimum-adventurer-level: 10
+
+  delver_story_empty_net:
+    faction: free_delvers
+    cadence: story
+    chapter: I
+    title: An Empty Net
+    description: Garrick's river camp stopped sending provisions. Catch fresh fish while the Delvers trace the abandoned route.
+    action: catch_fish
+    target: 8
+    reputation: 25
+    marks: 100
+    minimum-adventurer-level: 1
+  delver_story_tracks_downriver:
+    faction: free_delvers
+    cadence: story
+    chapter: II
+    prerequisite: delver_story_empty_net
+    title: Tracks Downriver
+    description: The missing crew fled something large enough to empty the banks. Clear hostile ground along their trail.
+    action: slay_monster
+    target: 35
+    reputation: 40
+    marks: 200
+    minimum-adventurer-level: 5
+  delver_story_way_home:
+    faction: free_delvers
+    cadence: story
+    chapter: III
+    prerequisite: delver_story_tracks_downriver
+    title: A Way Home
+    description: The crew is alive but stranded. Land enough provisions for the rescue party and the journey back.
+    action: catch_fish
+    target: 60
+    reputation: 75
+    marks: 400
+    minimum-adventurer-level: 10
+
+  warden_road_watch:
+    faction: frontier_wardens
+    cadence: daily
+    title: Road Watch
+    description: Clear hostile creatures from the roads and nearby camps.
+    action: slay_monster
+    target: 20
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  warden_timber_detail:
+    faction: frontier_wardens
+    cadence: daily
+    title: Timber Detail
+    description: Cut natural timber for bridge and barricade repairs.
+    action: chop_log
+    target: 48
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  warden_reinforce_routes:
+    faction: frontier_wardens
+    cadence: weekly
+    title: Reinforce the Routes
+    description: Craft supplies for road crews working beyond the city.
+    action: craft_item
+    target: 256
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  warden_lumber_stockpile:
+    faction: frontier_wardens
+    cadence: weekly
+    title: Lumber Stockpile
+    description: Build a reserve of natural timber before the next storm.
+    action: chop_log
+    target: 320
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  warden_secure_frontier:
+    faction: frontier_wardens
+    cadence: monthly
+    title: Secure the Frontier
+    description: Break the hostile packs gathering along settled routes.
+    action: slay_monster
+    target: 700
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25
+  warden_rebuild_reserves:
+    faction: frontier_wardens
+    cadence: monthly
+    title: Rebuild the Reserves
+    description: Produce a major shipment of field and construction supplies.
+    action: craft_item
+    target: 1200
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25
+
+  scholar_mineral_samples:
+    faction: rift_scholars
+    cadence: daily
+    title: Mineral Samples
+    description: Recover fresh ore samples from natural seams.
+    action: mine_ore
+    target: 30
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  scholar_field_notes:
+    faction: rift_scholars
+    cadence: daily
+    title: Field Notes
+    description: Craft instruments, containers, and records for field teams.
+    action: craft_item
+    target: 40
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  scholar_resonance_survey:
+    faction: rift_scholars
+    cadence: weekly
+    title: Resonance Survey
+    description: Sample enough natural ore to map a regional seam pattern.
+    action: mine_ore
+    target: 280
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  scholar_archive_bindings:
+    faction: rift_scholars
+    cadence: weekly
+    title: Archive Bindings
+    description: Produce the field goods needed to preserve a week of findings.
+    action: craft_item
+    target: 320
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  scholar_grand_catalog:
+    faction: rift_scholars
+    cadence: monthly
+    title: The Grand Catalog
+    description: Assemble a broad mineral record from natural deposits.
+    action: mine_ore
+    target: 1100
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25
+  scholar_research_archive:
+    faction: rift_scholars
+    cadence: monthly
+    title: Research Archive
+    description: Supply a full month of instruments, labels, and storage.
+    action: craft_item
+    target: 1400
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25
+
+  delver_fresh_provisions:
+    faction: free_delvers
+    cadence: daily
+    title: Fresh Provisions
+    description: Catch enough fish to restock a departing trail crew.
+    action: catch_fish
+    target: 10
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  delver_clear_route:
+    faction: free_delvers
+    cadence: daily
+    title: Clear Route
+    description: Remove hostile creatures from an unguarded trail.
+    action: slay_monster
+    target: 24
+    reputation: 12
+    marks: 100
+    minimum-adventurer-level: 1
+  delver_deep_route:
+    faction: free_delvers
+    cadence: weekly
+    title: Deep Route
+    description: Work natural seams while charting a route below the roads.
+    action: mine_ore
+    target: 320
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  delver_river_mapping:
+    faction: free_delvers
+    cadence: weekly
+    title: River Mapping
+    description: Fish unfamiliar waters and record where the catch is strongest.
+    action: catch_fish
+    target: 90
+    reputation: 55
+    marks: 500
+    minimum-adventurer-level: 10
+  delver_long_expedition:
+    faction: free_delvers
+    cadence: monthly
+    title: Long Expedition
+    description: Make the distant routes safer by thinning hostile territory.
+    action: slay_monster
+    target: 850
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25
+  delver_supply_crews:
+    faction: free_delvers
+    cadence: monthly
+    title: Supply the Crews
+    description: Land enough fish to provision several long expeditions.
+    action: catch_fish
+    target: 300
+    reputation: 175
+    marks: 1800
+    minimum-adventurer-level: 25

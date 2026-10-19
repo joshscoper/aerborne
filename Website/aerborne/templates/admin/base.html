@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Admin{% endblock %} | {{ site.SITE_NAME }} staff</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/brand/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='img/brand/favicon-32.png') }}" type="image/png" sizes="32x32">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  {% if current_user %}
+  <header class="bar">
+    <a class="bar-brand" href="{{ url_for('admin.dashboard') }}">{{ site.SITE_NAME }} staff</a>
+    <span class="bar-user">{{ current_user.display_name or current_user.username }} · {{ current_user.role }}</span>
+    <a href="{{ url_for('public.index') }}" target="_blank" rel="noopener">View site</a>
+    <form method="post" action="{{ url_for('admin.logout') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button type="submit" class="linkish">Sign out</button>
+    </form>
+  </header>
+  <div class="shell">
+    <nav class="side" aria-label="Admin">
+      <ul>
+        <li><a href="{{ url_for('admin.dashboard') }}"{% if request.endpoint == 'admin.dashboard' %} aria-current="page"{% endif %}>Dashboard</a></li>
+      </ul>
+      <p class="side-heading">Content</p>
+      <ul>
+        {% for t in admin_types() %}
+        <li><a href="{{ url_for('admin.content_list', key=t.key) }}"{% if request.view_args and request.view_args.get('key') == t.key %} aria-current="page"{% endif %}>{{ t.label }}</a></li>
+        {% endfor %}
+        <li><a href="{{ url_for('admin.media') }}"{% if request.endpoint == 'admin.media' %} aria-current="page"{% endif %}>Media library</a></li>
+      </ul>
+      {% if current_user.role in ('admin', 'moderator') %}
+      <p class="side-heading">Forum</p>
+      <ul>
+        <li><a href="{{ url_for('admin.forum_reports') }}"{% if request.endpoint == 'admin.forum_reports' %} aria-current="page"{% endif %}>Reports</a></li>
+        <li><a href="{{ url_for('admin.forum_members') }}"{% if request.endpoint == 'admin.forum_members' %} aria-current="page"{% endif %}>Members</a></li>
+        {% if current_user.role == 'admin' %}<li><a href="{{ url_for('admin.forum_ranks') }}"{% if request.endpoint == 'admin.forum_ranks' %} aria-current="page"{% endif %}>Ranks</a></li>{% endif %}
+        {% if current_user.role == 'admin' %}<li><a href="{{ url_for('admin.forum_categories') }}"{% if request.endpoint == 'admin.forum_categories' %} aria-current="page"{% endif %}>Categories</a></li>{% endif %}
+      </ul>
+      {% endif %}
+      <p class="side-heading">Site</p>
+      <ul>
+        {% if current_user.role in ('admin', 'editor') %}<li><a href="{{ url_for('admin.audit_log') }}"{% if request.endpoint == 'admin.audit_log' %} aria-current="page"{% endif %}>Audit log</a></li>{% endif %}
+        {% if current_user.role == 'admin' %}
+        <li><a href="{{ url_for('admin.settings') }}"{% if request.endpoint == 'admin.settings' %} aria-current="page"{% endif %}>Settings</a></li>
+        <li><a href="{{ url_for('admin.users') }}"{% if request.endpoint == 'admin.users' %} aria-current="page"{% endif %}>Staff accounts</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('admin.account') }}"{% if request.endpoint == 'admin.account' %} aria-current="page"{% endif %}>Your account</a></li>
+        {% if current_user.role == 'admin' and site.PANEL_URL %}<li><a href="{{ site.PANEL_URL }}" target="_blank" rel="noopener">Watchdog panel ↗</a></li>{% endif %}
+      </ul>
+    </nav>
+    <main id="main" class="main">
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+      <p class="flash flash-{{ category }}" role="status">{{ message }}</p>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+  <main id="main" class="solo">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <p class="flash flash-{{ category }}" role="status">{{ message }}</p>
+    {% endfor %}
+    {% block solo %}{% endblock %}
+  </main>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Leaderboards{% endblock %}
+{% block description %}Top players on {{ site.SITE_NAME }}: Adventurer XP, skills, islands, achievements, cooking and Marks.{% endblock %}
+{% block content %}
+<header class="page-head page-head-gold">
+  <div class="wrap">
+    <h1>Leaderboards</h1>
+    <p class="lede">Every account counts, online or not. Rankings come straight from the game and refresh about once a minute.</p>
+    <form class="player-search" method="get" action="{{ url_for('community.player_search') }}" role="search">
+      <label class="sr-only" for="player-name">Find a player</label>
+      <input id="player-name" name="name" placeholder="Find a player by Minecraft name" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" required>
+      <button class="btn btn-primary" type="submit">Find player</button>
+    </form>
+  </div>
+</header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap board-layout">
+  {{ c.flashes() }}
+  <nav class="tabs" aria-label="Leaderboards">
+    {% for key, label, _ in boards %}
+    <a href="{{ url_for('community.leaderboards', board=key) }}"{% if key == board %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if problem %}
+  <div class="notice notice-warn" role="status">
+    <strong>Leaderboards are offline right now.</strong> The game server's API can't be reached, so there are no rankings to show. They'll come back on their own once it's reachable.
+  </div>
+  {% elif not rows %}
+  <p class="empty">No one is ranked on this board yet.</p>
+  {% else %}
+  <h2 class="board-title">{{ board_info[2] }}</h2>
+  <p class="fine">{{ players | number }} players ranked{% if updated %} · updated <time datetime="{{ updated }}" data-ago="{{ updated }}">{{ updated[:16].replace('T', ' ') }} UTC</time>{% endif %}</p>
+  <ol class="podium">
+    {% for row in rows[:3] %}
+    <li class="podium-{{ row.rank }}">
+      <span class="podium-rank">#{{ row.rank }}</span>
+      <a class="podium-name" href="{{ url_for('community.player_profile', name=row.name) }}">{{ row.name }}</a>
+      <span class="podium-score">{{ row.score | number }}{% if board == 'marks' %} Marks{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if rows | length > 3 %}
+  <table class="board-table">
+    <thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col" class="num">{{ board_info[2] }}</th></tr></thead>
+    <tbody>
+      {% for row in rows[3:] %}
+      <tr><td>#{{ row.rank }}</td><td><a href="{{ url_for('community.player_profile', name=row.name) }}">{{ row.name }}</a></td><td class="num">{{ row.score | number }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

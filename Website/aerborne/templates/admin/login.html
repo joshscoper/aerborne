@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block solo %}
+<form class="card narrow" method="post">
+  <img src="{{ url_for('static', filename='img/brand/skycrest-192.webp') }}" alt="" width="72" height="72">
+  <h1>Staff sign in</h1>
+  {% if error %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endif %}
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Username <input name="username" autocomplete="username" required autofocus></label>
+  <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+  <button class="btn" type="submit">Sign in</button>
+  <p class="fine">Players don't need an account here. This area is for {{ site.SITE_NAME }} staff.</p>
+</form>
+{% endblock %}

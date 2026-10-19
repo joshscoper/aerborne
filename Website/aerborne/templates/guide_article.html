@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block description %}{{ item.summary }}{% endblock %}
+{% block body_class %}reading-page{% endblock %}
+{% block content %}
+<article class="article">
+  <header class="article-head">
+    <div class="wrap">
+      <p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a> / <a href="{{ url_for('public.guide_section', category=item.category) }}">{{ section }}</a></p>
+      {% if item.category == 'getting-started' and step %}<p class="step-label">Step {{ step }} of {{ siblings | length }}</p>{% endif %}
+      <h1>{{ item.title }}</h1>
+      <p class="lede">{{ item.summary }}</p>
+      {% if item.availability and item.availability != 'released' %}
+      <p class="notice notice-preview">{{ m.availability(item.availability) }} Parts of this guide describe features that aren't switched on yet.</p>
+      {% endif %}
+    </div>
+  </header>
+  <div class="wrap with-sidebar">
+    {% include "partials/guide_sidebar.html" %}
+    <div class="with-sidebar-main article-body">
+      {% if item.image %}<figure class="article-figure">{{ m.picture(item.image, item.image_alt, lazy=False) }}</figure>{% endif %}
+      <div class="prose">{{ item.body | markdown }}</div>
+      {{ m.related_list(related) }}
+      {% if prev_item or next_item %}
+      <nav class="pager" aria-label="{{ section }}">
+        {% if prev_item %}<a class="pager-prev" href="{{ url_for('public.guide_article', slug=prev_item.slug) }}"><span>Previous</span>{{ prev_item.title }}</a>{% endif %}
+        {% if next_item %}<a class="pager-next" href="{{ url_for('public.guide_article', slug=next_item.slug) }}"><span>Next</span>{{ next_item.title }}</a>{% endif %}
+      </nav>
+      {% endif %}
+      <p class="updated">Updated {{ item.updated_at | date }}</p>
+    </div>
+  </div>
+</article>
+{% endblock %}

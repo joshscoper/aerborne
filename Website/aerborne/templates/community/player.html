@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}{{ data.name if data else name }}{% endblock %}
+{% block description %}{{ data.name if data else name }}'s Aerborne profile: Adventurer level, skills and leaderboard standings.{% endblock %}
+{% block content %}
+<header class="page-head page-head-mint">
+  <div class="wrap profile-head">
+    <p class="crumbs"><a href="{{ url_for('community.leaderboards') }}">Leaderboards</a></p>
+    <h1>{{ data.name if data else name }}</h1>
+    {% if data %}
+    <p class="lede"><span class="rank-chip">{{ data.adventurer.rank }}</span> Adventurer level <strong>{{ data.adventurer.level }}</strong></p>
+    {% endif %}
+    {% if member %}<p><span class="badge badge-released">Verified</span> On the forum as <a href="{{ url_for('community.member_profile', username=member.username) }}">{{ member.username }}</a></p>{% endif %}
+  </div>
+</header>
+<div class="wrap profile-layout">
+  {% if problem %}
+  <div class="notice notice-warn" role="status"><strong>Player profiles are offline right now.</strong> The game server's API can't be reached. Try again in a minute.</div>
+  {% else %}
+  <section aria-labelledby="skills-title">
+    <h2 id="skills-title">Skills</h2>
+    <ul class="skill-bars">
+      {% for skill, level in skills %}
+      <li class="skill-bar skill-{{ skill }}">
+        <span class="skill-bar-name">{{ skill | capitalize }}</span>
+        <span class="skill-bar-level">{{ level }}</span>
+        <meter min="0" max="{{ max_level }}" value="{{ level }}">{{ level }} of {{ max_level }}</meter>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  <aside aria-labelledby="standing-title" class="panel">
+    <h2 id="standing-title">Leaderboard standing</h2>
+    <dl class="facts standing">
+      {% for key, label, long in boards %}
+      {% set row = (data.boards or {}).get(key) %}
+      <dt><a href="{{ url_for('community.leaderboards', board=key) }}">{{ long }}</a></dt>
+      <dd>{% if row %}#{{ row.rank | number }} · {{ row.score | number }}{% else %}–{% endif %}</dd>
+      {% endfor %}
+    </dl>
+    {% if data.updatedAt %}<p class="fine">Updated <time datetime="{{ data.updatedAt }}" data-ago="{{ data.updatedAt }}">{{ data.updatedAt[:16].replace('T', ' ') }} UTC</time></p>{% endif %}
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Your account{% endblock %}
+{% block content %}
+<h1>Your account</h1>
+<p>Signed in as <strong>{{ current_user.username }}</strong> ({{ current_user.role }}).</p>
+{% if current_user.must_change_password %}<p class="flash flash-error">This account still has its default password. Set a new one to open the rest of the admin.</p>{% endif %}
+<form class="card narrow-left" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h2>Change password</h2>
+  <label>Current password <input name="current" type="password" required autocomplete="current-password"></label>
+  <label>New password <input name="new" type="password" required minlength="12" autocomplete="new-password"><small>At least 12 characters. Changing it signs out your other sessions.</small></label>
+  <button class="btn" type="submit">Change password</button>
+</form>
+{% endblock %}

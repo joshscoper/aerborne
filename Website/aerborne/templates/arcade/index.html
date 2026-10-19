@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Arcade{% endblock %}
+{% block description %}Quick sky-themed games on the {{ site.SITE_NAME }} website. Earn a few Marks for the server.{% endblock %}
+{% block content %}
+<header class="page-head page-head-gold">
+  <div class="wrap">
+    <p class="eyebrow">A little break above the clouds</p>
+    <h1>Arcade</h1>
+    <p class="lede">Five games. One more try. Play for a high score and earn up to {{ cap }} Marks a day with a linked account.</p>
+    {% include "arcade/_status.html" %}
+  </div>
+</header>
+<div class="wrap arcade-grid">
+  {% for g in games %}
+  <article class="arcade-card">
+    <a class="arcade-card-link" href="{{ url_for('arcade.game', slug=g.slug) }}">
+      <img src="{{ url_for('static', filename=g.icon) }}" alt="" width="72" height="72" loading="lazy">
+      <span class="arcade-card-name">{{ g.name }}</span>
+      <span class="arcade-card-blurb">{{ g.blurb }}</span>
+      <span class="arcade-card-cap">Up to {{ g.cap }} Marks a run</span>
+    </a>
+    {% if boards[g.slug] %}
+    <ol class="mini-board" aria-label="Top scores this week">
+      {% for row in boards[g.slug] %}<li><span class="rank-{{ row.rank_slug or 'none' }} name-ranked">{{ row.username }}</span> <span>{{ row.best | number }}</span></li>{% endfor %}
+    </ol>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+<div class="wrap arcade-help"><p>Rewards reset at 00:00 UTC. Each game has a per-run limit and up to 15 rewarded runs per day. You can keep playing after you reach the limit.</p></div>
+{% endblock %}

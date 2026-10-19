@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Site settings</h1>
+<p class="fine">Server addresses, links and the site name live in the app's environment variables in cPanel, so they can't be changed by accident here.</p>
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% for key, label, kind, help in fields %}
+  <div class="field">
+    {% if kind == 'bool' %}
+    <label class="check"><input type="checkbox" name="{{ key }}" value="1"{% if current.get(key) == '1' %} checked{% endif %}> {{ label }}</label>
+    {% elif kind == 'textarea' %}
+    <label for="s-{{ key }}">{{ label }}</label>
+    <textarea id="s-{{ key }}" name="{{ key }}" rows="3">{{ current.get(key, '') }}</textarea>
+    {% else %}
+    <label for="s-{{ key }}">{{ label }}</label>
+    <input id="s-{{ key }}" name="{{ key }}" value="{{ current.get(key, '') }}">
+    {% endif %}
+    <small>{{ help }}</small>
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Save settings</button>
+</form>
+{% endblock %}

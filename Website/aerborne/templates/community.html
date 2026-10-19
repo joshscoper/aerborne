@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}Community{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <h1>Community</h1>
+    <p class="lede">{{ settings.community_intro or "Islands, events and the people who build them." }}</p>
+    <p><a class="btn btn-discord" href="{{ url_for('public.discord') }}" rel="noopener">{% include "partials/discord_icon.svg" %} Join the Discord</a></p>
+  </div>
+</header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap">
+  <section aria-labelledby="builds-title">
+    <h2 id="builds-title">Featured builds</h2>
+    {% if showcases %}
+    <div class="showcase-grid">
+      {% for build in showcases %}
+      <figure class="showcase" id="{{ build.slug }}">
+        {{ m.picture(build.image, build.image_alt, 'showcase-img') }}
+        <figcaption><strong>{{ build.title }}</strong> by {{ build.builder }}{% if build.summary %}<span>{{ build.summary }}</span>{% endif %}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-invite">No builds featured yet. Staff pick favourites from the community, always with the builder's permission.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="events-title">
+    <h2 id="events-title">Events</h2>
+    {% if events %}
+    <div class="news-grid">{% for item in events %}{{ m.news_card(item) }}{% endfor %}</div>
+    {% else %}
+    <p>No events announced yet. They'll be posted in <a href="{{ url_for('public.news', category='event') }}">News</a>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

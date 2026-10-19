@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="wrap auth-layout">
+  <form class="auth-card" method="post">
+    <h1>Sign in</h1>
+    {{ c.flashes() }}
+    {% if error %}<p class="notice notice-warn" role="alert">{{ error }}</p>{% endif %}
+    {{ c.csrf() }}
+    <label>Username <input name="username" autocomplete="username" required autofocus></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn btn-primary btn-large" type="submit">Sign in</button>
+    <p class="fine"><a href="{{ url_for('community.register') }}">Create an account</a> · <a href="{{ url_for('community.recover') }}">Forgot your password?</a></p>
+    <p class="fine">Staff can sign in here too; you'll go straight to the admin.</p>
+  </form>
+</div>
+{% endblock %}

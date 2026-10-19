@@ -1,0 +1,153 @@
+schema-version: 1
+mobs:
+  veil_stalker:
+    name: "<dark_purple>Veil Stalker</dark_purple>"
+    type: husk
+    health: 32
+    attack-damage: 5
+    ability-radius: 4
+    ability-damage: 4
+    ability-cooldown-seconds: 14
+    mark-reward: 3
+    relic-drop: veilwalker_compass
+    relic-chance: 0.01
+  emberbound:
+    name: "<red>Emberbound</red>"
+    type: zombie
+    health: 30
+    attack-damage: 6
+    ability-radius: 3
+    ability-damage: 5
+    ability-cooldown-seconds: 12
+    mark-reward: 3
+    relic-drop: emberforged_pickaxe
+    relic-chance: 0.01
+  thorn_sentinel:
+    name: "<green>Thorn Sentinel</green>"
+    type: skeleton
+    health: 28
+    attack-damage: 4
+    ability-radius: 5
+    ability-damage: 4
+    ability-cooldown-seconds: 15
+    mark-reward: 3
+  mire_weaver:
+    name: "<dark_green>Mire Weaver</dark_green>"
+    type: spider
+    health: 26
+    attack-damage: 5
+    ability-radius: 4
+    ability-damage: 4
+    ability-cooldown-seconds: 13
+    mark-reward: 3
+  frostmarked:
+    name: "<aqua>Frostmarked</aqua>"
+    type: stray
+    health: 30
+    attack-damage: 4
+    ability-radius: 5
+    ability-damage: 5
+    ability-cooldown-seconds: 15
+    mark-reward: 4
+  bog_oracle:
+    name: "<dark_aqua>Bog Oracle</dark_aqua>"
+    type: bogged
+    health: 34
+    attack-damage: 4
+    ability-radius: 5
+    ability-damage: 4
+    ability-cooldown-seconds: 12
+    mark-reward: 4
+  rift_enderman:
+    name: "<light_purple>Rift-Touched Enderman</light_purple>"
+    type: enderman
+    health: 48
+    attack-damage: 7
+    ability-radius: 5
+    ability-damage: 6
+    ability-cooldown-seconds: 16
+    mark-reward: 6
+    relic-drop: starfall_focus
+    relic-chance: 0.015
+  cinder_wraith:
+    name: "<gold>Cinder Wraith</gold>"
+    type: blaze
+    health: 40
+    attack-damage: 6
+    ability-radius: 6
+    ability-damage: 6
+    ability-cooldown-seconds: 14
+    mark-reward: 6
+  sulfur_spawn:
+    name: "<yellow>Sulfur Spawn</yellow>"
+    type: magma_cube
+    health: 36
+    attack-damage: 6
+    ability-radius: 4
+    ability-damage: 5
+    ability-cooldown-seconds: 12
+    mark-reward: 5
+  oathbreaker:
+    name: "<dark_red>Oathbreaker</dark_red>"
+    type: piglin_brute
+    health: 52
+    attack-damage: 8
+    ability-radius: 4
+    ability-damage: 7
+    ability-cooldown-seconds: 16
+    mark-reward: 8
+  storm_echo:
+    name: "<white>Storm Echo</white>"
+    type: breeze
+    health: 38
+    attack-damage: 5
+    ability-radius: 6
+    ability-damage: 5
+    ability-cooldown-seconds: 13
+    mark-reward: 6
+  hollow_vex:
+    name: "<gray>Hollow Vex</gray>"
+    type: vex
+    health: 24
+    attack-damage: 6
+    ability-radius: 3
+    ability-damage: 5
+    ability-cooldown-seconds: 11
+    mark-reward: 5
+  keeper_of_embers:
+    name: "<gradient:#ff9f43:#ff5e57><bold>Keeper of Embers</bold></gradient>"
+    type: ravager
+    boss: true
+    health: 450
+    attack-damage: 12
+    ability-radius: 8
+    ability-damage: 8
+    ability-cooldown-seconds: 10
+    mark-reward: 100
+    relic-drop: emberforged_pickaxe
+    relic-chance: 0.35
+  the_hollow_huntsman:
+    name: "<gradient:#dfe4ea:#747d8c><bold>The Hollow Huntsman</bold></gradient>"
+    type: wither_skeleton
+    boss: true
+    health: 380
+    attack-damage: 11
+    ability-radius: 7
+    ability-damage: 9
+    ability-cooldown-seconds: 9
+    mark-reward: 100
+    relic-drop: hollowfang_blade
+    relic-chance: 0.35
+  starfall_colossus:
+    name: "<gradient:#f1f2f6:#a29bfe><bold>Starfall Colossus</bold></gradient>"
+    type: warden
+    boss: true
+    health: 700
+    attack-damage: 14
+    ability-radius: 10
+    ability-damage: 10
+    ability-cooldown-seconds: 12
+    mark-reward: 150
+    relic-drop: starfall_focus
+    relic-chance: 0.5
+

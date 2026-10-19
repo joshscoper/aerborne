@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block body_class %}forum-page{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/forum.css') }}">
+<script src="{{ url_for('static', filename='js/forum.js') }}" defer></script>
+{% endblock %}

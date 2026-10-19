@@ -1,0 +1,16 @@
+# Working production baseline. Move to SELFHOST or another supported pack server only with a real public endpoint.
+Pack:
+  generation:
+    prefer_item_models: true
+  obfuscation:
+    type: SIMPLE
+    cache: true
+  server:
+    type: POLYMATH
+  dispatch:
+    send_pre_join: true
+    send_on_join: false
+    send_on_reload: true
+    delay: -1
+    mandatory: true
+    prompt: "<aqua><bold>Server resource pack</bold></aqua> <gray>Gear, icons and item textures.</gray>"

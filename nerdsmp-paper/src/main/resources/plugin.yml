@@ -1,0 +1,451 @@
+name: NerdSMP
+version: '${version}'
+main: net.nerdsmp.paper.NerdSmpPlugin
+description: Aerborne - a Skyblock RPG adventure. Small beginnings. Endless skies.
+authors: [NerdSMP]
+api-version: '26.2'
+load: POSTWORLD
+softdepend: [Nexo, LuckPerms, CoreProtect, GrimAC]
+
+commands:
+  pay:
+    description: Send earned Marks to another online player, with a durable receipt.
+    usage: /pay [status|<player> <amount>]
+  leaderboard:
+    description: Browse offline-inclusive player and island rankings.
+    aliases: [leaderboards, top, baltop]
+    usage: /leaderboard [marks|adventurer|skills|island|achievements|cooking]
+  weblink:
+    description: Get a one-time code to link your Minecraft account on the Aerborne website.
+    aliases: [linkweb]
+    usage: /weblink
+  cooking:
+    description: Browse meals, ingredients and Cooking requirements.
+    aliases: [cookbook, kitchen]
+    usage: /cooking
+  permissions:
+    description: Manage inherited staff groups and existing plugin permissions.
+    aliases: [staffperms, nperms]
+    usage: /permissions [list|audit|group|user]
+  studio:
+    description: Open the MMORPG developer and content-team toolkit.
+    usage: /studio [items|mobs|loot|world|npcs|recipes|library|qa|validate|board|simulate]
+    aliases: [content, devstudio]
+    permission: nerdsmp.studio.use
+  lootstudio:
+    description: Author and connect loot tables in game.
+    usage: /lootstudio
+    permission: nerdsmp.loot.admin
+  worldstudio:
+    description: Manage encounter zones, dig sites, NPC placement and public destinations.
+    usage: /worldstudio
+    permission: nerdsmp.studio.world
+  npcstudio:
+    description: Author NPCs and branching dialogue in game.
+    usage: /npcstudio
+    permission: nerdsmp.npc.admin
+  recipestudio:
+    description: Create crafting recipes for authored items.
+    usage: /recipestudio
+    permission: nerdsmp.studio.recipes
+  itemengine:
+    description: Create, preview, and publish RPG items using the staff editor.
+    usage: /itemengine
+    aliases: [itemstudio]
+    permission: nerdsmp.content.items
+  mobengine:
+    description: Create, preview, and publish RPG mobs using the staff editor.
+    usage: /mobengine
+    aliases: [mobstudio]
+    permission: nerdsmp.content.mobs
+  mobloot:
+    description: Author and assign RPG mob loot tables.
+    usage: /mobloot help
+    permission: nerdsmp.loot.admin
+  zone:
+    description: Define public areas, spawn points and zone mob populations.
+    usage: /zone help
+    permission: nerdsmp.zone.admin
+  expedition:
+    description: Browse staff-set public travel destinations.
+    usage: /expedition [warp]
+    aliases: [expeditions]
+  island:
+    description: Create and manage your RPG Skyblock island and co-op.
+    aliases: [is, skyblock]
+    usage: /island [create|home|homes|visit|directory|journal|resources|level|talents|machines|border|chat|showcase|advance|invite|invitations|accept|deny|kick|leave|visitors|rename|fixgenerator|hub]
+  digsite:
+    description: Find renewable excavation sites or manage staff-authored digging areas.
+    usage: /digsite [wand|selection|clear|list|info <id>|create <id> [cooldown]|enable|disable|delete]
+    aliases: [digsites]
+  marks:
+    description: View your earned Marks balance.
+    usage: /marks
+  skills:
+    description: View use-based skill progression.
+    usage: /skills
+  adventurer:
+    description: View your Adventurer Level and rank path.
+    usage: /adventurer
+  mastery:
+    description: Select or respec a seasonal mastery.
+    usage: /mastery <select|remove> <skill>
+  jobs:
+    description: View job and server-order information.
+    usage: /jobs [orders|fulfill <id> <amount>]
+  market:
+    description: Browse player listings, manage sales and collect deliveries from anywhere.
+    usage: /market [list|stores|stall|sell|mine|inbox|inspect|reserve|buy|collect|cancel|retry|help|review|resolve]
+  ah:
+    description: Bid on timed auctions, use Buy Now or sell your held items.
+    aliases: [auction, auctions, auctionhouse]
+    usage: /ah [list|mine|sell|inbox|bid|buy|inspect|cancel|retry|help]
+  store:
+    description: Browse and manage player stores, with remote purchases and deliveries.
+    aliases: [playerstore, playerstores]
+    usage: /store [directory|mine|sell|search|inbox|name|description|buy|collect|cancel|inspect|retry|help]
+  shops:
+    description: Buy supplies and sell surplus from anywhere.
+    usage: /shops [search]
+    aliases: [shop, vendors]
+  claim:
+    description: Manage your homestead, residents, territory, and protection rules.
+    aliases: [homestead, territory]
+    usage: /claim [help|mine|directory|plots|plot|map|members|flags|applications|bulletin|history|chat|create|expand]
+  party:
+    description: Create and manage a cooperative party.
+    usage: /party [info|invite <player>|accept|deny|leave|kick <player>|promote <player>|disband]
+  partychat:
+    description: Send a private message to your party.
+    usage: /partychat <message>
+    aliases: [pc]
+  relics:
+    description: Inspect or administer relic items.
+    usage: /relics [inspect|sets]
+  campaign:
+    description: View and contribute to the active campaign.
+    usage: /campaign [contribute <category> <amount>]
+  grave:
+    description: Locate or remotely recover your latest grave.
+    usage: /grave <locate|recover>
+  duel:
+    description: Opt into or out of consensual PvP.
+    usage: /duel <on|off|status>
+  cosmetics:
+    description: Browse your unlocked cosmetics.
+    usage: /cosmetics
+  menu:
+    description: Browse your character, island, activities and settings.
+    usage: /menu
+    aliases: [nexus, aerborne, hearthsky]
+  profile:
+    description: Open your player profile.
+    usage: /profile
+  hud:
+    description: Show or hide your sidebar.
+    usage: /hud
+  forge:
+    description: Socket gems and apply Arcane enchantments.
+    usage: /forge
+    permission: nerdsmp.station.remote
+    permission-message: Visit an anvil or Torren to use Forge. Premium opens it from anywhere.
+  enchants:
+    description: Use the Arcane Enchanting table.
+    usage: /enchants
+    permission: nerdsmp.station.remote
+    permission-message: Visit an enchanting table or Veyra to use Arcane Enchanting. Premium opens it from anywhere.
+  arcane:
+    description: Open the Arcane Codex, Arcane Research and Chosen Imbuement.
+    usage: /arcane [codex|research|imbue|mastery|help]
+    aliases: [codex]
+  forgeadmin:
+    description: Arcane Forge status, validation, reload, migration reports and diagnostics.
+    usage: /forgeadmin <help|status|validate|reload|debug|migration|anticheat|telemetry|grant|rollout>
+    permission: nerdsmp.forge.admin
+  recipes:
+    description: Browse crafted equipment and Smithing requirements.
+    usage: /recipes
+  daily:
+    description: View today's rotating contracts and progress.
+    usage: /daily
+    aliases: [quests]
+  playtime:
+    description: View active playtime and seasonal milestones.
+    usage: /playtime
+  achievements:
+    description: View personal milestones and achievement rewards.
+    usage: /achievements
+    aliases: [awards, ach]
+  npc:
+    description: Talk with nearby characters in chat, or manage NPC placements.
+    usage: /npc <nearby|talk|reply|bye|catalog|place|definitions|create|remove|movehere|list|respawn|reload|reputation>
+  reputation:
+    description: View faction standing, ranks, and NPC shop rates.
+    usage: /reputation [faction]
+  report:
+    description: File a private player report for staff review.
+    usage: /report <player> <reason>
+  settings:
+    description: Manage your chat, social, travel, and tip preferences.
+    usage: /settings [setting] [on|off]
+  social:
+    description: Open friends, parties and player trades.
+    usage: /social
+  friends:
+    description: Manage friends and friend requests.
+    usage: /friends [list|add|accept|deny|remove] [player]
+  ignore:
+    description: Ignore a player's chat, messages, and requests.
+    usage: /ignore <player>
+  unignore:
+    description: Stop ignoring a player.
+    usage: /unignore <player>
+  msg:
+    description: Send a private message.
+    usage: /msg <player> <message>
+    aliases: [tell, whisper, w]
+  reply:
+    description: Reply to your most recent private conversation.
+    usage: /reply <message>
+    aliases: [r]
+  channel:
+    description: View or select your active chat channel.
+    usage: /channel [global|local|trade|party|homestead|staff]
+    aliases: [ch]
+  globalchat:
+    description: Select global chat or send one global message.
+    usage: /globalchat [message]
+    aliases: [g]
+  localchat:
+    description: Select local chat or send one nearby message.
+    usage: /localchat [message]
+    aliases: [l]
+  tradechat:
+    description: Select trade chat or send one trade message.
+    usage: /tradechat [message]
+    aliases: [tc]
+  staffchat:
+    description: Select staff chat or send one staff message.
+    usage: /staffchat [message]
+    aliases: [sc]
+    permission: nerdsmp.staff
+  trade:
+    description: Open a secure item trade with another player.
+    usage: /trade <player|accept|deny|offer|remove|confirm|cancel|view>
+  spawn:
+    description: Travel to the server spawn.
+    usage: /spawn
+  warp:
+    description: Travel to a public warp.
+    usage: /warp <name>
+  warps:
+    description: List public warps.
+    usage: /warps
+  setwarp:
+    description: Create or replace a public warp.
+    usage: /setwarp <name>
+    permission: nerdsmp.travel.admin
+  delwarp:
+    description: Remove a public warp.
+    usage: /delwarp <name>
+    permission: nerdsmp.travel.admin
+  setspawn:
+    description: Set the city arrival point.
+    usage: /setspawn
+    permission: nerdsmp.travel.admin
+  tpa:
+    description: Ask to teleport to another player.
+    usage: /tpa <player>
+  tpahere:
+    description: Ask another player to teleport to you.
+    usage: /tpahere <player>
+  tpaccept:
+    description: Accept your current teleport request.
+    usage: /tpaccept [player]
+  tpdeny:
+    description: Decline your current teleport request.
+    usage: /tpdeny [player]
+  tpcancel:
+    description: Cancel your outgoing teleport request.
+    usage: /tpcancel
+  back:
+    description: Return to your previous travel or death location.
+    usage: /back
+  quickstart:
+    description: Learn the basics and find useful commands.
+    usage: /quickstart
+    aliases: [helpme]
+  tips:
+    description: Manage or preview automated feature tips.
+    usage: /tips [on|off|next]
+  alchemy:
+    description: Open the potion, poison, and coating workbench.
+    usage: /alchemy
+    permission: nerdsmp.station.remote
+    permission-message: Visit a brewing stand or Sella to use Alchemy. Premium opens it from anywhere.
+  fishing:
+    description: Open your fishing journal, streak, and catch guide.
+    usage: /fishing
+  excavation:
+    description: Open excavation field notes and find progression.
+    usage: /excavation
+  watchdog:
+    description: Inspect autonomous anti-cheat status and evidence.
+    usage: /watchdog [status|recent|player|clear|label|train] [player] [cheat|legit|clear] [hours]
+    permission: nerdsmp.staff.anticheat
+  identify:
+    description: Identify sealed equipment in bulk or scrap it for Arcane Dust.
+    usage: /identify [held|all|scrap]
+    permission: nerdsmp.station.remote
+    permission-message: Visit Nyra to use Arcane Identification. Premium opens it from anywhere.
+  bank:
+    description: Open your persistent account bank and purchase storage slots.
+    usage: /bank
+    permission: nerdsmp.station.remote
+    permission-message: Visit Orin at the bank to use Frontier Bank. Premium opens it from anywhere.
+  repairall:
+    description: Review and repair every damaged item in your inventory for Marks.
+    usage: /repairall
+    permission: nerdsmp.station.remote
+    permission-message: Visit Torren to use Repair All. Premium opens it from anywhere.
+  staff:
+    description: Open the audited staff management desk.
+    usage: /staff [player|reports|inventory|history|note|warn|mute|unmute|freeze|unfreeze|kick|ban|unban|resolve|audit]
+    permission: nerdsmp.staff
+  nerdadmin:
+    description: Restricted Aerborne administration and store fulfillment.
+    aliases: [aerborneadmin]
+    usage: /nerdadmin <releasecheck|stacks|api|marks|xp|damage|relic|set|starter|mob|geode|gem|tome|entitlement> [arguments]
+    permission: nerdsmp.admin
+
+permissions:
+  nerdsmp.permissions.manage:
+    description: Full permission ownership, including assigning other owners. Never grant to ordinary administrators.
+    default: op
+  nerdsmp.studio.use:
+    description: Open the content-team studio hub.
+    default: op
+  nerdsmp.studio.world:
+    description: Use world authoring controls; mutations require their domain permissions too.
+    default: op
+  nerdsmp.studio.library:
+    description: Inspect published content definitions.
+    default: op
+  nerdsmp.studio.recipes:
+    description: Author skill-gated crafting recipes for published items.
+    default: op
+  nerdsmp.studio.qa:
+    description: Inspect content validation, read the workboard, and simulate loot without rewards.
+    default: op
+  nerdsmp.studio.manage:
+    description: Create and maintain optional team tasks, bugs and reviews.
+    default: op
+  nerdsmp.studio.builder:
+    description: Builder toolkit bundle; does not grant moderation or territory bypass.
+    default: false
+    children:
+      nerdsmp.studio.use: true
+      nerdsmp.studio.world: true
+      nerdsmp.studio.library: true
+      nerdsmp.studio.qa: true
+      nerdsmp.studio.manage: true
+      nerdsmp.zone.admin: true
+      nerdsmp.npc.admin: true
+      nerdsmp.travel.admin: true
+  nerdsmp.studio.designer:
+    description: Content-design bundle with direct publishing; does not grant player moderation.
+    default: false
+    children:
+      nerdsmp.studio.use: true
+      nerdsmp.studio.library: true
+      nerdsmp.studio.qa: true
+      nerdsmp.studio.manage: true
+      nerdsmp.content.items: true
+      nerdsmp.content.mobs: true
+      nerdsmp.loot.admin: true
+      nerdsmp.npc.admin: true
+      nerdsmp.studio.recipes: true
+  nerdsmp.studio.tester:
+    description: QA and workboard bundle without content mutation or moderation powers.
+    default: false
+    children:
+      nerdsmp.studio.use: true
+      nerdsmp.studio.library: true
+      nerdsmp.studio.qa: true
+      nerdsmp.studio.manage: true
+  nerdsmp.content.items:
+    description: Use the RPG item authoring editor.
+    default: op
+  nerdsmp.content.mobs:
+    description: Use the RPG mob authoring editor.
+    default: op
+  nerdsmp.loot.admin:
+    description: Create, edit, assign, and reload mob loot tables.
+    default: op
+  nerdsmp.zone.admin:
+    description: Create, configure and enable public mob zones.
+    default: op
+  nerdsmp.admin:
+    description: Full NerdSMP administrative access.
+    default: op
+    children:
+      nerdsmp.staff: true
+      nerdsmp.staff.moderate: true
+      nerdsmp.npc.admin: true
+      nerdsmp.travel.admin: true
+      nerdsmp.travel.bypass: true
+      nerdsmp.progression.bypass: true
+      nerdsmp.claim.bypass: true
+      nerdsmp.market.review: true
+      nerdsmp.staff.anticheat: true
+      nerdsmp.anticheat.bypass: true
+      nerdsmp.premium: true
+      nerdsmp.studio.builder: true
+      nerdsmp.studio.designer: true
+      nerdsmp.studio.tester: true
+      nerdsmp.store.fulfill: true
+      nerdsmp.forge.admin: true
+  nerdsmp.forge.admin:
+    description: Arcane Forge diagnostics, strict config reload, migration reports and audited knowledge grants.
+    default: op
+  nerdsmp.premium:
+    description: Earned or administrative Premium conveniences; paid cosmetic memberships do not grant this permission.
+    default: false
+    children:
+      nerdsmp.station.remote: true
+  nerdsmp.station.remote:
+    description: Open service stations remotely with player commands and menus.
+    default: false
+  nerdsmp.staff:
+    description: Inspect players, reports, histories, and the staff audit trail.
+    default: op
+  nerdsmp.staff.moderate:
+    description: Add notes and warnings, mute, freeze, resolve reports, and kick players.
+    default: op
+  nerdsmp.store.fulfill:
+    description: Allows idempotent store entitlement lifecycle commands.
+    default: op
+  nerdsmp.npc.admin:
+    description: Create, move, remove, reload, and adjust NerdSMP NPCs.
+    default: op
+  nerdsmp.travel.admin:
+    description: Set the server spawn and manage public warps.
+    default: op
+  nerdsmp.travel.bypass:
+    description: Bypass travel warmups and cooldowns.
+    default: op
+  nerdsmp.progression.bypass:
+    description: Bypass campaign-gated realm access while testing or administering the server.
+    default: op
+  nerdsmp.claim.bypass:
+    description: Bypass physical claim protection for trusted administrators; does not grant ownership.
+    default: op
+  nerdsmp.market.review:
+    description: Review and resolve interrupted market inventory transfers with an audited reason.
+    default: op
+  nerdsmp.staff.anticheat:
+    description: View Watchdog alerts and inspect or clear live evidence buffers.
+    default: op
+  nerdsmp.anticheat.bypass:
+    description: Exempts trusted staff and test accounts from Watchdog checks.
+    default: op

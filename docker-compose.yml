@@ -1,0 +1,52 @@
+name: nerdsmp
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  paper:
+    image: eclipse-temurin:25-jre
+    restart: unless-stopped
+    working_dir: /server
+    command: ["java", "-Xms10G", "-Xmx10G", "-XX:+UseG1GC", "-XX:+AlwaysPreTouch", "-jar", "paper.jar", "--nogui"]
+    env_file: .env
+    volumes:
+      - ./runtime/paper:/server
+    expose: ["25566"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backend]
+
+  velocity:
+    image: eclipse-temurin:25-jre
+    restart: unless-stopped
+    working_dir: /proxy
+    command: ["java", "-Xms1G", "-Xmx1G", "-XX:+UseG1GC", "-jar", "velocity.jar"]
+    volumes:
+      - ./runtime/velocity:/proxy
+    ports:
+      - "25565:25565/tcp"
+    depends_on: [paper]
+    networks: [edge, backend]
+
+volumes:
+  postgres-data:
+
+networks:
+  edge:
+  backend:
+    internal: true

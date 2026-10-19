@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}News{% endblock %}
+{% block description %}Updates, patch notes, events and developer journals from {{ site.SITE_NAME }}.{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <h1>News</h1>
+    <p class="lede">Updates, patch notes, events and developer journals. <a href="{{ url_for('public.news_feed') }}">Subscribe with RSS</a>.</p>
+  </div>
+</header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap">
+  <nav class="tabs" aria-label="News categories">
+    <a href="{{ url_for('public.news') }}"{% if not category %} aria-current="page"{% endif %}>Everything</a>
+    {% for key, label in categories %}
+    <a href="{{ url_for('public.news', category=key) }}"{% if category == key %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {% if items %}
+  <div class="news-grid">{% for item in items %}{{ m.news_card(item) }}{% endfor %}</div>
+  {% else %}
+  <p class="empty">Nothing posted here yet.</p>
+  {% endif %}
+  {% if total_pages > 1 %}
+  <nav class="pager" aria-label="Pages">
+    {% if page > 1 %}<a class="pager-prev" href="{{ url_for('public.news', category=category or None, page=page - 1) }}">Newer</a>{% endif %}
+    {% if page < total_pages %}<a class="pager-next" href="{{ url_for('public.news', category=category or None, page=page + 1) }}">Older</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

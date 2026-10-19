@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aerborne-website",
+      "runtimeExecutable": "Website/.venv/Scripts/python.exe",
+      "runtimeArgs": ["Website/manage.py", "run"],
+      "port": 5000
+    }
+  ]
+}

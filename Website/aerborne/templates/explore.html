@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}Explore{% endblock %}
+{% block description %}The world of {{ site.SITE_NAME }}: floating islands, the arcane city and the zones beyond.{% endblock %}
+{% block content %}
+<header class="page-head page-head-journal">
+  <div class="wrap">
+    <h1>Explorer's journal</h1>
+    <p class="lede">Every island floats in its own patch of open sky. Above them all sits a city of merchants and arcanists, and beyond it, places no one has charted yet.</p>
+  </div>
+</header>
+
+<div class="wrap journal">
+  {% for region in regions %}
+  <article class="journal-entry region-{{ region.availability }}" id="{{ region.slug }}">
+    <div class="journal-art">
+      {% if region.image %}{{ m.picture(region.image, region.image_alt, 'journal-img') }}{% else %}<div class="journal-img journal-blank" aria-hidden="true"><span>Uncharted</span></div>{% endif %}
+    </div>
+    <div class="journal-text">
+      <p class="journal-badges">{{ m.availability(region.availability) }} {{ m.concept(region.concept_art, "Artist's impression") }}</p>
+      <h2><a href="{{ url_for('public.region', slug=region.slug) }}">{{ region.name }}</a></h2>
+      {% if region.theme %}<p class="journal-theme">{{ region.theme }}</p>{% endif %}
+      <p>{{ region.summary }}</p>
+      {% if region.requirements %}<p class="journal-req"><strong>When to visit:</strong> {{ region.requirements }}</p>{% endif %}
+    </div>
+  </article>
+  {% else %}
+  <p>The journal is empty for now. Regions appear here as they open.</p>
+  {% endfor %}
+
+  {% if world_guides %}
+  <section class="more-guides" aria-labelledby="world-guides">
+    <h2 id="world-guides">World guides</h2>
+    <ul class="link-list">{% for g in world_guides %}<li><a href="{{ url_for('public.guide_article', slug=g.slug) }}">{{ g.title }}</a> <span>{{ g.summary }}</span></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

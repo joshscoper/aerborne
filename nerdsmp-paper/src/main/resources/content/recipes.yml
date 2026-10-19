@@ -1,0 +1,353 @@
+schema-version: 4
+recipes:
+  forester_axe:
+    introduced: 4
+    result: wildwood_axe
+    skill: forestry
+    level: 10
+    shape: ["OI ", "IM ", " S "]
+    ingredients: {O: oak_log, I: iron_ingot, M: moss_block, S: stick}
+  forester_boots:
+    introduced: 4
+    result: wildwood_boots
+    skill: forestry
+    level: 20
+    shape: ["L L", "OVO", "L L"]
+    ingredients: {L: leather, O: oak_log, V: vine}
+  forester_coat:
+    introduced: 4
+    result: wildwood_coat
+    skill: forestry
+    level: 35
+    shape: ["L L", "OMO", "LLL"]
+    ingredients: {L: leather, O: spruce_log, M: moss_block}
+  wayfarer_helm:
+    introduced: 3
+    result: wayfarer_helm
+    skill: smithing
+    level: 5
+    shape: ["MCM","M M"]
+    ingredients: {M: iron_ingot, C: copper_ingot}
+  wayfarer_cuirass:
+    introduced: 3
+    result: wayfarer_cuirass
+    skill: smithing
+    level: 5
+    shape: ["M M","MCM","MMM"]
+    ingredients: {M: iron_ingot, C: copper_ingot}
+  wayfarer_greaves:
+    introduced: 3
+    result: wayfarer_greaves
+    skill: smithing
+    level: 5
+    shape: ["MCM","M M","M M"]
+    ingredients: {M: iron_ingot, C: copper_ingot}
+  wayfarer_boots:
+    introduced: 3
+    result: wayfarer_boots
+    skill: smithing
+    level: 5
+    shape: ["M M","C M"]
+    ingredients: {M: iron_ingot, C: copper_ingot}
+  wayfarer_blade:
+    introduced: 3
+    result: wayfarer_blade
+    skill: smithing
+    level: 5
+    shape: [" M "," C "," S "]
+    ingredients: {M: iron_ingot, C: copper_ingot, S: stick}
+  wayfarer_rod:
+    introduced: 3
+    result: wayfarer_rod
+    skill: fishing
+    level: 5
+    shape: ["  M"," CM","MS "]
+    ingredients: {M: iron_ingot, C: copper_ingot, S: string}
+  deepcurrent_helm:
+    introduced: 3
+    result: deepcurrent_helm
+    skill: smithing
+    level: 15
+    shape: ["MCM","M M"]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals}
+  deepcurrent_cuirass:
+    introduced: 3
+    result: deepcurrent_cuirass
+    skill: smithing
+    level: 15
+    shape: ["M M","MCM","MMM"]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals}
+  deepcurrent_greaves:
+    introduced: 3
+    result: deepcurrent_greaves
+    skill: smithing
+    level: 15
+    shape: ["MCM","M M","M M"]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals}
+  deepcurrent_boots:
+    introduced: 3
+    result: deepcurrent_boots
+    skill: smithing
+    level: 15
+    shape: ["M M","C M"]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals}
+  deepcurrent_blade:
+    introduced: 3
+    result: deepcurrent_blade
+    skill: smithing
+    level: 15
+    shape: [" M "," C "," S "]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals, S: stick}
+  deepcurrent_rod:
+    introduced: 3
+    result: deepcurrent_rod
+    skill: fishing
+    level: 15
+    shape: ["  M"," CM","MS "]
+    ingredients: {M: prismarine_shard, C: prismarine_crystals, S: string}
+  stormbound_helm:
+    introduced: 3
+    result: stormbound_helm
+    skill: smithing
+    level: 25
+    shape: ["MCM","M M"]
+    ingredients: {M: diamond, C: echo_shard}
+  stormbound_cuirass:
+    introduced: 3
+    result: stormbound_cuirass
+    skill: smithing
+    level: 25
+    shape: ["M M","MCM","MMM"]
+    ingredients: {M: diamond, C: echo_shard}
+  stormbound_greaves:
+    introduced: 3
+    result: stormbound_greaves
+    skill: smithing
+    level: 25
+    shape: ["MCM","M M","M M"]
+    ingredients: {M: diamond, C: echo_shard}
+  stormbound_boots:
+    introduced: 3
+    result: stormbound_boots
+    skill: smithing
+    level: 25
+    shape: ["M M","C M"]
+    ingredients: {M: diamond, C: echo_shard}
+  stormbound_blade:
+    introduced: 3
+    result: stormbound_blade
+    skill: smithing
+    level: 25
+    shape: [" M "," C "," S "]
+    ingredients: {M: diamond, C: echo_shard, S: stick}
+  stormbound_rod:
+    introduced: 3
+    result: stormbound_rod
+    skill: fishing
+    level: 25
+    shape: ["  M"," CM","MS "]
+    ingredients: {M: diamond, C: echo_shard, S: string}
+  dawnguard_helm:
+    introduced: 3
+    result: dawnguard_helm
+    skill: smithing
+    level: 35
+    shape: ["MCM","M M"]
+    ingredients: {M: gold_ingot, C: netherite_ingot}
+  dawnguard_cuirass:
+    introduced: 3
+    result: dawnguard_cuirass
+    skill: smithing
+    level: 35
+    shape: ["M M","MCM","MMM"]
+    ingredients: {M: gold_ingot, C: netherite_ingot}
+  dawnguard_greaves:
+    introduced: 3
+    result: dawnguard_greaves
+    skill: smithing
+    level: 35
+    shape: ["MCM","M M","M M"]
+    ingredients: {M: gold_ingot, C: netherite_ingot}
+  dawnguard_boots:
+    introduced: 3
+    result: dawnguard_boots
+    skill: smithing
+    level: 35
+    shape: ["M M","C M"]
+    ingredients: {M: gold_ingot, C: netherite_ingot}
+  dawnguard_blade:
+    introduced: 3
+    result: dawnguard_blade
+    skill: smithing
+    level: 35
+    shape: [" M "," C "," S "]
+    ingredients: {M: gold_ingot, C: netherite_ingot, S: stick}
+  dawnguard_rod:
+    introduced: 3
+    result: dawnguard_rod
+    skill: fishing
+    level: 35
+    shape: ["  M"," CM","MS "]
+    ingredients: {M: gold_ingot, C: netherite_ingot, S: string}
+  astral_covenant_helm:
+    introduced: 3
+    result: astral_covenant_helm
+    skill: smithing
+    level: 45
+    shape: ["MCM","M M"]
+    ingredients: {M: netherite_ingot, C: nether_star}
+  astral_covenant_cuirass:
+    introduced: 3
+    result: astral_covenant_cuirass
+    skill: smithing
+    level: 45
+    shape: ["M M","MCM","MMM"]
+    ingredients: {M: netherite_ingot, C: nether_star}
+  astral_covenant_greaves:
+    introduced: 3
+    result: astral_covenant_greaves
+    skill: smithing
+    level: 45
+    shape: ["MCM","M M","M M"]
+    ingredients: {M: netherite_ingot, C: nether_star}
+  astral_covenant_boots:
+    introduced: 3
+    result: astral_covenant_boots
+    skill: smithing
+    level: 45
+    shape: ["M M","C M"]
+    ingredients: {M: netherite_ingot, C: nether_star}
+  astral_covenant_blade:
+    introduced: 3
+    result: astral_covenant_blade
+    skill: smithing
+    level: 45
+    shape: [" M "," C "," S "]
+    ingredients: {M: netherite_ingot, C: nether_star, S: stick}
+  astral_covenant_rod:
+    introduced: 3
+    result: astral_covenant_rod
+    skill: fishing
+    level: 45
+    shape: ["  M"," CM","MS "]
+    ingredients: {M: netherite_ingot, C: nether_star, S: string}
+  ironroot_shovel:
+    introduced: 2
+    result: ironroot_shovel
+    skill: smithing
+    level: 12
+    shape: [" I ", " C ", " S "]
+    ingredients: {I: iron_ingot, C: copper_ingot, S: stick}
+  ironroot_shield:
+    introduced: 2
+    result: ironroot_shield
+    skill: smithing
+    level: 15
+    shape: ["CIC", "III", " C "]
+    ingredients: {I: iron_ingot, C: copper_ingot}
+  wildwood_rod:
+    introduced: 2
+    result: wildwood_rod
+    skill: fishing
+    level: 20
+    shape: ["  S", " SM", "SVT"]
+    ingredients: {S: stick, M: moss_block, V: vine, T: string}
+  riftglass_bow:
+    introduced: 2
+    result: riftglass_bow
+    skill: smithing
+    level: 35
+    shape: [" DT", "BAT", " DT"]
+    ingredients: {D: diamond, T: string, B: blaze_rod, A: amethyst_shard}
+  ironroot_blade:
+    result: ironroot_blade
+    skill: smithing
+    level: 10
+    shape: [" C ", " I ", " S "]
+    ingredients: {C: copper_ingot, I: iron_ingot, S: stick}
+  ironroot_pickaxe:
+    result: ironroot_pickaxe
+    skill: smithing
+    level: 10
+    shape: ["ICI", " S ", " S "]
+    ingredients: {C: copper_ingot, I: iron_ingot, S: stick}
+  ironroot_helm:
+    result: ironroot_helm
+    skill: smithing
+    level: 10
+    shape: ["ICI", "I I"]
+    ingredients: {C: copper_ingot, I: iron_ingot}
+  ironroot_plate:
+    result: ironroot_plate
+    skill: smithing
+    level: 10
+    shape: ["I I", "ICI", "III"]
+    ingredients: {C: copper_ingot, I: iron_ingot}
+  ironroot_boots:
+    result: ironroot_boots
+    skill: smithing
+    level: 10
+    shape: ["I I", "C C"]
+    ingredients: {C: copper_ingot, I: iron_ingot}
+
+  wildwood_axe:
+    result: wildwood_axe
+    skill: smithing
+    level: 20
+    shape: ["MI ", "IS ", " S "]
+    ingredients: {M: moss_block, I: iron_ingot, S: stick}
+  wildwood_sickle:
+    result: wildwood_sickle
+    skill: smithing
+    level: 20
+    shape: [" MI", " S ", " S "]
+    ingredients: {M: moss_block, I: iron_ingot, S: stick}
+  wildwood_hood:
+    result: wildwood_hood
+    skill: smithing
+    level: 20
+    shape: ["LVL", "L L"]
+    ingredients: {L: leather, V: vine}
+  wildwood_coat:
+    result: wildwood_coat
+    skill: smithing
+    level: 20
+    shape: ["L L", "LML", "LLL"]
+    ingredients: {L: leather, M: moss_block}
+  wildwood_boots:
+    result: wildwood_boots
+    skill: smithing
+    level: 20
+    shape: ["L L", "V V"]
+    ingredients: {L: leather, V: vine}
+
+  riftglass_edge:
+    result: riftglass_edge
+    skill: smithing
+    level: 30
+    shape: [" A ", " D ", " B "]
+    ingredients: {A: amethyst_shard, D: diamond, B: blaze_rod}
+  riftglass_pickaxe:
+    result: riftglass_pickaxe
+    skill: smithing
+    level: 30
+    shape: ["DAD", " B ", " B "]
+    ingredients: {A: amethyst_shard, D: diamond, B: blaze_rod}
+  riftglass_visor:
+    result: riftglass_visor
+    skill: smithing
+    level: 30
+    shape: ["DAD", "D D"]
+    ingredients: {A: amethyst_shard, D: diamond}
+  riftglass_cuirass:
+    result: riftglass_cuirass
+    skill: smithing
+    level: 30
+    shape: ["D D", "DAD", "DDD"]
+    ingredients: {A: amethyst_shard, D: diamond}
+  riftglass_boots:
+    result: riftglass_boots
+    skill: smithing
+    level: 30
+    shape: ["D D", "A A"]
+    ingredients: {A: amethyst_shard, D: diamond}

@@ -1,0 +1,27 @@
+{% extends "community/forum_base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}New thread | {{ cat.name }}{% endblock %}
+{% block content %}
+<div class="wrap compose-layout">
+  <p class="crumbs"><a href="{{ url_for('community.forum') }}">Forum</a> / <a href="{{ url_for('community.category', category_slug=cat.slug) }}">{{ cat.name }}</a></p>
+  <p class="eyebrow">{{ cat.name }}</p>
+  <h1>Start a conversation</h1>
+  {% if cat.private %}<p class="notice notice-info">Only you and staff can read this thread. Keep passwords and payment details out of your post.</p>{% endif %}
+  {{ c.flashes() }}
+  {% if block %}
+  <p class="notice notice-warn">{{ block }}{% if not member.mc_uuid %} <a href="{{ url_for('community.link') }}">Link your account</a>.{% endif %}</p>
+  {% else %}
+  {% if error %}<p class="notice notice-warn" role="alert">{{ error }}</p>{% endif %}
+  <form class="compose" method="post">
+    {{ c.csrf() }}
+    <div class="compose-row">
+      {% if prefixes %}<label>Tag <select name="prefix"><option value="">None</option>{% for key, label in prefixes %}<option value="{{ key }}"{% if form.prefix == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
+      <label class="grow">Title <input name="title" value="{{ form.title }}" required minlength="4" maxlength="{{ max_title }}"></label>
+    </div>
+    <label>Post <textarea name="body" rows="12" required maxlength="{{ max_post }}">{{ form.body }}</textarea>
+      <small>Markdown works: **bold**, _italic_, `code`, &gt; quotes, - lists and links. No images.</small></label>
+    <button class="btn btn-primary" type="submit">Post thread</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

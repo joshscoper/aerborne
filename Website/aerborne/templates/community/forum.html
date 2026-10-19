@@ -1,0 +1,98 @@
+{% extends "community/forum_base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Forum{% endblock %}
+{% block description %}The {{ site.SITE_NAME }} community forum: help, guides, island showcases, trading and suggestions.{% endblock %}
+{% block content %}
+<header class="forum-hero">
+  <div class="wrap forum-hero-inner">
+    <div class="forum-hero-copy">
+      <p class="eyebrow">A gathering place above the clouds</p>
+      <h1>Aerborne Forums</h1>
+      <p class="lede">Big ideas. Small islands.<br>A whole sky of people to share them with.</p>
+      <div class="forum-hero-actions">
+        <a class="btn btn-primary" href="#forum-directory">Find your corner</a>
+        {% if not member %}<a class="btn btn-ghost" href="{{ url_for('community.register') }}">Join the community</a>
+        {% elif not member.mc_uuid %}<a class="btn btn-ghost" href="{{ url_for('community.link') }}">Link Minecraft</a>
+        {% else %}<a class="btn btn-ghost" href="{{ url_for('community.account') }}">Your profile</a>{% endif %}
+      </div>
+      <dl class="forum-hero-stats"><div><dt>adventurers</dt><dd>{{ stats.members | number }}</dd></div><div><dt>discussions</dt><dd>{{ stats.threads | number }}</dd></div><div><dt>messages</dt><dd>{{ stats.posts | number }}</dd></div></dl>
+    </div>
+  </div>
+</header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap forum-layout" id="forum-directory">
+  <div class="forum-sections" data-forum-directory>
+    {{ c.flashes() }}
+    <div class="forum-directory-head"><div><p class="eyebrow">Pull up a cloud</p><h2>Explore the forums</h2></div><div class="forum-find" data-forum-search hidden><label class="sr-only" for="find-forum">Find a forum</label><input id="find-forum" type="search" placeholder="Find a forum…" maxlength="100" autocomplete="off" aria-controls="forum-groups"><span aria-hidden="true">⌕</span></div></div>
+    <nav class="forum-jumps" aria-label="Forum sections">{% for key, title, blurb, cats in grouped %}<a href="#sec-{{ key }}">{{ title }}</a>{% endfor %}</nav>
+    <p class="forum-search-status fine" data-forum-results role="status" hidden></p>
+    <div id="forum-groups">
+    {% for key, title, blurb, cats in grouped %}
+    <section class="forum-section forum-section-{{ key }}" aria-labelledby="sec-{{ key }}" data-forum-group>
+      <header class="forum-section-head">
+        <div>
+        <h2 id="sec-{{ key }}">{{ title }}</h2>
+        {% if blurb %}<p>{{ blurb }}</p>{% endif %}
+        </div><span class="forum-section-count">{{ cats | length }} forum{{ '' if cats | length == 1 else 's' }}</span>
+      </header>
+      <ul class="forum-nodes">
+        {% for cat in cats %}
+        {% set last = latest.get(cat.id) %}
+        <li class="forum-node{% if cat.private %} is-private{% endif %}" data-forum-node>
+          <a class="node-icon" href="{{ url_for('community.category', category_slug=cat.slug) }}" tabindex="-1" aria-hidden="true">{{ c.category_icon(cat) }}</a>
+          <div class="node-main">
+            <h3><a href="{{ url_for('community.category', category_slug=cat.slug) }}">{{ cat.name }}</a>{% if cat.private %}<span class="forum-private-label">Private</span>{% endif %}</h3>
+            <p>{{ cat.description }}</p>
+          </div>
+          {% if cat.private %}
+          <p class="node-stats node-private">You &amp; staff</p>
+          {% else %}
+          <dl class="node-stats">
+            <div><dt>Threads</dt><dd>{{ cat.thread_count | number }}</dd></div>
+            <div><dt>Posts</dt><dd>{{ cat.post_count | number }}</dd></div>
+          </dl>
+          {% endif %}
+          <div class="node-last">
+            {% if last %}
+            {{ c.avatar(last.last_avatar, 32) }}
+            <span><a href="{{ thread_url(last, page=-1) }}">{{ last.title }}</a><span class="fine">{{ last.last_post_at | date }} · {{ last.last_username }}</span></span>
+            {% elif not cat.private %}<a class="node-empty" href="{{ url_for('community.category', category_slug=cat.slug) }}">Start the conversation <span aria-hidden="true">↗</span></a>{% else %}<span class="node-private-note">A little help, in confidence.</span>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+    </div>
+  </div>
+
+  <aside class="forum-aside">
+    <section class="panel forum-welcome">
+      <img class="forum-welcome-icon" src="{{ url_for('static', filename='img/forum/off-topic-128.webp') }}" alt="" width="80" height="80" loading="lazy">
+      <p class="eyebrow">Stay a little longer</p>
+      <h2>The conversation<br>keeps going.</h2>
+      <p>Find a co-op, share your latest build or just say hello on Discord.</p>
+      <a class="btn btn-discord" href="{{ url_for('public.discord') }}">{% include 'partials/discord_icon.svg' %} Join Discord</a>
+      <a class="text-link" href="{{ url_for('public.guide') }}">Browse the Handbook &rarr;</a>
+    </section>
+    <section class="panel">
+      <h2>Online now</h2>
+      {% if online %}
+      <p class="online-list">{% for o in online %}{{ c.name(o.username, o.rank_slug) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      <p class="fine">{{ online | length }} member{{ '' if online | length == 1 else 's' }} in the last 15 minutes</p>
+      {% else %}<p class="fine">Nobody's around right now.</p>{% endif %}
+    </section>
+    {% if recent %}
+    <section class="panel">
+      <h2>Latest posts</h2>
+      <ul class="latest-list">
+        {% for t in recent %}
+        <li>{{ c.avatar(t.last_avatar, 32) }}<span><a href="{{ thread_url(t, page=-1) }}">{{ t.title }}</a><span class="fine">{{ t.last_username }} · {{ t.category_name }}</span></span></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    <p class="fine">Follow the <a href="{{ url_for('public.page', slug='rules') }}">server rules</a> here too.</p>
+  </aside>
+</div>
+{% endblock %}

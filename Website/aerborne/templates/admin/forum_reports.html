@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}Forum reports{% endblock %}
+{% block content %}
+<h1>Forum reports</h1>
+<form class="filter-row" method="get">
+  <label>Show <select name="show"><option value="open"{% if show == 'open' %} selected{% endif %}>Open</option><option value="closed"{% if show == 'closed' %} selected{% endif %}>Closed</option></select></label>
+  <button class="btn btn-quiet" type="submit">Filter</button>
+</form>
+{% if rows %}
+<table>
+  <thead><tr><th>Post</th><th>Reported by</th><th>Reason</th>{% if show == 'open' %}<th></th>{% else %}<th>Closed</th>{% endif %}</tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td><a href="{{ url_for('community.thread', thread_id=r.thread_id) }}#post-{{ r.post_id }}" target="_blank" rel="noopener">{{ r.title }}</a><br>
+        <span class="fine">by {{ r.author }}{% if r.hidden %} · already hidden{% endif %}</span>
+        <p class="excerpt">{{ r.body | truncate(240) }}</p></td>
+      <td>{{ r.reporter }}<br><span class="fine">{{ r.created_at | date(true) }}</span></td>
+      <td>{{ r.reason }}</td>
+      {% if show == 'open' %}
+      <td>
+        <form class="inline-form" method="post" action="{{ url_for('admin.forum_report_action', report_id=r.id) }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="btn" name="action" value="hide" type="submit">Hide post</button>
+          <button class="btn btn-quiet" name="action" value="dismiss" type="submit">Dismiss</button>
+        </form>
+      </td>
+      {% else %}
+      <td>{{ r.resolved_by }}<br><span class="fine">{{ r.resolved_at | date(true) }}</span></td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No {{ show }} reports.</p>{% endif %}
+{% endblock %}

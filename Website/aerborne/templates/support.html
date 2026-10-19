@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Support{% endblock %}
+{% block description %}Help with {{ site.SITE_NAME }}: FAQ, rules, appeals, reporting and purchase help.{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <h1>Support</h1>
+    <p class="lede">Answers first, then the right place to ask.</p>
+  </div>
+</header>
+<div class="wrap support-grid">
+  <div>
+    <section aria-labelledby="faq-title">
+      <h2 id="faq-title">Frequently asked</h2>
+      {% if faqs %}
+      <div class="faq">
+        {% for f in faqs %}
+        <details id="{{ f.slug }}">
+          <summary>{{ f.question }}</summary>
+          <div class="prose">{{ f.answer | markdown }}</div>
+        </details>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </section>
+
+    {% if pages %}
+    <section aria-labelledby="help-title">
+      <h2 id="help-title">Help pages</h2>
+      <ul class="link-list">{% for p in pages %}<li><a href="{{ url_for('public.page', slug=p.slug) }}">{{ p.title }}</a> <span>{{ p.summary }}</span></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    <section id="legal" aria-labelledby="legal-title">
+      <h2 id="legal-title">Legal</h2>
+      {% if legal %}
+      <ul class="link-list">{% for p in legal %}<li><a href="{{ url_for('public.page', slug=p.slug) }}">{{ p.title }}</a></li>{% endfor %}</ul>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="contact-card" aria-labelledby="contact-title">
+    <h2 id="contact-title">Contact staff</h2>
+    <dl>
+      <dt>Report a player</dt><dd>In game: <code>/report &lt;player&gt; &lt;reason&gt;</code></dd>
+      <dt>Questions and bugs</dt><dd><a href="{{ url_for('public.discord') }}" rel="noopener">Discord</a> or the <a href="{{ url_for('community.forum') }}">forum</a></dd>
+      <dt>Appeals and purchase help</dt><dd><a href="{{ url_for('community.category', category_slug='appeals') }}">Private forum threads</a></dd>
+      {% if site.CONTACT_EMAIL %}<dt>Email</dt><dd><a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a></dd>{% endif %}
+    </dl>
+    <p class="fine">Staff will never ask for your Microsoft password or card details.</p>
+  </aside>
+</div>
+{% endblock %}

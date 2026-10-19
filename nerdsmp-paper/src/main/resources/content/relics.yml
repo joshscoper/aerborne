@@ -1,0 +1,1144 @@
+schema-version: 12
+sets:
+  wayfarer:
+    name: Wayfarer
+    piece-count: 6
+    bonuses:
+      '2':
+        description: +2 Defense
+        stats: {defense: 2}
+      '4':
+        description: +8% harvest extra percent
+        stats: {harvest-extra-percent: 8}
+      '5':
+        description: +3% Skill XP
+        stats: {skill-xp-percent: 3}
+  deepcurrent:
+    name: Deepcurrent
+    piece-count: 6
+    bonuses:
+      '2':
+        description: +3 Defense
+        stats: {defense: 3}
+      '4':
+        description: +12% fishing luck percent
+        stats: {fishing-luck-percent: 12}
+      '5':
+        description: +6% Skill XP
+        stats: {skill-xp-percent: 6}
+  stormbound:
+    name: Stormbound
+    piece-count: 6
+    bonuses:
+      '2':
+        description: +4 Defense
+        stats: {defense: 4}
+      '4':
+        description: +10% damage percent
+        stats: {damage-percent: 10}
+      '5':
+        description: +9% Skill XP
+        stats: {skill-xp-percent: 9}
+  dawnguard:
+    name: Dawnguard
+    piece-count: 6
+    bonuses:
+      '2':
+        description: +5 Defense
+        stats: {defense: 5}
+      '4':
+        description: +20% durability save percent
+        stats: {durability-save-percent: 20}
+      '5':
+        description: +12% Skill XP
+        stats: {skill-xp-percent: 12}
+  astral_covenant:
+    name: Astral Covenant
+    piece-count: 6
+    bonuses:
+      '2':
+        description: +6 Defense
+        stats: {defense: 6}
+      '4':
+        description: +3% life steal percent
+        stats: {life-steal-percent: 3}
+      '5':
+        description: +15% Skill XP
+        stats: {skill-xp-percent: 15}
+  frontier:
+    name: Frontier Ward
+    piece-count: 4
+    bonuses:
+      '2':
+        description: +2 Defense
+        stats:
+          defense: 2
+      '4':
+        description: +10% Damage
+        stats:
+          damage-percent: 10
+  veilwalker:
+    name: Veilwalker
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +5% Damage
+        stats:
+          damage-percent: 5
+      '3':
+        description: +4 Defense
+        stats:
+          defense: 4
+  emberforged:
+    name: Emberforged
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +1 Damage
+        stats:
+          damage-flat: 1
+      '3':
+        description: +10% Damage
+        stats:
+          damage-percent: 10
+  verdant_oath:
+    name: Verdant Oath
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +3 Defense
+        stats:
+          defense: 3
+      '3':
+        description: +8% Damage
+        stats:
+          damage-percent: 8
+  tideglass:
+    name: Tideglass
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +4 Defense
+        stats:
+          defense: 4
+      '3':
+        description: +6% Damage
+        stats:
+          damage-percent: 6
+  hollowfang:
+    name: Hollowfang
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +1 Damage
+        stats:
+          damage-flat: 1
+      '3':
+        description: +12% Damage
+        stats:
+          damage-percent: 12
+  starfall:
+    name: Starfall
+    piece-count: 3
+    bonuses:
+      '2':
+        description: +7% Damage
+        stats:
+          damage-percent: 7
+      '3':
+        description: +5 Defense
+        stats:
+          defense: 5
+  ironroot:
+    name: Ironroot
+    piece-count: 5
+    bonuses:
+      '2':
+        description: +2 Defense
+        stats:
+          defense: 2
+      '3':
+        description: +1 Mining Power
+        stats:
+          mining-power: 1
+      '5':
+        description: +15% Durability Preservation
+        stats:
+          durability-save-percent: 15
+  wildwood:
+    name: Wildwood
+    piece-count: 5
+    bonuses:
+      '2':
+        description: +1 Gathering Power
+        stats:
+          gathering-power: 1
+      '3':
+        description: +10% Skill XP
+        stats:
+          skill-xp-percent: 10
+      '5':
+        description: +15% Harvest Yield
+        stats:
+          harvest-extra-percent: 15
+  riftglass:
+    name: Riftglass
+    piece-count: 5
+    bonuses:
+      '2':
+        description: +5% Damage
+        stats:
+          damage-percent: 5
+      '3':
+        description: +4 Defense
+        stats:
+          defense: 4
+      '5':
+        description: +1 Damage and +15% Geode Find
+        stats:
+          damage-flat: 1
+          geode-find-percent: 15
+
+relics:
+  wayfarer_helm:
+    material: iron_helmet
+    name: "<green>Wayfarer Helm</green>"
+    set: wayfarer
+    slot: head
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {defense: 3}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  wayfarer_cuirass:
+    material: iron_chestplate
+    name: "<green>Wayfarer Cuirass</green>"
+    set: wayfarer
+    slot: chest
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {defense: 3}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  wayfarer_greaves:
+    material: iron_leggings
+    name: "<green>Wayfarer Greaves</green>"
+    set: wayfarer
+    slot: legs
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {defense: 3}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  wayfarer_boots:
+    material: iron_boots
+    name: "<green>Wayfarer Boots</green>"
+    set: wayfarer
+    slot: feet
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {defense: 3}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  wayfarer_blade:
+    material: iron_sword
+    name: "<green>Wayfarer Blade</green>"
+    set: wayfarer
+    slot: main_hand
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {damage: 6, durability-save-percent: 2}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  wayfarer_rod:
+    material: fishing_rod
+    name: "<green>Wayfarer Rod</green>"
+    set: wayfarer
+    slot: main_hand
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    stats: {fishing-power: 1, fishing-luck-percent: 2}
+    lore: ["<gray>Built for the island ponds and the open sea.</gray>"]
+  deepcurrent_helm:
+    material: iron_helmet
+    name: "<aqua>Deepcurrent Helm</aqua>"
+    set: deepcurrent
+    slot: head
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {defense: 4}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  deepcurrent_cuirass:
+    material: iron_chestplate
+    name: "<aqua>Deepcurrent Cuirass</aqua>"
+    set: deepcurrent
+    slot: chest
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {defense: 4}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  deepcurrent_greaves:
+    material: iron_leggings
+    name: "<aqua>Deepcurrent Greaves</aqua>"
+    set: deepcurrent
+    slot: legs
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {defense: 4}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  deepcurrent_boots:
+    material: iron_boots
+    name: "<aqua>Deepcurrent Boots</aqua>"
+    set: deepcurrent
+    slot: feet
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {defense: 4}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  deepcurrent_blade:
+    material: iron_sword
+    name: "<aqua>Deepcurrent Blade</aqua>"
+    set: deepcurrent
+    slot: main_hand
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {damage: 7, durability-save-percent: 4}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  deepcurrent_rod:
+    material: fishing_rod
+    name: "<aqua>Deepcurrent Rod</aqua>"
+    set: deepcurrent
+    slot: main_hand
+    rarity: rare
+    item-level: 15
+    sockets: 1
+    stats: {fishing-power: 2, fishing-luck-percent: 4}
+    lore: ["<gray>Built for the island ponds and the open sea.</gray>"]
+  stormbound_helm:
+    material: diamond_helmet
+    name: "<light_purple>Stormbound Helm</light_purple>"
+    set: stormbound
+    slot: head
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {defense: 5}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  stormbound_cuirass:
+    material: diamond_chestplate
+    name: "<light_purple>Stormbound Cuirass</light_purple>"
+    set: stormbound
+    slot: chest
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {defense: 5}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  stormbound_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Stormbound Greaves</light_purple>"
+    set: stormbound
+    slot: legs
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {defense: 5}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  stormbound_boots:
+    material: diamond_boots
+    name: "<light_purple>Stormbound Boots</light_purple>"
+    set: stormbound
+    slot: feet
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {defense: 5}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  stormbound_blade:
+    material: diamond_sword
+    name: "<light_purple>Stormbound Blade</light_purple>"
+    set: stormbound
+    slot: main_hand
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {damage: 8, durability-save-percent: 6}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  stormbound_rod:
+    material: fishing_rod
+    name: "<light_purple>Stormbound Rod</light_purple>"
+    set: stormbound
+    slot: main_hand
+    rarity: epic
+    item-level: 25
+    sockets: 2
+    stats: {fishing-power: 3, fishing-luck-percent: 6}
+    lore: ["<gray>Built for the island ponds and the open sea.</gray>"]
+  dawnguard_helm:
+    material: diamond_helmet
+    name: "<gold>Dawnguard Helm</gold>"
+    set: dawnguard
+    slot: head
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {defense: 6}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  dawnguard_cuirass:
+    material: diamond_chestplate
+    name: "<gold>Dawnguard Cuirass</gold>"
+    set: dawnguard
+    slot: chest
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {defense: 6}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  dawnguard_greaves:
+    material: diamond_leggings
+    name: "<gold>Dawnguard Greaves</gold>"
+    set: dawnguard
+    slot: legs
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {defense: 6}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  dawnguard_boots:
+    material: diamond_boots
+    name: "<gold>Dawnguard Boots</gold>"
+    set: dawnguard
+    slot: feet
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {defense: 6}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  dawnguard_blade:
+    material: diamond_sword
+    name: "<gold>Dawnguard Blade</gold>"
+    set: dawnguard
+    slot: main_hand
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {damage: 9, durability-save-percent: 8}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  dawnguard_rod:
+    material: fishing_rod
+    name: "<gold>Dawnguard Rod</gold>"
+    set: dawnguard
+    slot: main_hand
+    rarity: legendary
+    item-level: 35
+    sockets: 2
+    stats: {fishing-power: 4, fishing-luck-percent: 8}
+    lore: ["<gray>Built for the island ponds and the open sea.</gray>"]
+  astral_covenant_helm:
+    material: netherite_helmet
+    name: "<light_purple>Astral Covenant Helm</light_purple>"
+    set: astral_covenant
+    slot: head
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {defense: 7}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  astral_covenant_cuirass:
+    material: netherite_chestplate
+    name: "<light_purple>Astral Covenant Cuirass</light_purple>"
+    set: astral_covenant
+    slot: chest
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {defense: 7}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  astral_covenant_greaves:
+    material: netherite_leggings
+    name: "<light_purple>Astral Covenant Greaves</light_purple>"
+    set: astral_covenant
+    slot: legs
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {defense: 7}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  astral_covenant_boots:
+    material: netherite_boots
+    name: "<light_purple>Astral Covenant Boots</light_purple>"
+    set: astral_covenant
+    slot: feet
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {defense: 7}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  astral_covenant_blade:
+    material: netherite_sword
+    name: "<light_purple>Astral Covenant Blade</light_purple>"
+    set: astral_covenant
+    slot: main_hand
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {damage: 10, durability-save-percent: 10}
+    lore: ["<gray>Made to travel with you, from first expedition to the last.</gray>"]
+  astral_covenant_rod:
+    material: fishing_rod
+    name: "<light_purple>Astral Covenant Rod</light_purple>"
+    set: astral_covenant
+    slot: main_hand
+    rarity: mythic
+    item-level: 45
+    sockets: 2
+    stats: {fishing-power: 5, fishing-luck-percent: 10}
+    lore: ["<gray>Built for the island ponds and the open sea.</gray>"]
+  frontier_hood:
+    material: leather_helmet
+    name: "<gray>Frontier Hood</gray>"
+    set: frontier
+    slot: head
+    rarity: starter
+    stats:
+      defense: 1
+    lore:
+      - "<gray>Simple protection for a new player.</gray>"
+  frontier_coat:
+    material: leather_chestplate
+    name: "<gray>Frontier Coat</gray>"
+    set: frontier
+    slot: chest
+    rarity: starter
+    stats:
+      defense: 2
+    lore:
+      - "<gray>A sturdy coat with room for repairs.</gray>"
+  frontier_trousers:
+    material: leather_leggings
+    name: "<gray>Frontier Trousers</gray>"
+    set: frontier
+    slot: legs
+    rarity: starter
+    stats:
+      defense: 2
+    lore:
+      - "<gray>Made for long trips and bad weather.</gray>"
+  frontier_boots:
+    material: leather_boots
+    name: "<gray>Frontier Boots</gray>"
+    set: frontier
+    slot: feet
+    rarity: starter
+    stats:
+      defense: 1
+    lore:
+      - "<gray>Worn in, but still reliable.</gray>"
+  frontier_blade:
+    material: stone_sword
+    name: "<white>Frontier Blade</white>"
+    slot: main_hand
+    rarity: starter
+    stats:
+      damage: 5
+    lore:
+      - "<gray>A basic blade with a clean edge.</gray>"
+  frontier_pickaxe:
+    material: stone_pickaxe
+    name: "<white>Frontier Pickaxe</white>"
+    slot: main_hand
+    rarity: starter
+    stats:
+      damage: 3
+      mining-power: 1
+    lore:
+      - "<gray>Your first mining tool.</gray>"
+  frontier_hatchet:
+    material: stone_axe
+    name: "<white>Frontier Hatchet</white>"
+    slot: main_hand
+    rarity: starter
+    stats:
+      damage: 4
+      gathering-power: 1
+    lore:
+      - "<gray>A balanced axe for timber and close work.</gray>"
+  frontier_shovel:
+    material: stone_shovel
+    name: "<white>Frontier Shovel</white>"
+    slot: main_hand
+    rarity: starter
+    stats:
+      damage: 3
+      mining-power: 1
+    lore:
+      - "<gray>A broad shovel made for the first road out.</gray>"
+  frontier_hoe:
+    material: stone_hoe
+    name: "<white>Frontier Hoe</white>"
+    slot: main_hand
+    rarity: starter
+    stats:
+      damage: 2
+      gathering-power: 1
+    lore:
+      - "<gray>A plain field tool for establishing a homestead.</gray>"
+
+  veilwalker_compass:
+    material: compass
+    name: "<gradient:#9b7bff:#67e8f9>Veilwalker Compass</gradient>"
+    set: veilwalker
+    slot: off_hand
+    rarity: relic
+    model: nerdsmp:veilwalker_compass
+    stats:
+      defense: 1
+    lore:
+      - "<gray>The needle pulls toward nearby rifts.</gray>"
+  veilwalker_hood:
+    material: chainmail_helmet
+    name: "<gradient:#9b7bff:#67e8f9>Veilwalker Hood</gradient>"
+    set: veilwalker
+    slot: head
+    rarity: relic
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Light armor made for rift scouting.</gray>"
+  veilwalker_boots:
+    material: chainmail_boots
+    name: "<gradient:#9b7bff:#67e8f9>Veilwalker Boots</gradient>"
+    set: veilwalker
+    slot: feet
+    rarity: relic
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Quiet boots for moving through ruins.</gray>"
+
+  emberforged_pickaxe:
+    material: diamond_pickaxe
+    name: "<gradient:#ff9f43:#ff5e57>Emberforged Pickaxe</gradient>"
+    set: emberforged
+    slot: main_hand
+    rarity: relic
+    model: nerdsmp:emberforged_pickaxe
+    stats:
+      damage: 7
+      mining-power: 3
+    lore:
+      - "<gray>Built to keep working under heavy use.</gray>"
+  emberforged_mantle:
+    material: iron_chestplate
+    name: "<gradient:#ff9f43:#ff5e57>Emberforged Mantle</gradient>"
+    set: emberforged
+    slot: chest
+    rarity: relic
+    stats:
+      defense: 6
+    lore:
+      - "<gray>Forge plate reinforced around the shoulders.</gray>"
+  emberforged_greaves:
+    material: iron_leggings
+    name: "<gradient:#ff9f43:#ff5e57>Emberforged Greaves</gradient>"
+    set: emberforged
+    slot: legs
+    rarity: relic
+    stats:
+      defense: 5
+    lore:
+      - "<gray>Heavy greaves made for mine work.</gray>"
+
+  verdant_sickle:
+    material: iron_hoe
+    name: "<gradient:#7bed9f:#2ed573>Verdant Sickle</gradient>"
+    set: verdant_oath
+    slot: main_hand
+    rarity: relic
+    model: nerdsmp:verdant_sickle
+    stats:
+      damage: 6
+      gathering-power: 3
+    lore:
+      - "<gray>A sharp tool for field work.</gray>"
+  verdant_crown:
+    material: turtle_helmet
+    name: "<gradient:#7bed9f:#2ed573>Verdant Crown</gradient>"
+    set: verdant_oath
+    slot: head
+    rarity: relic
+    stats:
+      defense: 4
+    lore:
+      - "<gray>A living crown that stays green year-round.</gray>"
+  verdant_raiment:
+    material: leather_chestplate
+    name: "<gradient:#7bed9f:#2ed573>Verdant Raiment</gradient>"
+    set: verdant_oath
+    slot: chest
+    rarity: relic
+    stats:
+      defense: 6
+    lore:
+      - "<gray>Layered hide bound with living roots.</gray>"
+
+  tideglass_rod:
+    material: fishing_rod
+    name: "<gradient:#70a1ff:#1e90ff>Tideglass Rod</gradient>"
+    set: tideglass
+    slot: main_hand
+    rarity: relic
+    model: nerdsmp:tideglass_rod
+    stats:
+      damage: 5
+      fishing-power: 4
+    lore:
+      - "<gray>A balanced rod with a clear glass reel.</gray>"
+  tideglass_coat:
+    material: diamond_chestplate
+    name: "<gradient:#70a1ff:#1e90ff>Tideglass Coat</gradient>"
+    set: tideglass
+    slot: chest
+    rarity: relic
+    stats:
+      defense: 6
+    lore:
+      - "<gray>Scaled armor that sheds water quickly.</gray>"
+  tideglass_boots:
+    material: diamond_boots
+    name: "<gradient:#70a1ff:#1e90ff>Tideglass Boots</gradient>"
+    set: tideglass
+    slot: feet
+    rarity: relic
+    stats:
+      defense: 4
+    lore:
+      - "<gray>Sure footing on wet ground.</gray>"
+
+  hollowfang_blade:
+    material: iron_sword
+    name: "<gradient:#dfe4ea:#747d8c>Hollowfang Blade</gradient>"
+    set: hollowfang
+    slot: main_hand
+    rarity: relic
+    model: nerdsmp:hollowfang_blade
+    stats:
+      damage: 9
+    lore:
+      - "<gray>A hunter's blade with a narrow point.</gray>"
+  hollowfang_mask:
+    material: iron_helmet
+    name: "<gradient:#dfe4ea:#747d8c>Hollowfang Mask</gradient>"
+    set: hollowfang
+    slot: head
+    rarity: relic
+    stats:
+      defense: 4
+    lore:
+      - "<gray>A close-fitting mask with a wide field of view.</gray>"
+  hollowfang_coat:
+    material: iron_chestplate
+    name: "<gradient:#dfe4ea:#747d8c>Hollowfang Coat</gradient>"
+    set: hollowfang
+    slot: chest
+    rarity: relic
+    stats:
+      defense: 7
+    lore:
+      - "<gray>A quiet coat reinforced with iron plates.</gray>"
+
+  starfall_focus:
+    material: blaze_rod
+    name: "<gradient:#f1f2f6:#a29bfe>Starfall Focus</gradient>"
+    set: starfall
+    slot: off_hand
+    rarity: relic
+    model: nerdsmp:starfall_focus
+    stats:
+      defense: 2
+    lore:
+      - "<gray>A focus cut from a fallen star.</gray>"
+  starfall_circlet:
+    material: diamond_helmet
+    name: "<gradient:#f1f2f6:#a29bfe>Starfall Circlet</gradient>"
+    set: starfall
+    slot: head
+    rarity: relic
+    stats:
+      defense: 5
+    lore:
+      - "<gray>A silver circlet set with cold light.</gray>"
+  starfall_boots:
+    material: diamond_boots
+    name: "<gradient:#f1f2f6:#a29bfe>Starfall Boots</gradient>"
+    set: starfall
+    slot: feet
+    rarity: relic
+    stats:
+      defense: 5
+    lore:
+      - "<gray>Light boots that soften hard landings.</gray>"
+
+  ironroot_blade:
+    material: iron_sword
+    name: "<gradient:#d6a85f:#7c5b35>Ironroot Blade</gradient>"
+    set: ironroot
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:ironroot_blade
+    sockets: 1
+    stats:
+      damage: 7
+    lore:
+      - "<gray>Iron folded around a copper-veined core.</gray>"
+  ironroot_pickaxe:
+    material: iron_pickaxe
+    name: "<gradient:#d6a85f:#7c5b35>Ironroot Pickaxe</gradient>"
+    set: ironroot
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:ironroot_pickaxe
+    sockets: 1
+    stats:
+      damage: 5
+      mining-power: 2
+    lore:
+      - "<gray>A dependable head built for deep seams.</gray>"
+  ironroot_helm:
+    material: iron_helmet
+    name: "<gradient:#d6a85f:#7c5b35>Ironroot Helm</gradient>"
+    set: ironroot
+    slot: head
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Riveted plate with a reinforced brow.</gray>"
+  ironroot_plate:
+    material: iron_chestplate
+    name: "<gradient:#d6a85f:#7c5b35>Ironroot Plate</gradient>"
+    set: ironroot
+    slot: chest
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 6
+    lore:
+      - "<gray>Mine plate that carries its weight well.</gray>"
+  ironroot_boots:
+    material: iron_boots
+    name: "<gradient:#d6a85f:#7c5b35>Ironroot Boots</gradient>"
+    set: ironroot
+    slot: feet
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Heavy soles for unstable ground.</gray>"
+
+  wildwood_axe:
+    material: iron_axe
+    name: "<gradient:#8fd14f:#3f7f3a>Wildwood Axe</gradient>"
+    set: wildwood
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:wildwood_axe
+    sockets: 2
+    stats:
+      damage: 8
+      gathering-power: 2
+    lore:
+      - "<gray>A broad axe balanced with living wood.</gray>"
+  wildwood_sickle:
+    material: iron_hoe
+    name: "<gradient:#8fd14f:#3f7f3a>Wildwood Sickle</gradient>"
+    set: wildwood
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:wildwood_sickle
+    sockets: 2
+    stats:
+      damage: 6
+      gathering-power: 3
+    lore:
+      - "<gray>A hooked edge for field and forest.</gray>"
+  wildwood_hood:
+    material: leather_helmet
+    name: "<gradient:#8fd14f:#3f7f3a>Wildwood Hood</gradient>"
+    set: wildwood
+    slot: head
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Waxed hide stitched with tough vine.</gray>"
+  wildwood_coat:
+    material: leather_chestplate
+    name: "<gradient:#8fd14f:#3f7f3a>Wildwood Coat</gradient>"
+    set: wildwood
+    slot: chest
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 5
+    lore:
+      - "<gray>Flexible armor for long work outdoors.</gray>"
+  wildwood_boots:
+    material: leather_boots
+    name: "<gradient:#8fd14f:#3f7f3a>Wildwood Boots</gradient>"
+    set: wildwood
+    slot: feet
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Quiet boots wrapped in mossy cord.</gray>"
+
+  riftglass_edge:
+    material: diamond_sword
+    name: "<gradient:#b38cff:#67e8f9>Riftglass Edge</gradient>"
+    set: riftglass
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:riftglass_edge
+    sockets: 2
+    stats:
+      damage: 10
+    lore:
+      - "<gray>A diamond edge tempered with resonant crystal.</gray>"
+  riftglass_pickaxe:
+    material: diamond_pickaxe
+    name: "<gradient:#b38cff:#67e8f9>Riftglass Pickaxe</gradient>"
+    set: riftglass
+    slot: main_hand
+    rarity: crafted
+    model: nerdsmp:riftglass_pickaxe
+    sockets: 2
+    stats:
+      damage: 7
+      mining-power: 4
+    lore:
+      - "<gray>The head hums when it nears a rich vein.</gray>"
+  riftglass_visor:
+    material: diamond_helmet
+    name: "<gradient:#b38cff:#67e8f9>Riftglass Visor</gradient>"
+    set: riftglass
+    slot: head
+    rarity: crafted
+    sockets: 2
+    stats:
+      defense: 5
+    lore:
+      - "<gray>Faceted crystal guards the eyes.</gray>"
+  riftglass_cuirass:
+    material: diamond_chestplate
+    name: "<gradient:#b38cff:#67e8f9>Riftglass Cuirass</gradient>"
+    set: riftglass
+    slot: chest
+    rarity: crafted
+    sockets: 2
+    stats:
+      defense: 8
+    lore:
+      - "<gray>Dense plate threaded with violet light.</gray>"
+  riftglass_boots:
+    material: diamond_boots
+    name: "<gradient:#b38cff:#67e8f9>Riftglass Boots</gradient>"
+    set: riftglass
+    slot: feet
+    rarity: crafted
+    sockets: 2
+    stats:
+      defense: 5
+    lore:
+      - "<gray>Crystal heels that hold firm on broken ground.</gray>"
+
+  ironroot_shovel:
+    material: iron_shovel
+    name: "<gold>Ironroot Spade</gold>"
+    set: ironroot
+    slot: main_hand
+    rarity: crafted
+    sockets: 1
+    stats:
+      damage: 5
+      excavation-power: 3
+    lore:
+      - "<gray>A reinforced blade for stubborn ground.</gray>"
+  ironroot_shield:
+    material: shield
+    name: "<gold>Ironroot Shield</gold>"
+    set: ironroot
+    slot: off_hand
+    rarity: crafted
+    sockets: 1
+    stats:
+      defense: 3
+    lore:
+      - "<gray>Copper bands brace the iron boss.</gray>"
+  wildwood_rod:
+    material: fishing_rod
+    name: "<green>Wildwood Rod</green>"
+    set: wildwood
+    slot: main_hand
+    rarity: crafted
+    sockets: 2
+    stats:
+      fishing-power: 3
+    lore:
+      - "<gray>A supple rod with a moss-wrapped grip.</gray>"
+  riftglass_bow:
+    material: bow
+    name: "<light_purple>Riftglass Bow</light_purple>"
+    set: riftglass
+    slot: main_hand
+    rarity: crafted
+    sockets: 2
+    stats:
+      projectile-damage: 10
+    lore:
+      - "<gray>Crystal tips keep the limbs under tension.</gray>"
+
+  coin_purse:
+    material: bundle
+    name: "<gold>Coin Purse</gold>"
+    slot: none
+    rarity: currency
+    model: nerdsmp:coin_purse
+    sockets: 0
+    lore:
+      - "<gray>A small purse of earned Marks.</gray>"
+
+  river_sprat:
+    material: cod
+    name: "<white>River Sprat</white>"
+    category: fish
+    slot: none
+    rarity: common
+    model: nerdsmp:river_sprat
+    sockets: 0
+    lore:
+      - "<gray>A bright little fish found where the current runs clear.</gray>"
+  redfin_perch:
+    material: salmon
+    name: "<white>Redfin Perch</white>"
+    category: fish
+    slot: none
+    rarity: common
+    model: nerdsmp:redfin_perch
+    sockets: 0
+    lore:
+      - "<gray>Its red fins flare when lifted from the water.</gray>"
+  mossback_carp:
+    material: cod
+    name: "<white>Mossback Carp</white>"
+    category: fish
+    slot: none
+    rarity: common
+    model: nerdsmp:mossback_carp
+    sockets: 0
+    lore:
+      - "<gray>Old weeds trail from the rough scales along its back.</gray>"
+  shoreline_mackerel:
+    material: cod
+    name: "<white>Shoreline Mackerel</white>"
+    category: fish
+    slot: none
+    rarity: common
+    model: nerdsmp:shoreline_mackerel
+    sockets: 0
+    lore:
+      - "<gray>A quick silver fish that follows the coast.</gray>"
+
+  moonlit_koi:
+    material: tropical_fish
+    name: "<green>Moonlit Koi</green>"
+    category: fish
+    slot: none
+    rarity: uncommon
+    model: nerdsmp:moonlit_koi
+    sockets: 0
+    lore:
+      - "<gray>Pale scales hold a soft glow after sunset.</gray>"
+  embergill_trout:
+    material: salmon
+    name: "<green>Embergill Trout</green>"
+    category: fish
+    slot: none
+    rarity: uncommon
+    model: nerdsmp:embergill_trout
+    sockets: 0
+    lore:
+      - "<gray>Warm orange gills stand out against its cold skin.</gray>"
+  glassscale_eel:
+    material: cod
+    name: "<green>Glassscale Eel</green>"
+    category: fish
+    slot: none
+    rarity: uncommon
+    model: nerdsmp:glassscale_eel
+    sockets: 0
+    lore:
+      - "<gray>Light passes through its scales like wet glass.</gray>"
+
+  stormfin_tuna:
+    material: cod
+    name: "<aqua>Stormfin Tuna</aqua>"
+    category: fish
+    slot: none
+    rarity: rare
+    model: nerdsmp:stormfin_tuna
+    sockets: 0
+    lore:
+      - "<gray>Sailors watch for its dark fin when storms roll in.</gray>"
+  frostveil_char:
+    material: salmon
+    name: "<aqua>Frostveil Char</aqua>"
+    category: fish
+    slot: none
+    rarity: rare
+    model: nerdsmp:frostveil_char
+    sockets: 0
+    lore:
+      - "<gray>A rim of frost clings to it even out of water.</gray>"
+  riftwater_ray:
+    material: phantom_membrane
+    name: "<aqua>Riftwater Ray</aqua>"
+    category: fish
+    slot: none
+    rarity: rare
+    model: nerdsmp:riftwater_ray
+    sockets: 0
+    lore:
+      - "<gray>Violet lines drift across its broad, weightless body.</gray>"
+
+  crownscale_coelacanth:
+    material: tropical_fish
+    name: "<gradient:#ffd166:#67e8f9>Crownscale Coelacanth</gradient>"
+    category: fish
+    slot: none
+    rarity: legendary
+    model: nerdsmp:crownscale_coelacanth
+    sockets: 0
+    lore:
+      - "<gray>A living remnant of waters older than the frontier.</gray>"
+  starfall_sturgeon:
+    material: cod
+    name: "<gradient:#ffd166:#b38cff>Starfall Sturgeon</gradient>"
+    category: fish
+    slot: none
+    rarity: legendary
+    model: nerdsmp:starfall_sturgeon
+    sockets: 0
+    lore:
+      - "<gray>Pinpricks of light move beneath its midnight scales.</gray>"

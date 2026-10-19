@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<h1>Audit log</h1>
+<form class="filter-row" method="get">
+  <label>Area
+    <select name="entity">
+      <option value="">Everything</option>
+      {% for e in entities %}<option value="{{ e }}"{% if entity == e %} selected{% endif %}>{{ e }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn btn-quiet" type="submit">Filter</button>
+</form>
+<table class="audit">
+  <thead><tr><th>When (UTC)</th><th>Who</th><th>What</th><th>Changes</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.created_at }}</td>
+      <td>{{ r.username }}</td>
+      <td>{{ r.summary }}</td>
+      <td>
+        {% if r.changes %}
+        <details><summary>{{ r.changes | length }} field{{ '' if r.changes | length == 1 else 's' }}</summary>
+          <dl class="diff">{% for k, v in r.changes.items() %}<dt>{{ k }}</dt><dd>{% if v is mapping %}{{ v | tojson }}{% else %}<del>{{ v[0] }}</del> <ins>{{ v[1] }}</ins>{% endif %}</dd>{% endfor %}</dl>
+        </details>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No entries.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav class="pager">
+  {% if page > 1 %}<a href="{{ url_for('admin.audit_log', page=page - 1, entity=entity or None) }}">Newer</a>{% endif %}
+  {% if rows | length == 50 %}<a href="{{ url_for('admin.audit_log', page=page + 1, entity=entity or None) }}">Older</a>{% endif %}
+</nav>
+{% endblock %}

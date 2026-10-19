@@ -1,0 +1,340 @@
+schema-version: 2
+# One serving per craft. Normal hunger/saturation values and bowl returns are retained.
+# Cooking raises the quality of prepared meals. Eating never awards XP, Marks or extra items.
+meals:
+  orchard_loaf:
+    name: Orchard Loaf
+    material: bread
+    level: 1
+    shape: ["ASA", "WWW"]
+    ingredients: {A: apple, S: sugar, W: wheat}
+    effect: speed
+    seconds: 30
+  miners_potato:
+    name: Miner's Potato
+    material: baked_potato
+    level: 5
+    shape: [" C ", "KPK", " B "]
+    ingredients: {C: carrot, K: dried_kelp, P: baked_potato, B: brown_mushroom}
+    effect: haste
+    seconds: 45
+  anglers_chowder:
+    name: Angler's Chowder
+    material: mushroom_stew
+    level: 12
+    shape: ["KFK", " P ", " B "]
+    ingredients: {K: dried_kelp, F: cooked_cod, P: baked_potato, B: bowl}
+    effect: water_breathing
+    seconds: 60
+  foragers_stew:
+    name: Forager's Stew
+    material: mushroom_stew
+    level: 20
+    shape: ["MRM", " G ", " B "]
+    ingredients: {M: brown_mushroom, R: red_mushroom, G: glow_berries, B: bowl}
+    effect: night_vision
+    seconds: 90
+  homestead_supper:
+    name: Homestead Supper
+    material: rabbit_stew
+    level: 30
+    shape: ["CPC", " R ", " B "]
+    ingredients: {C: carrot, P: baked_potato, R: cooked_rabbit, B: bowl}
+    effect: regeneration
+    seconds: 10
+  wardens_roast:
+    name: Warden's Roast
+    material: cooked_beef
+    level: 40
+    shape: ["GKG", "CRC", " P "]
+    ingredients: {G: golden_carrot, K: dried_kelp, C: carrot, R: cooked_beef, P: baked_potato}
+    effect: resistance
+    seconds: 30
+  garden_omelette:
+    introduced: 2
+    name: "Garden Omelette"
+    material: cooked_chicken
+    level: 1
+    shape: ["CEC","PPP"," K "]
+    ingredients: {C: carrot, E: egg, P: potato, K: dried_kelp}
+    effect: speed
+    seconds: 30
+  carrot_flatbread:
+    introduced: 2
+    name: "Carrot Flatbread"
+    material: bread
+    level: 2
+    shape: ["CWC","WWW"," S "]
+    ingredients: {C: carrot, W: wheat, S: sugar}
+    effect: haste
+    seconds: 30
+  berry_scone:
+    introduced: 2
+    name: "Berry Scone"
+    material: cookie
+    level: 3
+    shape: ["BSB","WEW"," W "]
+    ingredients: {B: sweet_berries, S: sugar, W: wheat, E: egg}
+    effect: speed
+    seconds: 35
+  honey_biscuit:
+    introduced: 2
+    name: "Honey Biscuit"
+    material: cookie
+    level: 4
+    shape: ["WHW","SWS"," W "]
+    ingredients: {W: wheat, H: honey_bottle, S: sugar}
+    effect: jump_boost
+    seconds: 35
+  kelp_crisps:
+    introduced: 2
+    name: "Kelp Crisps"
+    material: dried_kelp
+    level: 5
+    shape: ["KKK","SCS"," K "]
+    ingredients: {K: dried_kelp, S: sugar, C: carrot}
+    effect: water_breathing
+    seconds: 40
+  campfire_hash:
+    introduced: 2
+    name: "Campfire Hash"
+    material: baked_potato
+    level: 6
+    shape: ["PCP","MKM"," P "]
+    ingredients: {P: baked_potato, C: carrot, M: brown_mushroom, K: dried_kelp}
+    effect: haste
+    seconds: 40
+  herbed_chicken:
+    introduced: 2
+    name: "Garden Chicken"
+    material: cooked_chicken
+    level: 8
+    shape: ["CKC"," P "," B "]
+    ingredients: {C: carrot, K: cooked_chicken, P: baked_potato, B: beetroot}
+    effect: regeneration
+    seconds: 6
+  mushroom_skewers:
+    introduced: 2
+    name: "Mushroom Skewers"
+    material: cooked_rabbit
+    level: 9
+    shape: ["MRM"," K "," C "]
+    ingredients: {M: brown_mushroom, R: red_mushroom, K: dried_kelp, C: cooked_rabbit}
+    effect: night_vision
+    seconds: 50
+  grilled_riverfish:
+    introduced: 2
+    name: "Grilled Riverfish"
+    material: cooked_cod
+    level: 10
+    shape: ["KCK","PFP"," K "]
+    ingredients: {K: dried_kelp, C: carrot, P: baked_potato, F: cooked_cod}
+    effect: water_breathing
+    seconds: 50
+  salmon_wrap:
+    introduced: 2
+    name: "Salmon Wrap"
+    material: cooked_salmon
+    level: 12
+    shape: ["WKW","CSC","WWW"]
+    ingredients: {W: wheat, K: dried_kelp, C: carrot, S: cooked_salmon}
+    effect: speed
+    seconds: 50
+  beetroot_borscht:
+    introduced: 2
+    name: "Beetroot Borscht"
+    material: beetroot_soup
+    level: 14
+    shape: ["BMB","CPC"," O "]
+    ingredients: {B: beetroot, M: brown_mushroom, C: carrot, P: baked_potato, O: bowl}
+    effect: regeneration
+    seconds: 7
+  hunters_hotpot:
+    introduced: 2
+    name: "Hunter's Hotpot"
+    material: rabbit_stew
+    level: 15
+    shape: ["CRC","MPM"," B "]
+    ingredients: {C: carrot, R: cooked_rabbit, M: brown_mushroom, P: baked_potato, B: bowl}
+    effect: resistance
+    seconds: 25
+  pumpkin_tart:
+    introduced: 2
+    name: "Pumpkin Tart"
+    material: pumpkin_pie
+    level: 16
+    shape: ["SPS","WEW","WWW"]
+    ingredients: {S: sugar, P: pumpkin, W: wheat, E: egg}
+    effect: jump_boost
+    seconds: 50
+  honey_glazed_rabbit:
+    introduced: 2
+    name: "Honey-glazed Rabbit"
+    material: cooked_rabbit
+    level: 18
+    shape: ["CHC"," R "," P "]
+    ingredients: {C: carrot, H: honey_bottle, R: cooked_rabbit, P: baked_potato}
+    effect: speed
+    seconds: 55
+  glowberry_compote:
+    introduced: 2
+    name: "Glowberry Compote"
+    material: honey_bottle
+    level: 19
+    shape: ["GSG","BAB"," O "]
+    ingredients: {G: glow_berries, S: sugar, B: sweet_berries, A: apple, O: glass_bottle}
+    effect: night_vision
+    seconds: 70
+  seaweed_broth:
+    introduced: 2
+    name: "Seaweed Broth"
+    material: mushroom_stew
+    level: 20
+    shape: ["KFK","CMC"," B "]
+    ingredients: {K: dried_kelp, F: cooked_cod, C: carrot, M: brown_mushroom, B: bowl}
+    effect: water_breathing
+    seconds: 70
+  charred_steak:
+    introduced: 2
+    name: "Charred Steak"
+    material: cooked_beef
+    level: 22
+    shape: ["BRB","PMP"," K "]
+    ingredients: {B: beetroot, R: cooked_beef, P: baked_potato, M: brown_mushroom, K: dried_kelp}
+    effect: resistance
+    seconds: 30
+  apple_glazed_pork:
+    introduced: 2
+    name: "Apple-glazed Pork"
+    material: cooked_porkchop
+    level: 23
+    shape: ["ASA","CRC"," P "]
+    ingredients: {A: apple, S: sugar, C: carrot, R: cooked_porkchop, P: baked_potato}
+    effect: regeneration
+    seconds: 8
+  cod_fritters:
+    introduced: 2
+    name: "Cod Fritters"
+    material: cooked_cod
+    level: 24
+    shape: ["WEW","CFC"," P "]
+    ingredients: {W: wheat, E: egg, C: carrot, F: cooked_cod, P: baked_potato}
+    effect: haste
+    seconds: 60
+  golden_roast:
+    introduced: 2
+    name: "Golden Roast"
+    material: cooked_mutton
+    level: 26
+    shape: ["GPG","CMC"," K "]
+    ingredients: {G: golden_carrot, P: baked_potato, C: carrot, M: cooked_mutton, K: dried_kelp}
+    effect: resistance
+    seconds: 35
+  netherroot_broth:
+    introduced: 2
+    name: "Netherroot Broth"
+    material: mushroom_stew
+    level: 28
+    shape: ["NBN","MCM"," O "]
+    ingredients: {N: nether_wart, B: brown_mushroom, M: red_mushroom, C: carrot, O: bowl}
+    effect: fire_resistance
+    seconds: 50
+  snowcap_pie:
+    introduced: 2
+    name: "Snowcap Pie"
+    material: pumpkin_pie
+    level: 30
+    shape: ["BSB","WMW","PPP"]
+    ingredients: {B: sweet_berries, S: sugar, W: wheat, M: milk_bucket, P: pumpkin}
+    effect: slow_falling
+    seconds: 40
+  seafarers_platter:
+    introduced: 2
+    name: "Seafarer's Platter"
+    material: cooked_salmon
+    level: 31
+    shape: ["KFK","CSC","PGP"]
+    ingredients: {K: dried_kelp, F: cooked_cod, C: carrot, S: cooked_salmon, P: baked_potato, G: golden_carrot}
+    effect: water_breathing
+    seconds: 90
+  prospectors_lunch:
+    introduced: 2
+    name: "Prospector's Lunch"
+    material: baked_potato
+    level: 32
+    shape: ["GPG","MKM","CRC"]
+    ingredients: {G: golden_carrot, P: baked_potato, M: brown_mushroom, K: dried_kelp, C: carrot, R: cooked_beef}
+    effect: haste
+    seconds: 75
+  orchard_feast:
+    introduced: 2
+    name: "Orchard Feast"
+    material: golden_carrot
+    level: 34
+    shape: ["AHA","GBG","ASA"]
+    ingredients: {A: apple, H: honey_bottle, G: golden_carrot, B: sweet_berries, S: sugar}
+    effect: regeneration
+    seconds: 10
+  forest_keepers_stew:
+    introduced: 2
+    name: "Forest Keeper's Stew"
+    material: rabbit_stew
+    level: 35
+    shape: ["MRM","GCG"," B "]
+    ingredients: {M: brown_mushroom, R: red_mushroom, G: glow_berries, C: cooked_rabbit, B: bowl}
+    effect: night_vision
+    seconds: 100
+  emberglazed_chicken:
+    introduced: 2
+    name: "Emberglazed Chicken"
+    material: cooked_chicken
+    level: 37
+    shape: ["NHN","GCG"," B "]
+    ingredients: {N: nether_wart, H: honey_bottle, G: golden_carrot, C: cooked_chicken, B: blaze_powder}
+    effect: fire_resistance
+    seconds: 75
+  cloudberry_parfait:
+    introduced: 2
+    name: "Cloudberry Parfait"
+    material: honey_bottle
+    level: 38
+    shape: ["GBG","SMS"," HO"]
+    ingredients: {G: glow_berries, B: sweet_berries, S: sugar, M: milk_bucket, H: honey_bottle, O: glass_bottle}
+    effect: slow_falling
+    seconds: 55
+  captains_supper:
+    introduced: 2
+    name: "Captain's Supper"
+    material: rabbit_stew
+    level: 40
+    shape: ["FSF","GPG"," B "]
+    ingredients: {F: cooked_cod, S: cooked_salmon, G: golden_carrot, P: baked_potato, B: bowl}
+    effect: luck
+    seconds: 60
+  skyfarers_roast:
+    introduced: 2
+    name: "Skyfarer's Roast"
+    material: cooked_beef
+    level: 43
+    shape: ["GCG","PRP"," H "]
+    ingredients: {G: golden_carrot, C: chorus_fruit, P: baked_potato, R: cooked_beef, H: honey_bottle}
+    effect: jump_boost
+    seconds: 90
+  starlit_stew:
+    introduced: 2
+    name: "Starlit Stew"
+    material: mushroom_stew
+    level: 46
+    shape: ["GCG","RMR"," B "]
+    ingredients: {G: golden_carrot, C: chorus_fruit, R: red_mushroom, M: glistering_melon_slice, B: bowl}
+    effect: resistance
+    seconds: 50
+  sky_court_banquet:
+    introduced: 2
+    name: "Sky Court Banquet"
+    material: rabbit_stew
+    level: 50
+    shape: ["GCG","RSR"," B "]
+    ingredients: {G: golden_carrot, C: chorus_fruit, R: cooked_rabbit, S: cooked_salmon, B: bowl}
+    effect: regeneration
+    seconds: 12

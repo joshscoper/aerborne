@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "namespace": "nerdsmp",
+  "items": [
+    {
+      "id": "veilwalker_compass",
+      "javaModel": "nerdsmp:veilwalker_compass",
+      "texture": "items/veilwalker_compass"
+    },
+    {
+      "id": "emberforged_pickaxe",
+      "javaModel": "nerdsmp:emberforged_pickaxe",
+      "texture": "items/emberforged_pickaxe"
+    },
+    {
+      "id": "verdant_sickle",
+      "javaModel": "nerdsmp:verdant_sickle",
+      "texture": "items/verdant_sickle"
+    },
+    {
+      "id": "tideglass_rod",
+      "javaModel": "nerdsmp:tideglass_rod",
+      "texture": "items/tideglass_rod"
+    },
+    {
+      "id": "hollowfang_blade",
+      "javaModel": "nerdsmp:hollowfang_blade",
+      "texture": "items/hollowfang_blade"
+    },
+    {
+      "id": "starfall_focus",
+      "javaModel": "nerdsmp:starfall_focus",
+      "texture": "items/starfall_focus"
+    },
+    {
+      "id": "geode_rough",
+      "javaModel": "nerdsmp:geode_rough",
+      "texture": "items/geode_rough"
+    },
+    {
+      "id": "geode_resonant",
+      "javaModel": "nerdsmp:geode_resonant",
+      "texture": "items/geode_resonant"
+    },
+    {
+      "id": "geode_luminous",
+      "javaModel": "nerdsmp:geode_luminous",
+      "texture": "items/geode_luminous"
+    },
+    {
+      "id": "gem_ruby",
+      "javaModel": "nerdsmp:gem_ruby",
+      "texture": "items/gem_ruby"
+    },
+    {
+      "id": "gem_sapphire",
+      "javaModel": "nerdsmp:gem_sapphire",
+      "texture": "items/gem_sapphire"
+    },
+    {
+      "id": "gem_emerald",
+      "javaModel": "nerdsmp:gem_emerald",
+      "texture": "items/gem_emerald"
+    },
+    {
+      "id": "gem_topaz",
+      "javaModel": "nerdsmp:gem_topaz",
+      "texture": "items/gem_topaz"
+    },
+    {
+      "id": "gem_aquamarine",
+      "javaModel": "nerdsmp:gem_aquamarine",
+      "texture": "items/gem_aquamarine"
+    },
+    {
+      "id": "gem_amethyst",
+      "javaModel": "nerdsmp:gem_amethyst",
+      "texture": "items/gem_amethyst"
+    },
+    {
+      "id": "gem_citrine",
+      "javaModel": "nerdsmp:gem_citrine",
+      "texture": "items/gem_citrine"
+    },
+    {
+      "id": "gem_jade",
+      "javaModel": "nerdsmp:gem_jade",
+      "texture": "items/gem_jade"
+    },
+    {
+      "id": "gem_onyx",
+      "javaModel": "nerdsmp:gem_onyx",
+      "texture": "items/gem_onyx"
+    },
+    {
+      "id": "gem_moonstone",
+      "javaModel": "nerdsmp:gem_moonstone",
+      "texture": "items/gem_moonstone"
+    },
+    {
+      "id": "gem_prismatic",
+      "javaModel": "nerdsmp:gem_prismatic",
+      "texture": "items/gem_prismatic"
+    },
+    {
+      "id": "enchantment_tome",
+      "javaModel": "nerdsmp:enchantment_tome",
+      "texture": "items/enchantment_tome"
+    },
+    {
+      "id": "arcane_dust",
+      "javaModel": "nerdsmp:arcane_dust",
+      "texture": "items/arcane_dust"
+    },
+    {
+      "id": "ironroot_blade",
+      "javaModel": "nerdsmp:ironroot_blade",
+      "texture": "items/ironroot_blade"
+    },
+    {
+      "id": "ironroot_pickaxe",
+      "javaModel": "nerdsmp:ironroot_pickaxe",
+      "texture": "items/ironroot_pickaxe"
+    },
+    {
+      "id": "wildwood_axe",
+      "javaModel": "nerdsmp:wildwood_axe",
+      "texture": "items/wildwood_axe"
+    },
+    {
+      "id": "wildwood_sickle",
+      "javaModel": "nerdsmp:wildwood_sickle",
+      "texture": "items/wildwood_sickle"
+    },
+    {
+      "id": "riftglass_edge",
+      "javaModel": "nerdsmp:riftglass_edge",
+      "texture": "items/riftglass_edge"
+    },
+    {
+      "id": "riftglass_pickaxe",
+      "javaModel": "nerdsmp:riftglass_pickaxe",
+      "texture": "items/riftglass_pickaxe"
+    },
+    {
+      "id": "coin_purse",
+      "javaModel": "nerdsmp:coin_purse",
+      "texture": "items/coin_purse"
+    },
+    {
+      "id": "river_sprat",
+      "javaModel": "nerdsmp:river_sprat",
+      "texture": "items/river_sprat"
+    },
+    {
+      "id": "redfin_perch",
+      "javaModel": "nerdsmp:redfin_perch",
+      "texture": "items/redfin_perch"
+    },
+    {
+      "id": "mossback_carp",
+      "javaModel": "nerdsmp:mossback_carp",
+      "texture": "items/mossback_carp"
+    },
+    {
+      "id": "shoreline_mackerel",
+      "javaModel": "nerdsmp:shoreline_mackerel",
+      "texture": "items/shoreline_mackerel"
+    },
+    {
+      "id": "moonlit_koi",
+      "javaModel": "nerdsmp:moonlit_koi",
+      "texture": "items/moonlit_koi"
+    },
+    {
+      "id": "embergill_trout",
+      "javaModel": "nerdsmp:embergill_trout",
+      "texture": "items/embergill_trout"
+    },
+    {
+      "id": "glassscale_eel",
+      "javaModel": "nerdsmp:glassscale_eel",
+      "texture": "items/glassscale_eel"
+    },
+    {
+      "id": "stormfin_tuna",
+      "javaModel": "nerdsmp:stormfin_tuna",
+      "texture": "items/stormfin_tuna"
+    },
+    {
+      "id": "frostveil_char",
+      "javaModel": "nerdsmp:frostveil_char",
+      "texture": "items/frostveil_char"
+    },
+    {
+      "id": "riftwater_ray",
+      "javaModel": "nerdsmp:riftwater_ray",
+      "texture": "items/riftwater_ray"
+    },
+    {
+      "id": "crownscale_coelacanth",
+      "javaModel": "nerdsmp:crownscale_coelacanth",
+      "texture": "items/crownscale_coelacanth"
+    },
+    {
+      "id": "starfall_sturgeon",
+      "javaModel": "nerdsmp:starfall_sturgeon",
+      "texture": "items/starfall_sturgeon"
+    }
+  ]
+}

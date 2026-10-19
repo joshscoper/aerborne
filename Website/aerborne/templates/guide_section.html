@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ label }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a></p>
+    <h1>{{ label }}</h1>
+    <p class="lede">{{ blurb }}</p>
+  </div>
+</header>
+{% set group = 'guide' %}{% include "partials/subnav.html" %}
+<div class="wrap with-sidebar">
+  {% include "partials/guide_sidebar.html" %}
+  <div class="with-sidebar-main">
+    {% if guides %}
+    <ol class="path-steps{% if category != 'getting-started' %} path-plain{% endif %}">
+      {% for g in guides %}
+      <li><a href="{{ url_for('public.guide_article', slug=g.slug) }}"><span class="path-title">{{ g.title }}{% if g.availability != 'released' %} {{ m.availability(g.availability) }}{% endif %}</span><span class="path-summary">{{ g.summary }}</span></a></li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p>Guides for this chapter are on the way.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

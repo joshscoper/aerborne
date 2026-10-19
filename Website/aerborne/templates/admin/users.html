@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block title %}Staff accounts{% endblock %}
+{% block content %}
+<h1>Staff accounts</h1>
+<div class="card panel-sync">
+  <h2>Watchdog panel</h2>
+  {% if panel_sync.configured %}
+  <p>Admins below marked <strong>Panel access</strong> can sign in to the Watchdog panel{% if panel_sync.url %} at <a href="{{ panel_sync.url }}" target="_blank" rel="noopener">{{ panel_sync.url }}</a>{% endif %} with their website username and password. Changes reach the panel within about a minute.</p>
+  <p class="fine">{% if panel_sync.last_fetch %}Last fetched by the panel {{ panel_sync.last_fetch | date(true) }} ({{ panel_sync.last_count }} admin{{ '' if panel_sync.last_count == '1' else 's' }}).{% else %}The panel hasn't fetched the list yet. Check that website-sync is enabled in watchdog-panel.yml and the server was restarted.{% endif %}</p>
+  {% else %}
+  <p>Sync is off. To let admins sign in to the Watchdog panel with their website login, turn on <code>website-sync</code> in the server's <code>watchdog-panel.yml</code>, then copy <code>watchdog-website-token.txt</code> into this site's <code>AERBORNE_PANEL_SYNC_TOKEN</code> setting.</p>
+  {% endif %}
+</div>
+<table>
+  <thead><tr><th>Username</th><th>Role</th><th>Active</th><th>New password</th><th>Last sign-in</th><th></th></tr></thead>
+  <tbody>
+    {% for u in rows %}
+    <tr>
+      <td>{{ u.username }}{% if u.id == current_user.id %} <span class="fine">(you)</span>{% endif %}
+        {% if u.role == 'admin' %}<br>{% if panel[u.id][0] %}<span class="status status-published">Panel access</span>{% else %}<span class="fine">{{ panel[u.id][1] }}</span>{% endif %}{% endif %}</td>
+      <td colspan="4">
+        <form class="inline-form" method="post" action="{{ url_for('admin.user_update', user_id=u.id) }}" id="u{{ u.id }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <select name="role" aria-label="Role for {{ u.username }}">{% for key, label in roles %}<option value="{{ key }}"{% if u.role == key %} selected{% endif %}>{{ key }}</option>{% endfor %}</select>
+          <label class="check"><input type="checkbox" name="active" value="1"{% if u.active %} checked{% endif %}> Active</label>
+          <input type="password" name="password" autocomplete="new-password" placeholder="Leave blank to keep" aria-label="New password for {{ u.username }}">
+          <span class="fine">{{ u.last_login_at | date(true) or 'Never' }}</span>
+          <button class="btn btn-quiet" type="submit">Update</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<dl class="roles">{% for key, label in roles %}<dt>{{ key }}</dt><dd>{{ label.split(': ', 1)[1] }}</dd>{% endfor %}</dl>
+
+<h2>Add a staff member</h2>
+<form class="card" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Username <input name="username" required maxlength="32" autocomplete="off"></label>
+  <label>Display name <input name="display_name" maxlength="64"></label>
+  <label>Role <select name="role">{% for key, label in roles %}<option value="{{ key }}"{% if key == 'writer' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label>Temporary password <input name="password" type="password" required minlength="12" autocomplete="new-password"><small>At least 12 characters. Ask them to change it from Your account.</small></label>
+  <button class="btn" type="submit">Add staff member</button>
+</form>
+{% endblock %}

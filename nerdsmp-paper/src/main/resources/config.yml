@@ -1,0 +1,635 @@
+# NerdSMP configuration
+#
+# The server copies this file to plugins/NerdSMP/config.yml on first start and never overwrites it.
+# A key missing from your copy falls back to the default shown here, so after an update you only
+# need to copy across the sections you want to change. Restart the server after editing.
+#
+# Sections, in order:
+#   1. Game mode and setup     gameplay, skyblock, storage, compliance, resource-pack
+#   2. Economy                 economy, jobs, identification, bank, repairs
+#   3. Progression             season, progression, campaign, engagement
+#   4. Combat and mobs         combat, mobs, forge, arcane-forge
+#   5. Players and social      starter-kit, parties, social, chat, trading, travel, graves
+#   6. Player guidance         tips
+#   7. NPCs                    npcs
+#   8. Staff and moderation    moderation, anti-cheat
+#   9. Display                 presentation
+#  10. Legacy SMP mode only    claims, expeditions
+#
+# Naming: prices end in -marks and durations end in their unit (-seconds, -minutes, -days).
+# A few older keys predate this and keep their names so existing configs still work.
+
+# ---------------------------------------------------------------------------------------------
+# 1. Game mode and setup
+# ---------------------------------------------------------------------------------------------
+
+gameplay:
+  # The main switch. skyblock (the default) gives every player an island, with a shared city and
+  # RPG areas. smp is the older open-world mode with land claims; it is an explicit opt-in.
+  mode: skyblock
+
+# Public display copy. Name stays in skyblock.display-name for compatibility with existing servers.
+# Values are plain text (not MiniMessage); no website/store address is invented or advertised.
+branding:
+  server-list-enabled: true
+  # Blank uses mode-aware defaults: RPG Skyblock / Small beginnings. Endless skies.
+  mode-label: ''
+  tagline: ''
+  description: ''
+
+# Settings for skyblock mode. Ignored when gameplay.mode is legacy.
+skyblock:
+  # The name players see for the skyblock world.
+  display-name: Aerborne
+  market:
+    # NPCs must be physically within this radius of /setspawn to offer shop trades.
+    hub-radius: 256
+  # Floating holograms on islands.
+  displays:
+    enabled: true
+    max-active-islands: 32
+    range: 24
+  # Rotating tips shown in skyblock mode. Legacy mode uses tips.messages instead; timing for both
+  # modes is under tips. MiniMessage format; write a literal < as \<.
+  tips:
+    - '<gray>Craft meals from <white>/cooking</white> to train Cooking. A skilled cook''s meals last longer, even when traded.</gray>'
+    - '<gray>Island talents award one point every two levels. Read each column in <white>/island talents</white> to plan your co-op''s strengths.</gray>'
+    - '<gray>Send Marks with <white>/pay \<player> \<amount></white>. If a payment is pending, check <white>/pay status</white> instead of sending it again.</gray>'
+    - '<gray>Compare your progress in <white>/leaderboard</white>. Offline players are included.</gray>'
+    - '<gray><white>/island chat [owner]</white> keeps a conversation inside one co-op. Use <white>/channel global</white> to switch back.</gray>'
+    - '<gray>Trade from anywhere with <white>/trade \<player></white>. Check both offers before confirming.</gray>'
+    - '<gray><white>/settings</white> controls private messages and invitations. <white>/ignore \<player></white> also stops their requests.</gray>'
+    - '<gray>Your home is one command away: <white>/island home</white>.</gray>'
+    - '<gray><white>/expedition</white> leads to renewable veins, timber, excavation finds and fishing.</gray>'
+    - '<gray>Train skills together on your island to level it up. Every two island levels earns a talent point.</gray>'
+    - '<gray>Right-click ripe crops with a hoe to harvest and replant. Keep plain seeds handy if the harvest doesn''t supply one.</gray>'
+    - '<gray><white>/island talents</white> upgrades generators, crops and automation. Your owner confirms each choice.</gray>'
+    - '<gray><white>/island machines</white> shows crushers, compost bins, sawmills, sifters and automation recipes.</gray>'
+    - '<gray>Machine inputs go in the top row, coal or charcoal in the middle, and finished goods in the bottom row. Redstone pauses work.</gray>'
+    - '<gray>Your next ore unlock is in <white>/island journal</white>. Existing skills count when you share your progress.</gray>'
+    - '<gray>NPC replies are private. Open chat to click a response, or type <white>/npc reply 1</white>.</gray>'
+    - '<gray>Sneak + right-click a chunk hopper with an item to filter its drops. An empty hand clears the filter.</gray>'
+    - '<gray><white>/shops [item]</white> buys supplies and sells surplus from anywhere. Left-click to buy, right-click to sell, then confirm.</gray>'
+    - '<gray>Train different skills with your co-op, then share your progress through <white>/island journal</white>.</gray>'
+    - '<gray>New island chapters unlock more space and better generator ores.</gray>'
+    - '<gray>Complete island chapters to collect centerpieces. Preview them in <white>/island showcase</white>.</gray>'
+    - '<gray>Right-click your island''s bedrock landing to open its controls. <white>/settings</white> can hide displays or celebration effects.</gray>'
+    - '<gray><white>/island visitors on</white> allows sightseeing, not building or storage access.</gray>'
+    - '<gray>Only invite trusted players to your co-op. Members share building and storage access.</gray>'
+    - '<gray>Joining a co-op keeps your own island. Find all your homes with <white>/island homes</white>.</gray>'
+    - '<gray>Island void falls return you safely. Your city and expedition journeys have their own risks.</gray>'
+    - '<gray>Visit city stations for forging, enchanting and alchemy. Check <white>/daily</white> for contracts.</gray>'
+    - '<gray>Generated ores and regrown trees earn skill XP; placing an ore and breaking it does not.</gray>'
+    - '<gray>Excavation needs fresh soil or marked dig-site nodes. Find renewable digging with <white>/digsite list</white>; ordinary placed soil gives no XP.</gray>'
+
+# Where player accounts, Marks and progression are kept.
+storage:
+  # yaml keeps accounts, Marks, entitlements and progression in player_data/<uuid>.yml.
+  # memory is a retained alias for this same persistent local backend, NOT a save reset.
+  # postgres uses the connection below; do not switch existing backends without a reviewed migration.
+  mode: yaml
+  postgres:
+    # A value written as ${NAME} is read from that environment variable at startup, and the
+    # plugin refuses to start if it isn't set. You can also write the value directly.
+    jdbc-url: ${NERDSMP_DB_JDBC_URL}
+    username: ${NERDSMP_DB_USERNAME}
+    password: ${NERDSMP_DB_PASSWORD}
+    maximum-pool-size: 8
+
+compliance:
+  # The disclaimer the Minecraft usage guidelines expect a server to show. The plugin doesn't
+  # read it yet; it is kept here as the reference wording for the server list and website.
+  disclaimer: NOT AN OFFICIAL MINECRAFT SERVER. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT
+
+resource-pack:
+  # none: players use vanilla textures. nexo: the Nexo plugin builds, hosts and sends the pack.
+  provider: none
+  # With provider nexo, refuse to start when Nexo is missing (true) or just warn (false).
+  require-provider-plugin: false
+  # Use the pack's custom item models. Turn on only when the pack is installed.
+  custom-models: false
+
+# ---------------------------------------------------------------------------------------------
+# 2. Economy
+# ---------------------------------------------------------------------------------------------
+
+economy:
+  # Marks a brand-new account starts with.
+  starter-marks: 250
+  # Reserved for a /pay transfer tax. The plugin doesn't read it yet, so transfers are untaxed.
+  transfer-tax-percent: 0
+  # Marks charged to list an item on the market.
+  market-listing-fee: 10
+  # Percent taken from the seller when a market listing sells.
+  market-sales-tax-percent: 5
+  # Marks for /grave recover. Walking back to the grave is always free.
+  remote-grave-recovery-cost: 250
+  # Marks per extra claim chunk (legacy mode).
+  claim-expansion-cost: 500
+
+# Job pay falls off as a player repeats the same work: this many units pay full rate, the next
+# ones half rate, then a quarter.
+jobs:
+  full-rate-units: 200
+  half-rate-units: 200
+  quarter-rate-units: 400
+
+# Tree felling uses native breaks and plain inventory saplings; old Forestry XP settings stay intact.
+forestry:
+  enabled: true
+  experience-multiplier: 3.0
+  blocks-per-tick: 12
+  maximum-active-trees: 16
+  daily-contract-xp: 500
+
+# Nyra's Arcane Identification; /identify is the existing remote-station shortcut.
+identification:
+  base-cost-marks: 75
+  per-affix-cost-marks: 25
+  # Scrapping destroys unidentified equipment only. Add this amount per existing affix.
+  scrapping:
+    dust-per-affix: 1
+    dust-by-rarity:
+      common: 2
+      crafted: 2
+      uncommon: 3
+      rare: 5
+      epic: 8
+      relic: 8
+      legendary: 12
+      mythic: 20
+
+# The account bank (/bank). Slots are bought one at a time; each costs the increment more than the last.
+bank:
+  default-slots: 9
+  maximum-slots: 54
+  slot-base-cost-marks: 250
+  slot-cost-increment-marks: 125
+
+# Repairing gear with Torren or /repairall. All prices are in Marks.
+repairs:
+  base-cost: 20
+  per-item-cost: 15
+  per-durability-point: 0.20
+  maximum-cost: 25000
+
+# ---------------------------------------------------------------------------------------------
+# 3. Progression
+# ---------------------------------------------------------------------------------------------
+
+# Skill masteries. Each season a player picks up to this many masteries once a skill reaches the level.
+season:
+  id: season-1
+  masteries-per-player: 2
+  mastery-level: 25
+  mastery-respec-cooldown-days: 14
+  mastery-respec-cost-marks: 10000
+
+progression:
+  # Skill XP per action.
+  xp:
+    mining-ore: 12
+    forestry-log: 6
+    farming-crop: 5
+    # Base values are multiplied for verified harvests, including older saved configs.
+    # Defaults: field crops/berries 15, wart/cocoa 18, specialty crops 24, stalks 9 XP.
+    farming-multiplier: 3.0
+    # Optional per-crop base XP before the multiplier, e.g. { WHEAT: 5, COCOA: 6 }.
+    farming-items: {}
+    fishing-catch: 25
+    hunting-base: 8
+    excavation-block: 3
+    smithing-craft: 8
+    smithing-smelt-iron: 4
+    smithing-smelt-copper: 4
+    smithing-smelt-gold: 6
+    smithing-smelt-netherite: 12
+    alchemy-craft: 6
+    alchemy-brew: 18
+    building-structure: 3
+    building-detail: 5
+    building-landmark: 8
+
+# The server-wide campaign. Everyone's contributions add up; each milestone unlocks content for the
+# whole server.
+campaign:
+  id: veil-awakening
+  title: The Veil Awakens
+  duration-days: 14
+  # Most points one player can add per day.
+  daily-contribution-cap: 2500
+  categories: [gathering, crafting, hunting, exploration]
+  # Total points needed for each milestone.
+  milestones:
+    first-ripple: 10000
+    broken-seal: 30000
+    rift-opened: 60000
+  # Which milestone unlocks world events, the Nether and the End.
+  progression:
+    world-events: first-ripple
+    nether: broken-seal
+    end: rift-opened
+
+# Daily quests and playtime rewards.
+engagement:
+  daily-quests-per-day: 3
+  daily-rotation-seed: 76123
+  # A player counts as idle after this long without activity, and stops earning playtime.
+  active-timeout-seconds: 300
+  sample-seconds: 20
+  save-interval-minutes: 5
+  # Marks paid once a player reaches each amount of active playtime. The keys are minutes.
+  playtime-rewards:
+    '30': 75
+    '120': 175
+    '300': 350
+    '600': 600
+
+# ---------------------------------------------------------------------------------------------
+# 4. Combat and mobs
+# ---------------------------------------------------------------------------------------------
+
+combat:
+  critical-hit-multiplier: 1.5
+
+mobs:
+  # Chance that a natural spawn becomes one of the plugin's custom mobs.
+  ambient-conversion-chance: 0.015
+  # Share of a boss reward split among party members within party-reward-radius blocks.
+  party-boss-reward-percent: 0.60
+  party-reward-radius: 48
+  # Mobs gain a level for every blocks-per-level away from world spawn. Each level adds the amounts below;
+  # extra players fighting together make elites and bosses tougher and better paying.
+  scaling:
+    blocks-per-level: 128
+    health-per-level: 0.01
+    damage-per-level: 0.006
+    reward-per-level: 0.008
+    elite-chance-per-level: 0.0005
+    maximum-combatants: 8
+    combat-radius: 64
+    combat-timeout-seconds: 20
+    maximum-health: 1024
+    elite-health-per-extra-player: 0.30
+    elite-damage-per-extra-player: 0.06
+    elite-reward-per-extra-player: 0.25
+    boss-health-per-extra-player: 0.35
+    boss-damage-per-extra-player: 0.03
+    boss-reward-per-extra-player: 0.35
+  # Phased fights for vanilla bosses. A phase that runs longer than the timeout moves on.
+  boss-mechanics:
+    enabled: true
+    phase-timeout-seconds: 90
+
+# Drop chances for forge materials. 0.018 is 1.8%.
+forge:
+  geodes:
+    mining-chance: 0.018
+    excavation-chance: 0.003
+  enchantments:
+    custom-mob-tome-chance: 0.04
+    boss-tome-chance: 0.75
+
+# Arcane Forge 2.0: the Arcane Codex, Arcane Research, Chosen Imbuement and Arcane Signatures.
+# See docs/ARCANE_FORGE.md. Arcane Enchanting offers, tomes and every existing item work exactly as
+# before whatever is set here. Everything except the read-only Codex starts off: turn features on
+# one at a time (docs/ARCANE_FORGE.md, "Rollout"). /forgeadmin validate checks this section and
+# /forgeadmin reload applies it only when it is fully valid.
+#
+# Levels below are Arcane levels: a player's Enchanting level, or their Smithing level if that is
+# higher, so nobody loses an unlock they had before the Enchanting skill existed.
+arcane-forge:
+  enabled: true
+  codex:
+    enabled: true
+  # Combine one to three socket gems to discover enchantments. Gems and Dust are used up.
+  research:
+    enabled: true
+    unlock-level: 5
+    specialized-level: 10
+    signature-level: 30
+    dust-per-reagent: 4
+    # Progress per experiment toward an exact recipe, out of 100.
+    progress:
+      fundamental: 100
+      specialized: 50
+      signature: 25
+    # Smaller progress toward a larger recipe that contains these Aspects. It halves, thirds and
+    # so on with each repeat, and stops below discovery.
+    partial-progress: 10
+    partial-progress-cap: 60
+    clue-threshold: 30
+    # Research speed for gem tiers I, II, III and IV.
+    gem-tier-multipliers: [1.0, 1.25, 1.5, 2.0]
+    prismatic-multiplier: 1.5
+    # How many times a combination must have been tried before the menu refuses a fruitless repeat.
+    fruitless-repeats: 1
+    discovery-xp:
+      fundamental: 40
+      specialized: 80
+      signature: 200
+    clue-xp: 10
+    # Binds at an enchantment's top level, from any source, that make it Mastered.
+    mastery-binds: 3
+  # Pick a discovered enchantment and an exact level for a fixed Dust price.
+  imbuement:
+    enabled: true
+    # Enchanting needed to imbue levels I, II, III, IV and V.
+    level-requirements: [0, 0, 10, 25, 40]
+    # Dust per level gained, times the level: Fundamental III costs 6 x 3 = 18 more than II.
+    dust-per-level:
+      fundamental: 6
+      specialized: 8
+    signature-dust: 64
+    signature-gem-tier: 3
+    mastery-discount-percent: 25
+  # How much enchantment an item holds. Derived from the item, never stored. Only binding an Arcane
+  # Signature needs free capacity; items already over capacity keep everything.
+  capacity:
+    by-rarity:
+      starter: 6
+      common: 10
+      crafted: 10
+      uncommon: 14
+      rare: 18
+      epic: 22
+      relic: 22
+      legendary: 26
+      mythic: 30
+    unknown-rarity: 10
+    per-quality-tier: 2
+    item-levels-per-point: 10
+    cost:
+      fundamental-per-level: 1
+      specialized-per-level: 2
+      signature: 12
+  # Bind a signature past capacity. The item becomes Unstable: its signature cooldown is longer
+  # until it is stabilized for Dust. Nothing is random and nothing is ever destroyed.
+  overcharge:
+    enabled: true
+    maximum-percent: 25
+    level: 20
+    stabilize-dust-per-point: 4
+    signature-cooldown-percent-per-point: 5
+  # Each signature needs both switches. Keep them off until docs/ARCANE_FORGE.md's checks pass.
+  signatures:
+    enabled: false
+    stormwake:
+      enabled: false
+      threshold: 5
+      charge-decay-seconds: 8
+      cooldown-seconds: 8
+      maximum-targets: 3
+      range-blocks: 4.0
+      damage-percent: 40.0
+      falloff: 0.7
+      pvp: false
+      particles: 12
+    heart-of-the-mountain:
+      enabled: false
+      threshold: 48
+      cooldown-seconds: 0
+      particles: 16
+    last-bastion:
+      enabled: false
+      cooldown-seconds: 600
+      absorption-hearts: 4
+      protection-seconds: 4
+      pvp: false
+  # Enchanting skill XP. Each award is fingerprinted, so it is paid once.
+  enchanting-xp:
+    table-per-dust: 3
+    tome-per-level: 15
+    imbue-per-dust: 1
+    signature-bind: 150
+    corruption: 40
+  # Effect enchantments. While off they are not offered by the table, tomes or merchants, and
+  # stay dormant on any item that has them.
+  effects:
+    bloodletter:
+      enabled: false
+      duration-seconds: 3
+      pvp: false
+      maximum-bleeding: 256
+    veinseeker:
+      enabled: false
+    chain-harvest:
+      enabled: false
+    # Veinseeker and Chain Harvest break blocks through the normal break pipeline, a few per tick.
+    chain:
+      blocks-per-tick: 8
+      maximum-active: 16
+      maximum-blocks: 10
+  # Pick a corruption for a fixed bonus. The item wears faster, uses capacity and takes no new
+  # Arcane work until cleansed. Cleansing always works, and works even while this is off.
+  corruption:
+    enabled: true
+    level: 25
+    dust: 48
+    cleanse-dust: 24
+    capacity-cost: 8
+    durability-multiplier: 2
+  # Focus an item on one of its Aspects: its enchantments of that Aspect grow stronger (at most 25%)
+  # and a matching signature cools down faster. Clearing an attunement is free.
+  attunement:
+    enabled: true
+    level: 15
+    dust: 16
+    bonus-percent: 10
+    signature-cooldown-percent: 15
+  # Lets Watchdog, weapon stats, life steal and coatings recognise one server-made arc, bleed tick or
+  # chain break at a time. Stormwake, Bloodletter, Veinseeker and Chain Harvest stay off while this is off.
+  anticheat-bridge:
+    enabled: true
+
+# ---------------------------------------------------------------------------------------------
+# 5. Players and social
+# ---------------------------------------------------------------------------------------------
+
+# Gear handed to new players. Raise version to give the kit again to players who already had an older one.
+starter-kit:
+  version: 2
+  auto-equip: true
+  items:
+    - frontier_hood
+    - frontier_coat
+    - frontier_trousers
+    - frontier_boots
+    - frontier_blade
+    - frontier_pickaxe
+    - frontier_hatchet
+    - frontier_shovel
+    - frontier_hoe
+  food:
+    material: cooked_beef
+    amount: 16
+  health-potions: 3
+  torches: 16
+
+parties:
+  maximum-size: 5
+  invite-lifetime-seconds: 60
+
+social:
+  friend-request-seconds: 120
+
+chat:
+  # Local chat reaches players within this many blocks. The legacy tip in tips.messages
+  # says "100 blocks"; update it if you change this.
+  local-radius: 100
+
+trading:
+  request-seconds: 60
+
+# Teleport requests (/tpa) and travel.
+travel:
+  request-seconds: 60
+  warmup-seconds: 3
+  cooldown-seconds: 15
+
+graves:
+  lifetime-hours: 24
+
+# ---------------------------------------------------------------------------------------------
+# 6. Player guidance
+# ---------------------------------------------------------------------------------------------
+
+# Rotating chat tips. Players turn them off with /tips off.
+tips:
+  # Timing applies in both modes.
+  initial-delay-seconds: 120
+  interval-seconds: 600
+  # Tips for legacy mode. Skyblock mode uses skyblock.tips instead.
+  messages:
+    - '<gray>Choose two skill masteries after level 25. Open <white>/skills</white> to plan ahead.</gray>'
+    - '<gray>Physical grave recovery is free. <white>/grave recover</white> is the paid shortcut.</gray>'
+    - '<gray>Geodes can hold socket gems. Hold matching gems and open <white>/forge</white> to merge them.</gray>'
+    - '<gray>Local chat reaches players within 100 blocks. Switch with <white>/channel local</white>.</gray>'
+    - '<gray>Claim the chunk beneath your base with <white>/claim create</white>.</gray>'
+    - '<gray>Find a settlement in <white>/claim directory</white>. Applications wait for approval before granting access.</gray>'
+    - '<gray>Manage your homes, plots, and neighbors through <white>/claim mine</white>.</gray>'
+    - '<gray>Daily contracts and server orders are reliable ways to earn Marks.</gray>'
+    - '<gray>Enchanting uses Arcane Dust, crafted from lapis and amethyst. It never spends experience levels.</gray>'
+    - '<gray>Brewing stands or <white>/alchemy</white> open twenty potion families, arcane brews, and eight poisons.</gray>'
+    - '<gray>Catch streaks improve fishing rewards. Track yours with <white>/fishing</white>.</gray>'
+    - '<gray>Quick excavation chains improve buried finds. Player-placed blocks never count.</gray>'
+    - '<gray>Unidentified loot grants no stats until Nyra reveals it with <white>/identify</white>.</gray>'
+    - '<gray>Your account bank starts with nine slots. Open it with <white>/bank</white>.</gray>'
+    - '<gray>Prismatic Gems are exceptionally strong and exceptionally rare. Luminous geodes offer the best chance.</gray>'
+    - '<gray>NPC stores buy limited commodity bundles each day. Right-click a listed item to sell.</gray>'
+    - '<gray>Torren can repair every damaged item you carry, or use <white>/repairall</white>.</gray>'
+    - '<gray>Cato, Lyra, and Garrick offer rotating daily, weekly, and monthly work for faction reputation.</gray>'
+    - '<gray>Elian exchanges pottery sherds, Relic records, and sniffer eggs for Rift Scholar reputation.</gray>'
+    - '<gray>Milestones grant Achievement Points and Marks automatically. Track them with <white>/achievements</white>.</gray>'
+    - '<gray>Different waters favor different fish. Ivo records journal catches for Free Delver reputation.</gray>'
+
+# ---------------------------------------------------------------------------------------------
+# 7. NPCs
+# ---------------------------------------------------------------------------------------------
+
+npcs:
+  maximum-instances: 100
+  # Reputation lost for hitting an NPC, at most once per cooldown.
+  assault-reputation-loss: 10
+  assault-cooldown-seconds: 60
+  reputation-contract-rotation-seed: 89021
+  reputation-contract-save-minutes: 5
+
+# ---------------------------------------------------------------------------------------------
+# 8. Staff and moderation
+# ---------------------------------------------------------------------------------------------
+
+moderation:
+  report-cooldown-seconds: 60
+  default-mute-minutes: 30
+
+# Watchdog, the built-in anti-cheat. See docs/WATCHDOG_ANTICHEAT.md.
+anti-cheat:
+  mode: autonomous
+  # Suspicion score thresholds: alert staff, pull the player back, then kick. The score falls by
+  # decay-per-second while the player plays cleanly.
+  alert-score: 12
+  setback-score: 24
+  kick-score: 50
+  decay-per-second: 0.10
+  # Replay every client tick through vanilla's movement and collision code (Speed and Flight checks). Set false to
+  # fall back to the looser physics bounds.
+  movement-simulation: true
+  # Record joining IP addresses (last 10 per account) for the Staff Console's connection history
+  # and shared-address checks. Set false to stop recording and drop stored addresses on next save.
+  record-ip-addresses: true
+  # Where players connect from (country, region, city) for the Staff Console's Locations view. Addresses are looked
+  # up offline against a local DB-IP Lite City database (CC BY 4.0) in plugins/NerdSMP/geoip/; no address is ever
+  # sent to a web service. Needs record-ip-addresses: true. Set enabled false to stop lookups and drop stored
+  # locations on next save.
+  geolocation:
+    enabled: true
+    # Fetch the free database once a month (about 130 MB unpacked). Set false and drop any .mmdb file into
+    # plugins/NerdSMP/geoip/ yourself (a GeoLite2-City.mmdb works too).
+    auto-download: true
+    download-url: https://download.db-ip.com/free/dbip-city-lite-{month}.mmdb.gz
+  # Combat model. It learns from combat windows staff label with /watchdog label or the Staff Console.
+  ml:
+    enabled: true
+    # Let the model kick, then ban, on its own. It only does so while its latest training run proved itself on
+    # players it never saw: at least these labelled cases, and at least this precision and recall.
+    autonomous: true
+    target-precision: 0.995
+    min-recall: 0.25
+    min-cheat-windows: 100
+    min-cheat-players: 10
+    min-legit-windows: 300
+    min-legit-players: 30
+    # Flagged combat windows within 10 minutes before a kick; a flagged window within 24 h of that kick bans.
+    kick-after-windows: 2
+    ban-minutes: 10080
+
+# ---------------------------------------------------------------------------------------------
+# 9. Display
+# ---------------------------------------------------------------------------------------------
+
+presentation:
+  # Refresh once per second; unchanged sidebar/tab lines are not resent.
+  refresh-ticks: 20
+  sidebar-enabled: true
+  tab-list-enabled: true
+  nameplates-enabled: true
+  chat-format-enabled: true
+  # Floating damage numbers.
+  damage-displays:
+    enabled: true
+    lifetime-ticks: 24
+    fade-in-ticks: 4
+    fade-out-ticks: 8
+    vertical-rise-per-tick: 0.018
+    max-active-per-player: 24
+  mob-health-bars:
+    enabled: true
+    update-interval-ticks: 2
+    overhead-lifetime-ticks: 100
+    overhead-viewer-range: 32
+    boss-viewer-range: 64
+    display-view-range: 0.75
+    segments: 12
+    maximum-overhead-bars: 64
+
+# ---------------------------------------------------------------------------------------------
+# 10. Legacy SMP mode only (gameplay.mode: smp)
+# ---------------------------------------------------------------------------------------------
+
+# Land claims. Skyblock mode uses islands instead.
+claims:
+  starter-capacity: 4
+  maximum-capacity: 64
+  maximum-residents: 32
+  # Opt in after checking existing plots. Entire intersecting chunks are reserved.
+  spawn-buffer-blocks: 0
+  spawn-worlds: [world]
+  # Restart after editing reserves or moving/resizing a world border.
+  # Each entry: world, min-chunk-x, min-chunk-z, max-chunk-x, max-chunk-z, buffer-chunks
+  reserved-regions: []
+
+# Manual builds and /setspawn /setwarp destinations are the default.
+# This opt-in is retained only for reviewing the old generated expedition prototypes.
+expeditions:
+  generated-worlds: false

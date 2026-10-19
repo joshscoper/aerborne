@@ -1,0 +1,355 @@
+schema-version: 3
+
+achievements:
+  first_steps:
+    title: First Steps
+    description: Start your journey among the islands.
+    category: Journey
+    metric: adventurer_level
+    target: 1
+    points: 5
+    marks: 15
+    icon: LEATHER_BOOTS
+  trail_ready:
+    title: Trail Ready
+    description: Reach Adventurer Level 10.
+    category: Journey
+    metric: adventurer_level
+    target: 10
+    points: 10
+    marks: 75
+    icon: COMPASS
+  seasoned_pathfinder:
+    title: Seasoned Pathfinder
+    description: Reach Adventurer Level 25.
+    category: Journey
+    metric: adventurer_level
+    target: 25
+    points: 20
+    marks: 175
+    icon: FILLED_MAP
+  frontier_vanguard:
+    title: Frontier Vanguard
+    description: Reach Adventurer Level 50.
+    category: Journey
+    metric: adventurer_level
+    target: 50
+    points: 35
+    marks: 350
+    icon: NETHER_STAR
+  mythic_journey:
+    title: A Mythic Journey
+    description: Reach Adventurer Level 100.
+    category: Journey
+    metric: adventurer_level
+    target: 100
+    points: 100
+    marks: 1000
+    icon: DRAGON_EGG
+
+  learning_the_trade:
+    title: Learning the Trade
+    description: Raise any skill to level 10.
+    category: Professions
+    metric: highest_skill_level
+    target: 10
+    points: 10
+    marks: 60
+    icon: IRON_PICKAXE
+  master_of_one:
+    title: Master of One
+    description: Raise any skill to level 50.
+    category: Professions
+    metric: highest_skill_level
+    target: 50
+    points: 50
+    marks: 500
+    icon: DIAMOND_PICKAXE
+  practiced_hands:
+    title: Practiced Hands
+    description: Earn 100,000 total skill experience.
+    category: Professions
+    metric: total_skill_xp
+    target: 100000
+    points: 25
+    marks: 250
+    icon: EXPERIENCE_BOTTLE
+  workshop_regular:
+    title: Workshop Regular
+    description: Craft 500 items.
+    category: Professions
+    metric: items_crafted
+    target: 500
+    points: 20
+    marks: 180
+    icon: CRAFTING_TABLE
+
+  first_hunt:
+    title: First Hunt
+    description: Defeat your first hostile creature.
+    category: Combat
+    metric: mobs_defeated
+    target: 1
+    points: 5
+    marks: 20
+    icon: IRON_SWORD
+  road_clearer:
+    title: Road Clearer
+    description: Defeat 100 hostile creatures.
+    category: Combat
+    metric: mobs_defeated
+    target: 100
+    points: 20
+    marks: 175
+    icon: ZOMBIE_HEAD
+  marked_for_trouble:
+    title: Marked for Trouble
+    description: Defeat your first elite creature.
+    category: Combat
+    metric: elites_defeated
+    target: 1
+    points: 10
+    marks: 75
+    icon: GOLDEN_SWORD
+  elite_bane:
+    title: Elite Bane
+    description: Defeat 25 elite creatures.
+    category: Combat
+    metric: elites_defeated
+    target: 25
+    points: 35
+    marks: 325
+    icon: NETHERITE_SWORD
+  breaker_of_giants:
+    title: Breaker of Giants
+    description: Survive and defeat a boss encounter.
+    category: Combat
+    metric: bosses_defeated
+    target: 1
+    points: 50
+    marks: 500
+    icon: WITHER_SKELETON_SKULL
+
+  first_catch:
+    title: First Catch
+    description: Land your first fish.
+    category: Fieldwork
+    metric: fish_caught
+    target: 1
+    points: 5
+    marks: 20
+    icon: FISHING_ROD
+  river_lore:
+    title: River Lore
+    description: Land 100 fish.
+    category: Fieldwork
+    metric: fish_caught
+    target: 100
+    points: 20
+    marks: 175
+    icon: COD
+  complete_angler:
+    title: Complete Angler
+    description: Record every fish in the Angler's Journal.
+    category: Fieldwork
+    metric: fishing_species
+    target: 12
+    points: 50
+    marks: 500
+    icon: TROPICAL_FISH
+  beneath_the_dust:
+    title: Beneath the Dust
+    description: Recover your first excavation find.
+    category: Fieldwork
+    metric: excavation_finds
+    target: 1
+    points: 5
+    marks: 25
+    icon: BRUSH
+  field_archaeologist:
+    title: Field Archaeologist
+    description: Recover 50 excavation finds.
+    category: Fieldwork
+    metric: excavation_finds
+    target: 50
+    points: 30
+    marks: 275
+    icon: DECORATED_POT
+  first_deposit:
+    title: First Deposit
+    description: Place your first archaeological find in the Field Archive.
+    category: Archive
+    metric: archive_items
+    target: 1
+    points: 5
+    marks: 25
+    icon: MINER_POTTERY_SHERD
+  archive_patron:
+    title: Archive Patron
+    description: Contribute 25 finds to the Field Archive.
+    category: Archive
+    metric: archive_items
+    target: 25
+    points: 25
+    marks: 225
+    icon: CHISELED_BOOKSHELF
+  island_founder:
+    introduced: 3
+    title: A Patch of Sky
+    description: Establish your island.
+    category: Islands
+    metric: island_level
+    target: 1
+    points: 5
+    marks: 25
+    icon: GRASS_BLOCK
+  growing_homestead:
+    introduced: 3
+    title: Room to Grow
+    description: Reach island level 10.
+    category: Islands
+    metric: island_level
+    target: 10
+    points: 15
+    marks: 100
+    icon: OAK_SAPLING
+  thriving_island:
+    introduced: 3
+    title: A Thriving Island
+    description: Reach island level 25.
+    category: Islands
+    metric: island_level
+    target: 25
+    points: 30
+    marks: 300
+    icon: BEACON
+  skyward_legacy:
+    introduced: 3
+    title: Skyward Legacy
+    description: Reach island level 50.
+    category: Islands
+    metric: island_level
+    target: 50
+    points: 75
+    marks: 750
+    icon: END_CRYSTAL
+  shared_direction:
+    introduced: 3
+    title: A Shared Direction
+    description: Train your first island talent rank.
+    category: Islands
+    metric: island_talents
+    target: 1
+    points: 5
+    marks: 25
+    icon: BOOK
+  island_specialists:
+    introduced: 3
+    title: Island Specialists
+    description: Train ten island talent ranks.
+    category: Islands
+    metric: island_talents
+    target: 10
+    points: 30
+    marks: 250
+    icon: ENCHANTED_BOOK
+  diamond_horizon:
+    introduced: 3
+    title: Diamond Horizon
+    description: Unlock resource stage three.
+    category: Islands
+    metric: resource_stage
+    target: 3
+    points: 25
+    marks: 200
+    icon: DIAMOND_ORE
+  open_horizons:
+    introduced: 3
+    title: Open Horizons
+    description: Unlock every island resource stage.
+    category: Islands
+    metric: resource_stage
+    target: 5
+    points: 50
+    marks: 500
+    icon: EMERALD_ORE
+  kitchen_apprentice:
+    introduced: 3
+    title: Kitchen Apprentice
+    description: Reach Cooking level 10.
+    category: Cooking
+    metric: cooking_level
+    target: 10
+    points: 10
+    marks: 75
+    icon: BREAD
+  seasoned_chef:
+    introduced: 3
+    title: Seasoned Chef
+    description: Reach Cooking level 25.
+    category: Cooking
+    metric: cooking_level
+    target: 25
+    points: 25
+    marks: 250
+    icon: CAULDRON
+  master_of_the_hearth:
+    introduced: 3
+    title: Master of the Hearth
+    description: Reach Cooking level 50.
+    category: Cooking
+    metric: cooking_level
+    target: 50
+    points: 50
+    marks: 500
+    icon: CAMPFIRE
+  first_service:
+    introduced: 3
+    title: First Service
+    description: Prepare your first meal at a crafting table.
+    category: Cooking
+    metric: meals_prepared
+    target: 1
+    points: 5
+    marks: 20
+    icon: BAKED_POTATO
+  busy_kitchen:
+    introduced: 3
+    title: Busy Kitchen
+    description: Prepare one hundred meals.
+    category: Cooking
+    metric: meals_prepared
+    target: 100
+    points: 20
+    marks: 175
+    icon: COOKED_CHICKEN
+  feed_the_islands:
+    introduced: 3
+    title: Feed the Islands
+    description: Prepare one thousand meals.
+    category: Cooking
+    metric: meals_prepared
+    target: 1000
+    points: 50
+    marks: 500
+    icon: RABBIT_STEW
+  better_together:
+    introduced: 3
+    title: Better Together
+    description: Equip enough matching gear to activate a set bonus.
+    category: Equipment
+    metric: active_set_bonuses
+    target: 1
+    points: 10
+    marks: 75
+    icon: IRON_CHESTPLATE
+  complete_the_look:
+    introduced: 3
+    title: Complete the Look
+    description: Activate three set-bonus thresholds at once.
+    category: Equipment
+    metric: active_set_bonuses
+    target: 3
+    points: 30
+    marks: 250
+    icon: DIAMOND_CHESTPLATE

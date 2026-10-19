@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block title %}Media library{% endblock %}
+{% block content %}
+<h1>Media library</h1>
+<form class="card upload" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Image <input type="file" name="file" accept="image/png,image/jpeg,image/gif,image/webp" required></label>
+  <label>Description <input name="alt" maxlength="300" required placeholder="What's in the picture?"></label>
+  <button class="btn" type="submit">Upload</button>
+  <p class="fine">PNG, JPG, GIF or WebP up to 8 MB. Images are re-saved as WebP at up to 1600 px wide, with location and camera data removed.</p>
+</form>
+{% if items %}
+<ul class="media-grid">
+  {% for m in items %}
+  <li>
+    <img src="{{ url_for('public.media', filename=m.thumb or m.filename) }}" alt="{{ m.alt }}" loading="lazy">
+    <p>{{ m.alt }}</p>
+    <p class="fine">{{ m.original_name }}{% if m.width %} · {{ m.width }}×{{ m.height }}{% endif %} · {{ (m.bytes / 1024) | round | int }} KB · {{ m.uploaded_by }}</p>
+    {% if current_user.role in ('admin', 'editor') %}
+    <form method="post" action="{{ url_for('admin.media_delete', media_id=m.id) }}" data-confirm="Delete this image?">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="linkish danger-text" type="submit">Delete</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No uploads yet. The built-in branding images are always available in image fields.</p>
+{% endif %}
+{% endblock %}

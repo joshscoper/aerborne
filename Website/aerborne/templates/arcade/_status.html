@@ -1,0 +1,12 @@
+{% if not status.signed_in %}
+<p class="arcade-status"><a href="{{ url_for('community.login', next=request.path) }}">Sign in</a> and link your Minecraft account to earn Marks. You can play for practice without an account.</p>
+{% elif not status.linked %}
+<p class="arcade-status"><a href="{{ url_for('community.link') }}">Link your Minecraft account</a> to earn Marks. Until then, games are practice.</p>
+{% else %}
+<div class="arcade-status arcade-meter">
+  <span><strong>{{ status.earned }}</strong> / {{ status.cap }} Marks today</span>
+  <meter min="0" max="{{ status.cap or 1 }}" value="{{ status.earned }}">{{ status.earned }} of {{ status.cap }}</meter>
+  {% if status.pending %}<span class="fine">{{ status.pending }} on the way to your account</span>{% endif %}
+</div>
+{% endif %}
+{% if not status.delivery_enabled %}<p class="fine">Game-server delivery is being connected. Earned Marks will wait in your reward queue.</p>{% endif %}

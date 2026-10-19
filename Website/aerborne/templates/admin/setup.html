@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block title %}First-time setup{% endblock %}
+{% block solo %}
+<div class="card narrow">
+  <h1>Create the first admin</h1>
+  {% if not token_set %}
+  <p>No staff accounts exist yet. Create one in either of these ways:</p>
+  <ol>
+    <li>In cPanel Terminal, from the app folder with its virtual environment active, run <code>python manage.py create-admin yourname</code>.</li>
+    <li>Or add an environment variable <code>AERBORNE_SETUP_TOKEN</code> with a long random value, restart the app, and reload this page.</li>
+  </ol>
+  {% else %}
+  {% if error %}<p class="flash flash-error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label>Setup token <input name="token" type="password" autocomplete="off" required>
+      <small>The value of AERBORNE_SETUP_TOKEN.</small></label>
+    <label>Username <input name="username" autocomplete="username" required maxlength="32"></label>
+    <label>Password <input name="password" type="password" autocomplete="new-password" required minlength="12">
+      <small>At least 12 characters.</small></label>
+    <button class="btn" type="submit">Create admin account</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

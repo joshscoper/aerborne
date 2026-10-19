@@ -1,0 +1,33 @@
+schema-version: 1
+# IDs match the original contracts so changing modes cannot repeat a paid reward.
+quests:
+  seam_work:
+    title: Keep the Forge Fed
+    description: Mine 32 ores from your island generator or an open expedition.
+    action: mine_ore
+    target: 32
+    marks: 120
+  timber_run:
+    title: A Growing Grove
+    description: Harvest 64 logs from grown trees. Placed logs do not count.
+    action: chop_log
+    target: 64
+    marks: 110
+  clear_the_road:
+    title: Night Watch
+    description: Defeat 20 hostile creatures yourself. Machines cannot do this for you.
+    action: slay_monster
+    target: 20
+    marks: 140
+  workshop_order:
+    title: Workshop Shift
+    description: Craft 24 items at a crafting table.
+    action: craft_item
+    target: 24
+    marks: 115
+  fresh_catch:
+    title: Supper from the Pond
+    description: Land 10 catches with a fishing rod. Your island pond counts.
+    action: catch_fish
+    target: 10
+    marks: 130

@@ -1,0 +1,100 @@
+{% extends "community/forum_base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}{{ thread.title }} | Forum{% endblock %}
+{% block description %}{{ thread.title }}, a discussion in {{ thread.category_name }} on the {{ site.SITE_NAME }} forum.{% endblock %}
+{% block content %}
+<header class="page-head page-head-tight">
+  <div class="wrap">
+    <p class="crumbs"><a href="{{ url_for('community.forum') }}">Forum</a> / <a href="{{ url_for('community.category', category_slug=thread.category_slug) }}">{{ thread.category_name }}</a></p>
+    <h1 class="thread-heading">{{ c.prefix(thread.prefix) }}{{ thread.title }}</h1>
+    <p class="thread-flags">{% if thread.pinned %}<span class="prefix prefix-gold">Pinned</span>{% endif %}{% if thread.locked %}<span class="prefix prefix-stone">Locked</span>{% endif %}{% if thread.private %}<span class="prefix prefix-lavender">Private</span>{% endif %}{% if thread.hidden %}<span class="prefix prefix-red">Hidden from players</span>{% endif %}</p>
+    {% if is_moderator() %}
+    <form class="mod-bar" method="post" action="{{ url_for('community.moderate_thread', thread_id=thread.id) }}">
+      {{ c.csrf() }}
+      <span class="fine">Moderate:</span>
+      <button class="btn-chip" name="action" value="{{ 'unpin' if thread.pinned else 'pin' }}">{{ 'Unpin' if thread.pinned else 'Pin' }}</button>
+      <button class="btn-chip" name="action" value="{{ 'unlock' if thread.locked else 'lock' }}">{{ 'Unlock' if thread.locked else 'Lock' }}</button>
+      <button class="btn-chip" name="action" value="{{ 'unhide' if thread.hidden else 'hide' }}">{{ 'Show thread' if thread.hidden else 'Hide thread' }}</button>
+    </form>
+    {% endif %}
+  </div>
+</header>
+<div class="wrap thread-layout">
+  {{ c.flashes() }}
+  {{ c.pager(page, pages, 'community.thread', thread_id=thread.id) }}
+  <ol class="posts">
+    {% for p in posts %}
+    <li class="post rank-{{ p.rank_slug or 'none' }}{% if p.hidden %} is-hidden{% endif %}" id="post-{{ p.id }}">
+      <aside class="post-author">
+        {{ c.framed(p.avatar, p.rank_frame, 160) }}
+        {{ c.name(p.username, p.rank_slug) }}
+        {% if p.custom_title %}<span class="post-title">{{ p.custom_title }}</span>{% endif %}
+        {% if p.rank_slug %}{{ c.rank_tag(p.rank_slug, p.rank_name) }}{% else %}<span class="rank-tag">MEMBER</span>{% endif %}
+        <dl class="post-stats">
+          <div><dt>Posts</dt><dd>{{ p.post_count | number }}</dd></div>
+          <div><dt>Likes</dt><dd>{{ p.likes_received | number }}</dd></div>
+          <div><dt>Joined</dt><dd>{{ p.joined_at | date }}</dd></div>
+        </dl>
+        {% if p.mc_name %}<a class="post-mc" href="{{ url_for('community.player_profile', name=p.mc_name) }}" title="Verified Minecraft account">{{ p.mc_name }}</a>{% endif %}
+      </aside>
+      <div class="post-body">
+        <p class="post-meta">
+          <time datetime="{{ p.created_at | isodate }}">{{ p.created_at | date(true) }}</time>{% if p.edited_at %} · edited{% endif %}
+          <a class="post-number" href="#post-{{ p.id }}">#{{ number_from + loop.index }}</a>
+        </p>
+        {% if p.hidden %}
+        <p class="fine">{{ p.hidden_reason or "This post was hidden." }}</p>
+        {% if is_moderator() %}<div class="prose prose-dim">{{ p.body | forum }}</div>{% endif %}
+        {% else %}
+        <div class="prose">{{ p.body | forum }}</div>
+        {% if p.signature %}<p class="post-signature">{{ p.signature }}</p>{% endif %}
+        {% endif %}
+        <div class="post-actions">
+          {% if member and not p.hidden and p.member_id != member.id %}
+          <form method="post" action="{{ url_for('community.like_post', post_id=p.id) }}">{{ c.csrf() }}<input type="hidden" name="page" value="{{ page }}">
+            <button class="like{% if p.id in liked %} is-liked{% endif %}" type="submit" aria-pressed="{{ 'true' if p.id in liked else 'false' }}">♥ {{ p.like_count or '' }} {{ 'Liked' if p.id in liked else 'Like' }}</button>
+          </form>
+          {% elif p.like_count %}<span class="like is-static">♥ {{ p.like_count }}</span>{% endif %}
+          {% if member %}
+          {% if p.member_id == member.id and not p.hidden %}
+          <a href="{{ url_for('community.edit_post', post_id=p.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('community.delete_post', post_id=p.id) }}" data-confirm="Remove this post?{{ ' This also removes the thread.' if p.id == first_post_id else '' }}">{{ c.csrf() }}<button class="linkish" type="submit">Remove</button></form>
+          {% elif p.member_id != member.id %}
+          <details class="report">
+            <summary>Report</summary>
+            <form method="post" action="{{ url_for('community.report_post', post_id=p.id) }}">{{ c.csrf() }}
+              <label>What's wrong? <input name="reason" maxlength="300" placeholder="Spam, harassment, scam…"></label>
+              <button class="btn btn-ghost" type="submit">Send report</button>
+            </form>
+          </details>
+          {% endif %}
+          {% endif %}
+          {% if is_moderator() %}
+          <form method="post" action="{{ url_for('community.moderate_post', post_id=p.id) }}">{{ c.csrf() }}<button class="linkish" name="action" value="{{ 'unhide' if p.hidden else 'hide' }}">{{ 'Restore' if p.hidden else 'Hide' }}</button></form>
+          {% endif %}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {{ c.pager(page, pages, 'community.thread', thread_id=thread.id) }}
+
+  <section class="reply-box" id="reply" aria-labelledby="reply-title">
+    <p class="eyebrow">Keep the conversation going</p>
+    <h2 id="reply-title">Leave a reply</h2>
+    {% if reply_block %}
+    <p class="notice notice-info">{{ reply_block }}
+      {% if not member %}<a href="{{ url_for('community.login', next=request.full_path) }}">Sign in</a> or <a href="{{ url_for('community.register') }}">create an account</a>.
+      {% elif not member.mc_uuid %}<a href="{{ url_for('community.link') }}">Link your Minecraft account</a>.{% endif %}</p>
+    {% else %}
+    <form class="compose" method="post" action="{{ url_for('community.reply', thread_id=thread.id) }}">
+      {{ c.csrf() }}
+      <label class="sr-only" for="reply-body">Your reply</label>
+      <textarea id="reply-body" name="body" rows="6" required maxlength="{{ max_post }}" placeholder="Write a reply…"></textarea>
+      <small>Markdown works: **bold**, _italic_, `code`, &gt; quotes and links.</small>
+      <button class="btn btn-primary" type="submit">Post reply</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

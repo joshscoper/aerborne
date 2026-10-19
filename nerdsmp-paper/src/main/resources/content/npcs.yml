@@ -1,0 +1,3029 @@
+schema-version: 10
+
+factions:
+  frontier_wardens:
+    name: Frontier Wardens
+    description: Road crews, watch captains, and quartermasters keeping the frontier connected.
+    tiers:
+      hostile:
+        name: Wanted
+        color: red
+        threshold: -1000
+        shop-price-multiplier: 1.35
+        can-trade: false
+      distrusted:
+        name: Watched
+        color: dark_red
+        threshold: -249
+        shop-price-multiplier: 1.15
+        can-trade: true
+      neutral:
+        name: Unknown
+        color: gray
+        threshold: 0
+        shop-price-multiplier: 1.00
+        can-trade: true
+      trusted:
+        name: Trailhand
+        color: green
+        threshold: 250
+        shop-price-multiplier: 0.90
+        can-trade: true
+      honored:
+        name: Lantern-Bearer
+        color: gold
+        threshold: 600
+        shop-price-multiplier: 0.80
+        can-trade: true
+
+  rift_scholars:
+    name: Rift Scholars
+    description: Field researchers who catalogue relics, strange weather, and unstable crossings.
+    tiers:
+      hostile:
+        name: Banned
+        color: red
+        threshold: -1000
+        shop-price-multiplier: 1.40
+        can-trade: false
+      distrusted:
+        name: Questionable
+        color: dark_red
+        threshold: -249
+        shop-price-multiplier: 1.20
+        can-trade: true
+      neutral:
+        name: Unreviewed
+        color: gray
+        threshold: 0
+        shop-price-multiplier: 1.00
+        can-trade: true
+      trusted:
+        name: Field Assistant
+        color: aqua
+        threshold: 250
+        shop-price-multiplier: 0.90
+        can-trade: true
+      honored:
+        name: Riftwise
+        color: light_purple
+        threshold: 600
+        shop-price-multiplier: 0.78
+        can-trade: true
+
+  free_delvers:
+    name: Free Delvers
+    description: Independent explorers who trade routes, salvage, and hard-earned warnings.
+    tiers:
+      hostile:
+        name: Blacklisted
+        color: red
+        threshold: -1000
+        shop-price-multiplier: 1.30
+        can-trade: false
+      distrusted:
+        name: Bad Company
+        color: dark_red
+        threshold: -249
+        shop-price-multiplier: 1.15
+        can-trade: true
+      neutral:
+        name: New Face
+        color: gray
+        threshold: 0
+        shop-price-multiplier: 1.00
+        can-trade: true
+      trusted:
+        name: Route-Mate
+        color: green
+        threshold: 250
+        shop-price-multiplier: 0.88
+        can-trade: true
+      honored:
+        name: Deepwalker
+        color: gold
+        threshold: 600
+        shop-price-multiplier: 0.76
+        can-trade: true
+
+npcs:
+  mara_venn:
+    name: Mara Venn
+    title: Warden Quartermaster
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: mara_start
+    shop: warden_supplies
+    look-radius: 9
+  elian_quill:
+    name: Elian Quill
+    title: Rift Cartographer
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: elian_start
+    shop: scholar_supplies
+    look-radius: 8
+  bram_tallow:
+    name: Bram Tallow
+    title: Delver Fixer
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: bram_start
+    shop: delver_supplies
+    look-radius: 10
+  nyra_vell:
+    name: Nyra Vell
+    title: Arcane Identifier
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: nyra_start
+    look-radius: 8
+  orin_ledger:
+    name: Orin Ledger
+    title: Frontier Banker
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: orin_start
+    look-radius: 8
+  sella_mire:
+    name: Sella Mire
+    title: Camp Alchemist
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: sella_start
+    shop: apothecary_supplies
+    look-radius: 8
+  torren_pike:
+    name: Torren Pike
+    title: Forgekeeper
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: torren_start
+    look-radius: 8
+  ivo_reed:
+    name: Ivo Reed
+    title: River Angler
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: ivo_start
+    shop: fishery_supplies
+    look-radius: 9
+  hessa_clay:
+    name: Hessa Clay
+    title: Field Surveyor
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: hessa_start
+    look-radius: 8
+  gilda_penn:
+    name: Gilda Penn
+    title: Claim Registrar
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: gilda_start
+    look-radius: 8
+  orris_bell:
+    name: Orris Bell
+    title: Market Broker
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: orris_start
+    look-radius: 9
+  tamsin_wake:
+    name: Tamsin Wake
+    title: Grave Tender
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: tamsin_start
+    look-radius: 8
+  cassia_dawn:
+    name: Cassia Dawn
+    title: City Guide
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: cassia_start
+    look-radius: 9
+  aeron_vale:
+    name: Aeron Vale
+    title: Adventurer Registrar
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: aeron_start
+    look-radius: 8
+  pell_wren:
+    name: Pell Wren
+    title: Mastery Mentor
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: pell_start
+    look-radius: 8
+  veyra_loom:
+    name: Veyra Loom
+    title: Runic Enchanter
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: veyra_start
+    look-radius: 8
+  cato_flint:
+    name: Cato Flint
+    title: Warden Contract Clerk
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: cato_start
+    look-radius: 8
+  lyra_senn:
+    name: Lyra Senn
+    title: Research Commissioner
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: lyra_start
+    look-radius: 8
+  garrick_mott:
+    name: Garrick Mott
+    title: Expedition Broker
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: garrick_start
+    look-radius: 9
+  arlen_voss:
+    name: Arlen Voss
+    title: Campaign Herald
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: arlen_start
+    look-radius: 9
+  kestrel_way:
+    name: Kestrel Way
+    title: Portal Master
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: kestrel_start
+    look-radius: 9
+  nima_hart:
+    name: Nima Hart
+    title: Party Liaison
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: nima_start
+    look-radius: 9
+  dorian_ash:
+    name: Dorian Ash
+    title: Duel Marshal
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: dorian_start
+    look-radius: 10
+  vera_lune:
+    name: Vera Lune
+    title: Wardrobe Keeper
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: vera_start
+    look-radius: 8
+  rook_salen:
+    name: Rook Salen
+    title: Relic Curator
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: rook_start
+    look-radius: 8
+  fen_calder:
+    name: Fen Calder
+    title: Job Steward
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: fen_start
+    look-radius: 9
+
+  alba_meadow:
+    name: Alba Meadow
+    title: Farmer & Grocer
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: alba_start
+    shop: farmstead_supplies
+    look-radius: 8
+  rowan_ashwood:
+    name: Rowan Ashwood
+    title: Timber Merchant
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: rowan_start
+    shop: timber_yard
+    look-radius: 8
+  dain_slate:
+    name: Dain Slate
+    title: Quarry Merchant
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: dain_start
+    shop: quarry_supplies
+    look-radius: 8
+  petra_mason:
+    name: Petra Mason
+    title: Building Merchant
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: petra_start
+    shop: masons_stock
+    look-radius: 8
+  hob_copper:
+    name: Hob Copper
+    title: Mechanist
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: hob_start
+    shop: workshop_parts
+    look-radius: 8
+
+shops:
+  warden_supplies:
+    title: Warden Road Stores
+    description: Provisions and building stock used to keep roads, camps, and watch posts supplied.
+    products:
+      road_rations:
+        material: BREAD
+        amount: 8
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Eight travel rations.
+      lantern_stock:
+        material: TORCH
+        amount: 16
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: A bundle for dark roads.
+      repair_iron:
+        material: IRON_INGOT
+        amount: 4
+        buy-price: 68
+        sell-price: 26
+        daily-sell-limit: 6
+        minimum-reputation: 250
+        description: Reserved repair stock.
+      field_arrows:
+        material: ARROW
+        amount: 16
+        buy-price: 40
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Straight shafts for ordinary bows.
+      travel_leather:
+        material: LEATHER
+        amount: 4
+        buy-price: 52
+        sell-price: 20
+        daily-sell-limit: 6
+        minimum-reputation: 0
+        description: Clean hide for field repairs and books.
+      timber_bundle:
+        material: OAK_LOG
+        amount: 16
+        buy-price: 72
+        sell-price: 28
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Standard Warden construction timber.
+      stone_bundle:
+        material: COBBLESTONE
+        amount: 32
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Road stone, ugly and dependable.
+      coal_bundle:
+        material: COAL
+        amount: 8
+        buy-price: 44
+        sell-price: 17
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Dry fuel from the road crews.
+      binding_string:
+        material: STRING
+        amount: 8
+        buy-price: 40
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Useful for bows, leads, and emergency stitching.
+      bedroll:
+        material: WHITE_BED
+        amount: 1
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A bed and clean blanket for an overnight camp.
+      empty_bucket:
+        material: BUCKET
+        amount: 1
+        buy-price: 95
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: A plain iron bucket from the road stores.
+      campfire_kit:
+        material: CAMPFIRE
+        amount: 2
+        buy-price: 50
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: Two fire frames for a roadside camp.
+
+      camp_sword:
+        material: STONE_SWORD
+        amount: 1
+        buy-price: 28
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain replacement blade for the first few outings.
+      camp_bow:
+        material: BOW
+        amount: 1
+        buy-price: 72
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain bow; arrows are stocked separately.
+      camp_shield:
+        material: SHIELD
+        amount: 1
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A simple shield for blocking incoming attacks.
+      leather_cap:
+        material: LEATHER_HELMET
+        amount: 1
+        buy-price: 36
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Basic head protection for a new adventurer.
+      leather_tunic:
+        material: LEATHER_CHESTPLATE
+        amount: 1
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Basic body protection for a new adventurer.
+      leather_trousers:
+        material: LEATHER_LEGGINGS
+        amount: 1
+        buy-price: 56
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Basic leg protection for a new adventurer.
+      leather_boots:
+        material: LEATHER_BOOTS
+        amount: 1
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Basic boots for the first trip beyond the island.
+
+  scholar_supplies:
+    title: Scholar Field Supplies
+    description: Writing materials and arcane reagents for research, alchemy, and enchanting.
+    products:
+      lens_glass:
+        material: GLASS
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Clear glass for field instruments.
+      blank_journals:
+        material: BOOK
+        amount: 4
+        buy-price: 56
+        sell-price: 19
+        daily-sell-limit: 6
+        minimum-reputation: 0
+        description: Dry pages and sound bindings.
+      resonance_shards:
+        material: AMETHYST_SHARD
+        amount: 8
+        buy-price: 96
+        sell-price: 36
+        daily-sell-limit: 6
+        minimum-reputation: 250
+        description: Clean samples from the archive.
+      lapis_bundle:
+        material: LAPIS_LAZULI
+        amount: 8
+        buy-price: 80
+        sell-price: 30
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Enchanting stock measured and sealed.
+      redstone_bundle:
+        material: REDSTONE
+        amount: 16
+        buy-price: 64
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Field circuitry and instrument dust.
+      glowstone_samples:
+        material: GLOWSTONE_DUST
+        amount: 8
+        buy-price: 72
+        sell-price: 26
+        daily-sell-limit: 6
+        minimum-reputation: 0
+        description: Bottled light, minus the bottle.
+      quartz_samples:
+        material: QUARTZ
+        amount: 16
+        buy-price: 80
+        sell-price: 29
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Stable Nether samples.
+      archive_ink:
+        material: INK_SAC
+        amount: 8
+        buy-price: 40
+        sell-price: 13
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Ink that has not frozen, leaked, or become sentient.
+      field_paper:
+        material: PAPER
+        amount: 16
+        buy-price: 48
+        sell-price: 15
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Cut for maps, notes, and labels.
+      copper_samples:
+        material: COPPER_INGOT
+        amount: 8
+        buy-price: 56
+        sell-price: 21
+        daily-sell-limit: 8
+        minimum-reputation: 0
+        description: Conductive stock for field devices.
+      prismarine_crystals:
+        material: PRISMARINE_CRYSTALS
+        amount: 4
+        buy-price: 88
+        sell-price: 31
+        daily-sell-limit: 4
+        minimum-reputation: 250
+        description: Ocean samples kept away from the journals.
+      library_shelves:
+        material: BOOKSHELF
+        amount: 1
+        buy-price: 72
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: Keep your research within reach.
+
+  delver_supplies:
+    title: Bram's Expedition Packs
+    description: Portable equipment for caves, long routes, and getting home in one piece.
+    products:
+      quick_scaffold:
+        material: SCAFFOLDING
+        amount: 16
+        buy-price: 44
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Comes down almost as fast as it goes up.
+      trail_brush:
+        material: BRUSH
+        amount: 1
+        buy-price: 70
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: Stiff bristles, balanced handle.
+      climbing_leads:
+        material: LEAD
+        amount: 4
+        buy-price: 110
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: Delver-tested line and fittings.
+      trail_meals:
+        material: COOKED_BEEF
+        amount: 8
+        buy-price: 56
+        sell-price: 17
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dense food for longer routes.
+      flight_rockets:
+        material: FIREWORK_ROCKET
+        amount: 8
+        buy-price: 96
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: Flight duration one; no decorative charge.
+      ladder_bundle:
+        material: LADDER
+        amount: 16
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: When digging straight up has lost its charm.
+      ender_pair:
+        material: ENDER_PEARL
+        amount: 2
+        buy-price: 120
+        sell-price: 42
+        daily-sell-limit: 4
+        minimum-reputation: 250
+        description: Two emergency exits with questionable aim.
+      obsidian_block:
+        material: OBSIDIAN
+        amount: 4
+        buy-price: 100
+        sell-price: 34
+        daily-sell-limit: 5
+        minimum-reputation: 0
+        description: Portal patching stock.
+      slime_bundle:
+        material: SLIME_BALL
+        amount: 4
+        buy-price: 76
+        sell-price: 27
+        daily-sell-limit: 5
+        minimum-reputation: 0
+        description: Packed separately from everything worth keeping clean.
+      recovered_name_tag:
+        material: NAME_TAG
+        amount: 1
+        buy-price: 140
+        sell-price: 44
+        daily-sell-limit: 2
+        minimum-reputation: 250
+        description: A clean tag for keeping track of a companion.
+      trail_compass:
+        material: COMPASS
+        amount: 1
+        buy-price: 90
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: A plain compass for finding the way home.
+      brass_spyglass:
+        material: SPYGLASS
+        amount: 1
+        buy-price: 105
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: A clear view of the route ahead.
+
+  farmstead_supplies:
+    title: Alba's Farmstead & Pantry
+    description: Seeds for your first harvest, groceries for the kitchen, and a counter for surplus crops.
+    products:
+      wheat_seed:
+        material: WHEAT_SEEDS
+        amount: 4
+        buy-price: 12
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Sow wheat on tilled soil.
+      beetroot_seed:
+        material: BEETROOT_SEEDS
+        amount: 4
+        buy-price: 16
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A small patch for soup and red dye.
+      pumpkin_seed:
+        material: PUMPKIN_SEEDS
+        amount: 4
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Leave room beside each stem.
+      melon_seed:
+        material: MELON_SEEDS
+        amount: 4
+        buy-price: 36
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Start a melon patch on your island.
+      carrot_crate:
+        material: CARROT
+        amount: 8
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: Plant a few; bring back the surplus.
+      potato_crate:
+        material: POTATO
+        amount: 8
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: For fields, ovens, and a full pantry.
+      wheat_sheaf:
+        material: WHEAT
+        amount: 16
+        buy-price: 32
+        sell-price: 10
+        daily-sell-limit: 16
+        minimum-reputation: -249
+        description: Bread flour and feed for livestock.
+      beetroot_basket:
+        material: BEETROOT
+        amount: 16
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: Fresh roots for the cooking pot.
+      melon_basket:
+        material: MELON_SLICE
+        amount: 32
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: A basket from the morning harvest.
+      pumpkin_crate:
+        material: PUMPKIN
+        amount: 8
+        buy-price: 32
+        sell-price: 9
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: For pies, lanterns, and golems.
+      cane_bundle:
+        material: SUGAR_CANE
+        amount: 16
+        buy-price: 48
+        sell-price: 15
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: Plant beside water for sugar and paper.
+      cactus_crate:
+        material: CACTUS
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: Give each cactus space to grow.
+      bamboo_bundle:
+        material: BAMBOO
+        amount: 16
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: Quick-growing stock for scaffolds and fuel.
+      kelp_bundle:
+        material: KELP
+        amount: 16
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: Start an underwater crop.
+      bone_meal:
+        material: BONE_MEAL
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: Give crops and saplings a head start.
+      egg_basket:
+        material: EGG
+        amount: 8
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For cakes and a chance at a new chicken.
+      fresh_milk:
+        material: MILK_BUCKET
+        amount: 1
+        buy-price: 110
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A kitchen staple that also clears harmful effects.
+      pantry_bread:
+        material: BREAD
+        amount: 8
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Eight loaves for a day's work.
+      orchard_apples:
+        material: APPLE
+        amount: 8
+        buy-price: 32
+        sell-price: 9
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Simple food from the orchard.
+      baked_potatoes:
+        material: BAKED_POTATO
+        amount: 8
+        buy-price: 28
+        sell-price: 8
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Hot from the pantry oven.
+      cooked_chicken:
+        material: COOKED_CHICKEN
+        amount: 8
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A filling meal for the road.
+      sugar_sack:
+        material: SUGAR
+        amount: 16
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For baking and brewing.
+      red_mushrooms:
+        material: RED_MUSHROOM
+        amount: 4
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Keep them shaded when planting.
+      brown_mushrooms:
+        material: BROWN_MUSHROOM
+        amount: 4
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: For stew and fermented brewing reagents.
+      starter_hoe:
+        material: STONE_HOE
+        amount: 1
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain hoe for your first field.
+      watering_bucket:
+        material: WATER_BUCKET
+        amount: 1
+        buy-price: 140
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Replace a lost water source or irrigate a field.
+
+  timber_yard:
+    title: Rowan's Timber Yard
+    description: Logs, saplings, and greenery for expanding your island; sell spare timber at the yard.
+    products:
+      oak_timbers:
+        material: OAK_LOG
+        amount: 16
+        buy-price: 72
+        sell-price: 28
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dependable timber for nearly any build.
+      spruce_timbers:
+        material: SPRUCE_LOG
+        amount: 16
+        buy-price: 72
+        sell-price: 28
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark framing timber from colder forests.
+      birch_timbers:
+        material: BIRCH_LOG
+        amount: 16
+        buy-price: 72
+        sell-price: 28
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Pale wood for lighter interiors.
+      acacia_timbers:
+        material: ACACIA_LOG
+        amount: 16
+        buy-price: 72
+        sell-price: 28
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Warm orange planks beneath a grey bark.
+      jungle_timbers:
+        material: JUNGLE_LOG
+        amount: 16
+        buy-price: 80
+        sell-price: 28
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Timber with a warm grain.
+      dark_oak_timbers:
+        material: DARK_OAK_LOG
+        amount: 16
+        buy-price: 80
+        sell-price: 28
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Rich, dark wood for sturdy beams.
+      cherry_timbers:
+        material: CHERRY_LOG
+        amount: 16
+        buy-price: 88
+        sell-price: 30
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Pink planks for softer accents.
+      mangrove_timbers:
+        material: MANGROVE_LOG
+        amount: 16
+        buy-price: 88
+        sell-price: 30
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Deep red wood from the marsh.
+      bamboo_blocks:
+        material: BAMBOO_BLOCK
+        amount: 16
+        buy-price: 72
+        sell-price: 20
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Compact stalks for bamboo planks.
+      oak_saplings:
+        material: OAK_SAPLING
+        amount: 4
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Four starts for an island woodlot.
+      spruce_saplings:
+        material: SPRUCE_SAPLING
+        amount: 4
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Plant four together for a larger spruce.
+      birch_saplings:
+        material: BIRCH_SAPLING
+        amount: 4
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Straight trunks and bright leaves.
+      acacia_saplings:
+        material: ACACIA_SAPLING
+        amount: 4
+        buy-price: 32
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A spreading canopy with room to grow.
+      jungle_saplings:
+        material: JUNGLE_SAPLING
+        amount: 4
+        buy-price: 40
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Plant four together for a taller jungle tree.
+      dark_oak_saplings:
+        material: DARK_OAK_SAPLING
+        amount: 4
+        buy-price: 40
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: All four saplings are needed for one tree.
+      cherry_saplings:
+        material: CHERRY_SAPLING
+        amount: 4
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A flowering canopy for your island.
+      mangrove_starts:
+        material: MANGROVE_PROPAGULE
+        amount: 4
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Plant on suitable soil, in or out of water.
+      binding_sticks:
+        material: STICK
+        amount: 32
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For handles, fences, ladders, and signs.
+      oak_greenery:
+        material: OAK_LEAVES
+        amount: 16
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Shape a hedge or finish a handmade tree.
+      spruce_greenery:
+        material: SPRUCE_LEAVES
+        amount: 16
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark greenery for woodland builds.
+      hanging_vines:
+        material: VINE
+        amount: 8
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Soften walls and provide a climbing route.
+      moss_patches:
+        material: MOSS_BLOCK
+        amount: 16
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: A soft green ground cover.
+      azalea_starts:
+        material: AZALEA
+        amount: 4
+        buy-price: 40
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Small shrubs that can grow into trees.
+      flowering_azaleas:
+        material: FLOWERING_AZALEA
+        amount: 4
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Flowering shrubs for paths and courtyards.
+      yard_axe:
+        material: IRON_AXE
+        amount: 1
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain iron axe for the woodlot.
+      yard_shears:
+        material: SHEARS
+        amount: 1
+        buy-price: 56
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Gather leaves and vines without breaking them.
+
+  quarry_supplies:
+    title: Dain's Quarry Counter
+    description: Ore, fuel, and plain mining equipment; sell mined surplus without giving up your best gear.
+    products:
+      coal_sack:
+        material: COAL
+        amount: 8
+        buy-price: 44
+        sell-price: 17
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Fuel for furnaces and torches.
+      charcoal_sack:
+        material: CHARCOAL
+        amount: 8
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Wood-fired fuel for the workshop.
+      iron_stock:
+        material: IRON_INGOT
+        amount: 4
+        buy-price: 68
+        sell-price: 26
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Iron for tools and island machinery.
+      copper_stock:
+        material: COPPER_INGOT
+        amount: 8
+        buy-price: 56
+        sell-price: 21
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Copper for fittings and weathered accents.
+      gold_stock:
+        material: GOLD_INGOT
+        amount: 4
+        buy-price: 120
+        sell-price: 36
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Small stocks for recipes and powered rails.
+      raw_iron:
+        material: RAW_IRON
+        amount: 8
+        buy-price: 100
+        sell-price: 32
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Smelt before crafting.
+      raw_copper:
+        material: RAW_COPPER
+        amount: 16
+        buy-price: 80
+        sell-price: 24
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: A batch ready for the furnace.
+      raw_gold:
+        material: RAW_GOLD
+        amount: 4
+        buy-price: 84
+        sell-price: 24
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Unsmelted ore from the quarry.
+      lapis_stock:
+        material: LAPIS_LAZULI
+        amount: 8
+        buy-price: 80
+        sell-price: 30
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Combine with amethyst to craft Arcane Dust.
+      redstone_stock:
+        material: REDSTONE
+        amount: 16
+        buy-price: 64
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For mechanisms and potion timing.
+      amethyst_stock:
+        material: AMETHYST_SHARD
+        amount: 8
+        buy-price: 96
+        sell-price: 36
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Combine with lapis to craft Arcane Dust.
+      flint_stock:
+        material: FLINT
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For arrows and fire starters.
+      quarry_pick:
+        material: STONE_PICKAXE
+        amount: 1
+        buy-price: 28
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A replacement for your first pick.
+      iron_pick:
+        material: IRON_PICKAXE
+        amount: 1
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain pick for everyday mining.
+      iron_shovel:
+        material: IRON_SHOVEL
+        amount: 1
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For soil, gravel, and excavation.
+      iron_hoe:
+        material: IRON_HOE
+        amount: 1
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For larger fields and leaf gathering.
+      small_furnace:
+        material: FURNACE
+        amount: 1
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Turn mined ore into crafting stock.
+      blast_furnace:
+        material: BLAST_FURNACE
+        amount: 1
+        buy-price: 150
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Smelt ore faster than a regular furnace.
+      smooth_stone:
+        material: SMOOTH_STONE
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Flat stock for workshops and machines.
+      empty_bucket:
+        material: BUCKET
+        amount: 1
+        buy-price: 95
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Carry a new source block back to your island.
+      lava_supply:
+        material: LAVA_BUCKET
+        amount: 1
+        buy-price: 220
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Replace a lost generator source; place carefully.
+
+  masons_stock:
+    title: Petra's Building Yard
+    description: Stone, soil, timber, and finishing blocks for turning an island into a home.
+    products:
+      cobbled_stone:
+        material: COBBLESTONE
+        amount: 32
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Bulk stone for your first expansion.
+      plain_stone:
+        material: STONE
+        amount: 32
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A clean foundation for paths and buildings.
+      stone_bricks:
+        material: STONE_BRICKS
+        amount: 32
+        buy-price: 80
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Masonry for walls and towers.
+      granite_stock:
+        material: GRANITE
+        amount: 32
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Warm stone for kitchens and foundations.
+      diorite_stock:
+        material: DIORITE
+        amount: 32
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Pale stone for bright details.
+      andesite_stock:
+        material: ANDESITE
+        amount: 32
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A grey stone that blends with cobble.
+      deepslate_stock:
+        material: COBBLED_DEEPSLATE
+        amount: 32
+        buy-price: 72
+        sell-price: 20
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark stone for a heavier foundation.
+      deepslate_bricks:
+        material: DEEPSLATE_BRICKS
+        amount: 32
+        buy-price: 96
+        sell-price: 26
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark brickwork for roofs and towers.
+      sand_stock:
+        material: SAND
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For glass, sandstone, and desert gardens.
+      gravel_stock:
+        material: GRAVEL
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Path texture and a source of flint.
+      soil_crate:
+        material: DIRT
+        amount: 16
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Expand fields and plant a new woodlot.
+      grass_starts:
+        material: GRASS_BLOCK
+        amount: 4
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Let grass spread across nearby dirt.
+      clay_stock:
+        material: CLAY_BALL
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Fire into bricks or pack into clay.
+      terracotta_stock:
+        material: TERRACOTTA
+        amount: 16
+        buy-price: 72
+        sell-price: 20
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Ready for dyeing and patterned walls.
+      brick_stock:
+        material: BRICKS
+        amount: 16
+        buy-price: 80
+        sell-price: 24
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Warm brickwork for chimneys and houses.
+      white_wool:
+        material: WHITE_WOOL
+        amount: 16
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For beds, banners, carpets, and colour.
+      window_glass:
+        material: GLASS
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Clear windows and greenhouse walls.
+      white_concrete:
+        material: WHITE_CONCRETE
+        amount: 16
+        buy-price: 80
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A smooth white surface for clean lines.
+      quartz_blocks:
+        material: QUARTZ_BLOCK
+        amount: 16
+        buy-price: 320
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Bright finishing stone; a luxury, not a necessity.
+      oak_boards:
+        material: OAK_PLANKS
+        amount: 32
+        buy-price: 48
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Boards for floors and furniture.
+      spruce_boards:
+        material: SPRUCE_PLANKS
+        amount: 32
+        buy-price: 48
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark boards for beams and roofs.
+      birch_boards:
+        material: BIRCH_PLANKS
+        amount: 32
+        buy-price: 48
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Pale boards for walls and interiors.
+      build_scaffolds:
+        material: SCAFFOLDING
+        amount: 16
+        buy-price: 44
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Reach the roof without a dirt tower.
+      yard_lanterns:
+        material: LANTERN
+        amount: 4
+        buy-price: 56
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Hang from a beam or set on a wall.
+      glowstone_blocks:
+        material: GLOWSTONE
+        amount: 4
+        buy-price: 288
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Warm light for sheltered interiors.
+      sandstone_stock:
+        material: SANDSTONE
+        amount: 16
+        buy-price: 160
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Carved stone for sunlit paths and walls.
+      blackstone_stock:
+        material: BLACKSTONE
+        amount: 16
+        buy-price: 64
+        sell-price: 16
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Dark stone with a rougher grain.
+      mud_bricks:
+        material: MUD_BRICKS
+        amount: 16
+        buy-price: 72
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Earthy brickwork for farm buildings.
+      tuff_stock:
+        material: TUFF
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Muted stone for paths and foundations.
+      snow_blocks:
+        material: SNOW_BLOCK
+        amount: 16
+        buy-price: 48
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: White accents for cold-weather builds.
+
+  fishery_supplies:
+    title: Ivo's Fishery Counter
+    description: Everyday tackle, pond supplies, and a buyer for ordinary fish; prized catches belong at the appraisal desk.
+    products:
+      cod_basket:
+        material: COD
+        amount: 8
+        buy-price: 32
+        sell-price: 10
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: An ordinary catch for cooking or trade.
+      salmon_basket:
+        material: SALMON
+        amount: 8
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: A richer catch from rivers and cold waters.
+      tropical_catch:
+        material: TROPICAL_FISH
+        amount: 4
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Bright fish for an ordinary catch sale.
+      puffer_catch:
+        material: PUFFERFISH
+        amount: 2
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Handle carefully; useful at the alchemy bench.
+      smoked_cod:
+        material: COOKED_COD
+        amount: 8
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Cooked fish for a short journey.
+      smoked_salmon:
+        material: COOKED_SALMON
+        amount: 8
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A filling meal from the smokehouse.
+      spare_rod:
+        material: FISHING_ROD
+        amount: 1
+        buy-price: 56
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A plain rod to get you back on the water.
+      lily_pads:
+        material: LILY_PAD
+        amount: 8
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Make a pond feel established.
+      pond_grass:
+        material: SEAGRASS
+        amount: 16
+        buy-price: 24
+        sell-price: 6
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Plant underwater to soften the pond floor.
+      pond_kelp:
+        material: KELP
+        amount: 16
+        buy-price: 24
+        sell-price: 7
+        daily-sell-limit: 10
+        minimum-reputation: -249
+        description: An underwater crop for your island.
+      washed_bones:
+        material: BONE
+        amount: 8
+        buy-price: 32
+        sell-price: 9
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Grind into bone meal.
+      spare_line:
+        material: STRING
+        amount: 8
+        buy-price: 40
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For rods, bows, and scaffold bindings.
+      dark_ink:
+        material: INK_SAC
+        amount: 8
+        buy-price: 40
+        sell-price: 13
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Ordinary ink for dyes and writing.
+      glow_ink:
+        material: GLOW_INK_SAC
+        amount: 4
+        buy-price: 48
+        sell-price: 12
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Light up signs and item frames.
+      line_hooks:
+        material: TRIPWIRE_HOOK
+        amount: 4
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For tripwires and workshop fittings.
+      wooden_bowls:
+        material: BOWL
+        amount: 8
+        buy-price: 16
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For stew and a camp kitchen.
+      waterproof_hide:
+        material: LEATHER
+        amount: 4
+        buy-price: 52
+        sell-price: 20
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Hide for books and field equipment.
+      river_clay:
+        material: CLAY_BALL
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A useful bycatch for the kiln.
+      reed_bundle:
+        material: SUGAR_CANE
+        amount: 16
+        buy-price: 48
+        sell-price: 15
+        daily-sell-limit: 12
+        minimum-reputation: -249
+        description: Plant along the water's edge.
+      fresh_water:
+        material: WATER_BUCKET
+        amount: 1
+        buy-price: 140
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Start a pond or replace a lost source.
+      catch_barrel:
+        material: BARREL
+        amount: 1
+        buy-price: 36
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Keep fishing supplies together.
+      smokehouse_fires:
+        material: CAMPFIRE
+        amount: 2
+        buy-price: 50
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Cook the catch without a furnace.
+      pond_cod:
+        material: COD_BUCKET
+        amount: 1
+        buy-price: 168
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Bring a living cod to your pond.
+      pond_salmon:
+        material: SALMON_BUCKET
+        amount: 1
+        buy-price: 180
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Bring a living salmon to your pond.
+
+  apothecary_supplies:
+    title: Sella's Apothecary
+    description: Measured reagents and brewing equipment; make your potions and poisons at the alchemy bench.
+    products:
+      empty_vials:
+        material: GLASS_BOTTLE
+        amount: 16
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Empty bottles ready for water or honey.
+      wart_bundle:
+        material: NETHER_WART
+        amount: 8
+        buy-price: 64
+        sell-price: 18
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Plant on soul sand or use at the bench.
+      red_mushrooms:
+        material: RED_MUSHROOM
+        amount: 4
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: For field recipes and brewing stock.
+      brown_mushrooms:
+        material: BROWN_MUSHROOM
+        amount: 4
+        buy-price: 32
+        sell-price: 8
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: A base for fermented spider eyes.
+      spider_eyes:
+        material: SPIDER_EYE
+        amount: 4
+        buy-price: 44
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A poison reagent; do not snack on the stock.
+      fermented_eyes:
+        material: FERMENTED_SPIDER_EYE
+        amount: 4
+        buy-price: 72
+        sell-price: 18
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: A prepared reagent for altered brews.
+      sugar_stock:
+        material: SUGAR
+        amount: 16
+        buy-price: 48
+        sell-price: 14
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A reagent for faster movement.
+      glowstone_stock:
+        material: GLOWSTONE_DUST
+        amount: 8
+        buy-price: 72
+        sell-price: 26
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Strengthen a brew where its recipe allows.
+      redstone_stock:
+        material: REDSTONE
+        amount: 16
+        buy-price: 64
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Extend a brew where its recipe allows.
+      powder_stock:
+        material: GUNPOWDER
+        amount: 8
+        buy-price: 56
+        sell-price: 16
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: A reagent for throwable brews.
+      blaze_powder:
+        material: BLAZE_POWDER
+        amount: 4
+        buy-price: 80
+        sell-price: 20
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Fuel and a strength reagent.
+      magma_cream:
+        material: MAGMA_CREAM
+        amount: 4
+        buy-price: 88
+        sell-price: 22
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: A reagent for fire resistance.
+      tear_vial:
+        material: GHAST_TEAR
+        amount: 1
+        buy-price: 96
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: A regeneration reagent kept under the counter.
+      rabbit_foot:
+        material: RABBIT_FOOT
+        amount: 1
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For brews that put more spring in your step.
+      glistening_melon:
+        material: GLISTERING_MELON_SLICE
+        amount: 4
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Prepared melon for healing brews.
+      golden_carrots:
+        material: GOLDEN_CARROT
+        amount: 4
+        buy-price: 72
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A night-vision reagent and rich food.
+      turtle_scute:
+        material: TURTLE_SCUTE
+        amount: 1
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: A reagent for a tougher, slower brew.
+      phantom_membranes:
+        material: PHANTOM_MEMBRANE
+        amount: 4
+        buy-price: 104
+        sell-price: 24
+        daily-sell-limit: 4
+        minimum-reputation: 250
+        description: For slow-falling brews.
+      amethyst_stock:
+        material: AMETHYST_SHARD
+        amount: 8
+        buy-price: 96
+        sell-price: 36
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Combine with lapis for Arcane Dust.
+      honey_vials:
+        material: HONEY_BOTTLE
+        amount: 4
+        buy-price: 40
+        sell-price: 10
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Sweet stock for the kitchen or alchemy bench.
+      slime_stock:
+        material: SLIME_BALL
+        amount: 4
+        buy-price: 76
+        sell-price: 27
+        daily-sell-limit: 5
+        minimum-reputation: -249
+        description: Keep sealed until needed.
+      feather_stock:
+        material: FEATHER
+        amount: 16
+        buy-price: 40
+        sell-price: 12
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For arrows and lighter field recipes.
+      prismarine_stock:
+        material: PRISMARINE_SHARD
+        amount: 4
+        buy-price: 44
+        sell-price: 12
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Sea-grown mineral stock.
+      fresh_water:
+        material: WATER_BUCKET
+        amount: 1
+        buy-price: 140
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Fresh water for your brewing corner.
+      brewing_stand:
+        material: BREWING_STAND
+        amount: 1
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Place it to open the alchemy bench.
+      mixing_cauldron:
+        material: CAULDRON
+        amount: 1
+        buy-price: 160
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A water store for a working laboratory.
+      breeze_rod:
+        material: BREEZE_ROD
+        amount: 1
+        buy-price: 140
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: A reagent for wind-charged brews.
+      bottled_web_stock:
+        material: COBWEB
+        amount: 4
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For weaving brews and careful decoration.
+      soul_sand_bed:
+        material: SOUL_SAND
+        amount: 8
+        buy-price: 72
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Give nether wart a place to grow.
+
+  workshop_parts:
+    title: Hob's Mechanism Workshop
+    description: Plain redstone parts for island farms, storage, and transport; specialised island upgrades are earned elsewhere.
+    products:
+      redstone_dust:
+        material: REDSTONE
+        amount: 16
+        buy-price: 64
+        sell-price: 22
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: The starting point for a circuit.
+      quartz_stock:
+        material: QUARTZ
+        amount: 16
+        buy-price: 80
+        sell-price: 29
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: For comparators, observers, and sensors.
+      slime_stock:
+        material: SLIME_BALL
+        amount: 4
+        buy-price: 76
+        sell-price: 27
+        daily-sell-limit: 5
+        minimum-reputation: -249
+        description: For sticky pistons and moving machines.
+      iron_fittings:
+        material: IRON_INGOT
+        amount: 4
+        buy-price: 68
+        sell-price: 26
+        daily-sell-limit: 6
+        minimum-reputation: -249
+        description: Stock for hoppers and transport.
+      copper_fittings:
+        material: COPPER_INGOT
+        amount: 8
+        buy-price: 56
+        sell-price: 21
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Stock for copper mechanisms.
+      observer_pair:
+        material: OBSERVER
+        amount: 2
+        buy-price: 96
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Watch for block updates.
+      piston_pair:
+        material: PISTON
+        amount: 2
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Push blocks with a redstone pulse.
+      sticky_piston_pair:
+        material: STICKY_PISTON
+        amount: 2
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Pull the pushed block back again.
+      plain_hopper:
+        material: HOPPER
+        amount: 1
+        buy-price: 160
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: An ordinary hopper, not an island-wide collector.
+      dropper_pair:
+        material: DROPPER
+        amount: 2
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Move items on a redstone pulse.
+      dispenser_pair:
+        material: DISPENSER
+        amount: 2
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Use supported items when powered.
+      repeater_set:
+        material: REPEATER
+        amount: 4
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Carry a signal further and set its delay.
+      comparator_set:
+        material: COMPARATOR
+        amount: 4
+        buy-price: 112
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Read container strength and compare signals.
+      lever_set:
+        material: LEVER
+        amount: 8
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A simple on and off control.
+      stone_plates:
+        material: STONE_PRESSURE_PLATE
+        amount: 4
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Trigger a circuit underfoot.
+      oak_plates:
+        material: OAK_PRESSURE_PLATE
+        amount: 4
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A lighter pressure control.
+      powered_rails:
+        material: POWERED_RAIL
+        amount: 8
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Keep carts moving.
+      rail_bundle:
+        material: RAIL
+        amount: 16
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Lay a track between island workspaces.
+      plain_minecart:
+        material: MINECART
+        amount: 1
+        buy-price: 120
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A cart ready for your rails.
+      chest_set:
+        material: CHEST
+        amount: 4
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Basic storage for a new workshop.
+      workshop_barrel:
+        material: BARREL
+        amount: 1
+        buy-price: 36
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Storage that opens below a solid ceiling.
+      target_set:
+        material: TARGET
+        amount: 4
+        buy-price: 48
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Turn a well-placed shot into a signal.
+      daylight_sensor:
+        material: DAYLIGHT_DETECTOR
+        amount: 1
+        buy-price: 88
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Let daylight control a circuit.
+      iron_hatches:
+        material: IRON_TRAPDOOR
+        amount: 4
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: A hatch opened by redstone.
+      lightning_rod:
+        material: LIGHTNING_ROD
+        amount: 1
+        buy-price: 64
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Draw nearby lightning away from the roof.
+      iron_doors:
+        material: IRON_DOOR
+        amount: 2
+        buy-price: 80
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Doors controlled by a powered switch.
+      copper_lights:
+        material: COPPER_BULB
+        amount: 4
+        buy-price: 96
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Toggle a copper light with a pulse.
+
+dialogues:
+  mara_start:
+    text:
+      - "Quartermaster's busy. If this is about missing road signs, I already know."
+      - "What do you need, {player}?"
+    choices:
+      ask_work:
+        text: "What are the Wardens doing out here?"
+        next: mara_work
+      volunteer:
+        text: "Put my name on the watch list."
+        once: true
+        requires:
+          minimum-adventurer-level: 3
+          flags-none: [warden_volunteer]
+        effects:
+          - type: reputation
+            faction: frontier_wardens
+            amount: 30
+          - type: flag
+            key: warden_volunteer
+            value: true
+        next: mara_joined
+      trade:
+        text: "I need supplies for the road."
+        next: mara_stores
+      jobs:
+        text: "What work is paying today?"
+        effects:
+          - type: open_command
+            command: jobs
+      dismissive:
+        text: "The roads managed before you arrived."
+        cooldown-minutes: 1440
+        effects:
+          - type: reputation
+            faction: frontier_wardens
+            amount: -20
+        close: true
+
+  mara_work:
+    text:
+      - "Keeping routes open. Replacing bridges. Pulling overeager explorers out of holes."
+      - "Campaign work earns trust. Starting fights in camp loses it quickly."
+    choices:
+      back:
+        text: "I had another question."
+        next: mara_start
+      done:
+        text: "That's all."
+        close: true
+
+  mara_stores:
+    text:
+      - "This counter keeps travelers and road crews moving. Food, light, arrows, camp gear, and repair stock."
+      - "We buy the same staples back in limited bundles. The limits keep one supplier from emptying the quartermaster's purse."
+    choices:
+      browse:
+        text: "Show me the road stores."
+        requires:
+          minimum-reputation: -249
+        effects:
+          - type: open_shop
+            shop: warden_supplies
+      work:
+        text: "What supply work is open?"
+        effects:
+          - type: open_command
+            command: jobs
+      back:
+        text: "I had another question."
+        next: mara_start
+      done:
+        text: "I'll come back when I need provisions."
+        close: true
+
+  mara_joined:
+    text:
+      - "Good. Don't make me regret the ink."
+      - "Help with campaigns and keep your hands off Warden property. People will remember."
+    choices:
+      stores:
+        text: "What does the quartermaster carry?"
+        next: mara_stores
+      done:
+        text: "Understood."
+        close: true
+
+  elian_start:
+    text:
+      - "Hold still. Your outline is interfering with the map."
+      - "There. Speak."
+    choices:
+      ask_rifts:
+        text: "What exactly are you mapping?"
+        next: elian_rifts
+      fund_archive:
+        text: "I can spare 75 Marks for the field archive."
+        cooldown-minutes: 1440
+        requires:
+          minimum-marks: 75
+        effects:
+          - type: marks
+            amount: -75
+          - type: reputation
+            faction: rift_scholars
+            amount: 20
+        next: elian_thanks
+      trade:
+        text: "I need supplies for field work."
+        next: elian_supplies
+      archive:
+        text: "I brought finds for the archive."
+        effects:
+          - type: open_archive
+      done:
+        text: "Never mind."
+        close: true
+
+  elian_rifts:
+    text:
+      - "Where the world bends, what leaks through, and which fool touched it first."
+      - "Bring facts, not campfire versions. The archive rewards the difference."
+    choices:
+      back:
+        text: "One more thing."
+        next: elian_start
+      done:
+        text: "I'll keep my eyes open."
+        close: true
+
+  elian_supplies:
+    text:
+      - "The supply shelves hold ordinary materials: paper, glass, inks, and stable reagents."
+      - "Discoveries are not shop stock. Bring excavation finds to the appraisal desk and the archive will record them toward your standing."
+    choices:
+      browse:
+        text: "Show me the field supplies."
+        requires:
+          minimum-reputation: 0
+        effects:
+          - type: open_shop
+            shop: scholar_supplies
+      appraisal:
+        text: "I have a discovery to record."
+        effects:
+          - type: open_archive
+      back:
+        text: "I had another question."
+        next: elian_start
+      done:
+        text: "I'll return after the next survey."
+        close: true
+
+  elian_thanks:
+    text:
+      - "Useful. Ink, glass, and dry paper cost more than heroics suggest."
+      - "The archive has noted your help."
+    choices:
+      shop:
+        text: "What can the archive spare?"
+        next: elian_supplies
+      done:
+        text: "Back to your map."
+        close: true
+
+  bram_start:
+    text:
+      - "If you need rope, I have rope. If you need a rescue, talk to Mara."
+      - "If you need a route nobody else knows, now we're talking."
+    choices:
+      routes:
+        text: "How do Delvers trade routes?"
+        next: bram_routes
+      introduce:
+        text: "I'm looking for people who go past the road."
+        once: true
+        requires:
+          minimum-adventurer-level: 5
+          flags-none: [delver_introduction]
+        effects:
+          - type: reputation
+            faction: free_delvers
+            amount: 25
+          - type: flag
+            key: delver_introduction
+            value: true
+        next: bram_welcome
+      trade:
+        text: "Help me pack for an expedition."
+        next: bram_packs
+      relics:
+        text: "What relic sets have people found?"
+        effects:
+          - type: open_command
+            command: relics
+      done:
+        text: "Maybe later."
+        close: true
+
+  bram_routes:
+    text:
+      - "You bring back a route that saves boots or blood, you share it."
+      - "Hoard a warning and somebody gets buried. That's how names end up on the bad list."
+    choices:
+      back:
+        text: "Makes sense."
+        next: bram_start
+      done:
+        text: "I'll remember that."
+        close: true
+
+  bram_packs:
+    text:
+      - "I sell the things that save time underground: scaffolds, ladders, food, line, and a way out."
+      - "None of it swings harder than what you can make. It earns its place by keeping a bad route from becoming a grave."
+    choices:
+      browse:
+        text: "Open an expedition pack."
+        requires:
+          minimum-reputation: -249
+        effects:
+          - type: open_shop
+            shop: delver_supplies
+      routes:
+        text: "Tell me how Delvers handle routes."
+        next: bram_routes
+      back:
+        text: "I had another question."
+        next: bram_start
+      done:
+        text: "I'll check my pack first."
+        close: true
+
+  bram_welcome:
+    text:
+      - "Level five and still curious. Good enough for an introduction."
+      - "Don't call yourself a Delver yet. Come back with mud on the map."
+    choices:
+      shop:
+        text: "Help me pack for the trail."
+        next: bram_packs
+      done:
+        text: "See you down the trail."
+        close: true
+
+  nyra_start:
+    text:
+      - "Bring me your sealed finds. I can read the lot, or break down what you don't need into Arcane Dust."
+    choices:
+      identify:
+        text: "Let me sort through my finds."
+        effects:
+          - type: open_identifier
+      explain:
+        text: "What does identification reveal?"
+        next: nyra_explain
+      done:
+        text: "Not right now."
+        close: true
+
+  nyra_explain:
+    text:
+      - "The name, socket count, and every affix. Until then, the item grants nothing. Or I can scrap it for dust—better gear yields more, but there's no getting it back."
+    choices:
+      identify:
+        text: "Let's take a look."
+        effects:
+          - type: open_identifier
+      done:
+        text: "I'll come back with a sealed find."
+        close: true
+
+  orin_start:
+    text:
+      - "Nine slots are included. More space costs more each time; good vault steel is not cheap."
+    choices:
+      bank:
+        text: "Open my vault."
+        effects:
+          - type: open_bank
+      safety:
+        text: "Is the vault tied to this character?"
+        next: orin_safety
+      done:
+        text: "I'll be back."
+        close: true
+
+  orin_safety:
+    text:
+      - "Your vault stays with you, even if you change your name. Start with nine slots and buy more when you need them."
+    choices:
+      bank:
+        text: "Open it."
+        effects:
+          - type: open_bank
+      done:
+        text: "Good enough."
+        close: true
+
+  sella_start:
+    text:
+      - "Potions restore. Poisons persuade. Mine usually do one or the other."
+    choices:
+      workbench:
+        text: "Open the alchemy workbench."
+        effects:
+          - type: open_alchemy
+      supplies:
+        text: "I need bottles and brewing ingredients."
+        next: sella_supplies
+      lesson:
+        text: "How do weapon poisons work?"
+        next: sella_lesson
+      done:
+        text: "I'll come back when I need the bench."
+        close: true
+
+  sella_lesson:
+    text:
+      - "Distill a vial, then drag it onto your weapon or arrows to coat them. Keep an antidote handy."
+    choices:
+      workbench:
+        text: "Let's brew something."
+        effects:
+          - type: open_alchemy
+      done:
+        text: "Understood."
+        close: true
+
+  sella_supplies:
+    text:
+      - "Bottles on the left, dry reagents on the right. Make your own brews at the bench."
+      - "I buy spare ingredients in limited bundles. Bring plain materials, not a vial you have already brewed."
+    choices:
+      browse:
+        text: "Show me the apothecary shelves."
+        effects:
+          - type: open_shop
+            shop: apothecary_supplies
+      back:
+        text: "I need something else."
+        next: sella_start
+      done:
+        text: "I'll check my ingredients first."
+        close: true
+
+  torren_start:
+    text:
+      - "Crafted steel takes sockets. Unknown loot goes to Nyra before it comes near my bench."
+    choices:
+      forge:
+        text: "Open the arcane forge."
+        effects:
+          - type: open_forge
+      recipes:
+        text: "Show me the equipment patterns."
+        effects:
+          - type: open_command
+            command: recipes
+      repair:
+        text: "Repair everything I'm carrying."
+        effects:
+          - type: open_repair
+      done:
+        text: "Another time."
+        close: true
+
+  ivo_start:
+    text:
+      - "Keep the line moving and the water gets generous. Stop too long and the water forgets you."
+    choices:
+      journal:
+        text: "Open my fishing journal."
+        effects:
+          - type: open_command
+            command: fishing
+      appraisal:
+        text: "I brought you a catch."
+        effects:
+          - type: open_fishery
+      supplies:
+        text: "I need tackle or pond supplies."
+        next: ivo_supplies
+      done:
+        text: "See you on the bank."
+        close: true
+
+  ivo_supplies:
+    text:
+      - "A spare rod, a water bucket, a few things to make the pond your own. Ordinary fish go over this counter."
+      - "If your catch has a proper name and a place in the journal, take it to my appraisal desk instead."
+    choices:
+      browse:
+        text: "Show me the fishery counter."
+        effects:
+          - type: open_shop
+            shop: fishery_supplies
+      appraisal:
+        text: "This is a catch for the appraisal desk."
+        effects:
+          - type: open_fishery
+      back:
+        text: "I had another question."
+        next: ivo_start
+      done:
+        text: "Back to the water."
+        close: true
+
+  hessa_start:
+    text:
+      - "Natural ground keeps a history. Player-laid dirt keeps receipts. I can tell which is which."
+    choices:
+      notes:
+        text: "Show me the excavation field notes."
+        effects:
+          - type: open_command
+            command: excavation
+      done:
+        text: "I'll follow the survey notes."
+        close: true
+
+  gilda_start:
+    text:
+      - "Four chunks to begin. Keep expansions connected and set trust deliberately."
+    choices:
+      claims:
+        text: "Open the claim ledger."
+        effects:
+          - type: open_command
+            command: claim
+      done:
+        text: "I'll mark the boundary."
+        close: true
+
+  orris_start:
+    text:
+      - "The index tells you the price. The stall tells you who set it."
+    choices:
+      market:
+        text: "Open the market index."
+        effects:
+          - type: open_command
+            command: market
+      done:
+        text: "I'll check the listings."
+        close: true
+
+  tamsin_start:
+    text:
+      - "Your grave holds for twenty-four hours. Walking back is free. The shortcut is not."
+    choices:
+      graves:
+        text: "Show me my grave record."
+        effects:
+          - type: open_command
+            command: grave
+      done:
+        text: "I'll remember."
+        close: true
+
+  cassia_start:
+    text:
+      - "First day? Good. The city makes more sense once you know where the lifts and portals go."
+    choices:
+      quickstart:
+        text: "Give me the short tour."
+        effects:
+          - type: open_command
+            command: quickstart
+      nexus:
+        text: "Open the service directory."
+        effects:
+          - type: open_command
+            command: menu
+      settings:
+        text: "I need to change my settings."
+        effects:
+          - type: open_command
+            command: settings
+      done:
+        text: "I'll look around."
+        close: true
+
+  aeron_start:
+    text:
+      - "I record what you have done, not what you claim you can do. The ledger is kinder that way."
+    choices:
+      rank:
+        text: "Show me my Adventurer rank."
+        effects:
+          - type: open_command
+            command: adventurer
+      profile:
+        text: "Open my full profile."
+        effects:
+          - type: open_command
+            command: profile
+      done:
+        text: "Keep the ink dry."
+        close: true
+
+  pell_start:
+    text:
+      - "Anyone can practice everything. Mastery is deciding what deserves your best years."
+    choices:
+      skills:
+        text: "Show me my skill trees."
+        effects:
+          - type: open_command
+            command: skills
+      mastery:
+        text: "I want to review my masteries."
+        effects:
+          - type: open_command
+            command: mastery
+      done:
+        text: "I need to think."
+        close: true
+
+  veyra_start:
+    text:
+      - "An enchantment is a promise written in a language the item cannot refuse."
+    choices:
+      enchants:
+        text: "Show me the known enchantments."
+        effects:
+          - type: open_enchantments
+      done:
+        text: "No promises today."
+        close: true
+
+  cato_start:
+    text:
+      - "The Wardens post short work, week work, and the jobs nobody finishes in an afternoon."
+      - "Take an assignment before you start. Bring it back here when the count is done."
+    choices:
+      faction_contracts:
+        text: "Open the Warden contract board."
+        effects:
+          - type: open_contracts
+      daily:
+        text: "Show me the general daily board."
+        effects:
+          - type: open_command
+            command: daily
+      playtime:
+        text: "Check my service milestones."
+        effects:
+          - type: open_command
+            command: playtime
+      done:
+        text: "I'll decide what I can finish."
+        close: true
+
+  lyra_start:
+    text:
+      - "The archive pays for complete field records, not interesting pockets full of rubble."
+      - "Choose a commission, do the work, then return for your seal."
+    choices:
+      faction_contracts:
+        text: "Open the Scholar commission board."
+        effects:
+          - type: open_contracts
+      standing:
+        text: "What does the archive think of me?"
+        effects:
+          - type: open_command
+            command: reputation
+      done:
+        text: "I'll come back with proper notes."
+        close: true
+
+  garrick_start:
+    text:
+      - "Delvers trust finished routes, full provision crates, and people who return when they say they will."
+      - "Pick a job that fits your boots."
+    choices:
+      faction_contracts:
+        text: "Open the Delver expedition board."
+        effects:
+          - type: open_contracts
+      standing:
+        text: "How is my name traveling?"
+        effects:
+          - type: open_command
+            command: reputation
+      done:
+        text: "Nothing I can promise today."
+        close: true
+
+  arlen_start:
+    text:
+      - "The campaign board tracks what the city needs and what the frontier has already paid for."
+    choices:
+      campaign:
+        text: "Open the campaign board."
+        effects:
+          - type: open_command
+            command: campaign
+      done:
+        text: "I'll listen for the bells."
+        close: true
+
+  kestrel_start:
+    text:
+      - "Every public route returns here. That is the useful part of building a city in the sky."
+    choices:
+      warps:
+        text: "Show me the public destinations."
+        effects:
+          - type: open_command
+            command: warps
+      done:
+        text: "I'll take the long way."
+        close: true
+
+  nima_start:
+    text:
+      - "Good groups agree on the plan before the boss explains it for them."
+    choices:
+      party:
+        text: "Open the party desk."
+        effects:
+          - type: open_command
+            command: party
+      social:
+        text: "Remind me how the social tools work."
+        effects:
+          - type: open_command
+            command: social
+      done:
+        text: "I work alone today."
+        close: true
+
+  dorian_start:
+    text:
+      - "A duel begins with consent and ends without your inventory scattered across the floor."
+    choices:
+      duel:
+        text: "Open the duel controls."
+        effects:
+          - type: open_command
+            command: duel
+      done:
+        text: "Not looking for a fight."
+        close: true
+
+  vera_start:
+    text:
+      - "A good wardrobe says something. Preferably something other than 'I fell into a dye vat.'"
+    choices:
+      wardrobe:
+        text: "Open my cosmetic wardrobe."
+        effects:
+          - type: open_command
+            command: cosmetics
+      done:
+        text: "This look will do."
+        close: true
+
+  rook_start:
+    text:
+      - "Relics are arguments between old magic and whoever is reckless enough to wear three pieces."
+    choices:
+      relics:
+        text: "Show me the known collections."
+        effects:
+          - type: open_command
+            command: relics
+      done:
+        text: "I'll bring you something interesting."
+        close: true
+
+  alba_start:
+    text:
+      - "Seeds out front, groceries behind me. Keep a little of each harvest for the next planting."
+    choices:
+      browse:
+        text: "Show me the farm and pantry stock."
+        effects:
+          - type: open_shop
+            shop: farmstead_supplies
+      advice:
+        text: "How should I start a field?"
+        next: alba_advice
+      done:
+        text: "I'll come back when I need something."
+        close: true
+
+  alba_advice:
+    text:
+      - "Start small. Keep tilled soil near water and leave space beside melon and pumpkin stems."
+      - "I buy surplus harvests in set bundles, but keep enough carrots and potatoes to replant."
+      - "If you lose your island's water source, I carry a replacement bucket."
+    choices:
+      back:
+        text: "I have another question."
+        next: alba_start
+      done:
+        text: "Thanks. I'll put that to use."
+        close: true
+
+  rowan_start:
+    text:
+      - "Logs to build with, saplings to keep the yard growing. Which do you need?"
+    choices:
+      browse:
+        text: "Show me the timber yard."
+        effects:
+          - type: open_shop
+            shop: timber_yard
+      advice:
+        text: "Any advice for an island woodlot?"
+        next: rowan_advice
+      done:
+        text: "I'll come back when I need something."
+        close: true
+
+  rowan_advice:
+    text:
+      - "Give each tree a clear patch of soil. Dark oak needs four saplings together; spruce and jungle can grow larger that way too."
+      - "Keep a few saplings before selling the harvest. Shears are for leaves; an axe is for the trunk."
+      - "Different woods are building choices, not stronger gear. Pick what fits your island."
+    choices:
+      back:
+        text: "I have another question."
+        next: rowan_start
+      done:
+        text: "Thanks. I'll put that to use."
+        close: true
+
+  dain_start:
+    text:
+      - "Fuel, ore, and picks that do their job. I also buy spare material from the island mines."
+    choices:
+      browse:
+        text: "Show me the quarry stock."
+        effects:
+          - type: open_shop
+            shop: quarry_supplies
+      advice:
+        text: "What should I buy first?"
+        next: dain_advice
+      done:
+        text: "I'll come back when I need something."
+        close: true
+
+  dain_advice:
+    text:
+      - "A furnace and a pick get work moving. Spare iron can wait until you know what you are building."
+      - "Lapis and amethyst make Arcane Dust. Buy the ingredients here, then craft it yourself."
+      - "Missing a generator source? I carry lava. Alba sells water. Do not let them meet in the source cells."
+    choices:
+      back:
+        text: "I have another question."
+        next: dain_start
+      done:
+        text: "Thanks. I'll put that to use."
+        close: true
+
+  petra_start:
+    text:
+      - "Bring a plan, or bring a handful of blocks and see where they lead. I can help with either."
+    choices:
+      browse:
+        text: "Show me the building yard."
+        effects:
+          - type: open_shop
+            shop: masons_stock
+      advice:
+        text: "How do I make an island feel finished?"
+        next: petra_advice
+      done:
+        text: "I'll come back when I need something."
+        close: true
+
+  petra_advice:
+    text:
+      - "Give paths and roofs a little depth. Mix a few related blocks instead of a wall of every stone in the yard."
+      - "Logs and saplings are Rowan's trade. I carry boards, foundations, soil, windows, and finishing stock."
+      - "Sell spare common material here. Finished mechanisms belong on Hob's shelves."
+    choices:
+      back:
+        text: "I have another question."
+        next: petra_start
+      done:
+        text: "Thanks. I'll put that to use."
+        close: true
+
+  hob_start:
+    text:
+      - "Ordinary parts, clearly labelled. Tell me what the machine should do before you buy the whole shelf."
+    choices:
+      browse:
+        text: "Show me the workshop parts."
+        effects:
+          - type: open_shop
+            shop: workshop_parts
+      advice:
+        text: "What is different about island machinery?"
+        next: hob_advice
+      done:
+        text: "I'll come back when I need something."
+        close: true
+
+  hob_advice:
+    text:
+      - "These are plain hoppers and redstone parts. Island collectors and other specialised upgrades follow their own progression."
+      - "Start with a small circuit and test it before repeating it across a whole farm."
+      - "The counter buys spare raw materials, not assembled machines. Keep the parts you may want to reuse."
+    choices:
+      back:
+        text: "I have another question."
+        next: hob_start
+      done:
+        text: "Thanks. I'll put that to use."
+        close: true
+
+  fen_start:
+    text:
+      - "Work pays well until you repeat yourself. Then the ledger starts shaving the rate."
+    choices:
+      jobs:
+        text: "Show me the job board and orders."
+        effects:
+          - type: open_command
+            command: jobs
+      done:
+        text: "I'll find my own work."
+        close: true

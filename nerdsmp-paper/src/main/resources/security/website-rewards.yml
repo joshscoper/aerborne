@@ -1,0 +1,11 @@
+# Pays Marks that players earn in the website Arcade. Existing files are never replaced by the plugin.
+# The server fetches pending payouts from the website and credits each one exactly once.
+# On first enable it creates security/website-rewards-token.txt; copy that value into the
+# website's AERBORNE_REWARDS_TOKEN setting. Restart the server after changing this file.
+schema: 1
+enabled: false
+url: 'https://aerborne.net/admin/api/arcade-payouts'
+interval-seconds: 60
+# Ceilings that stop payouts if the website ever asks for more than it should.
+max-marks-per-payout: 50
+max-marks-per-hour: 5000

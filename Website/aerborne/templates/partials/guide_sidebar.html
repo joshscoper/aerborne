@@ -1,0 +1,14 @@
+<nav class="guide-nav" aria-label="Handbook chapters">
+  <p class="guide-nav-title"><a href="{{ url_for('public.guide') }}">Adventurer's Handbook</a></p>
+  {% for section in sections if section.guides %}
+  <details class="guide-nav-section"{% if (item is defined and item and item.category == section.key) or (category is defined and category == section.key) or (item is not defined and category is not defined and loop.first) %} open{% endif %}>
+    <summary><a href="{{ url_for('public.guide_section', category=section.key) }}">{{ section.label }}</a> <span class="count">{{ section.guides | length }}</span></summary>
+    <ul>
+      {% for g in section.guides %}
+      <li><a href="{{ url_for('public.guide_article', slug=g.slug) }}"{% if item is defined and item and item.id == g.id %} aria-current="page"{% endif %}>{{ g.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endfor %}
+  <p class="guide-nav-extra"><a href="{{ url_for('public.codex') }}">Arcane Codex</a></p>
+</nav>

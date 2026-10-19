@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block description %}{{ item.summary }}{% endblock %}
+{% block content %}
+<header class="page-head page-head-journal">
+  <div class="wrap">
+    <p class="crumbs"><a href="{{ url_for('public.explore') }}">Explore</a></p>
+    <h1>{{ item.name }}</h1>
+    <p class="lede">{{ item.summary }}</p>
+    <p>{{ m.availability(item.availability) }}</p>
+  </div>
+</header>
+<div class="wrap region-layout">
+  <div class="reading">
+    {% if item.image %}<figure class="region-figure">{{ m.picture(item.image, item.image_alt, 'region-img', lazy=False) }}{% if item.concept_art %}<figcaption>Artist's impression. The in-game build may look different.</figcaption>{% endif %}</figure>{% endif %}
+    {% if item.body %}<div class="prose">{{ item.body | markdown }}</div>{% endif %}
+  </div>
+  <aside class="region-facts">
+    {% if item.theme %}<h2>Theme</h2><p>{{ item.theme }}</p>{% endif %}
+    {% if item.requirements %}<h2>When to visit</h2><p>{{ item.requirements }}</p>{% endif %}
+    {% if activities %}<h2>Things to do</h2><ul>{% for a in activities %}<li>{{ a }}</li>{% endfor %}</ul>{% endif %}
+    {% if places %}<h2>Points of interest</h2><ul>{% for p in places %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+  </aside>
+</div>
+{% if others %}
+<section class="wrap others">
+  <h2>More of the sky</h2>
+  <ul class="link-list">{% for r in others %}<li><a href="{{ url_for('public.region', slug=r.slug) }}">{{ r.name }}</a> <span>{{ r.theme }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+schema-version: 1
+enabled: true
+# Signature affixes stay concealed until an unidentified item is revealed.
+unidentified-chance: 0.80
+# One extra gear roll; weights are conditional on that roll succeeding, not absolute drop chances.
+# No distance/Looting multiplier inflates these chase odds. Staff REPLACE tables opt out.
+tables:
+  standard:
+    chance: 0.012
+    weights: {uncommon: 60, rare: 32, epic: 7.5, legendary: 0.5, mythic: 0}
+  elite:
+    chance: 0.12
+    weights: {uncommon: 10, rare: 35, epic: 40, legendary: 14.5, mythic: 0.5}
+  boss:
+    chance: 0.50
+    weights: {uncommon: 0, rare: 10, epic: 45, legendary: 40, mythic: 5}
+  chest:
+    chance: 0.10
+    weights: {uncommon: 50, rare: 35, epic: 12, legendary: 2.9, mythic: 0.1}

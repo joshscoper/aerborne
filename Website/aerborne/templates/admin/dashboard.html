@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<section>
+  <h2>Waiting for review</h2>
+  {% if queue %}
+  <table>
+    <thead><tr><th>Item</th><th>Type</th><th>Last edited</th></tr></thead>
+    <tbody>
+      {% for t, item in queue %}
+      <tr><td><a href="{{ url_for('admin.content_edit', key=t.key, item_id=item.id) }}">{{ t.title_of(item) }}</a></td><td>{{ t.singular }}</td><td>{{ item.updated_at | date(true) }} by {{ item.updated_by }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="fine">Nothing is waiting for review.</p>{% endif %}
+</section>
+
+{% if scheduled %}
+<section>
+  <h2>Scheduled</h2>
+  <ul>{% for t, item in scheduled %}<li><a href="{{ url_for('admin.content_edit', key=t.key, item_id=item.id) }}">{{ t.title_of(item) }}</a> goes live {{ item.publish_at | date(true) }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section>
+  <h2>Content</h2>
+  <table>
+    <thead><tr><th>Type</th><th>Published</th><th>In review</th><th>Drafts</th><th>Archived</th><th></th></tr></thead>
+    <tbody>
+      {% for t, c in counts %}
+      <tr><td><a href="{{ url_for('admin.content_list', key=t.key) }}">{{ t.label }}</a></td><td>{{ c.published }}</td><td>{{ c.review }}</td><td>{{ c.draft }}</td><td>{{ c.archived }}</td>
+        <td><a href="{{ url_for('admin.content_edit', key=t.key) }}">New {{ t.singular }}</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="two-col">
+  <section>
+    <h2>Most viewed, last 7 days</h2>
+    {% if views %}
+    <table><thead><tr><th>Page</th><th>Views</th></tr></thead><tbody>
+      {% for v in views %}<tr><td>{{ v.path }}</td><td>{{ v.n }}</td></tr>{% endfor %}
+    </tbody></table>
+    <p class="fine">Counts only: no IP addresses, cookies or browser details are stored.</p>
+    {% else %}<p class="fine">No page views recorded yet.</p>{% endif %}
+  </section>
+  <section>
+    <h2>Recent changes</h2>
+    <ul class="activity">{% for a in recent %}<li><span class="when">{{ a.created_at | date(true) }}</span> <strong>{{ a.username }}</strong> {{ a.summary }}</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

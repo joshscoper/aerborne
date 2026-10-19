@@ -1,0 +1,49 @@
+{% extends "community/forum_base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}{{ cat.name }} | Forum{% endblock %}
+{% block content %}
+<header class="page-head forum-category-head">
+  <div class="wrap forum-head">
+    <div class="forum-category-identity">
+      {{ c.category_icon(cat, 96) }}
+      <div>
+      <p class="crumbs"><a href="{{ url_for('community.forum') }}">Forum</a></p>
+      <h1>{{ cat.name }}</h1>
+      <p class="lede">{{ cat.description }}</p>
+      </div>
+    </div>
+    <p class="forum-cta">
+      {% if not post_block %}<a class="btn btn-primary" href="{{ url_for('community.new_thread', category_slug=cat.slug) }}">{{ 'Ask staff' if cat.private else 'Post thread' }}</a>
+      {% elif not member %}<a class="btn btn-primary" href="{{ url_for('community.login', next=request.path) }}">Sign in to post</a>
+      {% elif not member.mc_uuid %}<a class="btn btn-primary" href="{{ url_for('community.link') }}">Link Minecraft to post</a>{% endif %}
+    </p>
+  </div>
+</header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap thread-page">
+  {{ c.flashes() }}
+  {% if cat.private %}<p class="notice notice-info">Threads here are private: only you and staff can see yours.</p>{% endif %}
+  <div class="discussion-heading"><h2>Discussions</h2><span class="fine">Pinned first · latest activity</span></div>
+  {% if threads %}
+  <ul class="thread-list">
+    {% for t in threads %}
+    <li class="thread-row{% if t.pinned %} is-pinned{% endif %}">
+      {{ c.avatar(t.author_avatar, 40) }}
+      <div class="thread-main">
+        <p class="thread-title-line">{{ c.prefix(t.prefix) }}{% if t.pinned %}<span class="prefix prefix-gold">Pinned</span>{% endif %}{% if t.locked %}<span class="prefix prefix-stone">Locked</span>{% endif %}<a class="thread-title" href="{{ thread_url(t) }}">{{ t.title }}</a></p>
+        <span class="thread-meta">{{ c.name(t.author, t.author_rank) }} · {{ t.created_at | date }}</span>
+      </div>
+      <dl class="thread-counts">
+        <div><dt>Replies</dt><dd>{{ t.reply_count | number }}</dd></div>
+        <div><dt>Views</dt><dd>{{ t.view_count | number }}</dd></div>
+      </dl>
+      <span class="thread-last">{{ c.avatar(t.last_avatar, 32) }}<span><a href="{{ thread_url(t, page=-1) }}">{{ t.last_post_at | date }}</a><span class="fine">{{ t.last_username }}</span></span></span>
+    </li>
+    {% endfor %}
+  </ul>
+  {{ c.pager(page, pages, 'community.category', category_slug=cat.slug) }}
+  {% else %}
+  <section class="forum-empty">{{ c.category_icon(cat, 112) }}<h2>{% if cat.private %}A quiet place to get help{% else %}Every good story starts somewhere.{% endif %}</h2><p>{% if cat.private %}You haven't started a thread here. Your conversations will only be visible to you and staff.{% else %}No threads yet. Bring your questions, discoveries and ideas.{% endif %}</p>{% if not post_block %}<a class="btn btn-primary" href="{{ url_for('community.new_thread', category_slug=cat.slug) }}">Start a conversation</a>{% elif not member %}<a class="btn btn-primary" href="{{ url_for('community.login', next=request.path) }}">Sign in to join in</a>{% else %}<p class="fine">{{ post_block }}</p>{% endif %}</section>
+  {% endif %}
+</div>
+{% endblock %}

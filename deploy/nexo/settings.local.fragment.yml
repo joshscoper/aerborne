@@ -1,0 +1,16 @@
+# The local launcher installs this as Nexo's settings.yml. Nexo fills any omitted defaults.
+Pack:
+  generation:
+    prefer_item_models: true
+  obfuscation:
+    type: NONE
+    cache: true
+  server:
+    type: POLYMATH
+  dispatch:
+    send_pre_join: true
+    send_on_join: false
+    send_on_reload: true
+    delay: -1
+    mandatory: true
+    prompt: "<aqua><bold>Server resource pack</bold></aqua> <gray>Gear, icons and item textures.</gray>"

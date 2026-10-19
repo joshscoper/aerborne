@@ -1,0 +1,1168 @@
+# Additive equipment catalog. Stable IDs are saved on the item; do not rename them after release.
+# Percentage values are percentage points. All appearances use the normal client textures.
+schema-version: 1
+sets:
+  copperfield:
+    name: "Copperfield"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+1 Gathering Power"
+        stats: {gathering-power: 1}
+      '4':
+        description: "+8% Harvest Yield"
+        stats: {harvest-extra-percent: 8}
+      '5':
+        description: "+5% Job Marks"
+        stats: {job-marks-percent: 5}
+  quarryward:
+    name: "Quarryward"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+1 Mining Power"
+        stats: {mining-power: 1}
+      '4':
+        description: "+10% Durability Preservation"
+        stats: {durability-save-percent: 10}
+      '5':
+        description: "+5% Job Marks"
+        stats: {job-marks-percent: 5}
+  brinewatch:
+    name: "Brinewatch"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+1 Fishing Power"
+        stats: {fishing-power: 1}
+      '4':
+        description: "+8% Fishing Luck"
+        stats: {fishing-luck-percent: 8}
+      '5':
+        description: "+6% Treasure Find"
+        stats: {treasure-find-percent: 6}
+  briarpath:
+    name: "Briarpath"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+1 Gathering Power"
+        stats: {gathering-power: 1}
+      '4':
+        description: "+10% Harvest Yield"
+        stats: {harvest-extra-percent: 10}
+      '5':
+        description: "+5% Skill XP"
+        stats: {skill-xp-percent: 5}
+  dustward:
+    name: "Dustward"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+1 Excavation Power"
+        stats: {excavation-power: 1}
+      '4':
+        description: "+5% Excavation Find"
+        stats: {excavation-find-percent: 5}
+      '5':
+        description: "+12% Geode Find"
+        stats: {geode-find-percent: 12}
+  nightglass:
+    name: "Nightglass"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+5% Ranged Damage"
+        stats: {projectile-damage-percent: 5}
+      '4':
+        description: "+8% Damage against wounded enemies"
+        stats: {execute-damage-percent: 8}
+      '5':
+        description: "+7% Job Marks"
+        stats: {job-marks-percent: 7}
+  ashen_oath:
+    name: "Ashen Oath"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+4 Defense"
+        stats: {defense: 4}
+      '4':
+        description: "+8% Damage"
+        stats: {damage-percent: 8}
+      '5':
+        description: "+10% Damage against wounded enemies"
+        stats: {execute-damage-percent: 10}
+  starwarden:
+    name: "Starwarden"
+    piece-count: 6
+    bonuses:
+      '2':
+        description: "+5 Defense"
+        stats: {defense: 5}
+      '4':
+        description: "+15% Durability Preservation"
+        stats: {durability-save-percent: 15}
+      '5':
+        description: "+1% Life Steal"
+        stats: {life-steal-percent: 1}
+items:
+  copperfield_helm:
+    material: iron_helmet
+    name: "<green>Copperfield Helm</green>"
+    set: copperfield
+    slot: head
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 2, harvest-extra-percent: 1}
+    lore: ["<gray>Keeps the sun off and the briars out.</gray>"]
+  copperfield_coat:
+    material: iron_chestplate
+    name: "<green>Copperfield Coat</green>"
+    set: copperfield
+    slot: chest
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 4, harvest-extra-percent: 1}
+    lore: ["<gray>Made for early starts and full baskets.</gray>"]
+  copperfield_greaves:
+    material: iron_leggings
+    name: "<green>Copperfield Greaves</green>"
+    set: copperfield
+    slot: legs
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, harvest-extra-percent: 1}
+    lore: ["<gray>Reinforced where the furrows wear it thin.</gray>"]
+  copperfield_boots:
+    material: iron_boots
+    name: "<green>Copperfield Boots</green>"
+    set: copperfield
+    slot: feet
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 2, harvest-extra-percent: 1}
+    lore: ["<gray>Good footing between the rows.</gray>"]
+  copperfield_hoe:
+    material: iron_hoe
+    name: "<green>Copperfield Hoe</green>"
+    set: copperfield
+    slot: main_hand
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 2, gathering-power: 1}
+    lore: ["<gray>A narrow edge for close planting.</gray>"]
+  copperfield_buckler:
+    material: shield
+    name: "<green>Copperfield Buckler</green>"
+    set: copperfield
+    slot: off_hand
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 1, harvest-extra-percent: 2}
+    lore: ["<gray>A field guard bound in wheat-straw cord.</gray>"]
+  quarryward_helm:
+    material: iron_helmet
+    name: "<green>Quarryward Helm</green>"
+    set: quarryward
+    slot: head
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, durability-save-percent: 2}
+    lore: ["<gray>The rim is scarred from low mine roofs.</gray>"]
+  quarryward_coat:
+    material: iron_chestplate
+    name: "<green>Quarryward Coat</green>"
+    set: quarryward
+    slot: chest
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 4, durability-save-percent: 2}
+    lore: ["<gray>Thick plate catches loose chips of stone.</gray>"]
+  quarryward_greaves:
+    material: iron_leggings
+    name: "<green>Quarryward Greaves</green>"
+    set: quarryward
+    slot: legs
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, durability-save-percent: 2}
+    lore: ["<gray>Built to kneel on broken rock.</gray>"]
+  quarryward_boots:
+    material: iron_boots
+    name: "<green>Quarryward Boots</green>"
+    set: quarryward
+    slot: feet
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 2, durability-save-percent: 2}
+    lore: ["<gray>A broad sole for the quarry floor.</gray>"]
+  quarryward_pickaxe:
+    material: iron_pickaxe
+    name: "<green>Quarryward Pickaxe</green>"
+    set: quarryward
+    slot: main_hand
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 4, mining-power: 1}
+    lore: ["<gray>A short, weighted pick for stubborn seams.</gray>"]
+  quarryward_buckler:
+    material: shield
+    name: "<green>Quarryward Buckler</green>"
+    set: quarryward
+    slot: off_hand
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 1, durability-save-percent: 4}
+    lore: ["<gray>A guard for flying chips and falling rubble.</gray>"]
+  brinewatch_helm:
+    material: iron_helmet
+    name: "<aqua>Brinewatch Helm</aqua>"
+    set: brinewatch
+    slot: head
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, fishing-luck-percent: 1}
+    lore: ["<gray>A salt-dark visor with a clear view of the line.</gray>"]
+  brinewatch_coat:
+    material: iron_chestplate
+    name: "<aqua>Brinewatch Coat</aqua>"
+    set: brinewatch
+    slot: chest
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 5, fishing-luck-percent: 1}
+    lore: ["<gray>Overlapping scales shed the spray.</gray>"]
+  brinewatch_greaves:
+    material: iron_leggings
+    name: "<aqua>Brinewatch Greaves</aqua>"
+    set: brinewatch
+    slot: legs
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 4, fishing-luck-percent: 1}
+    lore: ["<gray>The hems have survived a hundred soaked docks.</gray>"]
+  brinewatch_boots:
+    material: iron_boots
+    name: "<aqua>Brinewatch Boots</aqua>"
+    set: brinewatch
+    slot: feet
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, fishing-luck-percent: 1}
+    lore: ["<gray>The deck can pitch. These stay planted.</gray>"]
+  brinewatch_rod:
+    material: fishing_rod
+    name: "<aqua>Brinewatch Rod</aqua>"
+    set: brinewatch
+    slot: main_hand
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {fishing-power: 2}
+    lore: ["<gray>A patient rod with a shell-set reel.</gray>"]
+  brinewatch_buckler:
+    material: shield
+    name: "<aqua>Brinewatch Buckler</aqua>"
+    set: brinewatch
+    slot: off_hand
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 2, fishing-luck-percent: 2}
+    lore: ["<gray>Barnacles cling to its weathered rim.</gray>"]
+  briarpath_helm:
+    material: iron_helmet
+    name: "<aqua>Briarpath Helm</aqua>"
+    set: briarpath
+    slot: head
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, durability-save-percent: 2}
+    lore: ["<gray>Branches slide over the smooth brow.</gray>"]
+  briarpath_coat:
+    material: iron_chestplate
+    name: "<aqua>Briarpath Coat</aqua>"
+    set: briarpath
+    slot: chest
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 5, durability-save-percent: 2}
+    lore: ["<gray>A shoulder plate shaped to pass the undergrowth.</gray>"]
+  briarpath_greaves:
+    material: iron_leggings
+    name: "<aqua>Briarpath Greaves</aqua>"
+    set: briarpath
+    slot: legs
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 4, durability-save-percent: 2}
+    lore: ["<gray>The knee guards turn thorns aside.</gray>"]
+  briarpath_boots:
+    material: iron_boots
+    name: "<aqua>Briarpath Boots</aqua>"
+    set: briarpath
+    slot: feet
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 3, durability-save-percent: 2}
+    lore: ["<gray>Quiet steps on a floor of fallen leaves.</gray>"]
+  briarpath_hatchet:
+    material: iron_axe
+    name: "<aqua>Briarpath Hatchet</aqua>"
+    set: briarpath
+    slot: main_hand
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 7, gathering-power: 2}
+    lore: ["<gray>Its haft is polished by years of work.</gray>"]
+  briarpath_buckler:
+    material: shield
+    name: "<aqua>Briarpath Buckler</aqua>"
+    set: briarpath
+    slot: off_hand
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: craft
+    stats: {defense: 2, durability-save-percent: 4}
+    lore: ["<gray>Layered timber takes the brunt of the blow.</gray>"]
+  dustward_helm:
+    material: diamond_helmet
+    name: "<light_purple>Dustward Helm</light_purple>"
+    set: dustward
+    slot: head
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 4, excavation-find-percent: 1}
+    lore: ["<gray>A narrow visor keeps grit from the eyes.</gray>"]
+  dustward_coat:
+    material: diamond_chestplate
+    name: "<light_purple>Dustward Coat</light_purple>"
+    set: dustward
+    slot: chest
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 6, excavation-find-percent: 1}
+    lore: ["<gray>The lining still smells of dry earth.</gray>"]
+  dustward_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Dustward Greaves</light_purple>"
+    set: dustward
+    slot: legs
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, excavation-find-percent: 1}
+    lore: ["<gray>Every seam is sealed against drifting sand.</gray>"]
+  dustward_boots:
+    material: diamond_boots
+    name: "<light_purple>Dustward Boots</light_purple>"
+    set: dustward
+    slot: feet
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 4, excavation-find-percent: 1}
+    lore: ["<gray>Made to cross ruins without losing footing.</gray>"]
+  dustward_shovel:
+    material: diamond_shovel
+    name: "<light_purple>Dustward Shovel</light_purple>"
+    set: dustward
+    slot: main_hand
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 5, excavation-power: 3}
+    lore: ["<gray>A flat blade for lifting a layer at a time.</gray>"]
+  dustward_buckler:
+    material: shield
+    name: "<light_purple>Dustward Buckler</light_purple>"
+    set: dustward
+    slot: off_hand
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 3, excavation-find-percent: 2}
+    lore: ["<gray>A broad guard patterned with a buried city's roads.</gray>"]
+  nightglass_helm:
+    material: diamond_helmet
+    name: "<light_purple>Nightglass Helm</light_purple>"
+    set: nightglass
+    slot: head
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 4, execute-damage-percent: 1}
+    lore: ["<gray>A dark brow built to leave the sightline clear.</gray>"]
+  nightglass_coat:
+    material: diamond_chestplate
+    name: "<light_purple>Nightglass Coat</light_purple>"
+    set: nightglass
+    slot: chest
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, execute-damage-percent: 1}
+    lore: ["<gray>Close-fitting plates do not catch the bowstring.</gray>"]
+  nightglass_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Nightglass Greaves</light_purple>"
+    set: nightglass
+    slot: legs
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, execute-damage-percent: 1}
+    lore: ["<gray>Light joints make a quick change of stance.</gray>"]
+  nightglass_boots:
+    material: diamond_boots
+    name: "<light_purple>Nightglass Boots</light_purple>"
+    set: nightglass
+    slot: feet
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 4, execute-damage-percent: 1}
+    lore: ["<gray>Soft soles keep the approach quiet.</gray>"]
+  nightglass_bow:
+    material: bow
+    name: "<light_purple>Nightglass Bow</light_purple>"
+    set: nightglass
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {projectile-damage: 8, projectile-damage-percent: 5}
+    lore: ["<gray>The limbs draw smooth and return without a shiver.</gray>"]
+  nightglass_buckler:
+    material: shield
+    name: "<light_purple>Nightglass Buckler</light_purple>"
+    set: nightglass
+    slot: off_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 3, execute-damage-percent: 2}
+    lore: ["<gray>A small guard for the last few paces.</gray>"]
+  ashen_oath_helm:
+    material: diamond_helmet
+    name: "<gold>Ashen Oath Helm</gold>"
+    set: ashen_oath
+    slot: head
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, poison-potency-percent: 2}
+    lore: ["<gray>Ash has settled into every chased line.</gray>"]
+  ashen_oath_coat:
+    material: diamond_chestplate
+    name: "<gold>Ashen Oath Coat</gold>"
+    set: ashen_oath
+    slot: chest
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 7, poison-potency-percent: 2}
+    lore: ["<gray>The oath is scored across the breastplate.</gray>"]
+  ashen_oath_greaves:
+    material: diamond_leggings
+    name: "<gold>Ashen Oath Greaves</gold>"
+    set: ashen_oath
+    slot: legs
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 6, poison-potency-percent: 2}
+    lore: ["<gray>The knees bear the marks of a long vigil.</gray>"]
+  ashen_oath_boots:
+    material: diamond_boots
+    name: "<gold>Ashen Oath Boots</gold>"
+    set: ashen_oath
+    slot: feet
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, poison-potency-percent: 2}
+    lore: ["<gray>Still warm from a road through the cinders.</gray>"]
+  ashen_oath_blade:
+    material: diamond_sword
+    name: "<gold>Ashen Oath Blade</gold>"
+    set: ashen_oath
+    slot: main_hand
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 9, damage-percent: 5}
+    lore: ["<gray>An edge tempered until the last ember died.</gray>"]
+  ashen_oath_buckler:
+    material: shield
+    name: "<gold>Ashen Oath Buckler</gold>"
+    set: ashen_oath
+    slot: off_hand
+    rarity: legendary
+    item-level: 42
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 3, poison-potency-percent: 4}
+    lore: ["<gray>A dark shield with an unbroken silver oath-ring.</gray>"]
+  starwarden_helm:
+    material: netherite_helmet
+    name: "<gold>Starwarden Helm</gold>"
+    set: starwarden
+    slot: head
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, durability-save-percent: 2}
+    lore: ["<gray>A silver star marks the center of the brow.</gray>"]
+  starwarden_coat:
+    material: netherite_chestplate
+    name: "<gold>Starwarden Coat</gold>"
+    set: starwarden
+    slot: chest
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 7, durability-save-percent: 2}
+    lore: ["<gray>Forged to hold the line when the sky falls.</gray>"]
+  starwarden_greaves:
+    material: netherite_leggings
+    name: "<gold>Starwarden Greaves</gold>"
+    set: starwarden
+    slot: legs
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 6, durability-save-percent: 2}
+    lore: ["<gray>Overlapping plates cover every gap.</gray>"]
+  starwarden_boots:
+    material: netherite_boots
+    name: "<gold>Starwarden Boots</gold>"
+    set: starwarden
+    slot: feet
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, durability-save-percent: 2}
+    lore: ["<gray>Heavy soles anchor a stubborn stance.</gray>"]
+  starwarden_mace:
+    material: mace
+    name: "<gold>Starwarden Mace</gold>"
+    set: starwarden
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, durability-save-percent: 8}
+    lore: ["<gray>A star-cut head on a short, leather-bound haft.</gray>"]
+  starwarden_buckler:
+    material: shield
+    name: "<gold>Starwarden Buckler</gold>"
+    set: starwarden
+    slot: off_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 3, durability-save-percent: 4}
+    lore: ["<gray>Its face is dark. Its rim catches every light.</gray>"]
+  cobblebreak_pickaxe:
+    material: iron_pickaxe
+    name: "<green>Cobblebreak Pickaxe</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 4, mining-power: 1, job-marks-percent: 2}
+    lore: ["<gray>A broad pick for the island's first stoneworks.</gray>"]
+  rootcut_hatchet:
+    material: iron_axe
+    name: "<green>Rootcut Hatchet</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 5
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 6, gathering-power: 1, durability-save-percent: 4}
+    lore: ["<gray>A workhorse axe with a replaceable ash haft.</gray>"]
+  furrowkeeper_hoe:
+    material: iron_hoe
+    name: "<green>Furrowkeeper Hoe</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 8
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 2, gathering-power: 1, harvest-extra-percent: 3}
+    lore: ["<gray>Keeps a neat row and wastes little of the harvest.</gray>"]
+  river_reed_rod:
+    material: fishing_rod
+    name: "<green>River Reed Rod</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 8
+    sockets: 1
+    acquisition: craft
+    stats: {fishing-power: 1, treasure-find-percent: 2}
+    lore: ["<gray>Light enough to feel the smallest tug.</gray>"]
+  surveyors_shovel:
+    material: iron_shovel
+    name: "<green>Surveyor's Shovel</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 8
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 4, excavation-power: 1, excavation-find-percent: 2}
+    lore: ["<gray>Notches on the blade mark the depth of a careful cut.</gray>"]
+  watchmans_sword:
+    material: iron_sword
+    name: "<green>Watchman's Sword</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 10
+    sockets: 1
+    acquisition: craft
+    stats: {damage: 6, execute-damage-percent: 4}
+    lore: ["<gray>A simple blade sharpened for a short watch.</gray>"]
+  forgehand_boots:
+    material: iron_boots
+    name: "<green>Forgehand Boots</green>"
+    slot: feet
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: drop
+    stats: {defense: 3, durability-save-percent: 6}
+    lore: ["<gray>Scorched leather straps hold thick iron plates.</gray>"]
+  coppersight_crossbow:
+    material: crossbow
+    name: "<green>Coppersight Crossbow</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 12
+    sockets: 1
+    acquisition: drop
+    stats: {projectile-damage: 6, projectile-damage-percent: 3}
+    lore: ["<gray>A copper sight helps a steady hand find its mark.</gray>"]
+  prospectors_pickaxe:
+    material: iron_pickaxe
+    name: "<aqua>Prospector's Pickaxe</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 20
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 5, mining-power: 2, geode-find-percent: 6}
+    lore: ["<gray>Its head rings differently against a promising seam.</gray>"]
+  orchard_hoe:
+    material: iron_hoe
+    name: "<aqua>Orchard Hoe</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 20
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 3, gathering-power: 2, harvest-extra-percent: 5}
+    lore: ["<gray>Made for the roots below a heavy canopy.</gray>"]
+  resinbite_axe:
+    material: iron_axe
+    name: "<aqua>Resinbite Axe</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 7, gathering-power: 2, durability-save-percent: 7}
+    lore: ["<gray>The edge slips cleanly through green wood.</gray>"]
+  siltwalker_shovel:
+    material: iron_shovel
+    name: "<aqua>Siltwalker Shovel</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 4, excavation-power: 2, treasure-find-percent: 4}
+    lore: ["<gray>A narrow scoop for working around something worth keeping.</gray>"]
+  raincall_rod:
+    material: fishing_rod
+    name: "<aqua>Raincall Rod</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 23
+    sockets: 1
+    acquisition: drop
+    stats: {fishing-power: 2, fishing-luck-percent: 5}
+    lore: ["<gray>The cork grip stays firm in a downpour.</gray>"]
+  marshguard_trident:
+    material: trident
+    name: "<aqua>Marshguard Trident</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 24
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 7, projectile-damage: 7, defense: 1}
+    lore: ["<gray>Three barbed points made to hold a muddy crossing.</gray>"]
+  rangers_crossbow:
+    material: crossbow
+    name: "<aqua>Ranger's Crossbow</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 23
+    sockets: 1
+    acquisition: drop
+    stats: {projectile-damage: 7, execute-damage-percent: 6}
+    lore: ["<gray>A quiet latch and a clean line of sight.</gray>"]
+  quarry_maul:
+    material: mace
+    name: "<aqua>Quarry Maul</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 24
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 7, damage-percent: 3}
+    lore: ["<gray>Once used to split stone. It still does.</gray>"]
+  venomthorn_sword:
+    material: iron_sword
+    name: "<aqua>Venomthorn Sword</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 24
+    sockets: 1
+    acquisition: drop
+    stats: {damage: 7, poison-potency-percent: 8}
+    lore: ["<gray>A shallow groove keeps a coating near the edge.</gray>"]
+  counterweight_shield:
+    material: shield
+    name: "<aqua>Counterweight Shield</aqua>"
+    slot: off_hand
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: drop
+    stats: {defense: 3, durability-save-percent: 8}
+    lore: ["<gray>The handle sits exactly where the weight settles.</gray>"]
+  miners_lantern_helm:
+    material: iron_helmet
+    name: "<aqua>Miner's Lantern Helm</aqua>"
+    slot: head
+    rarity: rare
+    item-level: 24
+    sockets: 1
+    acquisition: drop
+    stats: {defense: 3, mining-power: 1, geode-find-percent: 3}
+    lore: ["<gray>Polished brass catches the mine's last light.</gray>"]
+  tanners_coat:
+    material: leather_chestplate
+    name: "<aqua>Tanner's Coat</aqua>"
+    slot: chest
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    acquisition: drop
+    stats: {defense: 4, job-marks-percent: 5, skill-xp-percent: 2}
+    lore: ["<gray>Every panel was cut from a different hard-earned hide.</gray>"]
+  mossstep_boots:
+    material: iron_boots
+    name: "<aqua>Mossstep Boots</aqua>"
+    slot: feet
+    rarity: rare
+    item-level: 25
+    sockets: 1
+    acquisition: drop
+    stats: {defense: 3, harvest-extra-percent: 4, durability-save-percent: 3}
+    lore: ["<gray>The soles leave little mark on the forest floor.</gray>"]
+  thunderhead_mace:
+    material: mace
+    name: "<light_purple>Thunderhead Mace</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, damage-percent: 5, execute-damage-percent: 6}
+    lore: ["<gray>The head is heavy enough to quiet a shield line.</gray>"]
+  glacial_trident:
+    material: trident
+    name: "<light_purple>Glacial Trident</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, projectile-damage: 8, projectile-damage-percent: 5}
+    lore: ["<gray>Cold blue metal tapers to three needle points.</gray>"]
+  starling_bow:
+    material: bow
+    name: "<light_purple>Starling Bow</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    acquisition: drop
+    stats: {projectile-damage: 8, projectile-damage-percent: 6, durability-save-percent: 5}
+    lore: ["<gray>It returns to its shape as quickly as a wingbeat.</gray>"]
+  siegebreaker_crossbow:
+    material: crossbow
+    name: "<light_purple>Siegebreaker Crossbow</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    acquisition: drop
+    stats: {projectile-damage: 8, execute-damage-percent: 10}
+    lore: ["<gray>A reinforced stirrup takes a punishing draw.</gray>"]
+  obsidian_edge:
+    material: diamond_sword
+    name: "<light_purple>Obsidian Edge</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, damage-percent: 5, durability-save-percent: 8}
+    lore: ["<gray>A dark, close-grained edge that holds its bite.</gray>"]
+  saltwind_cutlass:
+    material: diamond_sword
+    name: "<light_purple>Saltwind Cutlass</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 33
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, life-steal-percent: 1, execute-damage-percent: 5}
+    lore: ["<gray>The old salt has never quite left its guard.</gray>"]
+  ambervein_pickaxe:
+    material: diamond_pickaxe
+    name: "<light_purple>Ambervein Pickaxe</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 6, mining-power: 3, geode-find-percent: 10}
+    lore: ["<gray>Amber flecks glow along the striking face.</gray>"]
+  ironbark_axe:
+    material: diamond_axe
+    name: "<light_purple>Ironbark Axe</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 8, gathering-power: 3, harvest-extra-percent: 8}
+    lore: ["<gray>The handle bends before the edge gives way.</gray>"]
+  moonfurrow_hoe:
+    material: diamond_hoe
+    name: "<light_purple>Moonfurrow Hoe</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 3, gathering-power: 3, harvest-extra-percent: 8}
+    lore: ["<gray>A pale blade for the harvest that runs past sunset.</gray>"]
+  relicseekers_shovel:
+    material: diamond_shovel
+    name: "<light_purple>Relicseeker's Shovel</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 5, excavation-power: 3, excavation-find-percent: 4, treasure-find-percent: 6}
+    lore: ["<gray>A sharp edge lifts soil without crushing what lies beneath.</gray>"]
+  pearlwake_rod:
+    material: fishing_rod
+    name: "<light_purple>Pearlwake Rod</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    acquisition: drop
+    stats: {fishing-power: 3, fishing-luck-percent: 7, treasure-find-percent: 6}
+    lore: ["<gray>A pearl counterweight steadies every cast.</gray>"]
+  cryptward_shield:
+    material: shield
+    name: "<light_purple>Cryptward Shield</light_purple>"
+    slot: off_hand
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 4, durability-save-percent: 10, execute-damage-percent: 3}
+    lore: ["<gray>Scratches on the inner face count the roads home.</gray>"]
+  runebinders_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Runebinder's Greaves</light_purple>"
+    slot: legs
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    acquisition: drop
+    stats: {defense: 5, skill-xp-percent: 4, poison-potency-percent: 5}
+    lore: ["<gray>The stitching follows an old field manual's margins.</gray>"]
+  kingsfall_blade:
+    material: netherite_sword
+    name: "<gold>Kingsfall Blade</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 9, damage-percent: 7, execute-damage-percent: 12}
+    lore: ["<gray>The crown on its pommel has been struck through.</gray>"]
+  voidglass_crossbow:
+    material: crossbow
+    name: "<gold>Voidglass Crossbow</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {projectile-damage: 9, projectile-damage-percent: 8, execute-damage-percent: 8}
+    lore: ["<gray>The sight is a sliver of glass darker than the night.</gray>"]
+  volcanic_maul:
+    material: mace
+    name: "<gold>Volcanic Maul</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 44
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 9, damage-percent: 7, durability-save-percent: 12}
+    lore: ["<gray>Its forge scale is still black and unbroken.</gray>"]
+  deepsong_pickaxe:
+    material: netherite_pickaxe
+    name: "<gold>Deepsong Pickaxe</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 7, mining-power: 4, geode-find-percent: 14}
+    lore: ["<gray>A low note runs up the haft with every strike.</gray>"]
+  worldroot_hatchet:
+    material: netherite_axe
+    name: "<gold>Worldroot Hatchet</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 9, gathering-power: 4, harvest-extra-percent: 12}
+    lore: ["<gray>The haft was cut from a root older than the road.</gray>"]
+  sunsown_hoe:
+    material: netherite_hoe
+    name: "<gold>Sunsown Hoe</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 44
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 4, gathering-power: 4, harvest-extra-percent: 12}
+    lore: ["<gray>Warm metal and a wide blade for a long harvest.</gray>"]
+  tombward_shovel:
+    material: netherite_shovel
+    name: "<gold>Tombward Shovel</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {damage: 6, excavation-power: 4, excavation-find-percent: 5, geode-find-percent: 10}
+    lore: ["<gray>The iron-bound haft bears the names of forgotten dig sites.</gray>"]
+  maelstrom_rod:
+    material: fishing_rod
+    name: "<gold>Maelstrom Rod</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 45
+    sockets: 2
+    acquisition: drop
+    stats: {fishing-power: 4, fishing-luck-percent: 9, treasure-find-percent: 9}
+    lore: ["<gray>The reel turns without a sound, even under strain.</gray>"]
+  sunforge_pickaxe:
+    material: netherite_pickaxe
+    name: "<#ff70d0>Sunforge Pickaxe</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: furnace_heart
+    stats: {damage: 7, mining-power: 5, durability-save-percent: 10}
+    lore: ["<gray>The forge travels with the pick.</gray>"]
+  faultbreaker:
+    material: netherite_shovel
+    name: "<#ff70d0>Faultbreaker</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: deep_resonance
+    stats: {damage: 6, excavation-power: 5, geode-find-percent: 12}
+    lore: ["<gray>The ground answers every measured strike.</gray>"]
+  harvest_moon_hoe:
+    material: netherite_hoe
+    name: "<#ff70d0>Harvest Moon</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: harvest_moon
+    stats: {damage: 4, gathering-power: 5, harvest-extra-percent: 12}
+    lore: ["<gray>The last row is never the last of the harvest.</gray>"]
+  tideweaver_rod:
+    material: fishing_rod
+    name: "<#ff70d0>Tideweaver</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: tideweaver
+    stats: {fishing-power: 5, fishing-luck-percent: 10, treasure-find-percent: 8}
+    lore: ["<gray>The line finds currents no eye can follow.</gray>"]
+  second_dawn_plate:
+    material: netherite_chestplate
+    name: "<#ff70d0>Second Dawn</#ff70d0>"
+    slot: chest
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: second_dawn
+    stats: {defense: 7, durability-save-percent: 12}
+    lore: ["<gray>A dawn worth holding out for.</gray>"]
+  mercy_of_the_hunt:
+    material: netherite_sword
+    name: "<#ff70d0>Mercy of the Hunt</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: hunters_mercy
+    stats: {damage: 10, execute-damage-percent: 12, life-steal-percent: 1}
+    lore: ["<gray>A clean ending, and strength for the road ahead.</gray>"]
+  astral_insight_cowl:
+    material: netherite_helmet
+    name: "<#ff70d0>Astral Insight</#ff70d0>"
+    slot: head
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: astral_insight
+    stats: {defense: 6, skill-xp-percent: 5, job-marks-percent: 4}
+    lore: ["<gray>Every practiced motion reveals another small truth.</gray>"]
+  everlasting_hatchet:
+    material: netherite_axe
+    name: "<#ff70d0>Everlasting</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: everlasting
+    stats: {damage: 9, gathering-power: 4, durability-save-percent: 15}
+    lore: ["<gray>The maker's name has worn away. The edge has not.</gray>"]
+  venom_heart_spear:
+    material: diamond_spear
+    name: "<#ff70d0>Venom Heart</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: venom_heart
+    stats: {damage: 9, poison-potency-percent: 12}
+    lore: ["<gray>A patient hunter needs only one opening.</gray>"]
+  stormstring:
+    material: bow
+    name: "<#ff70d0>Stormstring</#ff70d0>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 50
+    sockets: 3
+    acquisition: drop
+    unique-affix: stormstring
+    stats: {projectile-damage: 10, projectile-damage-percent: 8}
+    lore: ["<gray>The string hums long after the arrow has gone.</gray>"]
+

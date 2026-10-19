@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}Play{% endblock %}
+{% block body_class %}page-play{% endblock %}
+{% block description %}How to join {{ site.SITE_NAME }}: the server address, supported Minecraft versions, setup steps and connection help.{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <h1>Play {{ site.SITE_NAME }}</h1>
+    <p class="lede">{{ site.SITE_NAME }} runs on Minecraft: Java Edition {{ site.MINECRAFT_VERSIONS }}.{% if not bedrock %} Bedrock, console and mobile players can't connect yet.{% endif %}</p>
+  </div>
+</header>
+
+<div class="wrap play-grid">
+  <div class="play-main">
+    {% if settings.maintenance == '1' %}
+    <div class="notice notice-warn" role="status">
+      <strong>Maintenance in progress.</strong> {{ settings.maintenance_message or "The server is down for planned work. Check back soon." }}
+    </div>
+    {% endif %}
+
+    <section aria-labelledby="java-title">
+      <h2 id="java-title">Java Edition</h2>
+      <ol class="steps">
+        <li>
+          <h3>Open Minecraft: Java Edition</h3>
+          <p>Launch version {{ site.MINECRAFT_VERSIONS }} from the Minecraft Launcher. You don't need mods or a resource pack.</p>
+        </li>
+        <li>
+          <h3>Add the server</h3>
+          {% if server_address %}
+          <p>Go to Multiplayer, choose Add Server, and paste <code>{{ server_address }}</code> as the server address.</p>
+          {% else %}
+          <p>The public address isn't out yet. It'll appear here and on <a href="{{ url_for('public.discord') }}" rel="noopener">Discord</a>.</p>
+          {% endif %}
+        </li>
+        <li>
+          <h3>Create your island</h3>
+          <p>Join, then type <code>/island create</code>. You'll land on your own floating island.</p>
+        </li>
+        <li>
+          <h3>Follow the quickstart</h3>
+          <p>Type <code>/quickstart</code> for a short route through your first session. The <a href="{{ url_for('public.guide_section', category='getting-started') }}">Getting Started guide</a> covers the same path with pictures.</p>
+        </li>
+      </ol>
+    </section>
+
+    {% if bedrock %}
+    <section aria-labelledby="bedrock-title">
+      <h2 id="bedrock-title">Bedrock Edition</h2>
+      <p>Add a server with address <code>{{ bedrock.address }}</code> and port <code>{{ bedrock.port }}</code>.</p>
+    </section>
+    {% endif %}
+
+    <section aria-labelledby="trouble-title">
+      <h2 id="trouble-title">Can't connect?</h2>
+      <dl class="trouble">
+        <dt>"Outdated client" or "Outdated server"</dt>
+        <dd>Switch to Minecraft {{ site.MINECRAFT_VERSIONS }} in the launcher's Installations tab.</dd>
+        <dt>"You are not white-listed on this server"</dt>
+        <dd>{{ site.SITE_NAME }} is in private testing. Staff add testers to the whitelist.</dd>
+        <dt>"Can't connect to server" or a timeout</dt>
+        <dd>Check the address for typos, then check <a href="{{ url_for('public.status_page') }}">server status</a>. If it's offline, it may be restarting.</dd>
+        {% for faq in faqs %}
+        <dt>{{ faq.question }}</dt>
+        <dd>{{ faq.answer | markdown }}</dd>
+        {% endfor %}
+      </dl>
+      <p>Still stuck? Ask in <a href="{{ url_for('public.discord') }}" rel="noopener">Discord</a> with a screenshot of the error.</p>
+    </section>
+  </div>
+
+  <aside class="play-side">
+    {{ m.server_card() }}
+    <a class="btn btn-discord btn-block" href="{{ url_for('public.discord') }}" rel="noopener">{% include "partials/discord_icon.svg" %} Join the Discord</a>
+  </aside>
+</div>
+{% endblock %}

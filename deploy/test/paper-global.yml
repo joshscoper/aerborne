@@ -1,0 +1,6 @@
+_version: 31
+block-updates:
+  disable-chorus-plant-updates: true
+  disable-mushroom-block-updates: false
+  disable-noteblock-updates: true
+  disable-tripwire-updates: true

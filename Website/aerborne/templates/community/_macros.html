@@ -1,0 +1,62 @@
+{% macro flashes() -%}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}<div class="flashes">{% for category, message in messages %}<p class="notice {{ 'notice-warn' if category == 'error' else 'notice-info' }}" role="status">{{ message }}</p>{% endfor %}</div>{% endif %}
+{% endwith %}
+{%- endmacro %}
+
+{% macro role_badge(role) -%}
+  {%- if role == 'staff' -%}<span class="badge badge-staff">Aerborne team</span>
+  {%- elif role == 'moderator' -%}<span class="badge badge-mod">Moderator</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro pager(page, pages, endpoint) -%}
+{% if pages > 1 %}
+<nav class="pager" aria-label="Pages">
+  {% if page > 1 %}<a class="pager-prev" href="{{ url_for(endpoint, page=page - 1, **kwargs) }}"><span>Previous</span>Page {{ page - 1 }}</a>{% endif %}
+  <span class="pager-where">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="pager-next" href="{{ url_for(endpoint, page=page + 1, **kwargs) }}"><span>Next</span>Page {{ page + 1 }}</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{%- endmacro %}
+
+{# Hypixel-style identity pieces. Rank colours come from /ranks.css as .rank-<slug>. #}
+{% macro avatar(key, size=48, cls='') -%}
+<span class="avatar avatar-{{ size }} {{ cls }}"><img src="{{ avatar_url(key) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy"></span>
+{%- endmacro %}
+
+{# The rank's frame from the frames pack around the avatar; members without a rank get the Member frame.
+   Character sprites are shown whole inside the opening, other avatars fill it. #}
+{% macro framed(key, frame, size=160, cls='', preview=False) -%}
+{%- set f = frame_name(frame) -%}
+{%- set sprite = not key or key.startswith('sprite:') -%}
+<span class="framed framed-{{ size }} frame-{{ f }}{% if sprite %} framed-sprite{% endif %} {{ cls }}"{% if preview %} data-preview-frame{% endif %}>
+  <span class="framed-hole"><img src="{{ avatar_url(key) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy"{% if preview %} data-preview-avatar{% endif %}></span>
+  <img class="framed-art" src="{{ url_for('static', filename='img/frames/' ~ f ~ '-256.webp') }}" srcset="{{ url_for('static', filename='img/frames/' ~ f ~ '-256.webp') }} 256w, {{ url_for('static', filename='img/frames/' ~ f ~ '-512.webp') }} 512w" sizes="{{ size }}px" alt="" width="{{ size }}" height="{{ size }}" loading="lazy">
+</span>
+{%- endmacro %}
+
+{% macro name(username, rank_slug, link=True) -%}
+{%- if link -%}<a class="name-ranked rank-{{ rank_slug or 'none' }}" href="{{ url_for('community.member_profile', username=username) }}">{{ username }}</a>
+{%- else -%}<span class="name-ranked rank-{{ rank_slug or 'none' }}">{{ username }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro rank_tag(rank_slug, rank_name) -%}
+{%- if rank_slug -%}<span class="rank-tag rank-{{ rank_slug }}">{{ rank_name }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro prefix(slug) -%}
+{%- set p = prefix_info(slug) -%}
+{%- if p -%}<span class="prefix prefix-{{ p[1] }}">{{ p[0] }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro category_icon(cat, size=64) -%}
+{% set icon = forum_icon(cat.slug) %}
+<span class="forum-illustration{% if not icon %} forum-illustration-stock{% endif %}" aria-hidden="true">
+{% if icon and icon.endswith('.png') %}<img src="{{ url_for('static', filename='img/forum/' ~ icon) }}" width="{{ size }}" height="{{ size }}" alt="" loading="lazy">
+{% elif icon %}<img src="{{ url_for('static', filename='img/forum/' ~ icon ~ '-128.webp') }}" srcset="{{ url_for('static', filename='img/forum/' ~ icon ~ '-128.webp') }} 128w, {{ url_for('static', filename='img/forum/' ~ icon ~ '-256.webp') }} 256w" sizes="{{ size }}px" width="{{ size }}" height="{{ size }}" alt="" loading="lazy">
+{% else %}<img src="{{ avatar_url(cat.icon) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy">{% endif %}
+</span>
+{%- endmacro %}

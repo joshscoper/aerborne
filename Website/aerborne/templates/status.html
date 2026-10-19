@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}Server status{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="wrap">
+    <h1>Server status</h1>
+    <p class="lede">Live from the server, refreshed every minute.</p>
+  </div>
+</header>
+<div class="wrap status-layout">
+  {% if settings.maintenance == '1' %}
+  <div class="notice notice-warn" role="status">
+    <strong>Maintenance in progress.</strong> {{ settings.maintenance_message or "The server is down for planned work. Check back soon." }}
+  </div>
+  {% endif %}
+  {{ m.server_card() }}
+  <dl class="facts status-facts">
+    <dt>State</dt><dd data-field="state">Checking…</dd>
+    <dt>Players</dt><dd data-field="players">–</dd>
+    <dt>Version</dt><dd data-field="version">–</dd>
+    <dt>Last checked</dt><dd data-field="checked">–</dd>
+    <dt>Last seen online</dt><dd data-field="last-online">–</dd>
+  </dl>
+</div>
+{% endblock %}

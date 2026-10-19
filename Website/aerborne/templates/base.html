@@ -1,0 +1,172 @@
+{% if false %}{% block title %}{% endblock %}{% endif %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% set page_title = self.title() | trim %}
+  <title>{% if page_title %}{{ page_title }} | {{ site.SITE_NAME }}{% else %}{{ site.SITE_NAME }}: Minecraft Skyblock RPG{% endif %}</title>
+  <meta name="description" content="{% block description %}{{ site.SITE_NAME }} is a Java Edition Skyblock RPG: grow a floating island with friends, discover Arcane enchantments and explore a world above the clouds.{% endblock %}">
+  <meta name="theme-color" content="#17243B">
+  <meta property="og:site_name" content="{{ site.SITE_NAME }}">
+  <meta property="og:title" content="{{ page_title or site.SITE_NAME }}">
+  <meta property="og:description" content="{{ self.description() | trim }}">
+  <meta property="og:image" content="{{ (site.SITE_URL ~ url_for('static', filename='img/brand/og-image-1200x630.jpg')) if site.SITE_URL else url_for('static', filename='img/brand/og-image-1200x630.jpg', _external=True) }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ site.SITE_NAME }}: {{ site.TAGLINE }}">
+  <meta name="twitter:card" content="summary_large_image">
+  {% if preview %}<meta name="robots" content="noindex">{% endif %}
+  <link rel="icon" href="{{ url_for('static', filename='img/brand/favicon.ico') }}" sizes="any">
+  <link rel="icon" href="{{ url_for('static', filename='img/brand/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='img/brand/favicon-32.png') }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/brand/apple-touch-icon.png') }}" sizes="180x180">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <link rel="alternate" type="application/rss+xml" title="{{ site.SITE_NAME }} news" href="{{ url_for('public.news_feed') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('community.ranks_css') }}">
+  <script src="{{ url_for('static', filename='js/site.js') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}{% if settings.fun_cursor != '0' %} fun-cursor{% endif %}">
+  <a class="skip" href="#main">Skip to content</a>
+
+  {% if staff and staff_view %}
+  <div class="staff-bar" role="region" aria-label="Staff tools">
+    <div class="wrap staff-bar-inner">
+      <span class="staff-bar-who"><span class="staff-dot" aria-hidden="true"></span>Admin view · <strong>{{ staff.username }}</strong></span>
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      {% if edit_link %}<a href="{{ edit_link[0] }}">{{ edit_link[1] }}</a>{% endif %}
+      <form class="staff-bar-switch" method="post" action="{{ url_for('admin.view_as') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="player">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <button type="submit">View as a player</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if preview %}
+  <div class="preview-bar" role="note">
+    Preview: this is how the page looks once published. Status: <strong>{{ item.status }}</strong>{% if item.publish_at %}, goes live {{ item.publish_at | date(true) }}{% endif %}.
+    Close this tab to go back to the editor.
+  </div>
+  {% endif %}
+
+  {% if settings.announcement_text %}
+  <div class="announce">
+    <p class="wrap">{{ settings.announcement_text }}{% if settings.announcement_link %} <a href="{{ settings.announcement_link }}">Read more</a>{% endif %}</p>
+  </div>
+  {% endif %}
+
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="{{ url_for('public.index') }}" aria-label="{{ site.SITE_NAME }} home">
+        <img src="{{ url_for('static', filename='img/brand/navbar-logo-320.webp') }}" alt="{{ site.SITE_NAME }}" width="160" height="60">
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu">Menu</button>
+      <nav id="site-menu" class="site-menu" aria-label="Main">
+        <ul class="nav-list">
+          {% for item in nav %}
+          {% if item.links %}
+          {% set active = request.endpoint in item.links | map('first') | list %}
+          <li class="nav-group{% if active %} is-active{% endif %}">
+            <button class="nav-trigger" type="button" aria-expanded="false" aria-controls="menu-{{ item.id }}">{{ item.label }}</button>
+            <ul class="nav-panel" id="menu-{{ item.id }}">
+              {% for endpoint, label, hint in item.links %}
+              <li><a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}><span class="nav-link-label">{{ label }}</span><span class="nav-link-hint">{{ hint }}</span></a></li>
+              {% endfor %}
+              {% if item.id == 'community' %}<li><a href="{{ url_for('public.discord') }}" rel="noopener"><span class="nav-link-label">Discord</span><span class="nav-link-hint">Chat with the community</span></a></li>{% endif %}
+            </ul>
+          </li>
+          {% else %}
+          <li><a class="nav-top" href="{{ url_for(item.endpoint) }}"{% if request.endpoint == item.endpoint or (request.endpoint or '').startswith(item.endpoint ~ '_') %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+        <div class="nav-account">
+          <a class="nav-discord" href="{{ url_for('public.discord') }}" rel="noopener" aria-label="Discord">{% include "partials/discord_icon.svg" %}<span>Discord</span></a>
+          {% if g.member %}
+          <a class="nav-top nav-member" href="{{ url_for('community.account') }}"{% if request.endpoint == 'community.account' %} aria-current="page"{% endif %}>{{ g.member.username }}</a>
+          {% elif staff and staff_view %}
+          <a class="nav-top" href="{{ url_for('admin.dashboard') }}">Admin</a>
+          {% else %}
+          <a class="nav-top" href="{{ url_for('community.login', next=request.full_path if request.endpoint != 'community.login' else None) }}"{% if request.endpoint in ('community.login', 'community.register') %} aria-current="page"{% endif %}>Sign in</a>
+          {% endif %}
+        </div>
+      </nav>
+      <a class="btn btn-primary masthead-play" href="{{ url_for('public.play') }}">Play now</a>
+    </div>
+  </header>
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='img/brand/skycrest-192.webp') }}" alt="" width="72" height="72" loading="lazy">
+        <p class="footer-tagline">{{ site.TAGLINE }}</p>
+        {% if server_address %}<p>Java: <code>{{ server_address }}</code></p>{% endif %}
+        <p><a class="btn btn-discord" href="{{ url_for('public.discord') }}" rel="noopener">{% include "partials/discord_icon.svg" %} Join our Discord</a></p>
+      </div>
+      <nav aria-label="Footer">
+        <h2 class="footer-heading">Game</h2>
+        <ul>
+          <li><a href="{{ url_for('public.play') }}">Play</a></li>
+          <li><a href="{{ url_for('public.guide') }}">Game Guide</a></li>
+          <li><a href="{{ url_for('public.codex') }}">Arcane Codex</a></li>
+          <li><a href="{{ url_for('public.companions') }}">Companions</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Community">
+        <h2 class="footer-heading">Community</h2>
+        <ul>
+          <li><a href="{{ url_for('community.forum') }}">Forum</a></li>
+          <li><a href="{{ url_for('community.leaderboards') }}">Leaderboards</a></li>
+          {% if settings.arcade_enabled != '0' %}<li><a href="{{ url_for('arcade.index') }}">Arcade</a></li>{% endif %}
+          <li><a href="{{ url_for('public.news') }}">News</a> · <a href="{{ url_for('public.news_feed') }}">RSS</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Help">
+        <h2 class="footer-heading">Help</h2>
+        <ul>
+          <li><a href="{{ url_for('public.support') }}">Support &amp; FAQ</a></li>
+          <li><a href="{{ url_for('public.page', slug='rules') }}">Rules</a></li>
+          <li><a href="{{ url_for('public.status_page') }}">Server status</a></li>
+          {% if site.CONTACT_EMAIL %}<li><a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a></li>{% endif %}
+          {% for line in (settings.extra_links or '').splitlines() if '|' in line %}
+          {% set label, href = line.split('|', 1) %}
+          {% if href.strip().startswith('https://') or href.strip().startswith('/') %}<li><a href="{{ href.strip() }}" rel="noopener">{{ label.strip() }}</a></li>{% endif %}
+          {% endfor %}
+        </ul>
+      </nav>
+      <div class="legal">
+        <p>&copy; {{ year }} {{ site.SITE_NAME }}. Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</p>
+        <p class="legal-links">
+          <a href="{{ url_for('public.page', slug='terms') }}">Terms</a>
+          <a href="{{ url_for('public.page', slug='privacy') }}">Privacy</a>
+          <a href="{{ url_for('public.page', slug='store-terms') }}">Store terms</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <a class="play-dock btn btn-primary" href="{{ url_for('public.play') }}">Play {{ site.SITE_NAME }}</a>
+
+  {% if staff and not staff_view %}
+  <form class="player-pill" method="post" action="{{ url_for('admin.view_as') }}" aria-label="Viewing as a player">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="mode" value="admin">
+    <input type="hidden" name="next" value="{{ request.full_path }}">
+    <span>Player view</span>
+    <button type="submit">Back to admin view</button>
+  </form>
+  {% endif %}
+</body>
+</html>

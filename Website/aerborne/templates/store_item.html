@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block description %}{{ item.summary }}{% endblock %}
+{% block content %}
+<div class="wrap product-layout">
+  <p class="crumbs"><a href="{{ url_for('public.store') }}">Store</a> / <a href="{{ url_for('public.store_category', category=item.category) }}">{{ category_title }}</a></p>
+  <article class="product">
+    <figure class="product-figure">
+      {{ m.picture(item.image, item.image_alt, 'product-big', 320, 320, lazy=False) }}
+      {% if item.concept_art %}<figcaption>Concept art. The in-game look may differ.</figcaption>{% endif %}
+    </figure>
+    <div class="product-text">
+      <h1>{{ item.name }}</h1>
+      <p class="lede">{{ item.summary }}</p>
+      <dl class="facts">
+        <dt>Price</dt><dd>{% if item.availability == 'released' and item.price %}<strong>{{ item.price }}</strong>{% else %}Not on sale yet{% endif %}</dd>
+        {% if item.entitlement %}<dt>Entitlement</dt><dd>{{ option_label('products', 'entitlement', item.entitlement) }}{% if item.entitlement_note %}: {{ item.entitlement_note }}{% endif %}</dd>{% endif %}
+        <dt>Platforms</dt><dd>{{ item.platforms or 'Java Edition' }}</dd>
+        <dt>Gameplay effect</dt><dd>None. Cosmetic only.</dd>
+      </dl>
+      <h2>What you receive</h2>
+      <ul class="ticks">{% for line in includes %}<li>{{ line }}</li>{% endfor %}</ul>
+      {% if item.availability == 'released' and item.price and item.tebex_url %}
+      <p><a class="btn btn-primary btn-large" href="{{ item.tebex_url }}" rel="noopener">Buy on Tebex for {{ item.price }}</a></p>
+      <p class="fine">You'll check out on Tebex. Read the <a href="{{ url_for('public.page', slug='store-terms') }}">store terms</a> before you buy.</p>
+      {% else %}
+      <p class="notice notice-info">This item isn't on sale yet.</p>
+      {% endif %}
+    </div>
+  </article>
+</div>
+{% endblock %}

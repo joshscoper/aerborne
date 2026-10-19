@@ -1,0 +1,46 @@
+# Optional fresh-deployment overlay. Omitted keys use the jar's bundled defaults.
+# Do not replace an existing config or change storage backend/season without a reviewed migration.
+gameplay:
+  mode: skyblock
+skyblock:
+  display-name: Aerborne
+branding:
+  server-list-enabled: true
+  mode-label: RPG Skyblock
+  tagline: Small beginnings. Endless skies.
+  description: Build your island. Explore the skies. Discover magic.
+# Safe Forge progression is available; runtime combat/chain effects keep their separate validation gates.
+arcane-forge:
+  research:
+    enabled: true
+  imbuement:
+    enabled: true
+  overcharge:
+    enabled: true
+  corruption:
+    enabled: true
+  attunement:
+    enabled: true
+storage:
+  mode: yaml
+resource-pack:
+  provider: none
+  custom-models: false
+tips:
+  initial-delay-seconds: 120
+  interval-seconds: 600
+# An explicit staging safeguard. Existing owner-selected autonomous settings are not overwritten.
+anti-cheat:
+  mode: alert
+  ml:
+    autonomous: false
+  record-ip-addresses: false
+  geolocation:
+    enabled: false
+    auto-download: false
+presentation:
+  refresh-ticks: 20
+  sidebar-enabled: true
+  tab-list-enabled: true
+  nameplates-enabled: true
+  chat-format-enabled: true

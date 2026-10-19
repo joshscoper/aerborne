@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}{{ cat.title }}{% endblock %}
+{% block content %}
+<header class="page-head page-head-gold">
+  <div class="wrap">
+    <p class="crumbs"><a href="{{ url_for('public.store') }}">Store</a></p>
+    <h1>{{ cat.title }}</h1>
+    <p class="lede">{{ cat.blurb }}</p>
+  </div>
+</header>
+<div class="wrap">
+  {% if cat.key == 'supporter-ranks' %}
+  <p class="notice notice-info">Supporter ranks are cosmetic only. They never give gameplay advantages, Marks or island progress.</p>
+  {% endif %}
+
+  {% if cat.products %}
+  <ul class="product-grid">
+    {% for p in cat.products %}
+    <li>
+      <a class="product-card" href="{{ url_for('public.store_item', slug=p.slug) }}">
+        {% if p.image %}{{ m.picture(p.image, p.image_alt, 'product-img', 200, 200) }}{% endif %}
+        <span class="product-name">{{ p.name }}</span>
+        <span class="product-price">{% if p.availability == 'released' and p.price %}{{ p.price }}{% else %}Not on sale yet{% endif %}</span>
+        <span>{{ m.concept(p.concept_art) }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if cat.key == 'supporter-ranks' and cat.products | length > 1 %}
+  {% set ns = namespace(rows=[]) %}
+  {% for p in cat.products %}{% for line in p.includes.splitlines() if line.strip() and line.strip() not in ns.rows %}{% set ns.rows = ns.rows + [line.strip()] %}{% endfor %}{% endfor %}
+  <section class="compare" aria-labelledby="compare-title">
+    <h2 id="compare-title">Compare ranks</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col">Includes</th>{% for p in cat.products %}<th scope="col">{{ p.name }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in ns.rows %}
+          <tr><th scope="row">{{ row }}</th>{% for p in cat.products %}{% set has = row in p.includes.splitlines() | map('trim') | list %}<td>{% if has %}<span class="yes" aria-label="Included">✓</span>{% else %}<span class="no" aria-label="Not included">–</span>{% endif %}</td>{% endfor %}</tr>
+          {% endfor %}
+          <tr><th scope="row">Gameplay advantage</th>{% for p in cat.products %}<td>None</td>{% endfor %}</tr>
+          <tr><th scope="row">Price</th>{% for p in cat.products %}<td>{% if p.availability == 'released' and p.price %}{{ p.price }}{% else %}Not on sale yet{% endif %}</td>{% endfor %}</tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+  {% else %}
+  <p class="empty">Nothing in {{ cat.title | lower }} is on sale yet. Watch <a href="{{ url_for('public.news') }}">News</a> for the store opening.</p>
+  {% endif %}
+</div>
+{% endblock %}

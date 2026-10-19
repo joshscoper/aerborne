@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Aerborne | Staff Console</title>
+<meta name="description" content="Aerborne staff console. Player support, server health and Watchdog moderation.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/panel.css">
+<script src="/panel.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="nav" aria-label="Sections">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5 7 8.5v6.8c0 5.6 3.8 10 9 11.7 5.2-1.7 9-6.1 9-11.7V8.5L16 5Z"/><path d="M10.5 16.5h3l1.5-3.5 2.2 6 1.6-2.5h2.7"/></svg>
+      <span>Aerborne<small>Staff Console</small></span>
+    </div>
+    <nav id="nav"></nav>
+    <div class="nav-foot">
+      <p id="link-state" class="link-state" data-state="connecting"><span class="dot"></span><span class="label">Connecting</span></p>
+      <p id="whoami" class="whoami"></p>
+      <button id="theme" class="ghost small" type="button">Switch theme</button>
+    </div>
+  </aside>
+
+  <main id="main" tabindex="-1">
+    <header class="topbar">
+      <div>
+        <h1 id="view-title">Overview</h1>
+        <p id="view-sub" class="sub"></p>
+      </div>
+      <div class="top-actions">
+        <label class="search">
+          <span class="visually-hidden">Find a player</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+          <input id="finder" type="search" placeholder="Find a player" autocomplete="off" spellcheck="false">
+          <kbd>/</kbd>
+        </label>
+        <div id="finder-results" class="finder-results" role="listbox" hidden></div>
+        <button id="broadcast" class="secondary" type="button">Broadcast</button>
+      </div>
+    </header>
+
+    <section class="view" data-view="overview">
+      <div class="pulse" id="pulse">
+        <div class="pulse-copy">
+          <p class="pulse-state" id="pulse-state">Waiting for the first server snapshot</p>
+          <p class="pulse-detail" id="pulse-detail"></p>
+        </div>
+        <div class="pulse-chart" id="pulse-chart"></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid two">
+        <article class="panel">
+          <header><h2>Under watch</h2><button class="link" data-goto="alerts" type="button">Open Watchdog</button></header>
+          <div id="ov-watch"></div>
+        </article>
+        <article class="panel">
+          <header><h2>Latest alerts</h2><button class="link" data-goto="alerts" type="button">All alerts</button></header>
+          <div id="ov-alerts"></div>
+        </article>
+        <article class="panel">
+          <header><h2>Open reports</h2><button class="link" data-goto="reports" type="button">All reports</button></header>
+          <div id="ov-reports"></div>
+        </article>
+        <article class="panel">
+          <header><h2>Staff activity</h2><button class="link" data-goto="audit" type="button">Audit log</button></header>
+          <div id="ov-audit"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" data-view="players" hidden>
+      <div class="toolbar">
+        <div class="segmented" id="players-scope" role="tablist">
+          <button type="button" data-value="online" aria-selected="true">Online</button>
+          <button type="button" data-value="all">Everyone</button>
+          <button type="button" data-value="sanctioned">With records</button>
+        </div>
+        <label class="field grow"><span class="visually-hidden">Filter players</span><input id="players-filter" type="search" placeholder="Filter by name, world or group" autocomplete="off"></label>
+      </div>
+      <div class="panel flush" id="players-table"></div>
+    </section>
+
+    <section class="view" data-view="locations" hidden>
+      <div id="geo-notice"></div>
+      <div class="kpis" id="geo-kpis"></div>
+      <div class="grid two wide-first">
+        <article class="panel"><header><h2>Players by country</h2><span class="hint" id="geo-scope-label"></span></header><div id="geo-bars"></div></article>
+        <article class="panel"><header><h2>Location data</h2></header><div id="geo-source"></div></article>
+      </div>
+      <div class="toolbar">
+        <div class="segmented" id="geo-scope" role="tablist">
+          <button type="button" data-value="all" aria-selected="true">Everyone</button>
+          <button type="button" data-value="online">Online now</button>
+        </div>
+        <label class="field grow"><span class="visually-hidden">Filter countries</span><input id="geo-filter" type="search" placeholder="Filter by country, region or city" autocomplete="off"></label>
+      </div>
+      <div class="panel flush" id="geo-table"></div>
+    </section>
+
+    <section class="view" data-view="alerts" hidden>
+      <div class="grid three">
+        <article class="panel"><header><h2>How Watchdog acts</h2></header><div id="wd-config"></div></article>
+        <article class="panel"><header><h2>Flags by check</h2><span class="hint" id="wd-range-label"></span></header><div id="wd-checks"></div></article>
+        <article class="panel"><header><h2>Live suspicion</h2></header><div id="wd-live"></div></article>
+      </div>
+      <article class="panel model-panel">
+        <header><h2>Combat model</h2><button id="train-model" class="secondary small" type="button">Train now</button></header>
+        <div id="wd-model"></div>
+      </article>
+      <div class="toolbar">
+        <label class="field"><span class="visually-hidden">Check</span><select id="wd-check"><option value="">All checks</option></select></label>
+        <label class="field"><span class="visually-hidden">Time range</span>
+          <select id="wd-range"><option value="3600000">Last hour</option><option value="86400000" selected>Last 24 hours</option><option value="604800000">Last 7 days</option><option value="0">All saved</option></select>
+        </label>
+        <label class="field"><span class="visually-hidden">Outcome</span>
+          <select id="wd-action"><option value="">Any outcome</option><option value="KICK">Kicked by rules</option><option value="AI_KICK">Kicked by model</option><option value="AI_BAN">Banned by model</option><option value="AI_FLAG">Model flags</option><option value="BUFFERED">Logged</option></select>
+        </label>
+        <label class="field grow"><span class="visually-hidden">Filter alerts</span><input id="wd-filter" type="search" placeholder="Filter by player or detail" autocomplete="off"></label>
+      </div>
+      <div class="panel flush" id="wd-table"></div>
+    </section>
+
+    <section class="view" data-view="reports" hidden>
+      <div class="toolbar">
+        <div class="segmented" id="reports-scope" role="tablist">
+          <button type="button" data-value="OPEN" aria-selected="true">Open</button>
+          <button type="button" data-value="RESOLVED">Resolved</button>
+        </div>
+      </div>
+      <div id="reports-list" class="stack"></div>
+    </section>
+
+    <section class="view" data-view="server" hidden>
+      <div class="kpis" id="srv-kpis"></div>
+      <div class="grid charts" id="srv-charts"></div>
+      <div class="grid two wide-first">
+        <article class="panel flush"><header><h2>Worlds</h2></header><div id="srv-worlds"></div></article>
+        <article class="panel"><header><h2>Runtime</h2></header><dl class="facts" id="srv-info"></dl></article>
+      </div>
+    </section>
+
+    <section class="view" data-view="sanctions" hidden>
+      <div class="grid three">
+        <article class="panel flush"><header><h2>Bans</h2></header><div id="sx-bans"></div></article>
+        <article class="panel flush"><header><h2>Mutes</h2></header><div id="sx-mutes"></div></article>
+        <article class="panel flush"><header><h2>Frozen</h2></header><div id="sx-freezes"></div></article>
+      </div>
+    </section>
+
+    <section class="view" data-view="audit" hidden>
+      <div class="toolbar">
+        <label class="field"><span class="visually-hidden">Action</span><select id="audit-action"><option value="">All actions</option></select></label>
+        <label class="field grow"><span class="visually-hidden">Filter audit log</span><input id="audit-filter" type="search" placeholder="Filter by staff, player or detail" autocomplete="off"></label>
+      </div>
+      <div class="panel flush" id="audit-table"></div>
+    </section>
+
+    <section class="view" data-view="staff" hidden>
+      <div class="grid two wide-first">
+        <article class="panel flush"><header><h2>Team</h2></header><div id="staff-users"></div></article>
+        <article class="panel flush"><header><h2>Groups</h2></header><div id="staff-groups"></div></article>
+      </div>
+      <article class="panel flush"><header><h2>Access changes</h2></header><div id="staff-audit"></div></article>
+    </section>
+
+    <footer class="foot">
+      <span id="updated">No data yet</span>
+      <span>Every change made here is written to the staff audit log under your console login.</span>
+    </footer>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Player profile" tabindex="-1" hidden>
+  <div class="drawer-head" id="drawer-head"></div>
+  <div class="drawer-actions" id="drawer-actions"></div>
+  <div class="segmented tabs" id="drawer-tabs" role="tablist">
+    <button type="button" data-value="profile" aria-selected="true">Profile</button>
+    <button type="button" data-value="connection">Connection</button>
+    <button type="button" data-value="watchdog">Watchdog</button>
+    <button type="button" data-value="history">History</button>
+    <button type="button" data-value="inventory">Inventory</button>
+    <button type="button" data-value="access">Access</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<dialog id="dialog">
+  <form id="dialog-form" method="dialog">
+    <h2 id="dialog-title"></h2>
+    <p id="dialog-text" class="sub"></p>
+    <div id="dialog-fields"></div>
+    <p id="dialog-error" class="form-error" role="alert"></p>
+    <div class="dialog-buttons">
+      <button type="button" class="ghost" id="dialog-cancel">Cancel</button>
+      <button type="submit" class="primary" id="dialog-confirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+</body>
+</html>

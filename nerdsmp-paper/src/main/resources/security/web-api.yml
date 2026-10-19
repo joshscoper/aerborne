@@ -1,0 +1,18 @@
+# Read-only integrations. Existing files are never overwritten or automatically enabled.
+schema: 1
+enabled: true
+bind: '0.0.0.0'
+port: 9028
+
+# Exact Host authorities accepted in addition to the local interface and localhost.
+# Add your HTTPS reverse proxy authority here, for example 'api.example.com'.
+allowed-hosts: []
+
+# Browser origins are denied by default. Add exact HTTPS origins only if needed.
+# Never put the bearer token in a public website or a client-side script.
+cors-origins: []
+
+# All Bukkit reads happen on the main thread at this interval, never in HTTP workers.
+snapshot-seconds: 5
+global-per-minute: 600
+per-address-per-minute: 120

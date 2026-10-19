@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block title %}Link your Minecraft account{% endblock %}
+{% block content %}
+<div class="wrap auth-layout">
+  <div class="auth-card">
+    <h1>Link your Minecraft account</h1>
+    {{ c.flashes() }}
+    {% if member.mc_uuid %}
+    <p>You're linked to <strong>{{ member.mc_name }}</strong>.</p>
+    <p><a class="btn btn-primary" href="{{ url_for('community.account') }}">Back to your account</a></p>
+    {% elif not available %}
+    <p class="notice notice-warn">Linking isn't switched on yet. The site needs its connection to the game server first. Check back soon.</p>
+    {% else %}
+    <ol class="steps steps-compact">
+      <li><h3>Join {{ site.SITE_NAME }}</h3><p>Connect to <code>{{ server_address }}</code> in Minecraft: Java Edition.</p></li>
+      <li><h3>Type <code>/weblink</code></h3><p>You'll get a private 8-character code, valid for 10 minutes.</p></li>
+      <li><h3>Enter the code here</h3>
+        <form method="post" class="inline-code">
+          {{ c.csrf() }}
+          <label class="sr-only" for="code">Link code</label>
+          <input id="code" name="code" placeholder="ABCD-2345" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="12" required>
+          <button class="btn btn-primary" type="submit">Link account</button>
+        </form>
+      </li>
+    </ol>
+    <p class="fine">Never share your code. Staff will never ask for it.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

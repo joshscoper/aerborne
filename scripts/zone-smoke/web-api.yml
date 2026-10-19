@@ -1,0 +1,10 @@
+# Disposable fixture only. Never expose its known test token or bind a production listener.
+schema: 1
+enabled: true
+bind: '127.0.0.1'
+port: 0
+allowed-hosts: []
+cors-origins: []
+snapshot-seconds: 5
+global-per-minute: 600
+per-address-per-minute: 120

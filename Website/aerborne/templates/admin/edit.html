@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if item %}Edit {{ ctype.title_of(item) }}{% else %}New {{ ctype.singular }}{% endif %}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="{{ url_for('admin.content_list', key=ctype.key) }}">{{ ctype.label }}</a></p>
+<div class="head-row">
+  <h1>{% if item %}{{ ctype.title_of(item) }}{% else %}New {{ ctype.singular }}{% endif %}</h1>
+  {% if preview_url %}<a class="btn btn-quiet" href="{{ preview_url }}" target="_blank" rel="noopener">Preview</a>{% endif %}
+</div>
+{% if item %}<p class="fine">Status: <span class="status status-{{ item.status }}">{{ item.status }}</span>. Last saved {{ item.updated_at | date(true) }} by {{ item.updated_by }}.</p>{% endif %}
+
+<form class="editor" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="editor-main">
+    {% for f in ctype.fields %}
+    {% set value = values.get(f.name) %}
+    {% set err = errors.get(f.name) %}
+    <div class="field field-{{ f.kind }}{% if err %} has-error{% endif %}">
+      {% if f.kind == 'bool' %}
+      <label class="check"><input type="checkbox" name="{{ f.name }}" value="1"{% if value %} checked{% endif %}> {{ f.label }}</label>
+      {% elif f.kind == 'multiselect' %}
+      <fieldset><legend>{{ f.label }}</legend>
+        {% set chosen = (value or '').split(',') %}
+        <div class="checks">{% for opt, label in f.options %}<label class="check"><input type="checkbox" name="{{ f.name }}" value="{{ opt }}"{% if opt in chosen %} checked{% endif %}> {{ label }}</label>{% endfor %}</div>
+      </fieldset>
+      {% else %}
+      <label for="f-{{ f.name }}">{{ f.label }}{% if f.required %} <span class="req">required</span>{% endif %}</label>
+      {% if f.kind == 'select' %}
+      <select id="f-{{ f.name }}" name="{{ f.name }}">
+        {% if not f.required %}<option value="">None</option>{% endif %}
+        {% for opt, label in f.options %}<option value="{{ opt }}"{% if value == opt %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% elif f.kind in ('textarea', 'lines') %}
+      <textarea id="f-{{ f.name }}" name="{{ f.name }}" rows="{{ 4 if f.kind == 'lines' else 3 }}">{{ value or '' }}</textarea>
+      {% elif f.kind == 'markdown' %}
+      <textarea id="f-{{ f.name }}" class="markdown" name="{{ f.name }}" rows="18">{{ value or '' }}</textarea>
+      <small>Markdown: **bold**, _italic_, ## headings, - lists, [links](/guide), | tables |.</small>
+      {% elif f.kind == 'image' %}
+      <div class="image-pick">
+        <select id="f-{{ f.name }}" name="{{ f.name }}" data-image-select>
+          <option value="">No image</option>
+          {% if media_choices %}<optgroup label="Uploaded">{% for v, label in media_choices %}<option value="{{ v }}"{% if value == v %} selected{% endif %}>{{ label }}</option>{% endfor %}</optgroup>{% endif %}
+          <optgroup label="Built-in">{% for v in builtin_choices %}<option value="{{ v }}"{% if value == v %} selected{% endif %}>{{ v[7:] }}</option>{% endfor %}</optgroup>
+        </select>
+        <img class="image-preview" alt="" src="{{ image_url(value) if value else '' }}" data-image-preview data-static-base="{{ url_for('static', filename='') }}" data-media-base="{{ url_for('public.media', filename='') }}"{% if not value %} hidden{% endif %}>
+        <a class="fine" href="{{ url_for('admin.media') }}" target="_blank" rel="noopener">Upload a new image</a>
+      </div>
+      {% else %}
+      <input id="f-{{ f.name }}" name="{{ f.name }}" value="{{ value if value is not none else '' }}"{% if f.kind == 'int' %} inputmode="numeric"{% endif %}{% if f.kind == 'slug' %} data-slug-for="{{ ctype.title_field }}" pattern="[a-z0-9]+(-[a-z0-9]+)*"{% endif %}{% if f.kind == 'url' %} type="url" placeholder="https://"{% endif %}>
+      {% endif %}
+      {% endif %}
+      {% if f.help %}<small>{{ f.help }}</small>{% endif %}
+      {% if err %}<p class="error" role="alert">{{ err }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <aside class="editor-side">
+    <div class="field{% if errors.status %} has-error{% endif %}">
+      <label for="f-status">Status</label>
+      <select id="f-status" name="status">
+        {% for value, label in statuses %}<option value="{{ value }}"{% if values.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% if current_user.role == 'writer' %}<small>Send it for review when it's ready; an editor publishes it.</small>{% endif %}
+      {% if errors.status %}<p class="error">{{ errors.status }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.publish_at %} has-error{% endif %}">
+      <label for="f-publish_at">Publish at (UTC)</label>
+      <input id="f-publish_at" type="datetime-local" name="publish_at" value="{{ (values.publish_at or '')[:16].replace(' ', 'T') }}">
+      <small>Leave blank to go live as soon as it's published. A future time schedules it.</small>
+      {% if errors.publish_at %}<p class="error">{{ errors.publish_at }}</p>{% endif %}
+    </div>
+    <div class="field">
+      <label for="f-sort_order">Sort order</label>
+      <input id="f-sort_order" name="sort_order" inputmode="numeric" value="{{ values.sort_order or 0 }}">
+      <small>Lower numbers come first.</small>
+    </div>
+    <button class="btn" type="submit">Save</button>
+  </aside>
+</form>
+
+{% if item and current_user.role in ('admin', 'editor') %}
+<form class="danger" method="post" action="{{ url_for('admin.content_delete', key=ctype.key, item_id=item.id) }}" data-confirm="Delete {{ ctype.title_of(item) }} permanently? Archiving hides it without deleting.">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button class="btn btn-danger" type="submit">Delete {{ ctype.singular }}</button>
+</form>
+{% endif %}
+{% endblock %}

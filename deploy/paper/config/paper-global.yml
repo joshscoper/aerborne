@@ -1,0 +1,14 @@
+_version: 31
+proxies:
+  velocity:
+    enabled: true
+    online-mode: true
+    secret: REPLACE_WITH_THE_CONTENTS_OF_FORWARDING_SECRET
+spark:
+  enabled: true
+unsupported-settings:
+  allow-headless-pistons: false
+  allow-permanent-block-break-exploits: false
+  allow-piston-duplication: false
+  allow-tripwire-disarming-exploits: false
+
