@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% import "community/_people.html" as people_macros with context %}
+{% block title %}{{ member.username }}'s friends{% endblock %}
+{% block body_class %}profile-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}">{% endblock %}
+{% block content %}
+<header class="social-head">
+  <div class="wrap">
+    <p class="eyebrow"><a href="{{ url_for('community.member_profile', username=member.username) }}">← {{ member.username }}</a></p>
+    <h1>{{ member.username }}'s friends</h1>
+  </div>
+</header>
+<div class="wrap friends-page">
+  {% if rows %}
+  <ul class="people-list">
+    {% for p in rows %}
+    <li>
+      {{ people_macros.person(p) }}
+      <a class="btn btn-ghost btn-small" href="{{ url_for('community.member_profile', username=p.username) }}">Profile</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="social-empty"><h2>No friends yet</h2></div>
+  {% endif %}
+</div>
+{% endblock %}

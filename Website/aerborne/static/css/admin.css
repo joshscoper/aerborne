@@ -154,3 +154,7 @@ ins { background: #DDF3EC; text-decoration: none; }
 .tool-grid .card { margin: 0; }
 .tool-grid h3 { margin-top: 0; }
 .card-danger { border-color: var(--danger); }
+.badge-admin-head { display: flex; align-items: center; gap: 0.6rem; }
+.badge-admin-head img, .badge-admin-list img { border-radius: 50%; }
+.badge-admin-list { list-style: none; padding: 0; display: grid; gap: 0.4rem; }
+.badge-admin-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }

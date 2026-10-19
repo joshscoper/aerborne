@@ -16,6 +16,24 @@
   {% for label, value in stats %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
 </dl>
 
+<h2>Badges</h2>
+{% if awarded %}
+<ul class="badge-admin-list">
+  {% for b in awarded %}
+  <li><strong>{{ b.name }}</strong> <span class="fine">awarded {{ b.awarded_at | date }} by {{ b.awarded_by }}{% if b.note %} · {{ b.note }}{% endif %}</span>
+    <form class="inline-form" method="post" action="{{ url_for('admin.forum_member_badges', member_id=m.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="badge_id" value="{{ b.id }}"><button class="linkish" name="action" value="revoke">Take back</button></form></li>
+  {% endfor %}
+</ul>
+{% else %}<p class="fine">No staff-awarded badges. Automatic badges show on their profile on their own.</p>{% endif %}
+{% if all_badges %}
+<form class="inline-form" method="post" action="{{ url_for('admin.forum_member_badges', member_id=m.id) }}">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <select name="badge_id" aria-label="Badge">{% for b in all_badges %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}</select>
+  <input name="note" maxlength="120" placeholder="Why? (optional, shown on their profile)" aria-label="Note">
+  <button class="btn btn-quiet" name="action" value="award">Award badge</button>
+</form>
+{% endif %}
+
 <h2>Tools</h2>
 <div class="tool-grid">
   <form class="card" method="post" action="{{ url_for('admin.forum_member_action', member_id=m.id) }}">

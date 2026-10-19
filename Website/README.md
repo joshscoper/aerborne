@@ -245,6 +245,29 @@ The server sends its changes every 15 seconds (`interval-seconds`) and keeps uns
 `plugins/NerdSMP/website-social-state.yml`, so neither side loses changes if the other is down. Without
 the token, everything still works on the website alone and nothing is queued for the server.
 
+## Profiles and badges
+
+The member's name in the nav opens their public profile; *Edit your profile* on it leads to the editor.
+Profiles show a stats strip (posts, likes, friends, badges, join date), the member's about text, badges,
+game stats (Adventurer rank and level, all eleven skills, and their standing on every leaderboard, read
+live from the game API; members can hide them, and the owner still sees them with a note), recent forum
+activity, up to 12 friends with a *See all* link and mutual friends, Arcade best scores,
+island and favourite skill, social links and in-game stats. Members can hide their friends list under
+Account → Links & privacy.
+
+**Badges** come in two kinds. Hover or tap one to see what it's for.
+
+- **Automatic**, earned through activity and worked out each time the profile is shown: Aerborne team,
+  Supporter, Content creator, Founding member (the first 100 accounts), Verified adventurer, A year in
+  the skies, First words, Forum regular (50 posts), Forum veteran (250), Well liked (25 likes), Community
+  favourite (250), Social butterfly (10 friends), Arcade player and High scorer (best score in any game).
+  Change them in `aerborne/badges.py`.
+- **Staff-awarded**, managed by admins under Admin → Forum → Badges. Six starter badges are included:
+  Bug hunter, Event winner, Master builder, Helping hand, Idea maker and Beta tester. Each badge uses a
+  picture from the site's gem, forum, companion or Arcade art and one of six colours. Admins and
+  moderators award or take back badges from a member's page under Forum → Members, with an optional
+  note. The member gets a notification.
+
 ## Members directory and member tools
 
 **Members** (Community → Members) lists every active member with their rank frame. Visitors can search

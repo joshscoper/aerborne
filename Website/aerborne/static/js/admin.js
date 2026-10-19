@@ -36,5 +36,12 @@
         if (!window.confirm(form.getAttribute("data-confirm"))) event.preventDefault();
       });
     });
+
+    // A single button inside a larger form, like "Delete badge" next to "Save".
+    Array.prototype.forEach.call(document.querySelectorAll("button[data-confirm]"), function (button) {
+      button.addEventListener("click", function (event) {
+        if (!window.confirm(button.getAttribute("data-confirm"))) event.preventDefault();
+      });
+    });
   });
 })();

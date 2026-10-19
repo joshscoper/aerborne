@@ -153,7 +153,10 @@ def forum_member(member_id):
     ]
     history = conn.execute("SELECT * FROM audit_log WHERE entity = 'members' AND entity_id = ? ORDER BY id DESC LIMIT 20",
                            (mid,)).fetchall()
-    return render_template("admin/forum_member.html", m=member, stats=stats, history=history)
+    awarded = conn.execute("SELECT b.*, mb.awarded_at, mb.awarded_by, mb.note FROM member_badges mb JOIN badges b ON b.id = mb.badge_id "
+                           "WHERE mb.member_id = ? ORDER BY mb.awarded_at DESC", (mid,)).fetchall()
+    all_badges = conn.execute("SELECT * FROM badges ORDER BY name").fetchall()
+    return render_template("admin/forum_member.html", m=member, stats=stats, history=history, awarded=awarded, all_badges=all_badges)
 
 
 @bp.route("/forum/members/<int:member_id>/export")
@@ -208,6 +211,74 @@ def forum_member_action(member_id):
         abort(400)
     conn.commit()
     return back
+
+
+@bp.route("/forum/badges", methods=["GET", "POST"])
+@auth.role_required("admin")
+def forum_badges():
+    """Badges staff hand out. Automatic badges are listed for reference but can't be edited here."""
+    from . import badges
+    conn = get_db()
+    if request.method == "POST":
+        badge_id = request.form.get("id", type=int)
+        if request.form.get("action") == "delete" and badge_id:
+            conn.execute("DELETE FROM member_badges WHERE badge_id = ?", (badge_id,))
+            conn.execute("DELETE FROM badges WHERE id = ?", (badge_id,))
+            audit(conn, g.user, "delete", "badges", badge_id, "Deleted a badge")
+            conn.commit()
+            flash("Badge deleted and taken back from everyone who had it.")
+            return redirect(url_for("admin.forum_badges"))
+        data = {"name": request.form.get("name", "").strip()[:40], "slug": request.form.get("slug", "").strip()[:40],
+                "description": request.form.get("description", "").strip()[:160],
+                "icon": request.form.get("icon", ""), "tone": request.form.get("tone", "")}
+        if not data["name"] or not SLUG_RE.match(data["slug"]):
+            flash("Give the badge a name and a slug like bug-hunter.", "error")
+        elif data["icon"] not in badges.ICON_PATHS or data["tone"] not in dict(badges.TONES):
+            flash("Pick a picture and a colour from the lists.", "error")
+        else:
+            clash = conn.execute("SELECT id FROM badges WHERE slug = ?", (data["slug"],)).fetchone()
+            if clash and clash["id"] != badge_id:
+                flash("Another badge already uses that slug.", "error")
+                return redirect(url_for("admin.forum_badges"))
+            cols = list(data.keys())
+            if badge_id:
+                conn.execute("UPDATE badges SET %s WHERE id = ?" % ", ".join(c + " = ?" for c in cols), [data[c] for c in cols] + [badge_id])
+                audit(conn, g.user, "update", "badges", badge_id, "Updated badge %s" % data["name"])
+            else:
+                cur = conn.execute("INSERT INTO badges (%s, created_at) VALUES (%s, ?)" % (", ".join(cols), ", ".join("?" * len(cols))),
+                                   [data[c] for c in cols] + [now_str()])
+                audit(conn, g.user, "create", "badges", cur.lastrowid, "Added badge %s" % data["name"])
+            conn.commit()
+            flash("Saved %s." % data["name"])
+        return redirect(url_for("admin.forum_badges"))
+    rows = conn.execute("SELECT b.*, (SELECT COUNT(*) FROM member_badges mb WHERE mb.badge_id = b.id) AS holders FROM badges b "
+                        "ORDER BY b.name").fetchall()
+    return render_template("admin/forum_badges.html", rows=rows, icons=badges.ICONS, tones=badges.TONES,
+                           icon_paths=badges.ICON_PATHS, automatic=badges.AUTOMATIC)
+
+
+@bp.route("/forum/members/<int:member_id>/badges", methods=["POST"])
+@auth.role_required(*FORUM_STAFF)
+def forum_member_badges(member_id):
+    from .members import get_member_or_404
+    conn = get_db()
+    member = get_member_or_404(conn, member_id)
+    badge = conn.execute("SELECT * FROM badges WHERE id = ?", (request.form.get("badge_id", type=int),)).fetchone() or abort(400)
+    if request.form.get("action") == "revoke":
+        conn.execute("DELETE FROM member_badges WHERE member_id = ? AND badge_id = ?", (member_id, badge["id"]))
+        audit(conn, g.user, "revoke", "members", member_id, "Took the %s badge from %s" % (badge["name"], member["username"]))
+        flash("Took %s from %s." % (badge["name"], member["username"]))
+    else:
+        note = request.form.get("note", "").strip()[:120]
+        conn.execute("INSERT OR REPLACE INTO member_badges (member_id, badge_id, awarded_at, awarded_by, note) VALUES (?, ?, ?, ?, ?)",
+                     (member_id, badge["id"], now_str(), g.user["username"], note))
+        from .social import notify
+        notify(conn, member_id, "badge", None, url_for("community.member_profile", username=member["username"], _anchor="badges"),
+               badge["name"])
+        audit(conn, g.user, "award", "members", member_id, "Awarded the %s badge to %s" % (badge["name"], member["username"]))
+        flash("Awarded %s to %s." % (badge["name"], member["username"]))
+    conn.commit()
+    return redirect(url_for("admin.forum_member", member_id=member_id))
 
 
 @bp.route("/forum/categories", methods=["GET", "POST"])

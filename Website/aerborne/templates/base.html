@@ -93,7 +93,7 @@
           {% set counts = social_counts() %}
           <a class="nav-icon" href="{{ url_for('community.messages') }}" aria-label="Messages{% if counts.messages %}, {{ counts.messages }} unread{% endif %}"{% if request.endpoint in ('community.messages', 'community.conversation') %} aria-current="page"{% endif %}>{% include "partials/icon_mail.svg" %}{% if counts.messages %}<span class="nav-badge">{{ counts.messages if counts.messages < 100 else '99+' }}</span>{% endif %}</a>
           <a class="nav-icon" href="{{ url_for('community.notifications') }}" aria-label="Notifications{% if counts.notifications + counts.requests %}, {{ counts.notifications }} unread{% endif %}"{% if request.endpoint in ('community.notifications', 'community.friends') %} aria-current="page"{% endif %}>{% include "partials/icon_bell.svg" %}{% if counts.notifications %}<span class="nav-badge">{{ counts.notifications if counts.notifications < 100 else '99+' }}</span>{% endif %}</a>
-          <a class="nav-top nav-member" href="{{ url_for('community.account') }}"{% if request.endpoint == 'community.account' %} aria-current="page"{% endif %}>{{ g.member.username }}</a>
+          <a class="nav-top nav-member" href="{{ url_for('community.member_profile', username=g.member.username) }}"{% if request.endpoint in ('community.account', 'community.member_profile', 'community.member_friends') and (request.view_args or {}).get('username', g.member.username) == g.member.username %} aria-current="page"{% endif %} title="Your profile">{{ g.member.username }}</a>
           {% elif staff and staff_view %}
           <a class="nav-top" href="{{ url_for('admin.dashboard') }}">Admin</a>
           {% else %}

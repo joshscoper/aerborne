@@ -3,7 +3,7 @@
 {% block title %}{{ member.username }}{% endblock %}
 {% block description %}{{ member.username }}'s profile on the {{ site.SITE_NAME }} forum.{% endblock %}
 {% block body_class %}profile-page{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}"><script src="{{ url_for('static', filename='js/badges.js') }}" defer></script>{% endblock %}
 {% block content %}
 <header class="member-cover">
   <img class="member-cover-art" src="{{ banner_url(member.banner) }}" alt="" width="1280" height="320">
@@ -34,12 +34,62 @@
     {% if g.member and g.member.id == member.id %}<a class="btn btn-ghost member-edit" href="{{ url_for('community.account') }}">Edit your profile</a>{% endif %}
   </div>
 </header>
-<div class="wrap member-stats"><dl><div><dt>Posts</dt><dd>{{ member.post_count | number }}</dd></div><div><dt>Likes received</dt><dd>{{ member.likes_received | number }}</dd></div><div><dt>Joined</dt><dd>{{ member.created_at | date }}</dd></div><div><dt>Last seen</dt><dd>{{ member.last_seen_at | date if member.last_seen_at else 'Not yet' }}</dd></div></dl></div>
+<div class="wrap member-stats"><dl><div><dt>Posts</dt><dd>{{ member.post_count | number }}</dd></div><div><dt>Likes received</dt><dd>{{ member.likes_received | number }}</dd></div><div><dt>Friends</dt><dd>{{ extras.friend_total | number }}</dd></div><div><dt>Badges</dt><dd>{{ extras.badges | length }}</dd></div><div><dt>Joined</dt><dd>{{ member.created_at | date }}</dd></div></dl></div>
 <div class="wrap member-layout">
   <div>
     {{ c.flashes() }}
     {% if member.status == 'banned' %}<p class="notice notice-warn">This account is banned from posting.</p>{% endif %}
     {% if member.bio %}<section class="member-panel"><p class="eyebrow">A little introduction</p><h2>About {{ member.username }}</h2><p class="profile-bio">{{ member.bio }}</p></section>{% endif %}
+    <section class="member-panel" id="badges"><div class="member-panel-heading"><div><p class="eyebrow">Earned along the way</p><h2>Badges</h2></div><span class="fine">{{ extras.badges | length }}</span></div>
+    {% if extras.badges %}
+    <ul class="badge-grid" data-badges>
+      {% for b in extras.badges %}
+      <li>
+        <button class="badge badge-tone-{{ b.tone }}{% if b.awarded %} badge-awarded{% endif %}{% if loop.first %} is-active{% endif %}" type="button" title="{{ b.name }}: {{ b.description }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+          <span class="badge-medal"><img src="{{ url_for('static', filename=b.icon) }}" alt="" width="56" height="56" loading="lazy"></span>
+          <span class="badge-name">{{ b.name }}</span>
+          <span class="badge-info" hidden><strong>{{ b.name }}</strong> {{ b.description }}{% if b.awarded %}<em>Awarded by staff {{ b.awarded_at | date }}{% if b.note %} · {{ b.note }}{% endif %}</em>{% endif %}</span>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+    {% set first = extras.badges[0] %}
+    <p class="badge-caption" data-badge-caption aria-live="polite"><strong>{{ first.name }}</strong> {{ first.description }}{% if first.awarded %}<em>Awarded by staff {{ first.awarded_at | date }}{% if first.note %} · {{ first.note }}{% endif %}</em>{% endif %}</p>
+    {% else %}<p class="fine">No badges yet. They come from posting, making friends, playing the Arcade and linking Minecraft.</p>{% endif %}
+    </section>
+    {% set own = g.member and g.member.id == member.id %}
+    {% if member.mc_name and (member.show_stats or own) %}
+    <section class="member-panel member-game" id="game"><div class="member-panel-heading"><div><p class="eyebrow">In the skies of Aerborne</p><h2>Game stats</h2></div><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">{{ member.mc_name }} ↗</a></div>
+    {% if not member.show_stats %}<p class="notice notice-info">Only you can see this. Your game stats are hidden from your public profile; turn them on under <a href="{{ url_for('community.account') }}#social-links">Links &amp; privacy</a>.</p>{% endif %}
+    {% if game %}
+      <dl class="game-highlights">
+        <div><dt>Adventurer</dt><dd><span class="rank-chip">{{ stats.adventurer.rank }}</span>Level {{ stats.adventurer.level }}</dd></div>
+        <div><dt>Total skill levels</dt><dd>{{ game.total | number }}</dd></div>
+        <div><dt>Best standing</dt><dd>{% if game.best %}#{{ game.best[3].rank | number }} <small>{{ game.best[1] }}</small>{% else %}Unranked{% endif %}</dd></div>
+      </dl>
+      <h3 class="game-subhead">Skills</h3>
+      <ul class="game-skills">
+        {% for skill, level, pct in game.skills %}
+        <li><span class="game-skill-name">{{ skill | capitalize }}</span><span class="game-skill-level">{{ level }}<small>/{{ game.max_level }}</small></span>
+          <svg class="game-skill-track" viewBox="0 0 100 6" preserveAspectRatio="none" role="img" aria-label="{{ skill | capitalize }} level {{ level }} of {{ game.max_level }}"><rect width="100" height="6" rx="3" class="track"></rect>{% if pct %}<rect width="{{ pct }}" height="6" rx="3" class="fill"></rect>{% endif %}</svg></li>
+        {% endfor %}
+      </ul>
+      <h3 class="game-subhead">Leaderboards</h3>
+      <ul class="game-boards">
+        {% for key, label, long, row in game.standings %}
+        <li><a href="{{ url_for('community.leaderboards', board=key) }}"><span>{{ long }}</span>{% if row %}<strong>#{{ row.rank | number }}</strong><small>{{ row.score | number }}</small>{% else %}<strong class="unranked">–</strong>{% endif %}</a></li>
+        {% endfor %}
+      </ul>
+      {% if game.updated %}<p class="fine">Updated <time datetime="{{ game.updated }}" data-ago="{{ game.updated }}">{{ game.updated[:16].replace('T', ' ') }} UTC</time></p>{% endif %}
+    {% elif stats_problem == 'not_found' %}
+      <p class="fine">No game stats for {{ member.mc_name }} yet. They appear after playing on the server for a little while.</p>
+    {% else %}
+      <p class="fine">Game stats are offline right now. They come live from the server; check back in a minute.</p>
+    {% endif %}
+    </section>
+    {% elif own and not member.mc_name %}
+    <section class="member-panel member-game"><p class="eyebrow">In the skies of Aerborne</p><h2>Game stats</h2><p class="fine">Link your Minecraft account to show your Adventurer level, skills and leaderboard standings here.</p><a class="btn btn-ghost btn-small" href="{{ url_for('community.link') }}">Link Minecraft</a></section>
+    {% endif %}
     <section class="member-panel"><div class="member-panel-heading"><div><p class="eyebrow">Around the commons</p><h2>Recent activity</h2></div><a href="{{ url_for('community.forum') }}">Visit the forums ↗</a></div>
     {% if posts %}<ul class="member-activity">{% for p in posts %}<li><span class="activity-mark" aria-hidden="true">↗</span><div><a href="{{ url_for('community.thread', thread_id=p.thread_id) }}#post-{{ p.id }}">{{ p.title }}</a><p>{{ p.body | plain(140) }}</p><time class="fine" datetime="{{ p.created_at | isodate }}">{{ p.created_at | date }}</time></div></li>{% endfor %}</ul>
     {% else %}<div class="member-empty"><img src="{{ url_for('static', filename='img/forum/general-chat-128.webp') }}" alt="" width="72" height="72"><p>No public posts yet.</p><span class="fine">Every adventure starts with a hello.</span></div>{% endif %}
@@ -47,9 +97,20 @@
     {% if threads %}<details class="member-panel member-discussions"><summary>Discussions started <span>{{ threads | length }}</span></summary><ul class="link-list">{% for t in threads %}<li>{{ c.prefix(t.prefix) }}<a href="{{ thread_url(t) }}">{{ t.title }}</a><span>{{ t.category_name }} · {{ t.created_at | date }}</span></li>{% endfor %}</ul></details>{% endif %}
   </div>
   <aside>
-    <section class="member-panel member-details"><p class="eyebrow">The adventurer</p><h2>In the skies</h2>{% if member.mc_name %}<p class="connection-state">✓ Minecraft verified</p><p><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">{{ member.mc_name }} ↗</a></p>{% endif %}<dl>{% if member.island_name %}<div><dt>Island</dt><dd>{{ member.island_name }}</dd></div>{% endif %}{% if member.favorite_skill %}<div><dt>Favourite skill</dt><dd>{{ skill_label.get(member.favorite_skill, member.favorite_skill) }}</dd></div>{% endif %}<div><dt>Member since</dt><dd>{{ member.created_at | date }}</dd></div></dl>{% if member.rank_description %}<p class="fine">{{ member.rank_description }}</p>{% endif %}</section>
+    <section class="member-panel member-friends"><div class="member-panel-heading"><div><p class="eyebrow">Good company</p><h2>Friends</h2></div>{% if extras.friends_visible and extras.friend_total %}<a href="{{ url_for('community.member_friends', username=member.username) }}">See all {{ extras.friend_total }}</a>{% endif %}</div>
+    {% if not extras.friends_visible %}<p class="fine">{{ member.username }} keeps their friends list private.</p>
+    {% elif extras.friends %}
+    {% if extras.mutual %}<p class="fine member-mutual">{{ extras.mutual }} mutual friend{{ '' if extras.mutual == 1 else 's' }}</p>{% endif %}
+    <ul class="friend-grid">
+      {% for f in extras.friends %}
+      <li><a href="{{ url_for('community.member_profile', username=f.username) }}" title="{{ f.username }}">{{ c.avatar(f.avatar, 48) }}{% if is_online(f.last_seen_at) %}<span class="friend-online" aria-label="Online"></span>{% endif %}<span class="name-ranked rank-{{ f.rank_slug or 'none' }}">{{ f.username }}</span></a></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="fine">No friends yet.</p>{% endif %}
+    </section>
+    <section class="member-panel member-details"><p class="eyebrow">The adventurer</p><h2>In the skies</h2>{% if member.mc_name %}<p class="connection-state">✓ Minecraft verified</p><p><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">{{ member.mc_name }} ↗</a></p>{% endif %}<dl>{% if member.island_name %}<div><dt>Island</dt><dd>{{ member.island_name }}</dd></div>{% endif %}{% if member.favorite_skill %}<div><dt>Favourite skill</dt><dd>{{ skill_label.get(member.favorite_skill, member.favorite_skill) }}</dd></div>{% endif %}<div><dt>Member since</dt><dd>{{ member.created_at | date }}</dd></div><div><dt>Last seen</dt><dd>{{ member.last_seen_at | date if member.last_seen_at else 'Not yet' }}</dd></div></dl>{% if member.rank_description %}<p class="fine">{{ member.rank_description }}</p>{% endif %}</section>
     {% if member.discord_handle or member.youtube_url or member.twitch_url %}<section class="member-panel"><h2>Find me elsewhere</h2><ul class="member-socials">{% if member.discord_handle %}<li><span>Discord</span><strong>@{{ member.discord_handle }}</strong></li>{% endif %}{% if member.youtube_url %}<li><a href="{{ member.youtube_url }}" rel="nofollow ugc noopener">YouTube channel ↗</a></li>{% endif %}{% if member.twitch_url %}<li><a href="{{ member.twitch_url }}" rel="nofollow ugc noopener">Twitch channel ↗</a></li>{% endif %}</ul></section>{% endif %}
-    {% if stats %}<section class="member-panel"><h2>In game</h2><p><span class="rank-chip">{{ stats.adventurer.rank }}</span> Level <strong>{{ stats.adventurer.level }}</strong></p><ul class="mini-skills">{% for skill, level in (stats.skills or {}).items() | sort(attribute='1', reverse=true) %}{% if loop.index <= 5 %}<li><span>{{ skill | capitalize }}</span><strong>{{ level }}</strong></li>{% endif %}{% endfor %}</ul><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">All game stats ↗</a></section>{% endif %}
+    {% if extras.arcade %}<section class="member-panel member-arcade"><div class="member-panel-heading"><div><p class="eyebrow">Arcade</p><h2>Best scores</h2></div><a href="{{ url_for('arcade.index') }}">Play ↗</a></div><ul class="arcade-bests">{% for a in extras.arcade %}<li><img src="{{ url_for('static', filename=a.icon) }}" alt="" width="40" height="40" loading="lazy"><span>{{ a.name }}<small>{{ a.runs }} game{{ '' if a.runs == 1 else 's' }}</small></span><strong>{{ a.best | number }}</strong></li>{% endfor %}</ul></section>{% endif %}
   </aside>
 </div>
 {% endblock %}

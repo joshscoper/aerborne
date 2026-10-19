@@ -51,6 +51,54 @@ def members():
                            sorts=SORTS, rank=rank, ranks=ranks)
 
 
+# --- Profile extras -------------------------------------------------------------------------
+
+FRIENDS_SHOWN = 12
+
+
+def _friends_sql(columns):
+    return ("SELECT " + columns + " FROM friendships f JOIN members m ON m.id = CASE WHEN f.member_a = ?1 THEN f.member_b "
+            "ELSE f.member_a END LEFT JOIN ranks r ON r.id = m.rank_id WHERE (f.member_a = ?1 OR f.member_b = ?1) AND m.status = 'active'")
+
+
+def friends_visible(member):
+    viewer = g.get("member")
+    return bool(member["show_friends"]) or (viewer is not None and viewer["id"] == member["id"])
+
+
+def profile_extras(conn, member):
+    """Friends, badges and Arcade bests for a public profile."""
+    from . import badges
+    from .arcade import GAMES
+    mid = member["id"]
+    friend_total = conn.execute("SELECT COUNT(*) FROM (" + _friends_sql("m.id") + ")", (mid,)).fetchone()[0]
+    friends, mutual = [], 0
+    if friends_visible(member):
+        friends = conn.execute(_friends_sql(AUTHOR_COLUMNS + ", m.last_seen_at, r.frame AS rank_frame") +
+                               " ORDER BY m.last_seen_at IS NULL, m.last_seen_at DESC LIMIT ?", (mid, FRIENDS_SHOWN)).fetchall()
+        viewer = g.get("member")
+        if viewer is not None and viewer["id"] != mid:
+            mutual = conn.execute("SELECT COUNT(*) FROM (" + _friends_sql("m.id") + ") a JOIN (" +
+                                  _friends_sql("m.id").replace("?1", "?2") + ") b ON a.id = b.id", (mid, viewer["id"])).fetchone()[0]
+    best = {r["game"]: r for r in conn.execute(
+        "SELECT game, MAX(score) AS best, COUNT(*) AS runs FROM arcade_runs WHERE member_id = ? AND status = 'finished' GROUP BY game", (mid,))}
+    arcade = [{"name": game["name"], "icon": game["icon"], "best": best[game["slug"]]["best"], "runs": best[game["slug"]]["runs"]}
+              for game in GAMES if game["slug"] in best]
+    return {"friends": friends, "friend_total": friend_total, "mutual": mutual, "badges": badges.for_member(conn, member),
+            "arcade": arcade, "friends_visible": friends_visible(member)}
+
+
+@bp.route("/members/<username>/friends")
+def member_friends(username):
+    conn = get_db()
+    member = conn.execute("SELECT * FROM members WHERE username = ? AND status = 'active'", (username,)).fetchone() or abort(404)
+    if not friends_visible(member):
+        abort(404)
+    rows = conn.execute(_friends_sql(AUTHOR_COLUMNS + ", m.id, m.last_seen_at, r.frame AS rank_frame") +
+                        " ORDER BY m.username COLLATE NOCASE", (member["id"],)).fetchall()
+    return render_template("community/member_friends.html", member=member, rows=rows)
+
+
 # --- Data export ----------------------------------------------------------------------------
 
 def _rows(conn, sql, args):
@@ -81,6 +129,8 @@ def export_zip(conn, member):
                                     "WHERE b.member_id = ?", (mid,)),
         "notifications.json": _rows(conn, "SELECT kind, (" + names + "actor_id) AS actor, body, created_at, read_at FROM notifications "
                                           "WHERE member_id = ? ORDER BY id", (mid,)),
+        "badges.json": _rows(conn, "SELECT b.name, b.description, mb.awarded_at, mb.note FROM member_badges mb "
+                                   "JOIN badges b ON b.id = mb.badge_id WHERE mb.member_id = ?", (mid,)),
         "reports_filed.json": _rows(conn, "SELECT post_id, reason, created_at FROM forum_reports WHERE member_id = ?", (mid,))
                               + _rows(conn, "SELECT message_id, reason, created_at FROM message_reports WHERE member_id = ?", (mid,)),
         "arcade.json": {
@@ -131,6 +181,7 @@ def erase(conn, member, remove_posts=False):
                 "DELETE FROM notifications WHERE member_id = ? OR actor_id = ?1",
                 "DELETE FROM forum_reports WHERE member_id = ?",
                 "DELETE FROM member_link_codes WHERE member_id = ?",
+                "DELETE FROM member_badges WHERE member_id = ?",
                 "DELETE FROM arcade_payouts WHERE member_id = ? AND status = 'pending'",
                 "UPDATE arcade_runs SET member_id = NULL WHERE member_id = ?"):
         conn.execute(sql, (mid,))

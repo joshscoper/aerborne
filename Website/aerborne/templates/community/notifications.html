@@ -19,7 +19,7 @@
     <a href="{{ url_for('community.open_notification', notification_id=n.id) }}">
       {% if n.actor_name %}{{ c.avatar(n.actor_avatar, 40) }}{% else %}<span class="note-icon" aria-hidden="true">✦</span>{% endif %}
       <span class="note-text">
-        <span><strong class="name-ranked rank-{{ n.actor_rank or 'none' }}">{{ n.actor_name or 'Aerborne' }}</strong> {{ text.get(n.kind, '') }}{% if n.kind in ('reply', 'like') %} <em>{{ n.body }}</em>{% endif %}</span>
+        <span><strong class="name-ranked rank-{{ n.actor_rank or 'none' }}">{{ n.actor_name or 'Aerborne' }}</strong> {{ text.get(n.kind, '') }}{% if n.kind in ('reply', 'like', 'badge') %} <em>{{ n.body }}</em>{% endif %}</span>
         {% if n.kind == 'message' and n.body %}<span class="note-quote">{{ n.body }}</span>{% endif %}
         <time datetime="{{ n.created_at | isodate }}">{{ n.created_at | date(true) }}</time>
       </span>

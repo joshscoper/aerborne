@@ -39,6 +39,7 @@
       <ul>
         <li><a href="{{ url_for('admin.forum_reports') }}"{% if request.endpoint == 'admin.forum_reports' %} aria-current="page"{% endif %}>Reports</a></li>
         <li><a href="{{ url_for('admin.forum_members') }}"{% if request.endpoint == 'admin.forum_members' %} aria-current="page"{% endif %}>Members</a></li>
+        {% if current_user.role == 'admin' %}<li><a href="{{ url_for('admin.forum_badges') }}"{% if request.endpoint == 'admin.forum_badges' %} aria-current="page"{% endif %}>Badges</a></li>{% endif %}
         {% if current_user.role == 'admin' %}<li><a href="{{ url_for('admin.forum_ranks') }}"{% if request.endpoint == 'admin.forum_ranks' %} aria-current="page"{% endif %}>Ranks</a></li>{% endif %}
         {% if current_user.role == 'admin' %}<li><a href="{{ url_for('admin.forum_categories') }}"{% if request.endpoint == 'admin.forum_categories' %} aria-current="page"{% endif %}>Categories</a></li>{% endif %}
       </ul>

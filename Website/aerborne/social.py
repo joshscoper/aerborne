@@ -421,6 +421,7 @@ NOTIFICATION_TEXT = {
     "message": "sent you a message",
     "reply": "replied to your thread",
     "like": "liked your post in",
+    "badge": "awarded you a badge:",
 }
 
 

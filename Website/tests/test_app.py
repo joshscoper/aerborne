@@ -1186,6 +1186,84 @@ class MemberManagementTest(SocialHelpers):
         self.assertEqual(self.register("Ava").status_code, 302, "The username is free again")
 
 
+class ProfileTest(SocialHelpers):
+    def test_nav_name_opens_the_public_profile(self):
+        self.member("Ava")
+        page = self.client.get("/forum").get_data(as_text=True)
+        self.assertIn('class="nav-top nav-member" href="/members/Ava"', page)
+        self.assertIn("Edit your profile", self.client.get("/members/Ava").get_data(as_text=True))
+
+    def test_profiles_show_friends_badges_and_respect_privacy(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.act("Ava", "add")
+        self.sign_in("Ava")
+        self.act("Bjorn", "accept")
+        page = self.client.get("/members/Bjorn").get_data(as_text=True)
+        self.assertIn("See all 1", page)
+        self.assertIn("Verified adventurer", page)
+        self.assertIn("Founding member", page)
+        self.assertEqual(self.client.get("/members/Bjorn/friends").status_code, 200)
+        self.sign_in("Bjorn")
+        token = self.csrf("/account")
+        self.client.post("/account", data={"_csrf": token, "action": "profile", "dm_policy": "everyone",
+                                           "friend_requests_open": "1"})
+        self.sign_in("Ava")
+        self.assertIn("keeps their friends list private", self.client.get("/members/Bjorn").get_data(as_text=True))
+        self.assertEqual(self.client.get("/members/Bjorn/friends").status_code, 404)
+
+    def test_profiles_show_game_stats_unless_hidden(self):
+        self.register("Amy")
+        self.link()
+        with mock.patch.object(gameapi, "_request", side_effect=fake_api()):
+            page = self.client.get("/members/Amy").get_data(as_text=True)
+            self.assertIn("Game stats", page)
+            self.assertIn("Scout", page)
+            self.assertIn("Mining", page)
+            self.assertIn("#1", page)
+            token = self.csrf("/account")
+            self.client.post("/account", data={"_csrf": token, "action": "profile", "dm_policy": "everyone"})
+            self.assertIn("Only you can see this", self.client.get("/members/Amy").get_data(as_text=True))
+            self.sign_out()
+            self.assertNotIn("Game stats", self.client.get("/members/Amy").get_data(as_text=True))
+        gameapi.clear_cache()
+        conn = self.db()
+        conn.execute("UPDATE members SET show_stats = 1")
+        conn.commit()
+        conn.close()
+        with mock.patch.object(gameapi, "_request", return_value=(None, "unavailable")):
+            self.assertIn("Game stats are offline right now", self.client.get("/members/Amy").get_data(as_text=True))
+
+    def test_staff_create_award_and_take_back_badges(self):
+        self.member("Ava")
+        conn = self.db()
+        ava = conn.execute("SELECT id FROM members WHERE username = 'Ava'").fetchone()[0]
+        conn.close()
+        self.add_user("boss", "admin")
+        self.login("boss")
+        token = self.csrf("/admin/forum/badges")
+        self.assertIn(b"Bug hunter", self.client.get("/admin/forum/badges").data, "Starter badges are seeded")
+        self.client.post("/admin/forum/badges", data={"_csrf": token, "name": "Speedrunner", "slug": "speedrunner",
+                                                      "description": "Fastest to the Workshop", "icon": "gem-celerity", "tone": "mint"})
+        bad = self.client.post("/admin/forum/badges", data={"_csrf": token, "name": "Bad", "slug": "bad", "icon": "../../etc", "tone": "mint"},
+                               follow_redirects=True)
+        self.assertIn(b"Pick a picture", bad.data)
+        conn = self.db()
+        badge = conn.execute("SELECT id FROM badges WHERE slug = 'speedrunner'").fetchone()[0]
+        conn.close()
+        self.client.post("/admin/forum/members/%d/badges" % ava, data={"_csrf": token, "badge_id": badge, "note": "Spring event"})
+        self.sign_in("Ava")
+        profile = self.client.get("/members/Ava").get_data(as_text=True)
+        self.assertIn("Speedrunner", profile)
+        self.assertIn("Spring event", profile)
+        self.assertIn("awarded you a badge:", self.client.get("/notifications").get_data(as_text=True))
+        self.login("boss")
+        token = self.csrf("/admin/forum/badges")
+        self.client.post("/admin/forum/members/%d/badges" % ava, data={"_csrf": token, "badge_id": badge, "action": "revoke"},
+                         follow_redirects=True)
+        self.assertNotIn("Speedrunner", self.client.get("/members/Ava").get_data(as_text=True))
+
+
 class FakeServer(threading.Thread):
     """Answers one Server List Ping with a canned status."""
 

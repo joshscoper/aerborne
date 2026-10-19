@@ -14,7 +14,7 @@
 .member-headline { color: #d9e4f3; margin: .85rem 0 0; font-size: 1rem; max-width: 36rem; overflow-wrap: anywhere; }
 .member-edit { align-self: flex-end; margin-bottom: .5rem; font-size: .85rem; }
 .member-stats { padding-block: 1.35rem; border-bottom: 1px solid #ffffff12; margin-bottom: 2rem; }
-.member-stats dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+.member-stats dl { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin: 0; }
 .member-stats dl > div { padding-inline: 1rem; border-right: 1px solid #ffffff18; }
 .member-stats dl > div:first-child { padding-left: 0; }
 .member-stats dl > div:last-child { border: 0; }
@@ -149,8 +149,77 @@
   .member-intro .eyebrow { font-size: .55rem; }
   .member-intro h1 { font-size: 1.8rem; }
   .member-headline { font-size: .85rem; }
-  .member-stats dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+  .member-stats dl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
   .member-stats dl > div { padding: 0; border: 0; }
   .member-panel { padding: 1.25rem; }
   .member-panel h2 { font-size: 1.4rem; }
 }
+
+/* Badges */
+.badge-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr)); gap: .5rem .35rem; }
+.badge { --tone: var(--sky); position: relative; display: flex; flex-direction: column; align-items: center; gap: .45rem; width: 100%; padding: .4rem .2rem; text-align: center; font: inherit; color: inherit; background: none; border: 0; border-radius: 12px; cursor: pointer; }
+.badge:hover, .badge.is-active { background: #ffffff0d; }
+.badge.is-active .badge-name { color: var(--tone); }
+.badge:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.badge-tone-gold { --tone: var(--gold); }
+.badge-tone-mint { --tone: var(--mint); }
+.badge-tone-lavender { --tone: var(--lavender); }
+.badge-tone-peach { --tone: var(--peach); }
+.badge-tone-ruby { --tone: #F07A7A; }
+.badge-medal { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #2f4670, #17243b 70%); box-shadow: inset 0 0 0 3px var(--tone), 0 0 0 4px #20314b, 0 0 0 5px color-mix(in srgb, var(--tone) 45%, transparent), 0 8px 18px -8px #07101e; }
+.badge-medal img { width: 52px; height: 52px; object-fit: contain; border-radius: 50%; }
+.badge-awarded .badge-medal::after { content: "★"; position: absolute; top: -2px; right: calc(50% - 40px); display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--gold); color: #2E2105; font-size: .7rem; box-shadow: 0 0 0 2px #20314b; }
+.badge-name { font-size: .78rem; font-weight: 800; color: #dce6f5; line-height: 1.25; }
+.badge-info[hidden] { display: none; }
+.badge-caption { margin: 1.1rem 0 0; padding: .8rem 1rem; border-radius: 10px; background: #17243b; border: 1px solid #9ab1d22a; color: #c8d7ea; font-size: .86rem; line-height: 1.5; overflow-wrap: anywhere; }
+.badge-caption strong { color: var(--cloud); }
+.badge-caption em { display: block; margin-top: .3rem; font-style: normal; color: var(--gold); font-size: .8rem; }
+@supports not (background: color-mix(in srgb, red, blue)) { .badge-medal { box-shadow: inset 0 0 0 3px var(--tone), 0 0 0 4px #20314b, 0 8px 18px -8px #07101e; } }
+
+/* Friends on profiles */
+.member-mutual { margin: -.4rem 0 .8rem; }
+.friend-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem .4rem; }
+.friend-grid a { position: relative; display: flex; flex-direction: column; align-items: center; gap: .3rem; text-decoration: none; min-width: 0; }
+.friend-grid .name-ranked { font-size: .7rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.friend-online { position: absolute; top: 36px; left: calc(50% + 14px); width: 12px; height: 12px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 2px #20314b; }
+
+/* Arcade bests */
+.arcade-bests { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.arcade-bests li { display: flex; align-items: center; gap: .75rem; }
+.arcade-bests img { border-radius: 10px; flex-shrink: 0; }
+.arcade-bests span { flex: 1; display: grid; font-weight: 700; font-size: .88rem; }
+.arcade-bests small { font-weight: 400; color: #95a8c2; font-size: .72rem; }
+.arcade-bests strong { color: var(--gold); }
+
+/* Full friends list */
+.friends-page { padding-block: 2rem 4rem; max-width: 52rem; }
+
+/* Game stats */
+.game-highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0 0 1.4rem; }
+.game-highlights div { padding: .85rem 1rem; border-radius: 12px; background: #17243b; border: 1px solid #9ab1d22a; min-width: 0; }
+.game-highlights dt { font-size: .7rem; color: #95a8c2; text-transform: uppercase; letter-spacing: .08em; }
+.game-highlights dd { margin: .4rem 0 0; font: 800 1.2rem/1.2 var(--display); color: var(--cloud); overflow-wrap: anywhere; }
+.game-highlights dd small { font: 700 .75rem var(--body); color: #95a8c2; }
+.game-highlights .rank-chip { font: 800 .75rem var(--body); vertical-align: .15em; }
+.game-subhead { font: 800 .8rem var(--body); text-transform: uppercase; letter-spacing: .08em; color: #95a8c2; margin: 0 0 .7rem; }
+.game-skills { list-style: none; margin: 0 0 1.4rem; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem 1.5rem; }
+.game-skills li { display: grid; grid-template-columns: 1fr auto; gap: .3rem .5rem; align-items: baseline; }
+.game-skill-name { font-weight: 700; font-size: .88rem; color: #dce6f5; }
+.game-skill-level { font-weight: 800; color: var(--mint); font-variant-numeric: tabular-nums; }
+.game-skill-level small { color: #6f84a3; font-weight: 600; }
+.game-skill-track { grid-column: 1 / -1; width: 100%; height: 6px; display: block; }
+.game-skill-track .track { fill: #ffffff14; }
+.game-skill-track .fill { fill: var(--mint); }
+.game-boards { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.game-boards a { display: grid; gap: .1rem; padding: .7rem .85rem; border-radius: 10px; background: #17243b; border: 1px solid #9ab1d22a; text-decoration: none; color: inherit; }
+.game-boards a:hover { border-color: #9ab1d266; }
+.game-boards span { font-size: .75rem; color: #95a8c2; }
+.game-boards strong { font: 800 1.15rem var(--display); color: var(--gold); }
+.game-boards strong.unranked { color: #6f84a3; }
+.game-boards small { font-size: .75rem; color: #c8d7ea; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .game-highlights, .game-boards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .game-highlights div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .game-skills { grid-template-columns: minmax(0, 1fr); }
+}
+

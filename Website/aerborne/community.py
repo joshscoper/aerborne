@@ -319,6 +319,7 @@ def _save_profile(conn, member_id, form):
         "show_stats": 1 if form.get("show_stats") else 0,
         "dm_policy": form.get("dm_policy", "everyone"),
         "friend_requests_open": 1 if form.get("friend_requests_open") else 0,
+        "show_friends": 1 if form.get("show_friends") else 0,
     }
     if fields["dm_policy"] not in ("everyone", "friends", "nobody"):
         return "Pick who can message you from the list."
@@ -437,14 +438,26 @@ def member_profile(username):
         "WHERE p.member_id = ? AND p.hidden = 0 AND t.hidden = 0 AND c.private = 0 ORDER BY p.id DESC LIMIT 6",
         (member["id"],)).fetchall()
     stats, problem = (None, None)
-    if member["mc_name"] and member["show_stats"]:
+    if member["mc_name"] and (member["show_stats"] or (g.member and g.member["id"] == member["id"])):
         stats, problem = gameapi.player(member["mc_name"])
+    game = None
+    if stats:
+        levels = stats.get("skills") or {}
+        skills = sorted(((s, int(levels.get(s, 0) or 0)) for s in gameapi.SKILLS), key=lambda pair: -pair[1])
+        standings = [(key, label, long, (stats.get("boards") or {}).get(key)) for key, label, long in gameapi.BOARDS]
+        ranked = [row for row in standings if row[3]]
+        game = {"skills": [(s, level, min(100, int(round(100.0 * level / gameapi.MAX_SKILL_LEVEL)))) for s, level in skills],
+                "total": sum(level for _s, level in skills), "standings": standings,
+                "best": min(ranked, key=lambda row: row[3].get("rank", 10 ** 9)) if ranked else None,
+                "updated": stats.get("updatedAt") or "", "max_level": gameapi.MAX_SKILL_LEVEL}
     rel = None
     if g.member and g.member["id"] != member["id"]:
         from .social import relationship
         rel = relationship(conn, g.member["id"], member["id"])
+    from .members import profile_extras
     return render_template("community/member.html", member=member, threads=threads, posts=posts,
-                           stats=stats, stats_problem=problem, skill_label=dict(FAVOURITE_SKILLS), rel=rel)
+                           stats=stats, stats_problem=problem, game=game, skill_label=dict(FAVOURITE_SKILLS), rel=rel,
+                           extras=profile_extras(conn, member))
 
 
 # --- Leaderboards and player profiles -------------------------------------------------------

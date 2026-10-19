@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 7
+LATEST = 8
 C = "static:img/companions/"
 
 
@@ -29,6 +29,8 @@ def apply(conn):
         _rev6(conn)
     if current < 7:
         _rev7(conn)
+    if current < 8:
+        _rev8(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -38,6 +40,23 @@ def apply(conn):
 def _rev7(conn):
     # Raise the original allowance while retaining custom limits (including rewards disabled).
     conn.execute("UPDATE settings SET value = '1000' WHERE key = 'arcade_daily_cap' AND value = '200'")
+
+
+STAFF_BADGES = [
+    ("bug-hunter", "Bug hunter", "Found and reported a bug that got fixed.", "forum-bug-reports", "mint"),
+    ("event-winner", "Event winner", "Won an official Aerborne event.", "gem-fortune", "gold"),
+    ("master-builder", "Master builder", "Built something the whole server talked about.", "forum-island-showcase", "sky"),
+    ("helping-hand", "Helping hand", "Went out of their way to help other players.", "gem-vitality", "peach"),
+    ("idea-maker", "Idea maker", "Suggested something that made it into the game.", "forum-suggestions", "lavender"),
+    ("beta-tester", "Beta tester", "Tested Aerborne before it opened.", "gem-celerity", "mint"),
+]
+
+
+def _rev8(conn):
+    # Starter badges staff can hand out; staff can rename or delete them.
+    for slug, name, description, icon, tone in STAFF_BADGES:
+        conn.execute("INSERT OR IGNORE INTO badges (slug, name, description, icon, tone, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                     (slug, name, description, icon, tone, now_str()))
 
 
 def _insert(conn, key, row):

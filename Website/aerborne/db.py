@@ -229,6 +229,23 @@ CREATE TABLE IF NOT EXISTS notifications (
     read_at TEXT
 );
 CREATE INDEX IF NOT EXISTS notifications_member ON notifications (member_id, read_at);
+CREATE TABLE IF NOT EXISTS badges (
+    id INTEGER PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    icon TEXT NOT NULL DEFAULT 'gem-ward',
+    tone TEXT NOT NULL DEFAULT 'sky',
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS member_badges (
+    member_id INTEGER NOT NULL REFERENCES members (id),
+    badge_id INTEGER NOT NULL REFERENCES badges (id),
+    awarded_at TEXT NOT NULL,
+    awarded_by TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (member_id, badge_id)
+);
 CREATE TABLE IF NOT EXISTS social_outbox (
     id INTEGER PRIMARY KEY,
     kind TEXT NOT NULL,
@@ -269,6 +286,7 @@ SYSTEM_COLUMNS = [
     # Friends, blocks and messages.
     ("members", "dm_policy", "TEXT NOT NULL DEFAULT 'everyone'"),
     ("members", "friend_requests_open", "INTEGER NOT NULL DEFAULT 1"),
+    ("members", "show_friends", "INTEGER NOT NULL DEFAULT 1"),
 ]
 
 

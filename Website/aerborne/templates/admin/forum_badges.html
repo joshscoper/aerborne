@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block title %}Badges{% endblock %}
+{% block content %}
+<h1>Badges</h1>
+<p class="fine">Badges show on member profiles. Staff hand out the ones below from a member's page under Forum → Members, and the member gets a notification. The automatic ones at the bottom are earned through activity and can't be edited here.</p>
+{% for b in rows %}
+<form class="card cat-form badge-form" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <input type="hidden" name="id" value="{{ b.id }}">
+  <p class="badge-admin-head"><img src="{{ url_for('static', filename=icon_paths.get(b.icon, icon_paths['gem-ward'])) }}" alt="" width="40" height="40"> <strong>{{ b.name }}</strong> <span class="fine">{{ b.holders }} member{{ '' if b.holders == 1 else 's' }}</span></p>
+  <div class="cat-grid">
+    <label>Name <input name="name" value="{{ b.name }}" required maxlength="40"></label>
+    <label>Slug <input name="slug" value="{{ b.slug }}" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*"></label>
+    <label>Picture <select name="icon">{% for key, label, path in icons %}<option value="{{ key }}"{% if b.icon == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>Colour <select name="tone">{% for key, label in tones %}<option value="{{ key }}"{% if b.tone == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Description <input name="description" value="{{ b.description }}" maxlength="160"></label>
+  <p class="inline-form">
+    <button class="btn btn-quiet" type="submit">Save</button>
+    <button class="linkish danger-text" type="submit" name="action" value="delete" formnovalidate data-confirm="Delete {{ b.name }}? Everyone who has it loses it.">Delete badge</button>
+  </p>
+</form>
+{% else %}<p>No badges yet.</p>{% endfor %}
+
+<h2>Add a badge</h2>
+<form class="card cat-form" method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="cat-grid">
+    <label>Name <input name="name" required maxlength="40" placeholder="Event winner"></label>
+    <label>Slug <input name="slug" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="event-winner"></label>
+    <label>Picture <select name="icon">{% for key, label, path in icons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Colour <select name="tone">{% for key, label in tones %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+  </div>
+  <label>Description <input name="description" maxlength="160" placeholder="Shown when someone hovers over the badge"></label>
+  <button class="btn" type="submit">Add badge</button>
+</form>
+
+<h2>Automatic badges</h2>
+<table>
+  <thead><tr><th></th><th>Badge</th><th>How it's earned</th></tr></thead>
+  <tbody>
+    {% for key, name, description, icon, tone, test in automatic %}
+    <tr><td><img src="{{ url_for('static', filename=icon_paths[icon]) }}" alt="" width="32" height="32"></td><td>{{ name }}</td><td>{{ description }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
