@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ m.username }} · Members{% endblock %}
+{% block content %}
+<p class="fine"><a href="{{ url_for('admin.forum_members') }}">← All members</a></p>
+<h1>{{ m.username }}</h1>
+<p>
+  {{ 'Banned' if m.status == 'banned' else 'Active' }} · joined {{ m.created_at | date }} · last seen {{ m.last_seen_at | date(true) if m.last_seen_at else 'never' }}
+  · {% if m.mc_name %}Minecraft: {{ m.mc_name }}{% else %}Minecraft not linked{% endif %}
+  · <a href="{{ url_for('community.member_profile', username=m.username) }}" target="_blank" rel="noopener">Public profile ↗</a>
+</p>
+{% if m.status == 'banned' and m.ban_reason %}<p class="notice">Ban reason: {{ m.ban_reason }}</p>{% endif %}
+<p class="fine">Change rank, title, role, ban or Minecraft link from the <a href="{{ url_for('admin.forum_members', q=m.username) }}">members list</a>.</p>
+
+<h2>Activity</h2>
+<dl class="stat-grid">
+  {% for label, value in stats %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+</dl>
+
+<h2>Tools</h2>
+<div class="tool-grid">
+  <form class="card" method="post" action="{{ url_for('admin.forum_member_action', member_id=m.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <h3>Sign out everywhere</h3>
+    <p class="fine">Ends every session on the website. Use after a password leak or a ban.</p>
+    <button class="btn btn-quiet" name="action" value="signout">Sign out</button>
+  </form>
+  <form class="card" method="post" action="{{ url_for('admin.forum_member_action', member_id=m.id) }}" data-confirm="Clear {{ m.username }}'s headline, bio, signature, links, avatar and banner?">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <h3>Clear profile</h3>
+    <p class="fine">Removes their headline, bio, signature, title, social links, avatar and banner. Posts stay.</p>
+    <button class="btn btn-quiet" name="action" value="clear_profile">Clear profile</button>
+  </form>
+  {% if g.user.role == 'admin' %}
+  <form class="card" method="post" action="{{ url_for('admin.forum_member_action', member_id=m.id) }}" data-confirm="Replace {{ m.username }}'s password with a temporary one?">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <h3>Reset password</h3>
+    <p class="fine">Sets a temporary password shown to you once and signs them out. Linked players can also reset their own with <code>/weblink</code>.</p>
+    <button class="btn btn-quiet" name="action" value="reset_password">Reset password</button>
+  </form>
+  <div class="card">
+    <h3>Download their data</h3>
+    <p class="fine">A zip of everything the website holds about them: profile, posts, messages, friends, blocks, notifications and Arcade history. Never includes the password. Logged in the audit log.</p>
+    <a class="btn btn-quiet" href="{{ url_for('admin.forum_member_export', member_id=m.id) }}">Download zip</a>
+  </div>
+  <form class="card card-danger" method="post" action="{{ url_for('admin.forum_member_action', member_id=m.id) }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <h3>Delete account</h3>
+    <p class="fine">Removes their profile, Minecraft link, messages, friends, blocks, notifications and likes, and frees the username. Their posts show as "Deleted member" unless you remove them too. This can't be undone; download their data first if you need a copy.</p>
+    <label class="check"><input type="checkbox" name="remove_posts" value="1"> Also remove their posts and threads</label>
+    <label>Type <strong>{{ m.username }}</strong> to confirm <input name="confirm" autocomplete="off" required></label>
+    <button class="btn btn-danger" name="action" value="delete">Delete account</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if history %}
+<h2>Staff history</h2>
+<table>
+  <thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead>
+  <tbody>{% for h in history %}<tr><td>{{ h.created_at | date(true) }}</td><td>{{ h.username }}</td><td>{{ h.summary }}</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+{% endblock %}

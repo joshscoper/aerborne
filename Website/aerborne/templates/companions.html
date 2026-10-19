@@ -1,52 +1,13 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
+{% import "partials/reference_macros.html" as ref with context %}
 {% block title %}Companions{% endblock %}
-{% block description %}The {{ site.SITE_NAME }} companion encyclopedia: block-built pets and trails.{% endblock %}
+{% block description %}Meet Aerborne's companion characters, with availability and acquisition details for each design.{% endblock %}
+{% block body_class %}reference-page companions-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head page-head-mint">
-  <div class="wrap">
-    <h1>Companion encyclopedia</h1>
-    <p class="lede">Block-built pets in the classic armour-stand sculpture style. They're coming to the game soon.</p>
-  </div>
-</header>
+<header class="page-head reference-head companions-reference-head"><div class="wrap"><p class="eyebrow">A little company in the clouds</p><h1>Meet the companions.</h1><p class="lede">Cloud puffs, garden bunnies and small sparks of mischief. Find a favourite, and see what’s planned.</p></div></header>
 {% set group = 'guide' %}{% include "partials/subnav.html" %}
-
-<div class="wrap">
-  {% if companions %}
-  <ul class="bestiary">
-    {% for pet in companions %}
-    <li>
-      <a class="bestiary-card" href="{{ url_for('public.companion', slug=pet.slug) }}">
-        <span class="bestiary-frame">{{ m.picture(pet.image, pet.image_alt, 'bestiary-img', 240, 240) }}</span>
-        <span class="bestiary-no">No. {{ '%02d' % loop.index }}</span>
-        <span class="bestiary-name">{{ pet.name }}</span>
-        <span class="bestiary-species">{{ pet.species }}</span>
-        <span class="bestiary-badges">{{ m.availability(pet.availability) }} {{ m.concept(pet.concept_art) }}</span>
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p>The first companions will be introduced here.</p>
-  {% endif %}
-
-  {% if trails %}
-  <section class="trails" id="trails" aria-labelledby="trails-title">
-    <h2 id="trails-title">Trails</h2>
-    <p class="lede">Little effects that follow your footsteps.</p>
-    <ul class="trail-grid">
-      {% for t in trails %}
-      <li class="trail">
-        {{ m.picture(t.image, t.image_alt, 'trail-img', 160, 160) }}
-        <div>
-          <h3>{{ t.name }}</h3>
-          <p>{{ t.summary }}</p>
-          <p class="trail-badges">{{ m.availability(t.availability) }} {{ m.concept(t.concept_art) }}</p>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
-  {% endif %}
-</div>
-{% endblock %}
+<div class="wrap reference-content">{% if companions and not (companions | selectattr('availability','equalto','released') | list) %}<div class="reference-preview-note"><strong>A character collection in development.</strong> These illustrations show the designs, not finished in-game models. Acquisition methods and release dates have not been announced.</div>{% endif %}
+{% if companions %}<ul class="reference-companion-grid">{% for pet in companions %}<li><a class="reference-companion-card" href="{{ url_for('public.companion', slug=pet.slug) }}"><div class="reference-companion-art">{{ m.picture(pet.image, pet.image_alt, '', 360, 360) }}</div><div class="reference-companion-copy"><p class="eyebrow">{{ pet.species }}</p><h2>{{ pet.name }}</h2><p>{{ pet.summary }}</p><div class="reference-card-footer">{{ ref.status(pet.availability) }}<span>Meet {{ pet.name }} ↗</span></div></div></a></li>{% endfor %}</ul>{% else %}<p>Companions will appear here as their designs are published.</p>{% endif %}
+</div>{% endblock %}

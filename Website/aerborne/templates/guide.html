@@ -1,53 +1,18 @@
 {% extends "base.html" %}
-{% import "partials/macros.html" as m with context %}
+{% import "partials/reference_macros.html" as ref with context %}
 {% block title %}Game Guide{% endblock %}
-{% block description %}The Adventurer's Handbook: everything you need to learn {{ site.SITE_NAME }}, from your first island to Arcane research.{% endblock %}
+{% block body_class %}reference-page handbook-page{% endblock %}
+{% block description %}Practical Aerborne guides for your first island, skills, trading, equipment and Arcane discovery.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head">
-  <div class="wrap">
-    <h1>Adventurer's Handbook</h1>
-    <p class="lede">Start with the first five steps, then dip into any chapter when you need it.</p>
-    <form class="handbook-search" method="get" action="{{ url_for('public.guide') }}" role="search">
-      <label for="guide-query">Find a guide <span class="fine">{{ guide_count }} field notes for your adventure</span></label>
-      <div class="search-row"><input id="guide-query" type="search" name="q" value="{{ query }}" maxlength="100" placeholder="Try fishing, machines or trading"><button class="btn btn-primary" type="submit">Search</button></div>
-    </form>
-  </div>
-</header>
+<header class="page-head reference-head"><div class="wrap"><p class="eyebrow">A little knowledge goes a long way</p><h1>Adventurer’s Handbook</h1><p class="lede">Your first island, your next upgrade, your next good idea.</p><form class="handbook-search" method="get" action="{{ url_for('public.guide') }}" role="search"><label for="guide-query">Find what you need <span class="fine">{{ guide_count }} guides</span></label><div class="search-row"><input id="guide-query" type="search" name="q" value="{{ query }}" maxlength="100" placeholder="Search a topic or command"><button class="btn btn-primary" type="submit">Search</button></div></form></div></header>
 {% set group = 'guide' %}{% include "partials/subnav.html" %}
-
-<div class="wrap with-sidebar">
-  {% include "partials/guide_sidebar.html" %}
-  <div class="with-sidebar-main">
-    {% if results is not none %}
-    <section class="guide-results" aria-labelledby="results-title">
-      <div class="section-head section-head-row"><h2 id="results-title">{{ results | length }} result{{ '' if results | length == 1 else 's' }} for “{{ query }}”</h2><a href="{{ url_for('public.guide') }}">Clear search</a></div>
-      {% if results %}<ul class="guide-result-list">{% for entry in results %}<li><span class="eyebrow">{{ option_label('guides', 'category', entry.category) }}</span><h3><a href="{{ url_for('public.guide_article', slug=entry.slug) }}">{{ entry.title }}</a></h3><p>{{ entry.summary }}</p></li>{% endfor %}</ul>
-      {% else %}<p>No guides match that search. Try a skill, item or command name, or <a href="{{ url_for('community.category', category_slug='help') }}">ask the community</a>.</p>{% endif %}
-    </section>
-    {% else %}
-    {% set first = sections[0] %}
-    {% if first.guides %}
-    <section class="path" aria-labelledby="path-title">
-      <h2 id="path-title">{{ first.label }}</h2>
-      <ol class="path-steps">
-        {% for g in first.guides %}
-        <li><a href="{{ url_for('public.guide_article', slug=g.slug) }}"><span class="path-title">{{ g.title }}</span><span class="path-summary">{{ g.summary }}</span></a></li>
-        {% endfor %}
-      </ol>
-    </section>
-    {% endif %}
-
-    <div class="chapters">
-      {% for section in sections[1:] if section.guides %}
-      <section class="chapter chapter-{{ section.key }}" aria-labelledby="ch-{{ section.key }}">
-        <span class="chapter-icon" aria-hidden="true"></span>
-        <h2 id="ch-{{ section.key }}"><a href="{{ url_for('public.guide_section', category=section.key) }}">{{ section.label }}</a></h2>
-        <p>{{ section.blurb }}</p>
-        <ul>{% for g in section.guides %}<li><a href="{{ url_for('public.guide_article', slug=g.slug) }}">{{ g.title }}</a>{% if g.availability != 'released' %} {{ m.availability(g.availability) }}{% endif %}</li>{% endfor %}</ul>
-      </section>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
-</div>
-{% endblock %}
+<div class="wrap reference-content">
+{% if results is not none %}
+<section class="guide-results"><div class="reference-section-heading"><h2>{{ results | length }} result{{ '' if results | length == 1 else 's' }} for “{{ query }}”</h2><a href="{{ url_for('public.guide') }}">Clear search</a></div>{% if results %}<ul class="reference-guide-list">{% for entry in results %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}"><span class="eyebrow">{{ option_label('guides', 'category', entry.category) }}</span><h3>{{ entry.title }}</h3><p>{{ entry.summary }}</p>{% if entry.availability != 'released' %}{{ ref.status(entry.availability) }}{% endif %}</a></li>{% endfor %}</ul>{% else %}<p>No guides match that search. Try a skill, item or command, or <a href="{{ url_for('community.category', category_slug='help') }}">ask the community</a>.</p>{% endif %}</section>
+{% else %}
+{% set first = sections[0] %}{% if first.guides %}<section class="handbook-start"><div class="reference-section-heading"><div><p class="eyebrow">New to the skies?</p><h2>Start with these five.</h2></div><a href="{{ url_for('public.play') }}">Ready to join? →</a></div><ol class="handbook-first-steps">{% for entry in first.guides %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}"><span class="handbook-step-number">{{ '%02d' % loop.index }}</span><h3>{{ entry.title }}</h3><p>{{ entry.summary }}</p></a></li>{% endfor %}</ol></section>{% endif %}
+<section class="handbook-chapters" aria-labelledby="chapters-title"><div class="reference-section-heading"><div><p class="eyebrow">Keep it close as you play</p><h2 id="chapters-title">Find your chapter.</h2></div><a href="{{ url_for('public.guide_article', slug='commands') }}">Commands at a glance →</a></div><div class="handbook-chapter-grid">{% for section in sections[1:] if section.guides %}<article class="handbook-chapter"><p class="eyebrow">{{ section.guides | length }} guides</p><h3><a href="{{ url_for('public.guide_section', category=section.key) }}">{{ section.label }}</a></h3><p>{{ section.blurb }}</p><ul>{% for entry in section.guides[:3] %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}">{{ entry.title }} <span aria-hidden="true">↗</span></a></li>{% endfor %}</ul><a class="text-link" href="{{ url_for('public.guide_section', category=section.key) }}">View chapter →</a></article>{% endfor %}</div></section>
+<div class="reference-callout"><div><h2>A specific enchantment or companion?</h2><p>Browse public effects in the Codex, or meet the planned companion collection.</p></div><div class="reference-actions"><a class="btn btn-ghost" href="{{ url_for('public.codex') }}">Arcane Codex</a><a class="text-link" href="{{ url_for('public.companions') }}">Companions →</a></div></div>
+{% endif %}
+</div>{% endblock %}

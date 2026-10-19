@@ -12,7 +12,7 @@
   <tbody>
     {% for m in rows %}
     <tr>
-      <td><a href="{{ url_for('community.member_profile', username=m.username) }}" target="_blank" rel="noopener">{{ m.username }}</a><br><span class="fine">Joined {{ m.created_at | date }}</span></td>
+      <td><a href="{{ url_for('admin.forum_member', member_id=m.id) }}">{{ m.username }}</a><br><span class="fine">Joined {{ m.created_at | date }} · <a href="{{ url_for('community.member_profile', username=m.username) }}" target="_blank" rel="noopener">Profile ↗</a></span></td>
       <td>{{ m.mc_name or '–' }}</td>
       <td>{{ m.post_count }}</td>
       <td>

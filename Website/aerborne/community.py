@@ -243,7 +243,7 @@ def login():
         if login_blocked(conn, throttle_key):
             error = "Too many sign-in attempts. Wait 15 minutes and try again."
         else:
-            member = conn.execute("SELECT * FROM members WHERE username = ?", (username,)).fetchone()
+            member = conn.execute("SELECT * FROM members WHERE username = ? AND status != 'deleted'", (username,)).fetchone()
             if member and check_password_hash(member["password_hash"], password):
                 clear_failed_logins(conn, throttle_key)
                 conn.execute("UPDATE members SET last_login_at = ? WHERE id = ?", (now_str(), member["id"]))
@@ -300,7 +300,8 @@ def account():
                 flash("Profile saved.")
         return redirect(url_for("community.account"))
     return render_template("community/account.html", avatars=AVATARS, legacy_avatars=LEGACY_AVATARS,
-                           selected_avatar=g.member["avatar"] or DEFAULT_AVATAR, banners=BANNERS, skills=FAVOURITE_SKILLS)
+                           selected_avatar=g.member["avatar"] or DEFAULT_AVATAR, banners=BANNERS, skills=FAVOURITE_SKILLS,
+                           dm_policies=[("everyone", "Anyone"), ("friends", "Friends only"), ("nobody", "No one")])
 
 
 def _save_profile(conn, member_id, form):
@@ -316,7 +317,11 @@ def _save_profile(conn, member_id, form):
         "avatar": form.get("avatar", ""),
         "banner": form.get("banner", ""),
         "show_stats": 1 if form.get("show_stats") else 0,
+        "dm_policy": form.get("dm_policy", "everyone"),
+        "friend_requests_open": 1 if form.get("friend_requests_open") else 0,
     }
+    if fields["dm_policy"] not in ("everyone", "friends", "nobody"):
+        return "Pick who can message you from the list."
     if fields["favorite_skill"] and fields["favorite_skill"] not in dict(FAVOURITE_SKILLS):
         return "Pick a skill from the list."
     if fields["avatar"] and fields["avatar"] not in AVATAR_PATHS:
@@ -365,7 +370,8 @@ def link():
             return redirect(url_for("community.link"))
         data, error = _redeem(conn, request.form.get("code"), "link")
         if not error:
-            other = conn.execute("SELECT username FROM members WHERE mc_uuid = ?", (data["playerId"],)).fetchone()
+            other = conn.execute("SELECT username FROM members WHERE mc_uuid = ? OR (mc_account_id IS NOT NULL AND mc_account_id = ?)",
+                                 (data["playerId"], data.get("accountId"))).fetchone()
             if other:
                 error = "That Minecraft account is already linked to another website account."
         if error:
@@ -376,8 +382,10 @@ def link():
                      (data["code"], g.member["id"], now_str()))
         conn.execute("UPDATE members SET mc_uuid = ?, mc_name = ?, mc_account_id = ?, linked_at = ? WHERE id = ?",
                      (data["playerId"], data["name"], data.get("accountId"), now_str(), g.member["id"]))
+        from .social import on_linked
+        on_linked(conn, conn.execute("SELECT * FROM members WHERE id = ?", (g.member["id"],)).fetchone())
         conn.commit()
-        flash("Linked to %s. You can post on the forum now." % data["name"])
+        flash("Linked to %s. You can post on the forum now, and your friends and blocks will match in game." % data["name"])
         return redirect(url_for("community.account"))
     return render_template("community/link.html", available=available)
 
@@ -418,7 +426,7 @@ def member_profile(username):
     conn = get_db()
     member = conn.execute(
         "SELECT m.*, r.slug AS rank_slug, r.name AS rank_name, r.staff AS rank_staff, r.frame AS rank_frame, r.description AS rank_description "
-        "FROM members m LEFT JOIN ranks r ON r.id = m.rank_id WHERE m.username = ?", (username,)).fetchone() or abort(404)
+        "FROM members m LEFT JOIN ranks r ON r.id = m.rank_id WHERE m.username = ? AND m.status != 'deleted'", (username,)).fetchone() or abort(404)
     threads = conn.execute(
         "SELECT t.*, c.slug AS category_slug, c.name AS category_name FROM forum_threads t "
         "JOIN forum_categories c ON c.id = t.category_id WHERE t.member_id = ? AND t.hidden = 0 AND c.private = 0 "
@@ -431,8 +439,12 @@ def member_profile(username):
     stats, problem = (None, None)
     if member["mc_name"] and member["show_stats"]:
         stats, problem = gameapi.player(member["mc_name"])
+    rel = None
+    if g.member and g.member["id"] != member["id"]:
+        from .social import relationship
+        rel = relationship(conn, g.member["id"], member["id"])
     return render_template("community/member.html", member=member, threads=threads, posts=posts,
-                           stats=stats, stats_problem=problem, skill_label=dict(FAVOURITE_SKILLS))
+                           stats=stats, stats_problem=problem, skill_label=dict(FAVOURITE_SKILLS), rel=rel)
 
 
 # --- Leaderboards and player profiles -------------------------------------------------------
@@ -656,12 +668,16 @@ def thread(thread_id, slug=None):
         liked = {r[0] for r in conn.execute(
             "SELECT post_id FROM post_likes WHERE member_id = ? AND post_id IN (%s)" % ",".join("?" * len(ids)),
             [g.member["id"]] + ids)}
+    blocked = set()
+    if g.member:
+        from .social import blocked_ids
+        blocked = blocked_ids(conn, g.member["id"])
     if not (g.member and g.member["id"] == t["member_id"]):
         conn.execute("UPDATE forum_threads SET view_count = view_count + 1 WHERE id = ?", (t["id"],))
         conn.commit()
     return render_template("community/thread.html", thread=t, posts=posts, page=page, pages=pages,
                            reply_block=_can_post(g.member, None, t), max_post=MAX_POST, first_post_id=first_post_id,
-                           liked=liked, number_from=(page - 1) * POSTS_PER_PAGE)
+                           liked=liked, number_from=(page - 1) * POSTS_PER_PAGE, blocked=blocked)
 
 
 @bp.route("/forum/thread/<int:thread_id>/reply", methods=["POST"])
@@ -688,6 +704,9 @@ def reply(thread_id):
     conn.execute("UPDATE forum_threads SET reply_count = reply_count + 1, last_post_at = ?, last_member_id = ? WHERE id = ?",
                  (now, g.member["id"], t["id"]))
     conn.execute("UPDATE members SET post_count = post_count + 1 WHERE id = ?", (g.member["id"],))
+    from .social import notify
+    notify(conn, t["member_id"], "reply", g.member["id"], thread_url(t, page=-1, anchor="post-%d" % cur.lastrowid),
+           t["title"], collapse=True)
     conn.commit()
     return redirect(thread_url(t, page=-1, anchor="post-%d" % cur.lastrowid))
 
@@ -810,5 +829,7 @@ def like_post(post_id):
         conn.execute("INSERT INTO post_likes (post_id, member_id, created_at) VALUES (?, ?, ?)", (post_id, g.member["id"], now_str()))
         conn.execute("UPDATE forum_posts SET like_count = like_count + 1 WHERE id = ?", (post_id,))
         conn.execute("UPDATE members SET likes_received = likes_received + 1 WHERE id = ?", (post["member_id"],))
+        from .social import notify
+        notify(conn, post["member_id"], "like", g.member["id"], thread_url(t, anchor="post-%d" % post_id), t["title"], collapse=True)
     conn.commit()
     return redirect(thread_url(t, page=request.form.get("page", type=int), anchor="post-%d" % post_id))

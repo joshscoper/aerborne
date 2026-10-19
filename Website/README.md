@@ -2,7 +2,7 @@
 
 The official site for Aerborne: home page with live server status, Play, Explore, the
 Adventurer's Handbook, the Arcane Codex, the Companion encyclopedia, News with RSS, a cosmetic
-Store catalog ready for Tebex links, community forums, member profiles, ranks, five Arcade games and Support. Staff edit everything from a built-in
+Store catalog ready for Tebex links, community forums, member profiles, ranks, six Arcade games and Support. Staff edit everything from a built-in
 admin at `/admin`. Built for **Python 3.6.15** on cPanel, with SQLite, so there's no database
 server to set up.
 
@@ -68,6 +68,7 @@ database, uploads and secret key. Back it up from time to time.
 | `AERBORNE_SITE_URL` | *(request host)* | Full `https://` address of the site, used in RSS and the sitemap. |
 | `AERBORNE_DISCORD_URL`, `AERBORNE_CONTACT_EMAIL` | *(blank)* | Shown in navigation, Support and the final call to action. |
 | `AERBORNE_REWARDS_TOKEN` | *(blank)* | Private token for the game server to collect Arcade payouts. Blank leaves rewards queued and shows a delivery notice. |
+| `AERBORNE_SOCIAL_TOKEN` | *(blank)* | Private token for the game server to sync friends, blocks and messages. Blank keeps them website-only. |
 | `AERBORNE_STATUS_HOST`, `AERBORNE_STATUS_PORT` | the address above | Where the site pings for live status, if different. |
 | `AERBORNE_STATUS_CACHE_SECONDS` | `30` | How long one status check is reused. |
 | `AERBORNE_SECRET_KEY` | generated | Session signing key. Generated into `instance/secret_key` if unset. |
@@ -181,13 +182,19 @@ The profile editor groups appearance, personal details and links into keyboard-a
 
 **Homepage:** `templates/index.html` and `static/css/home.css` provide the scenic hero, live server card, island/magic/community links, first steps, published news and Arcade feature. The page opens directly without an intro animation.
 
+**Joining and navigation:** `/play` presents the public server address and live status first, then three join steps, the first-island Handbook and expandable connection help. Its layout is in `static/css/play.css`. The former whitelist FAQ is retained as an unpublished draft on upgrades. Discord sits in the Community menu, with contextual links on Play and in the footer; one Play now button serves desktop and mobile navigation.
+
+**Explore and Game Guide:** the reference pages share `static/css/reference.css`; article contents links and the mobile chapter drawer use `static/js/reference.js`. Revision 6 reviews all 33 Handbook guides, three Explore entries and the Codex/design catalogs. Copy is in `reference_content.py`. Matching original starter copy is refreshed while staff edits are retained. See `CONTENT_REVIEW.md` for sources, material corrections and the limits of checking local code against a remote server. Preview and planned labels do not assert that a feature is active on the live server.
+
 **Forum appearance:** forum pages share `templates/community/forum_base.html`, `static/css/forum.css` and `static/js/forum.js`. The transparent category illustrations are in `static/img/forum/`, mapped to existing category slugs in `community_data.FORUM_ICONS`. The original ten icons have 128 and 256 px WebP versions; the Events icon uses the supplied original PNG. Custom categories fall back to their admin-selected icon. The directory finder filters category names and descriptions locally; it does not search private threads. No example discussions are added to the release.
 
 **Tebex:** create a webstore and packages in Tebex, configure delivery with its Minecraft plugin, then paste each package URL into the matching website product. Add its exact price, set availability to Released and publish. The website links to hosted checkout; no card handling or Tebex secret belongs in browser code. Website rank assignments are manual until a separate verified purchase sync is implemented. See [Tebex integration methods](https://docs.tebex.io/developers/integration-methods).
 
 ## Arcade reward setup
 
-Sky Hop, Gem Rush, Cloud Catch, Codex Memory and Forge Strike support visitor practice and saved member scores. Minecraft linking is required to earn Marks. The default daily limit is 200 per member, with per-run caps and 15 rewarded runs per game per UTC day. Change the cap or close the Arcade in Admin → Settings. Closing also removes its navigation and home-page feature.
+Sky Hop, Gem Rush, Cloud Catch, Codex Memory, Forge Strike and Rune Breaker support visitor practice and saved member scores. Minecraft linking is required to earn Marks. The default daily limit is 1,000 per member, with 75–100 Marks per-run caps and 15 rewarded runs per game per UTC day. Revision 7 upgrades the original 200-Mark allowance; custom limits, including zero, are preserved. Change the cap or close the Arcade in Admin → Settings. Closing also removes its navigation and home-page feature.
+
+Larger run rewards are split into payouts of at most 50 Marks, compatible with the existing collector ceiling. Finish requests return the saved receipt when retried, without issuing duplicate payouts. A failed save can be retried from the game-over screen.
 
 The existing game plugin includes a queue collector in `WebsiteRewards`. To enable delivery:
 
@@ -197,6 +204,70 @@ The existing game plugin includes a queue collector in `WebsiteRewards`. To enab
 4. Link a test Minecraft account, finish a round and verify its Marks arrive in game. Keep the queue database when updating the site.
 
 Scores originate in the browser. Run tokens, rate checks, serialised payout creation, caps and game-server idempotency reduce abuse; they are not a full authoritative simulation. Test delivery before announcing rewards as live. The site shows a holding notice while its token is absent.
+
+## Friends, messages and notifications
+
+Signed-in members get a mail and a bell icon in the nav, both with unread counts. They open three tabs:
+
+- **Notifications:** friend requests, accepted requests, new messages, replies to your threads and likes on
+  your posts. Notifications are kept for the newest 200 per member.
+- **Messages:** one-to-one conversations in plain text, up to 1,000 characters each. Members choose who
+  can message them (anyone, friends only, no one) under Account → Links & privacy. Sending needs a linked
+  Minecraft account while *Posting and messaging need a linked Minecraft account* is on. Messages are rate
+  limited. Recipients can report a message; staff see only reported messages, under Forum → Reports.
+  Admin → Settings can pause new messages.
+- **Friends:** send requests by name or from a profile, accept or decline, remove, and block. A block
+  removes any friendship, stops messages and requests both ways, and folds the blocked member's forum
+  posts away. Friends lists hold 200, the same as in game.
+
+Profiles show *Add friend*, *Message* and *Block* buttons to other signed-in members.
+
+## Syncing friends and messages with the game server
+
+For players who linked their account with `/weblink`, the website and the server keep each other up to date:
+
+- Friendships and blocks made on either side appear on the other: `/friends` and `/ignore` in game, the
+  Friends page on the website. When a player links, their existing game friends and blocks are sent to
+  the website, and their website friends and blocks to the game.
+- A website message to a linked player who is online also appears in their game chat as `[Web] From …`.
+  Clicking it starts a reply with `/msg`.
+- `/msg` or `/reply` to a linked player who is offline goes to their website inbox instead of failing.
+- On joining, players see how many website messages and notifications are waiting.
+
+To switch it on:
+
+1. Deploy the new plugin jar and start the server once. This creates `plugins/NerdSMP/security/website-social.yml`.
+2. Set its `url` to `https://YOUR-WEBSITE/admin/api/social-sync`, set `enabled: true`, and restart.
+3. Copy the generated `security/website-social-token.txt` value into `AERBORNE_SOCIAL_TOKEN` on the
+   website, then restart the website.
+
+The server sends its changes every 15 seconds (`interval-seconds`) and keeps unsent ones in
+`plugins/NerdSMP/website-social-state.yml`, so neither side loses changes if the other is down. Without
+the token, everything still works on the website alone and nothing is queued for the server.
+
+## Members directory and member tools
+
+**Members** (Community → Members) lists every active member with their rank frame. Visitors can search
+by website or Minecraft name, filter by rank and sort by activity, join date, posts or name. Banned and
+deleted members aren't listed.
+
+Members can download everything the website holds about them from `/account/data`. The download is a
+zip of JSON files covering profile, posts, messages, friends, blocks, notifications and Arcade history,
+and it never includes the password.
+
+Staff open a member from Forum → Members to see their activity, past staff actions and these tools:
+
+| Tool | Who | What it does |
+|---|---|---|
+| Sign out everywhere | admins, moderators | Ends all their website sessions |
+| Clear profile | admins, moderators | Removes headline, bio, signature, title, links, avatar and banner |
+| Reset password | admins | Sets a temporary password shown once to the admin, and signs them out |
+| Download their data | admins | The same zip members can download themselves |
+| Delete account | admins | Type the username to confirm. Removes the profile, Minecraft link, messages, friends, blocks, notifications and likes, cancels pending Arcade payouts, and frees the username |
+
+When an account is deleted, its posts stay and show as "Deleted member N", unless the admin also ticks
+*remove their posts and threads*. Every tool is recorded in the audit log. Deleting a website account
+doesn't touch the player's game data or in-game friends.
 
 ## Not built yet
 
@@ -211,6 +282,10 @@ does: players online, version, ping bars and server icon. Each answer carries th
 checked, and offline is reported as offline, never as an old player count. Some shared hosts
 block outgoing connections to port 25565; if status always reads offline while the server is up,
 ask your host to allow it or point `AERBORNE_STATUS_HOST` at an address they allow.
+
+Status automatically follows the public address's `_minecraft._tcp` SRV record when using the default Java port. Aerborne currently advertises port 9025, so players can keep copying `play.aerborne.net` without a port suffix. An explicit `AERBORNE_STATUS_HOST`, `AERBORNE_STATUS_PORT`, non-default `AERBORNE_SERVER_PORT`, or port in the public address bypasses SRV discovery. Install the updated requirements (including `dnspython==2.2.1`) when deploying this update.
+
+Cards refresh every minute and when the tab becomes visible, with a manual Refresh status button. Counts, version, response time and server icon come from Minecraft's public status response; response time measures the website-to-server connection. Checks are reused for 30 seconds (15 seconds for failures), including manual refreshes. Failed website requests clear old counts and signal bars rather than showing stale online data.
 
 ## Run it locally
 

@@ -1,0 +1,59 @@
+{% extends "community/social_base.html" %}
+{% import "community/_people.html" as people_macros with context %}
+{% set social_tab = 'messages' %}
+{% block title %}{{ other.username }} · Messages{% endblock %}
+{% block eyebrow %}Conversation{% endblock %}
+{% block heading %}{{ other.username }}{% endblock %}
+{% block social %}
+<section class="chat">
+  <header class="chat-head">
+    {{ people_macros.person(other) }}
+    <span class="people-actions">
+      <a class="btn btn-ghost btn-small" href="{{ url_for('community.member_profile', username=other.username) }}">Profile</a>
+      <details class="menu">
+        <summary aria-label="More options">•••</summary>
+        <div class="menu-panel">
+          {% if rel.blocked %}
+          <form method="post" action="{{ url_for('community.friend_action', username=other.username) }}">{{ c.csrf() }}<input type="hidden" name="next" value="{{ request.path }}"><button class="linkish" name="action" value="unblock">Unblock</button></form>
+          {% else %}
+          <form method="post" action="{{ url_for('community.friend_action', username=other.username) }}" data-confirm="Block {{ other.username }}?">{{ c.csrf() }}<input type="hidden" name="next" value="{{ request.path }}"><button class="linkish danger-text" name="action" value="block">Block</button></form>
+          {% endif %}
+          <form method="post" action="{{ url_for('community.delete_conversation', username=other.username) }}" data-confirm="Remove this conversation from your inbox? {{ other.username }} keeps their copy.">{{ c.csrf() }}<button class="linkish" type="submit">Delete conversation</button></form>
+        </div>
+      </details>
+    </span>
+  </header>
+  {% if rows %}
+  <ol class="chat-log">
+    {% for m in rows %}
+    {% set mine = m.sender_id == member.id %}
+    <li class="bubble {{ 'bubble-mine' if mine else 'bubble-theirs' }}"{% if loop.last %} id="latest"{% endif %}>
+      <p class="bubble-body">{{ m.body }}</p>
+      <p class="bubble-meta"><time datetime="{{ m.created_at | isodate }}">{{ m.created_at | date(true) }}</time>{% if m.source == 'game' %} · sent from in game{% endif %}{% if mine and m.read_at %} · seen{% endif %}</p>
+      {% if not mine %}
+      <details class="report bubble-report">
+        <summary>Report</summary>
+        <form method="post" action="{{ url_for('community.report_message', message_id=m.id) }}">{{ c.csrf() }}
+          <label>What's wrong? <input name="reason" maxlength="300" placeholder="Harassment, scam, spam…"></label>
+          <button class="btn btn-ghost btn-small" type="submit">Send report</button>
+        </form>
+      </details>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="chat-empty">Say hello to {{ other.username }}.</p>
+  {% endif %}
+  {% if blocked %}
+  <p class="notice notice-info chat-closed">{{ blocked }}</p>
+  {% else %}
+  <form class="chat-compose" method="post">
+    {{ c.csrf() }}
+    <label class="sr-only" for="chat-body">Message</label>
+    <textarea id="chat-body" name="body" rows="3" maxlength="{{ max_message }}" required placeholder="Write a message…"></textarea>
+    <div class="chat-compose-row"><span class="fine">{% if other.mc_account_id %}If {{ other.username }} is in game, this also appears in their chat.{% else %}Plain text, up to {{ max_message }} characters.{% endif %}</span><button class="btn btn-primary" type="submit">Send</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

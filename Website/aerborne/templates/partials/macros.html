@@ -44,6 +44,11 @@
   <p class="server-status" data-status-text role="status">
     {%- if server_address %}Checking the server…{% else %}The public address is coming soon.{% endif -%}
   </p>
+  <div class="server-health">
+    <span class="server-state" data-status-state>Checking</span>
+    <span class="server-latency" data-status-latency title="Connection time from the website to the Minecraft server"></span>
+    <button class="server-refresh" type="button" data-status-refresh>Refresh status</button>
+  </div>
   {% if server_address %}
   <div class="address-row">
     <code class="address" data-address>{{ server_address }}</code>

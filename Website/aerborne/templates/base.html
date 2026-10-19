@@ -89,8 +89,10 @@
           {% endfor %}
         </ul>
         <div class="nav-account">
-          <a class="nav-discord" href="{{ url_for('public.discord') }}" rel="noopener" aria-label="Discord">{% include "partials/discord_icon.svg" %}<span>Discord</span></a>
           {% if g.member %}
+          {% set counts = social_counts() %}
+          <a class="nav-icon" href="{{ url_for('community.messages') }}" aria-label="Messages{% if counts.messages %}, {{ counts.messages }} unread{% endif %}"{% if request.endpoint in ('community.messages', 'community.conversation') %} aria-current="page"{% endif %}>{% include "partials/icon_mail.svg" %}{% if counts.messages %}<span class="nav-badge">{{ counts.messages if counts.messages < 100 else '99+' }}</span>{% endif %}</a>
+          <a class="nav-icon" href="{{ url_for('community.notifications') }}" aria-label="Notifications{% if counts.notifications + counts.requests %}, {{ counts.notifications }} unread{% endif %}"{% if request.endpoint in ('community.notifications', 'community.friends') %} aria-current="page"{% endif %}>{% include "partials/icon_bell.svg" %}{% if counts.notifications %}<span class="nav-badge">{{ counts.notifications if counts.notifications < 100 else '99+' }}</span>{% endif %}</a>
           <a class="nav-top nav-member" href="{{ url_for('community.account') }}"{% if request.endpoint == 'community.account' %} aria-current="page"{% endif %}>{{ g.member.username }}</a>
           {% elif staff and staff_view %}
           <a class="nav-top" href="{{ url_for('admin.dashboard') }}">Admin</a>
@@ -98,8 +100,8 @@
           <a class="nav-top" href="{{ url_for('community.login', next=request.full_path if request.endpoint != 'community.login' else None) }}"{% if request.endpoint in ('community.login', 'community.register') %} aria-current="page"{% endif %}>Sign in</a>
           {% endif %}
         </div>
+        <a class="btn btn-primary masthead-play" href="{{ url_for('public.play') }}"{% if request.endpoint == 'public.play' %} aria-current="page"{% endif %}>Play now</a>
       </nav>
-      <a class="btn btn-primary masthead-play" href="{{ url_for('public.play') }}">Play now</a>
     </div>
   </header>
 

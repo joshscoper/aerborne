@@ -45,6 +45,8 @@
         {% if p.hidden %}
         <p class="fine">{{ p.hidden_reason or "This post was hidden." }}</p>
         {% if is_moderator() %}<div class="prose prose-dim">{{ p.body | forum }}</div>{% endif %}
+        {% elif p.member_id in blocked %}
+        <details class="post-blocked"><summary>You blocked {{ p.username }}. Show this post</summary><div class="prose">{{ p.body | forum }}</div></details>
         {% else %}
         <div class="prose">{{ p.body | forum }}</div>
         {% if p.signature %}<p class="post-signature">{{ p.signature }}</p>{% endif %}

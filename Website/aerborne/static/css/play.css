@@ -1,0 +1,80 @@
+.page-play { background: #152238; }
+.play-welcome { position: relative; isolation: isolate; overflow: hidden; padding-block: clamp(2.5rem, 5vw, 4.5rem); }
+.play-welcome-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 65% 45%; z-index: -2; }
+.play-welcome::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #101e33f5, #152238bd 50%, #15223870), linear-gradient(0deg, #152238, transparent 75%); }
+.play-welcome-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .9fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+.play-welcome-copy h1 { font-size: clamp(2.8rem, 5vw, 4.5rem); line-height: 1.05; margin-bottom: 1.25rem; }
+.play-welcome-copy .lede { font-size: 1.05rem; max-width: 31rem; color: #d2deef; margin-bottom: 1.5rem; }
+.play-welcome-copy .eyebrow { font-size: .65rem; }
+.play-welcome-copy > .text-link { font-size: .85rem; }
+.play-requirements { display: flex; gap: .6rem; flex-wrap: wrap; list-style: none; margin: 0 0 1.75rem; padding: 0; }
+.play-requirements li { border: 1px solid #c4d8f02e; background: #15223880; color: #dbe7f6; border-radius: 6px; padding: .35rem .6rem; font-size: .72rem; font-weight: 700; }
+.play-connect { min-width: 0; padding: 1.5rem; border: 1px solid #f4c76b4d; border-radius: 16px; background: #152238dd; backdrop-filter: blur(10px); box-shadow: 0 15px 35px #07101e33; }
+.play-connect > .eyebrow { font-size: .65rem; }
+.play-connect .server-card { padding: 0; margin: 0; max-width: none; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+.play-connect .motd-2 { display: none; }
+.play-connect .server-entry { grid-template-columns: 44px minmax(0, 1fr) auto; gap: .7rem; }
+.play-connect .server-icon { width: 44px; height: 44px; }
+.play-connect .motd { font-size: .8rem; }
+.play-connect .server-meta { font-size: .8rem; }
+.play-connect .server-status { font-size: .8rem; margin-top: 1rem; }
+.play-connect .address-row { margin-top: 1rem; }
+.play-connect .address { flex-basis: 10rem; font-size: .9rem; }
+.play-connect .btn-copy { font-size: .8rem; }
+.play-connect-note { font-size: .72rem; color: #aebfd5; margin: .9rem 0 0; }
+.play-join-section { padding-block: 3rem; scroll-margin-top: 5rem; }
+.play-section-heading h2 { font-size: clamp(2rem, 3vw, 2.6rem); margin-bottom: .5rem; }
+.play-section-heading > p:last-child { color: #aebfd5; margin-bottom: 1.75rem; }
+.play-join-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.play-join-steps li { border: 1px solid #b2c8e62b; border-radius: 14px; background: #20314b; padding: 1.5rem; }
+.play-step-number { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border: 1px solid #f4c76b55; border-radius: 10px; background: #f4c76b0a; color: var(--gold); font: 800 .85rem var(--body); margin-bottom: 1.2rem; }
+.play-join-steps h3 { font-size: 1.45rem; margin-bottom: .65rem; }
+.play-join-steps p { font-size: .9rem; color: #bfcee2; line-height: 1.8; margin: 0; }
+.play-join-steps strong { color: #e8f1ff; }
+.play-join-steps code { overflow-wrap: anywhere; }
+.play-next { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; border-top: 1px solid #b2c8e62b; padding-top: 1.75rem; margin-top: 2rem; }
+.play-next h3 { font-size: 1.3rem; margin-bottom: .3rem; }
+.play-next p { color: #aebfd5; font-size: .88rem; margin: 0; max-width: 40rem; }
+.play-next .btn { font-size: .8rem; }
+.play-bedrock { padding: 1.5rem; margin-top: 1.5rem; background: #20314b; border-radius: 12px; }
+.play-help-section { border-top: 1px solid #b2c8e61a; background: #18283f; padding-block: 3rem 4rem; }
+.play-help-grid { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+.play-help-grid h2 { font-size: 2rem; margin-bottom: 1.25rem; }
+.play-faqs details { border-top: 1px solid #b2c8e626; padding-block: 1rem; }
+.play-faqs details:last-child { border-bottom: 1px solid #b2c8e626; }
+.play-faqs summary { cursor: pointer; font-weight: 800; color: #deebfb; font-size: .88rem; }
+.play-faqs p, .play-faq-answer { font-size: .87rem; line-height: 1.8; color: #afc1d9; margin: .85rem 0 0; }
+.play-help-card { background: #20314b; border: 1px solid #b2c8e626; border-radius: 14px; padding: 1.5rem; }
+.play-help-card h3 { font-size: 1.5rem; }
+.play-help-card p { font-size: .85rem; color: #afc1d9; }
+.play-discord-link { display: inline-flex; align-items: center; gap: .5rem; color: #c9bcff; font-weight: 800; font-size: .85rem; text-decoration: none; }
+.play-discord-link:hover { text-decoration: underline; }
+.play-discord-link svg { width: 19px; height: 19px; }
+.play-rules-link { display: block; font-size: .78rem; margin-top: 1.2rem; }
+@media (max-width: 900px) {
+  .play-welcome-grid { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  .play-welcome-copy { max-width: 36rem; }
+  .play-connect { max-width: 32rem; }
+  .play-join-steps { grid-template-columns: minmax(0, 1fr); gap: .85rem; }
+  .play-join-steps li { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: .3rem 1rem; }
+  .play-step-number { grid-row: 1 / 3; margin-bottom: 0; }
+  .play-join-steps h3 { margin-bottom: .2rem; }
+  .play-join-steps p { grid-column: 2; }
+  .play-help-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .play-welcome-copy .eyebrow { font-size: .56rem; }
+  .play-welcome-copy .lede { font-size: .95rem; }
+  .play-connect { padding: 1.1rem; }
+  .play-connect .server-entry { grid-template-columns: 36px minmax(0, 1fr) auto; gap: .6rem; }
+  .play-connect .server-icon { width: 36px; height: 36px; }
+  .play-connect .server-meta { grid-column: auto; flex-direction: column; align-items: end; gap: .3rem; }
+  .play-connect .server-name { font-size: .9rem; }
+  .play-connect .motd { font-size: .65rem; }
+  .play-connect .address { font-size: .85rem; }
+  .play-join-section { padding-block: 2rem; }
+  .play-join-steps li { padding: 1.1rem; }
+  .play-join-steps h3 { font-size: 1.2rem; }
+  .play-join-steps p { font-size: .82rem; }
+  .play-help-section { padding-block: 2rem 3rem; }
+}

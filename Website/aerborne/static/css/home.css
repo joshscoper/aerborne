@@ -77,6 +77,7 @@
 .home-arcade-games a { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.1rem .5rem; background: #151e34a6; border: 1px solid #b99bfa35; border-radius: 14px; color: #dce6f5; text-decoration: none; }
 .home-arcade-games a:hover { border-color: var(--lavender); }
 .home-arcade-games img { object-fit: contain; width: 100%; max-width: 112px; margin-bottom: .8rem; }
+.home-arcade-games img[src*="/img/arcade/sky-hop"] { clip-path: inset(0 0 5%); }
 .home-arcade-games span { font: 800 .85rem var(--display); }
 .home-arcade-games small { font-size: .6rem; color: #9cabc1; margin-top: .35rem; }
 .home-showcases { padding-block: 4rem; }

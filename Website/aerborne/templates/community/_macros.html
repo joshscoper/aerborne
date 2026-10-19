@@ -39,7 +39,7 @@
 {%- endmacro %}
 
 {% macro name(username, rank_slug, link=True) -%}
-{%- if link -%}<a class="name-ranked rank-{{ rank_slug or 'none' }}" href="{{ url_for('community.member_profile', username=username) }}">{{ username }}</a>
+{%- if link and not username.startswith('Deleted member ') -%}<a class="name-ranked rank-{{ rank_slug or 'none' }}" href="{{ url_for('community.member_profile', username=username) }}">{{ username }}</a>
 {%- else -%}<span class="name-ranked rank-{{ rank_slug or 'none' }}">{{ username }}</span>{%- endif -%}
 {%- endmacro %}
 

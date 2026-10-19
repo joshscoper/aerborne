@@ -1,0 +1,9 @@
+# Keeps /friends, /ignore and messages in step with the Aerborne website for players who linked
+# their website account with /weblink. Existing files are never replaced by the plugin.
+# On first enable it creates security/website-social-token.txt; copy that value into the
+# website's AERBORNE_SOCIAL_TOKEN setting. Restart the server after changing this file.
+schema: 1
+enabled: false
+url: 'https://aerborne.net/admin/api/social-sync'
+# How often to exchange changes. Website messages reach game chat within this many seconds.
+interval-seconds: 15

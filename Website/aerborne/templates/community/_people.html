@@ -1,0 +1,11 @@
+{% import "community/_macros.html" as c with context %}
+{# A member row for the friends and message pages. #}
+{% macro person(p, show_online=True) -%}
+<span class="person">
+  {{ c.avatar(p.avatar, 48) }}
+  <span class="person-text">
+    {{ c.name(p.username, p.rank_slug) }}
+    <span class="person-meta">{% if show_online and is_online(p.last_seen_at) %}<span class="online-dot">Online</span>{% elif p.custom_title %}{{ p.custom_title }}{% elif p.mc_name %}{{ p.mc_name }} in game{% else %}Member{% endif %}</span>
+  </span>
+</span>
+{%- endmacro %}

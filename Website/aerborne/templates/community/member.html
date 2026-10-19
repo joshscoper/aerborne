@@ -3,19 +3,41 @@
 {% block title %}{{ member.username }}{% endblock %}
 {% block description %}{{ member.username }}'s profile on the {{ site.SITE_NAME }} forum.{% endblock %}
 {% block body_class %}profile-page{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}">{% endblock %}
 {% block content %}
 <header class="member-cover">
   <img class="member-cover-art" src="{{ banner_url(member.banner) }}" alt="" width="1280" height="320">
   <div class="wrap member-cover-inner">
     {{ c.framed(member.avatar, member.rank_frame, 160, 'member-portrait') }}
-    <div class="member-intro"><p class="eyebrow">An adventurer of Aerborne</p><h1>{{ c.name(member.username, member.rank_slug, link=False) }}</h1><div class="profile-tags">{% if member.rank_slug %}{{ c.rank_tag(member.rank_slug, member.rank_name) }}{% else %}<span class="member-label">Member</span>{% endif %}{% if member.custom_title %}<span class="post-title">{{ member.custom_title }}</span>{% endif %}{% if is_online(member.last_seen_at) %}<span class="online-dot">Online</span>{% endif %}</div>{% if member.headline %}<p class="member-headline">{{ member.headline }}</p>{% endif %}</div>
+    <div class="member-intro"><p class="eyebrow">An adventurer of Aerborne</p><h1>{{ c.name(member.username, member.rank_slug, link=False) }}</h1><div class="profile-tags">{% if member.rank_slug %}{{ c.rank_tag(member.rank_slug, member.rank_name) }}{% else %}<span class="member-label">Member</span>{% endif %}{% if member.custom_title %}<span class="post-title">{{ member.custom_title }}</span>{% endif %}{% if is_online(member.last_seen_at) %}<span class="online-dot">Online</span>{% endif %}</div>{% if member.headline %}<p class="member-headline">{{ member.headline }}</p>{% endif %}
+    {% if rel %}
+    <div class="member-social">
+      {% if not rel.blocked and not rel.blocked_by %}
+      <form method="post" action="{{ url_for('community.friend_action', username=member.username) }}">{{ c.csrf() }}
+        {% if rel.friends %}<span class="tag-quiet">✓ Friends</span>
+        {% elif rel.incoming %}<button class="btn btn-primary btn-small" name="action" value="accept">Accept friend request</button>
+        {% elif rel.outgoing %}<button class="btn btn-ghost btn-small" name="action" value="cancel">Cancel friend request</button>
+        {% elif member.friend_requests_open %}<button class="btn btn-primary btn-small" name="action" value="add">Add friend</button>{% endif %}
+      </form>
+      <a class="btn btn-ghost btn-small" href="{{ url_for('community.conversation', username=member.username) }}">Message</a>
+      {% endif %}
+      <details class="menu">
+        <summary aria-label="More for {{ member.username }}">•••</summary>
+        <div class="menu-panel">
+          {% if rel.friends %}<form method="post" action="{{ url_for('community.friend_action', username=member.username) }}" data-confirm="Remove {{ member.username }} from your friends?">{{ c.csrf() }}<button class="linkish" name="action" value="remove">Remove friend</button></form>{% endif %}
+          {% if rel.blocked %}<form method="post" action="{{ url_for('community.friend_action', username=member.username) }}">{{ c.csrf() }}<button class="linkish" name="action" value="unblock">Unblock</button></form>
+          {% else %}<form method="post" action="{{ url_for('community.friend_action', username=member.username) }}" data-confirm="Block {{ member.username }}? They won't be able to message you or add you.">{{ c.csrf() }}<button class="linkish danger-text" name="action" value="block">Block</button></form>{% endif %}
+        </div>
+      </details>
+    </div>
+    {% endif %}</div>
     {% if g.member and g.member.id == member.id %}<a class="btn btn-ghost member-edit" href="{{ url_for('community.account') }}">Edit your profile</a>{% endif %}
   </div>
 </header>
 <div class="wrap member-stats"><dl><div><dt>Posts</dt><dd>{{ member.post_count | number }}</dd></div><div><dt>Likes received</dt><dd>{{ member.likes_received | number }}</dd></div><div><dt>Joined</dt><dd>{{ member.created_at | date }}</dd></div><div><dt>Last seen</dt><dd>{{ member.last_seen_at | date if member.last_seen_at else 'Not yet' }}</dd></div></dl></div>
 <div class="wrap member-layout">
   <div>
+    {{ c.flashes() }}
     {% if member.status == 'banned' %}<p class="notice notice-warn">This account is banned from posting.</p>{% endif %}
     {% if member.bio %}<section class="member-panel"><p class="eyebrow">A little introduction</p><h2>About {{ member.username }}</h2><p class="profile-bio">{{ member.bio }}</p></section>{% endif %}
     <section class="member-panel"><div class="member-panel-heading"><div><p class="eyebrow">Around the commons</p><h2>Recent activity</h2></div><a href="{{ url_for('community.forum') }}">Visit the forums ↗</a></div>

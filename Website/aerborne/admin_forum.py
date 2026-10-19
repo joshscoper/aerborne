@@ -22,7 +22,32 @@ def forum_reports():
         "FROM forum_reports r JOIN forum_posts p ON p.id = r.post_id JOIN forum_threads t ON t.id = p.thread_id "
         "JOIN members a ON a.id = p.member_id JOIN members m ON m.id = r.member_id "
         "WHERE " + where + " ORDER BY r.id DESC LIMIT 100").fetchall()
-    return render_template("admin/forum_reports.html", rows=rows, show=show)
+    # Only reported messages are ever shown to staff; private conversations stay private otherwise.
+    message_rows = get_db().execute(
+        "SELECT r.*, x.body, x.created_at AS sent_at, x.sender_deleted, s.username AS sender, m.username AS reporter "
+        "FROM message_reports r JOIN messages x ON x.id = r.message_id JOIN members s ON s.id = x.sender_id "
+        "JOIN members m ON m.id = r.member_id WHERE " + where + " ORDER BY r.id DESC LIMIT 100").fetchall()
+    return render_template("admin/forum_reports.html", rows=rows, message_rows=message_rows, show=show)
+
+
+@bp.route("/forum/message-reports/<int:report_id>", methods=["POST"])
+@auth.role_required(*FORUM_STAFF)
+def message_report_action(report_id):
+    conn = get_db()
+    report = conn.execute("SELECT * FROM message_reports WHERE id = ?", (report_id,)).fetchone() or abort(404)
+    action = request.form.get("action")
+    if action == "remove":
+        conn.execute("UPDATE messages SET sender_deleted = 1, recipient_deleted = 1, read_at = COALESCE(read_at, ?) WHERE id = ?",
+                     (now_str(), report["message_id"]))
+    elif action != "dismiss":
+        abort(400)
+    conn.execute("UPDATE message_reports SET resolved_at = ?, resolved_by = ? WHERE message_id = ? AND resolved_at IS NULL",
+                 (now_str(), g.user["username"], report["message_id"]))
+    audit(conn, g.user, "remove" if action == "remove" else "dismiss", "message_reports", report_id,
+          "%s a reported message" % ("Removed" if action == "remove" else "Dismissed reports on"))
+    conn.commit()
+    flash("Message removed for both members and reports closed." if action == "remove" else "Reports dismissed.")
+    return redirect(url_for("admin.forum_reports"))
 
 
 @bp.route("/forum/reports/<int:report_id>", methods=["POST"])
@@ -48,10 +73,10 @@ def forum_report_action(report_id):
 @auth.role_required(*FORUM_STAFF)
 def forum_members():
     q = request.args.get("q", "").strip()
-    sql = "SELECT * FROM members"
+    sql = "SELECT * FROM members WHERE status != 'deleted'"
     args = []
     if q:
-        sql += " WHERE username LIKE ? OR mc_name LIKE ?"
+        sql += " AND (username LIKE ? OR mc_name LIKE ?)"
         args = ["%" + q + "%", "%" + q + "%"]
     conn = get_db()
     rows = conn.execute(sql + " ORDER BY created_at DESC LIMIT 200", args).fetchall()
@@ -105,6 +130,84 @@ def forum_member_update(member_id):
     conn.commit()
     flash("Updated %s." % row["username"])
     return redirect(url_for("admin.forum_members", q=request.args.get("q") or None))
+
+
+@bp.route("/forum/members/<int:member_id>/manage")
+@auth.role_required(*FORUM_STAFF)
+def forum_member(member_id):
+    from .members import get_member_or_404
+    conn = get_db()
+    member = get_member_or_404(conn, member_id)
+    mid = member["id"]
+    count = lambda sql: conn.execute(sql, (mid,) * sql.count("?")).fetchone()[0]  # noqa: E731
+    stats = [
+        ("Threads", count("SELECT COUNT(*) FROM forum_threads WHERE member_id = ?")),
+        ("Posts", count("SELECT COUNT(*) FROM forum_posts WHERE member_id = ?")),
+        ("Hidden posts", count("SELECT COUNT(*) FROM forum_posts WHERE member_id = ? AND hidden = 1")),
+        ("Reports against their posts", count("SELECT COUNT(*) FROM forum_reports r JOIN forum_posts p ON p.id = r.post_id WHERE p.member_id = ?")),
+        ("Reports against their messages", count("SELECT COUNT(*) FROM message_reports r JOIN messages x ON x.id = r.message_id WHERE x.sender_id = ?")),
+        ("Messages sent", count("SELECT COUNT(*) FROM messages WHERE sender_id = ?")),
+        ("Friends", count("SELECT COUNT(*) FROM friendships WHERE member_a = ? OR member_b = ?")),
+        ("Blocked by", count("SELECT COUNT(*) FROM member_blocks WHERE blocked_id = ?")),
+        ("Arcade Marks earned", count("SELECT COALESCE(SUM(marks), 0) FROM arcade_payouts WHERE member_id = ?")),
+    ]
+    history = conn.execute("SELECT * FROM audit_log WHERE entity = 'members' AND entity_id = ? ORDER BY id DESC LIMIT 20",
+                           (mid,)).fetchall()
+    return render_template("admin/forum_member.html", m=member, stats=stats, history=history)
+
+
+@bp.route("/forum/members/<int:member_id>/export")
+@auth.role_required("admin")
+def forum_member_export(member_id):
+    from .members import get_member_or_404, send_export
+    conn = get_db()
+    member = get_member_or_404(conn, member_id)
+    audit(conn, g.user, "export", "members", member_id, "Downloaded the data of member %s" % member["username"])
+    conn.commit()
+    return send_export(conn, member)
+
+
+@bp.route("/forum/members/<int:member_id>/action", methods=["POST"])
+@auth.role_required(*FORUM_STAFF)
+def forum_member_action(member_id):
+    import secrets
+    from .community import _hash
+    from .members import erase, get_member_or_404
+    conn = get_db()
+    member = get_member_or_404(conn, member_id)
+    action = request.form.get("action")
+    back = redirect(url_for("admin.forum_member", member_id=member_id))
+    if action in ("reset_password", "delete") and g.user["role"] != "admin":
+        abort(403)
+    if action == "signout":
+        conn.execute("UPDATE members SET session_version = session_version + 1 WHERE id = ?", (member_id,))
+        audit(conn, g.user, "signout", "members", member_id, "Signed out member %s everywhere" % member["username"])
+        flash("%s is signed out on every device." % member["username"])
+    elif action == "clear_profile":
+        conn.execute("UPDATE members SET headline = '', bio = '', signature = '', avatar = '', banner = '', island_name = '', "
+                     "discord_handle = '', youtube_url = '', twitch_url = '', custom_title = '' WHERE id = ?", (member_id,))
+        audit(conn, g.user, "clear", "members", member_id, "Cleared the profile of member %s" % member["username"])
+        flash("Cleared %s's profile text, links and pictures." % member["username"])
+    elif action == "reset_password":
+        temporary = secrets.token_urlsafe(9)
+        conn.execute("UPDATE members SET password_hash = ?, session_version = session_version + 1 WHERE id = ?",
+                     (_hash(temporary), member_id))
+        audit(conn, g.user, "reset", "members", member_id, "Reset the password of member %s" % member["username"])
+        flash("Temporary password for %s: %s  Share it privately; it isn't shown again. They can change it under Account."
+              % (member["username"], temporary))
+    elif action == "delete":
+        if request.form.get("confirm", "").strip() != member["username"]:
+            flash("Type the member's username exactly to confirm.", "error")
+            return back
+        summary = erase(conn, member, remove_posts=bool(request.form.get("remove_posts")))
+        audit(conn, g.user, "delete", "members", member_id, summary)
+        conn.commit()
+        flash(summary + ".")
+        return redirect(url_for("admin.forum_members"))
+    else:
+        abort(400)
+    conn.commit()
+    return back
 
 
 @bp.route("/forum/categories", methods=["GET", "POST"])

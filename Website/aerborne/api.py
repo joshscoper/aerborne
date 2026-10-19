@@ -5,7 +5,7 @@ Only published content is returned, and hidden codex recipes stay hidden here to
 from flask import Blueprint, current_app, jsonify, url_for
 
 from . import status
-from .config import status_target
+from .config import status_target, status_uses_srv
 from .content import image_url, published
 from .db import get_setting
 
@@ -21,7 +21,7 @@ def _cors(response):
 def current_status():
     cfg = current_app.config
     result = status.get_status(status_target(cfg), timeout=cfg["STATUS_TIMEOUT"],
-                               cache_seconds=cfg["STATUS_CACHE_SECONDS"])
+                               cache_seconds=cfg["STATUS_CACHE_SECONDS"], use_srv=status_uses_srv(cfg))
     if get_setting("maintenance") == "1":
         result["state"] = "maintenance"
         result["message"] = get_setting("maintenance_message")

@@ -175,6 +175,69 @@ CREATE TABLE IF NOT EXISTS forum_reports (
     resolved_at TEXT,
     resolved_by TEXT
 );
+CREATE TABLE IF NOT EXISTS friendships (
+    member_a INTEGER NOT NULL REFERENCES members (id),
+    member_b INTEGER NOT NULL REFERENCES members (id),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (member_a, member_b)
+);
+CREATE INDEX IF NOT EXISTS friendships_b ON friendships (member_b);
+CREATE TABLE IF NOT EXISTS friend_requests (
+    from_id INTEGER NOT NULL REFERENCES members (id),
+    to_id INTEGER NOT NULL REFERENCES members (id),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (from_id, to_id)
+);
+CREATE INDEX IF NOT EXISTS friend_requests_to ON friend_requests (to_id);
+CREATE TABLE IF NOT EXISTS member_blocks (
+    member_id INTEGER NOT NULL REFERENCES members (id),
+    blocked_id INTEGER NOT NULL REFERENCES members (id),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (member_id, blocked_id)
+);
+CREATE INDEX IF NOT EXISTS member_blocks_blocked ON member_blocks (blocked_id);
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY,
+    sender_id INTEGER NOT NULL REFERENCES members (id),
+    recipient_id INTEGER NOT NULL REFERENCES members (id),
+    body TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'web',
+    created_at TEXT NOT NULL,
+    read_at TEXT,
+    sender_deleted INTEGER NOT NULL DEFAULT 0,
+    recipient_deleted INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS messages_recipient ON messages (recipient_id, read_at);
+CREATE INDEX IF NOT EXISTS messages_pair ON messages (sender_id, recipient_id);
+CREATE TABLE IF NOT EXISTS message_reports (
+    id INTEGER PRIMARY KEY,
+    message_id INTEGER NOT NULL REFERENCES messages (id),
+    member_id INTEGER NOT NULL REFERENCES members (id),
+    reason TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    resolved_at TEXT,
+    resolved_by TEXT
+);
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY,
+    member_id INTEGER NOT NULL REFERENCES members (id),
+    kind TEXT NOT NULL,
+    actor_id INTEGER,
+    ref TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    read_at TEXT
+);
+CREATE INDEX IF NOT EXISTS notifications_member ON notifications (member_id, read_at);
+CREATE TABLE IF NOT EXISTS social_outbox (
+    id INTEGER PRIMARY KEY,
+    kind TEXT NOT NULL,
+    actor_account TEXT,
+    target_account TEXT NOT NULL,
+    actor_name TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
 """
 
 # Columns added to system tables after their first release.
@@ -203,6 +266,9 @@ SYSTEM_COLUMNS = [
     ("forum_threads", "prefix", "TEXT NOT NULL DEFAULT ''"),
     ("forum_threads", "view_count", "INTEGER NOT NULL DEFAULT 0"),
     ("forum_posts", "like_count", "INTEGER NOT NULL DEFAULT 0"),
+    # Friends, blocks and messages.
+    ("members", "dm_policy", "TEXT NOT NULL DEFAULT 'everyone'"),
+    ("members", "friend_requests_open", "INTEGER NOT NULL DEFAULT 1"),
 ]
 
 

@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 4
+LATEST = 7
 C = "static:img/companions/"
 
 
@@ -23,10 +23,21 @@ def apply(conn):
         _rev3(conn)
     if current < 4:
         _rev4(conn)
+    if current < 5:
+        _rev5(conn)
+    if current < 6:
+        _rev6(conn)
+    if current < 7:
+        _rev7(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
     return True
+
+
+def _rev7(conn):
+    # Raise the original allowance while retaining custom limits (including rewards disabled).
+    conn.execute("UPDATE settings SET value = '1000' WHERE key = 'arcade_daily_cap' AND value = '200'")
 
 
 def _insert(conn, key, row):
@@ -69,6 +80,57 @@ def _rev4(conn):
                 body = body.replace(before, after)
             if body != row["body"]:
                 conn.execute("UPDATE pages SET body = ?, updated_at = ? WHERE id = ?", (body, now_str(), row["id"]))
+
+
+def _rev5(conn):
+    # Public access replaces the old pre-launch FAQ; keep the entry as an editable draft.
+    conn.execute("UPDATE faqs SET status = 'draft', updated_at = ? WHERE slug = 'whitelist'", (now_str(),))
+    row = conn.execute("SELECT id, body FROM guides WHERE slug = 'connection-help' AND updated_by = 'starter content'").fetchone()
+    if row:
+        old = "- **You are not white-listed.** Aerborne is in private testing. Ask staff to add you.\n"
+        body = row['body'].replace(old, '')
+        if body != row['body']:
+            conn.execute("UPDATE guides SET body = ?, updated_at = ? WHERE id = ?", (body, now_str(), row['id']))
+
+
+def _rev6(conn):
+    from . import reference_content, seed
+    originals = {row['slug']: row for row in seed.GUIDES + GUIDES + FIELD_GUIDES}
+    order = {}
+    for reviewed in reference_content.GUIDES:
+        category = reviewed['category']
+        position = order.get(category, 0)
+        order[category] = position + 1
+        row = conn.execute("SELECT * FROM guides WHERE slug = ?", (reviewed['slug'],)).fetchone()
+        original = originals.get(reviewed['slug'])
+        # Compare actual copy as well as authorship, so a manual database edit is preserved.
+        expected = dict(original or {})
+        expected.setdefault('availability', 'released')
+        if reviewed['slug'] == 'trading':
+            expected['category'] = 'economy'  # Revision 2 re-filed the original guide.
+        untouched = row and original and all((row[key] or '') == (expected.get(key) or '')
+                                             for key in ('title', 'summary', 'body', 'category', 'related', 'availability'))
+        if untouched and row['updated_by'] == 'starter content':
+            changes = dict(reviewed, sort_order=position, updated_at=now_str())
+            changes.pop('slug')
+            cols = list(changes)
+            conn.execute("UPDATE guides SET " + ', '.join(column + ' = ?' for column in cols) + " WHERE id = ?",
+                         [changes[column] for column in cols] + [row['id']])
+    region_originals = {row['slug']: row for row in seed.REGIONS}
+    for slug, reviewed in reference_content.REGIONS.items():
+        row = conn.execute("SELECT * FROM regions WHERE slug = ?", (slug,)).fetchone()
+        original = region_originals.get(slug)
+        if row and original and row['updated_by'] == 'starter content' and (row['body'] or '') == (original.get('body') or ''):
+            changes = dict(reviewed, updated_at=now_str())
+            cols = list(changes)
+            conn.execute("UPDATE regions SET " + ', '.join(column + ' = ?' for column in cols) + " WHERE id = ?",
+                         [changes[column] for column in cols] + [row['id']])
+    for slug, note in reference_content.CODEX_NOTES.items():
+        conn.execute("UPDATE codex_entries SET body = ?, updated_at = ? WHERE slug = ? AND updated_by = 'starter content' AND COALESCE(body, '') = ''",
+                     (note, now_str(), slug))
+    conn.execute("UPDATE companions SET concept_art = 1 WHERE updated_by = 'starter content' AND image LIKE 'static:img/companions/%'")
+    conn.execute("UPDATE faqs SET answer = ?, updated_at = ? WHERE slug = 'lost-items' AND updated_by = 'starter content' AND answer LIKE 'No. A grave keeps your items%'",
+                 ('A grave can hold up to 27 stacks; overflow is unprotected. Returning to the barrel is free, while remote recovery has a Marks fee. Recover promptly and read the [grave guide](/guide/graves) for expiry and restart limits. Island void rescue returns you with your items.', now_str()))
 
 
 def _rev2(conn):

@@ -4,6 +4,7 @@ import net.nerdsmp.api.model.AccountId;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.player.PlayerSettingsService;
 import net.nerdsmp.paper.presentation.Chat;
+import net.nerdsmp.paper.webapi.WebsiteSocial;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -22,6 +23,8 @@ public final class SocialManager implements Listener, AutoCloseable {
     private final Map<UUID, Map<UUID, Instant>> requests = new HashMap<>();
     private final Map<UUID, UUID> replies = new HashMap<>();
     private final Map<UUID, Instant> lastMessage = new HashMap<>();
+    /** Website sync for linked players; null when switched off. */
+    private volatile WebsiteSocial website;
     public SocialManager(NerdSmpPlugin plugin, PlayerSettingsService settings) {
         this.plugin = plugin; this.settings = settings;
         graph = new SocialGraph(new File(plugin.getDataFolder(), "social.yml"), this::id);
@@ -50,8 +53,56 @@ public final class SocialManager implements Listener, AutoCloseable {
             && plugin.sessions().account(a.getUniqueId()).isPresent() && plugin.sessions().account(b.getUniqueId()).isPresent()
             && !id(a).equals(id(b)) && !graph.blocked(id(a), id(b)) && settings.enabled(b.getUniqueId(), preference);
     }
+    public void website(WebsiteSocial website) { this.website = website; }
+    private void toWebsite(String type, UUID actor, UUID target) {
+        WebsiteSocial sync = website; if (sync != null) sync.queue(type, new AccountId(actor), new AccountId(target), "", false);
+    }
+    /** Applies changes made on the website. They are never queued back to it. */
+    public WebsiteSocial.Port websitePort() {
+        return new WebsiteSocial.Port() {
+            @Override public void friend(AccountId first, AccountId second, boolean friends) {
+                UUID a = first.value(), b = second.value();
+                if (!friends) { graph.unfriend(a, b); return; }
+                if (graph.profile(a).friends().contains(b)) return;
+                try { graph.friend(a, b); } catch (IllegalArgumentException refused) { return; }
+                removeRequest(a, b); removeRequest(b, a);
+                Player one = online(a), two = online(b);
+                if (one != null) Chat.success(one, "You and " + who(b) + " are now friends (added on the website).");
+                if (two != null) Chat.success(two, "You and " + who(a) + " are now friends (added on the website).");
+            }
+            @Override public void block(AccountId actor, AccountId target, boolean blocked) {
+                UUID a = actor.value(), b = target.value();
+                if (a.equals(b) || graph.profile(a).ignored().contains(b) == blocked) return;
+                graph.ignore(a, b, blocked); removeRequest(a, b); removeRequest(b, a);
+                if (blocked) { replies.remove(a, b); replies.remove(b, a); }
+            }
+            @Override public void message(AccountId target, String fromName, Optional<AccountId> from, String body) {
+                Player player = online(target.value());
+                if (player == null || !settings.enabled(player.getUniqueId(), PlayerSettingsService.Setting.DIRECT_MESSAGES)) return;
+                if (from.isPresent() && graph.blocked(from.get().value(), target.value())) return;
+                String reply = from.map(account -> "/msg " + name(account.value()) + " ").orElse("");
+                String label = "[Web] From " + Chat.escape(fromName);
+                Chat.send(player, "<light_purple>" + (reply.isEmpty() ? label
+                    : "<click:suggest_command:'" + reply + "'><hover:show_text:'<gray>Click to reply</gray>'>" + label + "</hover></click>")
+                    + "</light_purple> <white>" + Chat.escape(body) + "</white>");
+                from.ifPresent(account -> replies.put(target.value(), account.value()));
+            }
+            @Override public WebsiteSocial.Snapshot snapshot(AccountId account) {
+                var profile = graph.profile(account.value());
+                return new WebsiteSocial.Snapshot(
+                    profile.friends().stream().map(AccountId::new).collect(java.util.stream.Collectors.toUnmodifiableSet()),
+                    profile.ignored().stream().map(AccountId::new).collect(java.util.stream.Collectors.toUnmodifiableSet()));
+            }
+        };
+    }
     public void ready(Player player) {
         UUID account = id(player); graph.remember(account, player.getName());
+        WebsiteSocial sync = website;
+        if (sync != null) sync.linked(new AccountId(account)).ifPresent(linked -> {
+            int messages = linked.unreadMessages(), notices = linked.unreadNotifications();
+            if (messages + notices > 0) Chat.info(player, "On the website: <white>" + messages + "</white> unread message" + (messages == 1 ? "" : "s")
+                + " and <white>" + notices + "</white> notification" + (notices == 1 ? "" : "s") + ".");
+        });
         for (UUID friendId : graph.profile(account).friends()) {
             Player friend = online(friendId);
             if (friend != null && friend.canSee(player) && settings.enabled(friend.getUniqueId(), PlayerSettingsService.Setting.FRIEND_NOTICES))
@@ -87,14 +138,14 @@ public final class SocialManager implements Listener, AutoCloseable {
                     befriend(actor, other);
                 }
                 case "deny" -> { removeRequest(actor, other); Chat.success(player, "Friend request denied."); }
-                case "remove" -> { graph.unfriend(actor, other); Chat.success(player, "Removed " + who(other) + " from your friends."); }
+                case "remove" -> { graph.unfriend(actor, other); toWebsite("unfriend", actor, other); Chat.success(player, "Removed " + who(other) + " from your friends."); }
                 default -> throw new Usage("/friends [list|add|accept|deny|remove] [player]");
             }
         } catch (RuntimeException error) { failed(player, error); }
         return true;
     }
     private void befriend(UUID a, UUID b) {
-        graph.friend(a, b); removeRequest(a, b); removeRequest(b, a);
+        graph.friend(a, b); removeRequest(a, b); removeRequest(b, a); toWebsite("friend", a, b);
         Player first = online(a), second = online(b);
         if (first != null) Chat.success(first, "You and " + who(b) + " are now friends.");
         if (second != null) Chat.success(second, "You and " + who(a) + " are now friends.");
@@ -123,6 +174,7 @@ public final class SocialManager implements Listener, AutoCloseable {
             if (args.length != 1) throw new Usage("/" + (remove ? "unignore" : "ignore") + " <player>");
             UUID other = known(args[0]); if (other == null) throw new IllegalArgumentException("No player with that name has joined.");
             UUID actor = id(player); graph.ignore(actor, other, !remove); removeRequest(actor, other); removeRequest(other, actor);
+            toWebsite(remove ? "unblock" : "block", actor, other);
             replies.remove(actor, other); replies.remove(other, actor);
             Chat.success(player, remove ? "You no longer ignore " + who(other) + "." : "You now ignore " + who(other) + ".");
         } catch (RuntimeException error) { failed(player, error); } return true;
@@ -133,7 +185,7 @@ public final class SocialManager implements Listener, AutoCloseable {
         Player target = targetId == null ? null : online(targetId); int from = reply ? 0 : 1;
         if (reply && targetId == null) { Chat.error(player, "You have no recent conversation."); Chat.usage(player, "/msg <player> <message>"); return true; }
         if (args.length <= from) { Chat.usage(player, reply ? "/reply <message>" : "/msg <player> <message>"); return true; }
-        if (target == null) { Chat.error(player, "That player is not online."); return true; }
+        if (target == null) { if (!toWebsiteInbox(player, actor, targetId, args, from)) Chat.error(player, "That player is not online."); return true; }
         if (!plugin.staff().canCommunicate(player.getUniqueId()) || !canContact(player, target, PlayerSettingsService.Setting.DIRECT_MESSAGES)) {
             Chat.error(player, "You cannot send a message to that player right now."); return true;
         }
@@ -145,6 +197,31 @@ public final class SocialManager implements Listener, AutoCloseable {
         Chat.send(player, "<light_purple>[To " + Chat.escape(target.getName()) + "]</light_purple> <white>" + Chat.escape(message) + "</white>");
         Chat.send(target, "<light_purple><click:suggest_command:'/reply '>[From " + Chat.escape(player.getName()) + "]</click></light_purple> <white>" + Chat.escape(message) + "</white>");
         replies.put(actor, targetId); replies.put(targetId, actor); return true;
+    }
+    /** /msg to an offline player who linked the website: deliver it to their website inbox instead. */
+    private boolean toWebsiteInbox(Player player, UUID actor, UUID targetId, String[] args, int from) {
+        WebsiteSocial sync = website;
+        if (sync == null || targetId == null || args.length <= from) return false;
+        var recipient = sync.linked(new AccountId(targetId));
+        if (recipient.isEmpty()) return false;
+        if (sync.linked(new AccountId(actor)).isEmpty()) {
+            Chat.error(player, who(targetId) + " is offline. Link your website account with <white>/weblink</white> to message them there.");
+            return true;
+        }
+        if (!plugin.staff().canCommunicate(player.getUniqueId()) || graph.blocked(actor, targetId)
+            || !recipient.get().accepts(graph.profile(actor).friends().contains(targetId))) {
+            Chat.error(player, "You cannot send a message to that player right now."); return true;
+        }
+        String message = String.join(" ", Arrays.copyOfRange(args, from, args.length));
+        if (message.length() > 512 || message.isBlank()) { Chat.error(player, "Keep messages between 1 and 512 characters."); return true; }
+        Instant now = Instant.now();
+        if (lastMessage.getOrDefault(actor, Instant.EPOCH).plusMillis(750).isAfter(now)) { Chat.notice(player, "Please wait a moment before sending another message."); return true; }
+        lastMessage.put(actor, now);
+        sync.queue("message", new AccountId(actor), new AccountId(targetId), message, false);
+        Chat.send(player, "<light_purple>[To " + Chat.escape(name(targetId)) + " · website]</light_purple> <white>" + Chat.escape(message) + "</white>");
+        Chat.info(player, who(targetId) + " is offline, so this went to their Aerborne website inbox.");
+        replies.put(actor, targetId);
+        return true;
     }
     public List<String> tabComplete(String command, CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) return List.of();

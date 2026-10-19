@@ -4,9 +4,9 @@
 <p class="arcade-status"><a href="{{ url_for('community.link') }}">Link your Minecraft account</a> to earn Marks. Until then, games are practice.</p>
 {% else %}
 <div class="arcade-status arcade-meter">
-  <span><strong>{{ status.earned }}</strong> / {{ status.cap }} Marks today</span>
-  <meter min="0" max="{{ status.cap or 1 }}" value="{{ status.earned }}">{{ status.earned }} of {{ status.cap }}</meter>
-  {% if status.pending %}<span class="fine">{{ status.pending }} on the way to your account</span>{% endif %}
+  <span><strong data-earned>{{ status.earned }}</strong> / {{ status.cap }} Marks today</span>
+  <meter data-allowance min="0" max="{{ status.cap or 1 }}" value="{{ status.earned }}">{{ status.earned }} of {{ status.cap }}</meter>
+  <span class="fine" data-pending {% if not status.pending %}hidden{% endif %}>{{ status.pending }} {{ 'Mark' if status.pending == 1 else 'Marks' }} awaiting delivery</span>
 </div>
 {% endif %}
 {% if not status.delivery_enabled %}<p class="fine">Game-server delivery is being connected. Earned Marks will wait in your reward queue.</p>{% endif %}

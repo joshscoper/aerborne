@@ -1,27 +1,11 @@
 {% extends "base.html" %}
-{% import "partials/macros.html" as m with context %}
+{% import "partials/reference_macros.html" as ref with context %}
 {% block title %}{{ label }}{% endblock %}
+{% block body_class %}reference-page{% endblock %}
+{% block description %}{{ blurb }}. Practical {{ site.SITE_NAME }} guides and commands.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><script src="{{ url_for('static', filename='js/reference.js') }}" defer></script>{% endblock %}
 {% block content %}
-<header class="page-head">
-  <div class="wrap">
-    <p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a></p>
-    <h1>{{ label }}</h1>
-    <p class="lede">{{ blurb }}</p>
-  </div>
-</header>
+<header class="page-head reference-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a> / {{ label }}</p><p class="eyebrow">{{ guides | length }} field guides</p><h1>{{ label }}</h1><p class="lede">{{ blurb }}.</p></div></header>
 {% set group = 'guide' %}{% include "partials/subnav.html" %}
-<div class="wrap with-sidebar">
-  {% include "partials/guide_sidebar.html" %}
-  <div class="with-sidebar-main">
-    {% if guides %}
-    <ol class="path-steps{% if category != 'getting-started' %} path-plain{% endif %}">
-      {% for g in guides %}
-      <li><a href="{{ url_for('public.guide_article', slug=g.slug) }}"><span class="path-title">{{ g.title }}{% if g.availability != 'released' %} {{ m.availability(g.availability) }}{% endif %}</span><span class="path-summary">{{ g.summary }}</span></a></li>
-      {% endfor %}
-    </ol>
-    {% else %}
-    <p>Guides for this chapter are on the way.</p>
-    {% endif %}
-  </div>
-</div>
+<div class="wrap reference-layout">{{ ref.sidebar() }}<div class="reference-main">{% if guides %}<ol class="reference-guide-list chapter-guide-list">{% for entry in guides %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}">{% if category == 'getting-started' %}<span class="handbook-step-number">{{ '%02d' % loop.index }}</span>{% endif %}<h2>{{ entry.title }}</h2><p>{{ entry.summary }}</p>{% if entry.availability != 'released' %}{{ ref.status(entry.availability) }}{% endif %}<span class="reference-read-link">Read guide ↗</span></a></li>{% endfor %}</ol>{% else %}<p>Guides for this chapter are on the way.</p>{% endif %}</div></div>
 {% endblock %}

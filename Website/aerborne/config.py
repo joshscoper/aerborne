@@ -100,6 +100,8 @@ def load_config():
         "PANEL_SYNC_TOKEN": _env("AERBORNE_PANEL_SYNC_TOKEN"),
         # The game server collects Arcade payouts with this token (plugins/NerdSMP/security/website-rewards-token.txt).
         "REWARDS_TOKEN": _env("AERBORNE_REWARDS_TOKEN"),
+        # The game server syncs friends, blocks and messages with this token (plugins/NerdSMP/security/website-social-token.txt).
+        "SOCIAL_TOKEN": _env("AERBORNE_SOCIAL_TOKEN"),
 
         # Live status checks.
         "STATUS_HOST": _env("AERBORNE_STATUS_HOST"),
@@ -124,6 +126,13 @@ def status_target(config):
         if maybe_port.isdigit():
             host, port = name, int(maybe_port)
     return host, port
+
+
+def status_uses_srv(config):
+    """Explicit ping hosts or ports take precedence over Minecraft's DNS discovery."""
+    address = config.get("SERVER_ADDRESS") or ""
+    return (not config.get("STATUS_HOST") and not config.get("STATUS_PORT")
+            and config.get("SERVER_PORT", 25565) == 25565 and ":" not in address)
 
 
 def display_address(config):

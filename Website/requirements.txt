@@ -7,5 +7,6 @@ itsdangerous==2.0.1
 click==8.0.4
 Markdown==3.3.7
 bleach==4.1.0
+dnspython==2.2.1
 # Optional but recommended: re-encodes uploads and makes WebP sizes. The site works without it.
 Pillow==8.4.0

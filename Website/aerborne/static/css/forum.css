@@ -171,3 +171,7 @@
   .forum-page .report form { min-width: 0; width: 100%; }
   .forum-page .reply-box { padding: 1.1rem; }
 }
+
+/* Posts from members you've blocked stay folded until opened. */
+.post-blocked > summary { cursor: pointer; color: #95a8c2; font-style: italic; }
+.post-blocked[open] > summary { margin-bottom: 0.75rem; }

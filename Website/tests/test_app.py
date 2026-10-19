@@ -8,13 +8,15 @@ import sys
 import tempfile
 import threading
 import unittest
+from html.parser import HTMLParser
+import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from unittest import mock  # noqa: E402
 
 from aerborne import auth, create_app, gameapi, status  # noqa: E402
-from aerborne.config import status_target  # noqa: E402
+from aerborne.config import status_target, status_uses_srv  # noqa: E402
 from aerborne.db import connect, now_str  # noqa: E402
 
 PUBLIC_PATHS = [
@@ -60,6 +62,55 @@ class SiteTest(unittest.TestCase):
 
 
 class PublicPagesTest(SiteTest):
+    def test_reference_catalog_and_internal_links(self):
+        class Links(HTMLParser):
+            def __init__(self):
+                HTMLParser.__init__(self)
+                self.hrefs = set()
+            def handle_starttag(self, tag, attrs):
+                if tag == 'a':
+                    href = dict(attrs).get('href', '')
+                    if href.startswith('/') and not href.startswith('//'):
+                        self.hrefs.add(href.split('#')[0])
+        conn = self.db()
+        paths = ['/guide', '/explore', '/codex', '/companions']
+        for table, prefix in [('guides','/guide/'), ('regions','/explore/'), ('companions','/companions/')]:
+            paths.extend(prefix + row['slug'] for row in conn.execute("SELECT slug FROM " + table + " WHERE status = 'published'"))
+        from aerborne.content_types import GUIDE_CATEGORIES
+        paths.extend('/guide/section/' + key for key, label in GUIDE_CATEGORIES)
+        links = Links()
+        for path in paths:
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+            links.feed(response.get_data(as_text=True))
+        for path in links.hrefs:
+            response = self.client.get(path)
+            self.assertIn(response.status_code, (200, 302), path)
+        self.assertGreaterEqual(len(paths), 50)
+        conn.close()
+
+    def test_reviewed_copy_and_private_preview_filters(self):
+        from aerborne.reference_content import GUIDES
+        conn = self.db()
+        self.assertEqual(len(GUIDES), 33)
+        for guide in GUIDES:
+            row = conn.execute('SELECT body FROM guides WHERE slug = ?', (guide['slug'],)).fetchone()
+            self.assertEqual(row['body'], guide['body'], guide['slug'])
+        grave = self.client.get('/guide/graves').get_data(as_text=True)
+        for fact in ('250 Marks', '27 stacks', 'restart', 'payment immediately'):
+            self.assertIn(fact, grave)
+        active = self.client.get('/codex?availability=released').get_data(as_text=True)
+        self.assertIn('Keen Edge', active)
+        self.assertNotIn('id="stormwake"', active)
+        preview = self.client.get('/codex?availability=preview').get_data(as_text=True)
+        self.assertIn('id="stormwake"', preview)
+        self.assertNotIn('id="keen-edge"', preview)
+        hidden = self.client.get('/codex?availability=preview&aspect=celerity').get_data(as_text=True)
+        self.assertNotIn('id="stormwake"', hidden)
+        self.assertNotIn('id="chain-harvest"', hidden)
+        self.assertEqual(conn.execute("SELECT concept_art FROM companions WHERE slug='pufflet'").fetchone()[0], 1)
+        conn.close()
+
     def test_guide_search_only_returns_live_content(self):
         conn = self.db()
         conn.execute("UPDATE guides SET status = 'draft' WHERE slug = 'milestone-planning'")
@@ -76,12 +127,20 @@ class PublicPagesTest(SiteTest):
         conn = self.db()
         conn.execute("UPDATE pages SET body = 'Owner policy', updated_by = 'Josh' WHERE slug = 'privacy'")
         conn.execute("UPDATE guides SET body = 'Owner guide' WHERE slug = 'milestone-planning'")
+        conn.execute("UPDATE guides SET summary = 'Owner summary' WHERE slug = 'fishing'")
+        conn.execute("INSERT INTO faqs (slug, question, answer, category, status) VALUES (?, ?, ?, ?, ?)",
+                     ('whitelist', "Why can't I join yet?", 'Old testing notice', 'connecting', 'published'))
+        conn.execute("UPDATE guides SET body = body || ? WHERE slug = 'connection-help'",
+                     ("\n- **You are not white-listed.** Aerborne is in private testing. Ask staff to add you.\n",))
         conn.execute("UPDATE settings SET value = '3' WHERE key = 'seed_rev'")
         conn.commit()
         seed_updates.apply(conn)
         self.assertEqual(conn.execute("SELECT body FROM pages WHERE slug = 'privacy'").fetchone()[0], 'Owner policy')
         self.assertEqual(conn.execute("SELECT body FROM guides WHERE slug = 'milestone-planning'").fetchone()[0], 'Owner guide')
+        self.assertEqual(conn.execute("SELECT summary FROM guides WHERE slug = 'fishing'").fetchone()[0], 'Owner summary')
         self.assertFalse(seed_updates.apply(conn))
+        self.assertEqual(conn.execute("SELECT status FROM faqs WHERE slug = 'whitelist'").fetchone()[0], 'draft')
+        self.assertNotIn('private testing', conn.execute("SELECT body FROM guides WHERE slug = 'connection-help'").fetchone()[0])
         conn.close()
 
     def test_pages_render(self):
@@ -137,6 +196,23 @@ class PublicPagesTest(SiteTest):
     def test_status_without_address(self):
         data = self.client.get("/api/v1/status").get_json()
         self.assertEqual(data["state"], "unconfigured")
+
+    def test_status_reports_live_and_maintenance_states(self):
+        self.app.config["SERVER_ADDRESS"] = "play.example.com"
+        self.app.config["SERVER_PORT"] = 25565
+        payload = {"players": {"online": 2, "max": 20}, "version": {"name": "Paper 26.2"}}
+        with mock.patch.object(status, "ping", return_value=(payload, 75)) as ping:
+            data = self.client.get("/api/v1/status").get_json()
+        self.assertEqual((data["state"], data["players"], data["max"], data["latency_ms"]),
+                         ("online", 2, 20, 75))
+        ping.assert_called_once_with("play.example.com", 25565, 3, use_srv=True)
+        conn = self.db()
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('maintenance', '1')")
+        conn.commit()
+        conn.close()
+        self.assertEqual(self.client.get("/api/v1/status").get_json()["state"], "maintenance")
+        self.assertIn(b'data-status-refresh', self.client.get("/").data)
+        self.assertIn(b'data-field="latency"', self.client.get("/status").data)
 
     def test_markdown_is_sanitised(self):
         conn = self.db()
@@ -734,7 +810,7 @@ class ArcadeTest(CommunityHelpers):
 
     def test_visitors_play_for_practice(self):
         self.assertEqual(self.client.get("/arcade/").status_code, 200)
-        for slug in ("sky-hop", "gem-rush", "cloud-catch", "codex-memory", "forge-strike"):
+        for slug in ("sky-hop", "gem-rush", "cloud-catch", "codex-memory", "forge-strike", "rune-breaker"):
             self.assertEqual(self.client.get("/arcade/" + slug).status_code, 200, slug)
         _token, data = self.start()
         self.assertTrue(data["practice"])
@@ -744,9 +820,12 @@ class ArcadeTest(CommunityHelpers):
         self.link()
         csrf, data = self.start()
         result = self.finish(csrf, data["token"], 30)
-        self.assertEqual(result["marks"], 15, "30 gaps at 1 Mark per 2, capped at 15")
-        again = self.client.post("/arcade/run/%s/finish" % data["token"], headers={"X-CSRF-Token": csrf}, json={"score": 30})
-        self.assertEqual(again.status_code, 409, "A finished run can't be submitted twice")
+        self.assertEqual(result["marks"], 75, "30 gaps at 3 Marks per gap, capped at 75")
+        again = self.client.post("/arcade/run/%s/finish" % data["token"], headers={"X-CSRF-Token": csrf}, json={"score": 999999})
+        self.assertEqual(again.status_code, 200, "A lost receipt can be retrieved safely")
+        self.assertEqual(again.get_json()["marks"], 75)
+        self.assertEqual(again.get_json()["score"], 30, "Retries return the stored score, regardless of the new payload")
+        self.assertEqual(again.get_json()["pending"], 75)
         csrf, data = self.start()
         cheat = self.finish(csrf, data["token"], 300, seconds_ago=10)
         self.assertEqual(cheat["marks"], 0)
@@ -754,8 +833,8 @@ class ArcadeTest(CommunityHelpers):
         self.app.config["REWARDS_TOKEN"] = self.REWARDS
         self.assertEqual(self.client.get("/admin/api/arcade-payouts").status_code, 401)
         feed = self.client.get("/admin/api/arcade-payouts", headers={"Authorization": "Bearer " + self.REWARDS}).get_json()
-        self.assertEqual([(p["marks"], p["accountId"]) for p in feed["payouts"]], [(15, "acct")])
-        acked = self.client.get("/admin/api/arcade-payouts?ack=%d" % feed["payouts"][0]["id"],
+        self.assertEqual([(p["marks"], p["accountId"]) for p in feed["payouts"]], [(50, "acct"), (25, "acct")])
+        acked = self.client.get("/admin/api/arcade-payouts?ack=%d" % feed["payouts"][-1]["id"],
                                 headers={"Authorization": "Bearer " + self.REWARDS}).get_json()
         self.assertEqual(acked["payouts"], [])
 
@@ -769,11 +848,75 @@ class ArcadeTest(CommunityHelpers):
         conn.commit()
         conn.close()
         csrf, data = self.start()
-        self.assertEqual(self.finish(csrf, data["token"], 30)["marks"], 15)
+        self.assertEqual(self.finish(csrf, data["token"], 5)["marks"], 15)
         csrf, data = self.start("forge-strike")
         self.assertEqual(self.finish(csrf, data["token"], 30)["marks"], 5, "Only 5 Marks left under the 20 cap")
         csrf, data = self.start("forge-strike")
         self.assertEqual(self.finish(csrf, data["token"], 30)["marks"], 0)
+
+    def test_all_six_games_pay_the_new_caps_in_compatible_chunks(self):
+        self.register()
+        self.link()
+        total = 0
+        for slug, score, expected in (("sky-hop", 25, 75), ("gem-rush", 2000, 100),
+                                      ("cloud-catch", 40, 75), ("codex-memory", 500, 100),
+                                      ("forge-strike", 500, 75), ("rune-breaker", 1000, 100)):
+            csrf, data = self.start(slug)
+            result = self.finish(csrf, data["token"], score)
+            self.assertTrue(result["ok"], slug)
+            self.assertEqual(result["marks"], expected, slug)
+            total += expected
+        conn = self.db()
+        payouts = [r[0] for r in conn.execute("SELECT marks FROM arcade_payouts")]
+        self.assertTrue(all(0 < n <= 50 for n in payouts))
+        self.assertEqual(sum(payouts), total)
+        conn.close()
+
+    def test_default_daily_allowance_stops_at_one_thousand(self):
+        self.register()
+        self.link()
+        paid = []
+        for i in range(15):
+            csrf, data = self.start()
+            paid.append(self.finish(csrf, data["token"], 25)["marks"])
+        self.assertEqual(paid, [75] * 13 + [25, 0])
+
+    def test_allowance_migration_preserves_staff_limits(self):
+        from aerborne import seed_updates
+        conn = self.db()
+        for before, expected in (("200", "1000"), ("0", "0"), ("750", "750")):
+            conn.execute("UPDATE settings SET value = '6' WHERE key = 'seed_rev'")
+            conn.execute("UPDATE settings SET value = ? WHERE key = 'arcade_daily_cap'", (before,))
+            conn.commit()
+            seed_updates.apply(conn)
+            self.assertEqual(conn.execute("SELECT value FROM settings WHERE key = 'arcade_daily_cap'").fetchone()[0], expected)
+        conn.close()
+
+    def test_early_finish_and_other_members_receipts_do_not_pay(self):
+        self.register()
+        self.link()
+        csrf, data = self.start("gem-rush")
+        result = self.finish(csrf, data["token"], 120, seconds_ago=5)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["marks"], 0)
+        self.assertIn("at least 20 seconds", result["message"])
+        self.client.post("/account/logout", data={"_csrf": csrf})
+        self.register("AnotherPlayer")
+        new_csrf, _ = self.start()
+        denied = self.client.post("/arcade/run/%s/finish" % data["token"], headers={"X-CSRF-Token": new_csrf}, json={"score": 100})
+        self.assertEqual(denied.status_code, 409)
+
+    def test_paid_run_limit_still_applies_with_a_larger_allowance(self):
+        self.register()
+        self.link()
+        conn = self.db()
+        conn.execute("UPDATE settings SET value = '5000' WHERE key = 'arcade_daily_cap'")
+        conn.commit()
+        conn.close()
+        for i in range(16):
+            csrf, data = self.start()
+            result = self.finish(csrf, data["token"], 1)
+            self.assertEqual(result["marks"], 3 if i < 15 else 0)
 
     def test_invalid_score_payload_and_banned_member_cannot_collect(self):
         self.register()
@@ -800,6 +943,249 @@ class ArcadeTest(CommunityHelpers):
         self.assertNotIn(b"delivery is being connected", self.client.get("/arcade/").data)
 
 
+class SocialHelpers(CommunityHelpers):
+    SOCIAL = "c" * 64
+    ACCOUNTS = {"Ava": "aaaaaaaa-0000-4000-8000-000000000001", "Bjorn": "bbbbbbbb-0000-4000-8000-000000000002",
+                "Cyra": "cccccccc-0000-4000-8000-000000000003"}
+
+    def setUp(self):
+        CommunityHelpers.setUp(self)
+        self.app.config["SOCIAL_TOKEN"] = self.SOCIAL
+
+    def sign_out(self):
+        page = self.client.get("/account")
+        if page.status_code == 200:
+            token = re.search(r'name="_csrf" value="([^"]+)"', page.get_data(as_text=True)).group(1)
+            self.client.post("/account/logout", data={"_csrf": token})
+
+    def member(self, name, linked=True):
+        """Registers name (signing out whoever was signed in) and links it to its game account."""
+        self.sign_out()
+        self.register(name)
+        if linked:
+            conn = self.db()
+            conn.execute("UPDATE members SET mc_uuid = ?, mc_name = ?, mc_account_id = ?, linked_at = '2026-01-01 00:00:00' "
+                         "WHERE username = ?", (self.ACCOUNTS[name], name, self.ACCOUNTS[name], name))
+            conn.commit()
+            conn.close()
+
+    def sign_in(self, name):
+        self.sign_out()
+        token = self.csrf("/account/login")
+        self.client.post("/account/login", data={"_csrf": token, "username": name, "password": "cloud-castle-9"})
+
+    def act(self, name, action):
+        return self.client.post("/friends/" + name, data={"_csrf": self.csrf("/account"), "action": action}, follow_redirects=True)
+
+    def send(self, name, body):
+        return self.client.post("/messages/" + name, data={"_csrf": self.csrf("/account"), "body": body}, follow_redirects=True)
+
+    def outbox(self):
+        conn = self.db()
+        rows = [tuple(r) for r in conn.execute("SELECT kind, actor_account, target_account FROM social_outbox ORDER BY id")]
+        conn.close()
+        return rows
+
+    def sync(self, payload, token=None):
+        return self.client.post("/admin/api/social-sync", json=payload,
+                                headers={"Authorization": "Bearer " + (token or self.SOCIAL)})
+
+
+class SocialTest(SocialHelpers):
+    def test_friend_requests_notify_and_sync_to_the_server(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.assertIn(b"Friend request sent to Ava", self.act("Ava", "add").data)
+        self.sign_in("Ava")
+        self.assertIn(b'class="nav-badge">1<', self.client.get("/").data)
+        notes = self.client.get("/notifications").get_data(as_text=True)
+        self.assertIn("sent you a friend request", notes)
+        self.assertIn(b"You and Bjorn are now friends", self.act("Bjorn", "accept").data)
+        self.assertIn(b"Bjorn", self.client.get("/friends").data)
+        self.assertEqual(self.outbox(), [("friend", self.ACCOUNTS["Ava"], self.ACCOUNTS["Bjorn"])])
+        self.act("Bjorn", "remove")
+        self.assertEqual(self.outbox()[-1], ("unfriend", self.ACCOUNTS["Ava"], self.ACCOUNTS["Bjorn"]))
+        self.sign_in("Bjorn")
+        self.assertIn("accepted your friend request", self.client.get("/notifications").get_data(as_text=True))
+
+    def test_blocking_stops_messages_and_requests_and_folds_posts(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.act("Ava", "add")
+        self.sign_in("Ava")
+        self.act("Bjorn", "block")
+        conn = self.db()
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM friend_requests").fetchone()[0], 0)
+        conn.close()
+        self.assertEqual(self.outbox()[-1], ("block", self.ACCOUNTS["Ava"], self.ACCOUNTS["Bjorn"]))
+        self.sign_in("Bjorn")
+        self.assertIn(b"can&#39;t message this member", self.send("Ava", "hello?").data)
+        self.assertIn(b"can&#39;t add Ava", self.act("Ava", "add").data)
+        token = self.csrf("/forum/general/new")
+        made = self.client.post("/forum/general/new", data={"_csrf": token, "title": "Bjorn's island", "body": "Look at my farm"})
+        self.sign_in("Ava")
+        page = self.client.get(made.headers["Location"]).get_data(as_text=True)
+        self.assertIn("You blocked Bjorn. Show this post", page)
+
+    def test_messages_inbox_privacy_and_reports(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.send("Ava", "Want to trade rubies?")
+        self.assertEqual(self.outbox(), [("message", self.ACCOUNTS["Bjorn"], self.ACCOUNTS["Ava"])])
+        self.sign_in("Ava")
+        self.assertIn(b'aria-label="Messages, 1 unread"', self.client.get("/").data)
+        inbox = self.client.get("/messages").get_data(as_text=True)
+        self.assertIn("Want to trade rubies?", inbox)
+        chat = self.client.get("/messages/Bjorn").get_data(as_text=True)
+        self.assertIn("Want to trade rubies?", chat)
+        self.assertNotIn('aria-label="Messages, 1 unread"', self.client.get("/").get_data(as_text=True))
+        conn = self.db()
+        message_id = conn.execute("SELECT id FROM messages").fetchone()[0]
+        conn.close()
+        self.client.post("/messages/report/%d" % message_id, data={"_csrf": self.csrf("/account"), "reason": "scam"})
+        token = self.csrf("/account")
+        self.client.post("/account", data={"_csrf": token, "action": "profile", "dm_policy": "friends", "friend_requests_open": "1"})
+        self.member("Cyra")
+        self.assertIn(b"Ava only accepts messages from friends", self.send("Ava", "hi").data)
+        self.add_user("warden", "moderator")
+        self.login("warden")
+        reports = self.client.get("/admin/forum/reports").get_data(as_text=True)
+        self.assertIn("Want to trade rubies?", reports)
+        self.assertIn("scam", reports)
+
+    def test_replies_and_likes_notify_the_author(self):
+        self.member("Ava")
+        token = self.csrf("/forum/general/new")
+        made = self.client.post("/forum/general/new", data={"_csrf": token, "title": "Sky farms", "body": "Show yours"})
+        thread = made.headers["Location"]
+        self.member("Bjorn")
+        thread_id = int(thread.split("/thread/")[1].split("/")[0])
+        self.client.post("/forum/thread/%d/reply" % thread_id, data={"_csrf": self.csrf(thread), "body": "Here's mine!"})
+        conn = self.db()
+        first = conn.execute("SELECT MIN(id) FROM forum_posts").fetchone()[0]
+        conn.close()
+        self.client.post("/forum/post/%d/like" % first, data={"_csrf": self.csrf(thread)})
+        self.sign_in("Ava")
+        notes = self.client.get("/notifications").get_data(as_text=True)
+        self.assertIn("replied to your thread", notes)
+        self.assertIn("liked your post in", notes)
+        self.assertIn("Sky farms", notes)
+
+    def test_server_sync_applies_game_changes_once_and_returns_website_changes(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.send("Ava", "From the website")
+        self.assertEqual(self.sync({"apiVersion": 1}, token="d" * 64).status_code, 401)
+        self.assertEqual(self.sync({"apiVersion": 2}).status_code, 400)
+        events = [{"seq": 1, "type": "friend", "actor": self.ACCOUNTS["Ava"], "target": self.ACCOUNTS["Bjorn"]},
+                  {"seq": 2, "type": "message", "actor": self.ACCOUNTS["Ava"], "target": self.ACCOUNTS["Bjorn"], "body": "Sent with /msg"},
+                  {"seq": 3, "type": "block", "actor": self.ACCOUNTS["Ava"], "target": "dddddddd-0000-4000-8000-000000000004"}]
+        first = self.sync({"apiVersion": 1, "ack": 0, "events": events}).get_json()
+        self.assertEqual(first["accepted"], 3)
+        self.assertEqual([(e["type"], e["body"]) for e in first["events"]], [("message", "From the website")])
+        linked = {row["member"]: row for row in first["linked"]}
+        self.assertEqual(linked["Ava"]["unreadMessages"], 1)
+        self.assertEqual(linked["Bjorn"]["account"], self.ACCOUNTS["Bjorn"])
+        again = self.sync({"apiVersion": 1, "ack": first["events"][-1]["id"], "events": events}).get_json()
+        self.assertEqual(again["events"], [], "Acknowledged website events are not sent again")
+        conn = self.db()
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM friendships").fetchone()[0], 1)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM messages WHERE source = 'game'").fetchone()[0], 1,
+                         "Replaying the same events changes nothing")
+        conn.close()
+        self.assertEqual(self.outbox(), [], "Changes from the server are never sent back to it")
+        self.sign_in("Bjorn")
+        chat = self.client.get("/messages/Ava").get_data(as_text=True)
+        self.assertIn("Sent with /msg", chat)
+        self.assertIn("sent from in game", chat)
+        self.assertIn("is now your friend (added in game)", self.client.get("/notifications").get_data(as_text=True))
+
+    def test_linking_asks_the_server_for_existing_friends(self):
+        self.member("Ava")
+        self.member("Bjorn", linked=False)
+        self.act("Ava", "add")
+        self.sign_in("Ava")
+        self.act("Bjorn", "accept")
+        self.assertEqual(self.outbox(), [], "Bjorn isn't in game yet")
+        self.sign_in("Bjorn")
+        links = {"ABCD2345": {"apiVersion": 1, "accountId": self.ACCOUNTS["Bjorn"], "playerId": self.ACCOUNTS["Bjorn"], "name": "Bjorn"}}
+        with mock.patch.object(gameapi, "_request", side_effect=fake_api(links)):
+            token = self.csrf("/account/link")
+            self.client.post("/account/link", data={"_csrf": token, "code": "ABCD-2345"})
+        self.assertEqual(self.outbox(), [("link", self.ACCOUNTS["Bjorn"], self.ACCOUNTS["Bjorn"]),
+                                         ("friend", self.ACCOUNTS["Bjorn"], self.ACCOUNTS["Ava"])])
+
+
+class MemberManagementTest(SocialHelpers):
+    def test_directory_lists_searches_and_hides_banned(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        conn = self.db()
+        conn.execute("UPDATE members SET status = 'banned' WHERE username = 'Bjorn'")
+        conn.commit()
+        conn.close()
+        page = self.client.get("/members").get_data(as_text=True)
+        self.assertIn("Ava", page)
+        self.assertNotIn("Bjorn&#39;s profile", page)
+        self.assertIn("/members", self.client.get("/forum").get_data(as_text=True))
+        self.assertNotIn(">Ava<", self.client.get("/members?q=zzz").get_data(as_text=True))
+
+    def test_members_download_their_own_data_without_the_password(self):
+        self.member("Ava")
+        self.member("Bjorn")
+        self.send("Ava", "Hello there")
+        res = self.client.get("/account/data")
+        self.assertEqual(res.mimetype, "application/zip")
+        archive = zipfile.ZipFile(io.BytesIO(res.data))
+        self.assertIn("messages.json", archive.namelist())
+        self.assertIn("Hello there", archive.read("messages.json").decode("utf-8"))
+        profile = archive.read("profile.json").decode("utf-8")
+        self.assertIn("Bjorn", profile)
+        self.assertNotIn("password_hash", profile)
+        self.assertNotIn("pbkdf2", profile)
+
+    def test_admins_export_and_delete_while_moderators_cannot(self):
+        self.member("Ava")
+        token = self.csrf("/forum/general/new")
+        made = self.client.post("/forum/general/new", data={"_csrf": token, "title": "Ava's farm", "body": "Wheat everywhere"})
+        thread = made.headers["Location"]
+        self.member("Bjorn")
+        self.send("Ava", "Nice farm")
+        self.act("Ava", "add")
+        conn = self.db()
+        ava = conn.execute("SELECT id FROM members WHERE username = 'Ava'").fetchone()[0]
+        conn.close()
+        self.add_user("warden", "moderator")
+        self.login("warden")
+        self.assertEqual(self.client.get("/admin/forum/members/%d/manage" % ava).status_code, 200)
+        self.assertEqual(self.client.get("/admin/forum/members/%d/export" % ava).status_code, 403)
+        token = self.csrf("/admin/forum/members/%d/manage" % ava)
+        denied = self.client.post("/admin/forum/members/%d/action" % ava, data={"_csrf": token, "action": "delete", "confirm": "Ava"})
+        self.assertEqual(denied.status_code, 403)
+        self.client.post("/admin/forum/members/%d/action" % ava, data={"_csrf": token, "action": "signout"})
+        self.add_user("boss", "admin")
+        self.login("boss")
+        export = self.client.get("/admin/forum/members/%d/export" % ava)
+        self.assertIn("posts.json", zipfile.ZipFile(io.BytesIO(export.data)).namelist())
+        token = self.csrf("/admin/forum/members/%d/manage" % ava)
+        wrong = self.client.post("/admin/forum/members/%d/action" % ava, data={"_csrf": token, "action": "delete", "confirm": "ava?"},
+                                 follow_redirects=True)
+        self.assertIn(b"Type the member", wrong.data)
+        self.client.post("/admin/forum/members/%d/action" % ava, data={"_csrf": token, "action": "delete", "confirm": "Ava"})
+        conn = self.db()
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0], 0)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM friend_requests").fetchone()[0], 0)
+        self.assertEqual(conn.execute("SELECT status, mc_account_id FROM members WHERE id = ?", (ava,)).fetchone()[:], ("deleted", None))
+        actions = [r[0] for r in conn.execute("SELECT action FROM audit_log WHERE entity = 'members' ORDER BY id")]
+        conn.close()
+        self.assertEqual(actions, ["signout", "export", "delete"])
+        self.assertEqual(self.client.get("/members/Ava").status_code, 404)
+        page = self.client.get(thread).get_data(as_text=True)
+        self.assertIn("Deleted member %d" % ava, page)
+        self.assertIn("Wheat everywhere", page, "Posts stay unless staff remove them too")
+        self.assertEqual(self.register("Ava").status_code, 302, "The username is free again")
+
+
 class FakeServer(threading.Thread):
     """Answers one Server List Ping with a canned status."""
 
@@ -814,7 +1200,7 @@ class FakeServer(threading.Thread):
 
     def run(self):
         conn, _ = self.sock.accept()
-        conn.recv(1024)
+        self.request = conn.recv(1024)
         body = status._pack_varint(0) + status._pack_varint(len(self.payload)) + self.payload
         conn.sendall(status._pack_varint(len(body)) + body)
         conn.close()
@@ -850,6 +1236,47 @@ class StatusTest(unittest.TestCase):
     def test_address_with_port(self):
         cfg = {"SERVER_ADDRESS": "play.example.com:25570", "SERVER_PORT": 25565}
         self.assertEqual(status_target(cfg), ("play.example.com", 25570))
+
+    def test_srv_discovery_and_explicit_overrides(self):
+        cfg = {"SERVER_ADDRESS": "play.example.com", "SERVER_PORT": 25565}
+        self.assertTrue(status_uses_srv(cfg))
+        for overrides in ({"SERVER_ADDRESS": "play.example.com:25565"}, {"SERVER_PORT": 9025},
+                          {"STATUS_HOST": "backend.example.com"}, {"STATUS_PORT": 25565}):
+            self.assertFalse(status_uses_srv(dict(cfg, **overrides)))
+        record = mock.Mock(priority=0, weight=5, port=9025, target="node.example.com.")
+        with mock.patch.object(status.dns.resolver, "resolve", return_value=[record]) as resolve:
+            self.assertEqual(status._resolve_target("play.example.com", 25565, 3), ("node.example.com", 9025))
+            resolve.assert_called_once_with("_minecraft._tcp.play.example.com.", "SRV", lifetime=3, search=False)
+
+    def test_srv_fallback_and_ip_addresses(self):
+        with mock.patch.object(status.dns.resolver, "resolve", side_effect=status.dns.resolver.NXDOMAIN):
+            self.assertEqual(status._resolve_target("play.example.com", 25565, 1), ("play.example.com", 25565))
+        with mock.patch.object(status.dns.resolver, "resolve") as resolve:
+            self.assertEqual(status._resolve_target("127.0.0.1", 25565, 1), ("127.0.0.1", 25565))
+            self.assertEqual(status._resolve_target("play.example.com", 9025, 1), ("play.example.com", 9025))
+            resolve.assert_not_called()
+
+    def test_srv_ping_keeps_public_handshake_host(self):
+        server = FakeServer({"version": {"name": "Paper 26.2"}, "players": {"online": 4, "max": 20}})
+        server.start()
+        with mock.patch.object(status, "_resolve_target", return_value=("127.0.0.1", server.port)):
+            result = status.get_status(("public.example.com", 25565))
+        self.assertEqual((result["state"], result["players"], result["max"]), ("online", 4, 20))
+        self.assertIn(b"public.example.com", server.request)
+
+    def test_cached_success_is_replaced_by_offline(self):
+        target = ("play.example.com", 25565)
+        payload = {"players": {"online": 4, "max": 20}, "version": {"name": "Paper"}}
+        with mock.patch.object(status, "ping", return_value=(payload, 80)) as ping:
+            result = status.get_status(target)
+            self.assertEqual(status.get_status(target), result)
+            self.assertEqual(ping.call_count, 1)
+        with mock.patch.object(status.time, "time", return_value=result["checked_at"] + 31):
+            with mock.patch.object(status, "ping", side_effect=OSError("offline")):
+                offline = status.get_status(target)
+        self.assertEqual(offline["state"], "offline")
+        self.assertNotIn("players", offline)
+        self.assertEqual(offline["last_online_at"], result["checked_at"])
 
 
 if __name__ == "__main__":

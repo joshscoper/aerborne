@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "community/_macros.html" as c with context %}
+{% block body_class %}profile-page social-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}">{% endblock %}
+{% block content %}
+{% set counts = social_counts() %}
+<header class="social-head">
+  <div class="wrap">
+    <p class="eyebrow">{% block eyebrow %}Your corner of Aerborne{% endblock %}</p>
+    <h1>{% block heading %}{% endblock %}</h1>
+    <nav class="social-tabs" aria-label="Your inbox">
+      <a href="{{ url_for('community.notifications') }}"{% if social_tab == 'notifications' %} aria-current="page"{% endif %}>{% include "partials/icon_bell.svg" %}<span>Notifications</span>{% if counts.notifications %}<span class="count">{{ counts.notifications }}</span>{% endif %}</a>
+      <a href="{{ url_for('community.messages') }}"{% if social_tab == 'messages' %} aria-current="page"{% endif %}>{% include "partials/icon_mail.svg" %}<span>Messages</span>{% if counts.messages %}<span class="count">{{ counts.messages }}</span>{% endif %}</a>
+      <a href="{{ url_for('community.friends') }}"{% if social_tab == 'friends' %} aria-current="page"{% endif %}>{% include "partials/icon_friends.svg" %}<span>Friends</span>{% if counts.requests %}<span class="count">{{ counts.requests }}</span>{% endif %}</a>
+    </nav>
+  </div>
+</header>
+<div class="wrap social-layout">
+  {{ c.flashes() }}
+  {% block social %}{% endblock %}
+</div>
+{% endblock %}

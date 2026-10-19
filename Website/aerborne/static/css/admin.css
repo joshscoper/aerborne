@@ -144,3 +144,13 @@ ins { background: #DDF3EC; text-decoration: none; }
 .rank-preview { display: inline-block; padding: 0.25rem 0.6rem; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.05em; border-radius: 5px; color: var(--rank-ink, #17243B); background: var(--rank, #8E9AAF); }
 .rank-grid { grid-template-columns: 1.4fr 1.4fr 6rem 6rem 6rem; }
 .rank-grid input[type="color"] { height: 38px; padding: 2px; }
+
+/* Member manage page */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.6rem; margin: 0 0 1.5rem; }
+.stat-grid div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0.7rem 0.9rem; }
+.stat-grid dt { font-size: 0.8rem; color: var(--muted, #6b778c); }
+.stat-grid dd { margin: 0.2rem 0 0; font-size: 1.3rem; font-weight: 700; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; align-items: start; }
+.tool-grid .card { margin: 0; }
+.tool-grid h3 { margin-top: 0; }
+.card-danger { border-color: var(--danger); }

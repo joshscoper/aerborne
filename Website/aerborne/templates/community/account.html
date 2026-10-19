@@ -36,6 +36,11 @@
         <label>YouTube channel <input name="youtube_url" type="url" value="{{ member.youtube_url }}" maxlength="200" placeholder="https://youtube.com/@yourname"></label>
         <label>Twitch channel <input name="twitch_url" type="url" value="{{ member.twitch_url }}" maxlength="200" placeholder="https://twitch.tv/yourname"></label>
         <div class="profile-privacy"><h3>Game stats</h3><label class="check"><input type="checkbox" name="show_stats" value="1"{% if member.show_stats %} checked{% endif %}> Show my in-game stats on my public profile</label><p class="fine">Your profile and forum activity stay public.</p></div>
+        <div class="profile-privacy"><h3>Messages &amp; friends</h3>
+          <label>Who can message you <select name="dm_policy">{% for key, label in dm_policies %}<option value="{{ key }}"{% if (member.dm_policy or 'everyone') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+          <label class="check"><input type="checkbox" name="friend_requests_open" value="1"{% if member.friend_requests_open %} checked{% endif %}> Let members send me friend requests</label>
+          <p class="fine">Blocked members can never message you. Manage your lists under <a href="{{ url_for('community.friends') }}">Friends</a>.</p>
+        </div>
       </section>
     </form>
   </div>

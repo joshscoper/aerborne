@@ -6,7 +6,7 @@ import zipfile
 def build():
     root = os.path.dirname(os.path.abspath(__file__))
     target = os.path.join(os.path.dirname(root), "Website.zip")
-    files = ["passenger_wsgi.py", "manage.py", "requirements.txt", "README.md", "build_release.py"]
+    files = ["passenger_wsgi.py", "manage.py", "requirements.txt", "README.md", "CONTENT_REVIEW.md", "build_release.py"]
     for directory, folders, names in os.walk(os.path.join(root, "aerborne")):
         folders[:] = sorted(name for name in folders if name != "__pycache__")
         for name in sorted(names):

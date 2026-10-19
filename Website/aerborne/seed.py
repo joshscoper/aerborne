@@ -53,7 +53,8 @@ def seed_default_admin(conn):
     return True
 
 
-DEFAULT_SETTINGS = {"forum_enabled": "1", "registrations_open": "1", "forum_require_link": "1", "fun_cursor": "1"}
+DEFAULT_SETTINGS = {"forum_enabled": "1", "registrations_open": "1", "forum_require_link": "1", "fun_cursor": "1",
+                    "messages_enabled": "1"}
 
 
 def ensure_default_settings(conn):
@@ -332,7 +333,6 @@ Each one appears on the Explore page once it's open to visit.
     {"title": "Can't connect?", "slug": "connection-help", "category": "troubleshooting",
      "summary": "The usual reasons a connection fails, and what to try.",
      "body": """- **Outdated client or server.** Use the Minecraft version listed on the Play page.
-- **You are not white-listed.** Aerborne is in private testing. Ask staff to add you.
 - **Can't reach the server.** Check the address for typos, then check Server Status. If it says offline,
   the server may be restarting.
 - **Bedrock, console or mobile.** Aerborne is Java Edition only.
@@ -428,8 +428,6 @@ FAQS = [
      "answer": "Minecraft: Java Edition. The Play page always lists the versions the server accepts."},
     {"question": "Can I play on Bedrock, console or mobile?", "slug": "bedrock", "category": "connecting",
      "answer": "Not right now. Aerborne is Java Edition only."},
-    {"question": "Why can't I join yet?", "slug": "whitelist", "category": "connecting",
-     "answer": "Aerborne is in private testing with a whitelist while content is finished. Watch News and Discord for openings."},
     {"question": "Is Aerborne free to play?", "slug": "free", "category": "playing",
      "answer": "Yes. Everything that affects gameplay is earned in game."},
     {"question": "Can I buy power, Marks or island progress?", "slug": "pay-to-win", "category": "store",

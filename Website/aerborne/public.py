@@ -18,7 +18,7 @@ GUIDE_INFO = {
     "skills": "Levelling, gathering and crafting",
     "equipment": "Gear, rarity, sockets and combat",
     "arcane": "Enchantments, Aspects and discovery",
-    "world": "Islands, the city and what lies beyond",
+    "world": "Island travel, the shared hub, parties and recovery",
     "troubleshooting": "Answers, fixes and help",
 }
 
@@ -80,7 +80,7 @@ def index():
 
 @bp.route("/play")
 def play():
-    faqs = published("faqs", "category = ?", ("connecting",))
+    faqs = published("faqs", "category = ? AND slug NOT IN ('whitelist', 'which-version', 'bedrock')", ("connecting",))
     return render_template("play.html", faqs=faqs)
 
 
@@ -156,6 +156,7 @@ def render_guide(item, preview=False):
     prev_item = siblings[position - 1] if position else None
     next_item = siblings[position + 1] if position is not None and position + 1 < len(siblings) else None
     return render_template("guide_article.html", item=item, preview=preview,
+                           reading_minutes=max(1, (len((item['body'] or '').split()) + 179) // 180),
                            section=dict(GUIDE_CATEGORIES).get(item["category"], ""),
                            related=related_links(item["related"]), siblings=siblings,
                            step=(position + 1) if position is not None else None,
@@ -171,9 +172,12 @@ def codex():
         "aspect": request.args.get("aspect", ""),
         "equipment": request.args.get("equipment", ""),
         "q": request.args.get("q", "").strip()[:60],
+        "availability": request.args.get("availability", ""),
     }
 
     def keep(entry):
+        if filters["availability"] and entry["availability"] != filters["availability"]:
+            return False
         if filters["tier"] and entry["tier"] != filters["tier"]:
             return False
         if filters["equipment"] and entry["equipment"] != filters["equipment"]:
@@ -198,8 +202,7 @@ def codex():
 
 @bp.route("/companions")
 def companions():
-    return render_template("companions.html", companions=published("companions"),
-                           trails=published("trails"))
+    return render_template("companions.html", companions=published("companions"))
 
 
 @bp.route("/companions/<slug>")

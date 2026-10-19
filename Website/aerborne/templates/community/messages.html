@@ -1,0 +1,29 @@
+{% extends "community/social_base.html" %}
+{% set social_tab = 'messages' %}
+{% block title %}Messages{% endblock %}
+{% block heading %}Messages{% endblock %}
+{% block social %}
+<form class="social-add" method="get" action="{{ url_for('community.messages') }}">
+  <label for="message-to">New message</label>
+  <div class="social-add-row"><input id="message-to" name="to" maxlength="20" required placeholder="Website username" autocomplete="off"><button class="btn btn-primary" type="submit">Write</button></div>
+</form>
+{% if conversations %}
+<ul class="inbox">
+  {% for conv in conversations %}
+  {% set p = conv.other %}
+  <li{% if conv.unread %} class="is-unread"{% endif %}>
+    <a href="{{ url_for('community.conversation', username=p.username) }}">
+      {{ c.avatar(p.avatar, 48) }}
+      <span class="inbox-text">
+        <span class="inbox-top"><span class="name-ranked rank-{{ p.rank_slug or 'none' }}">{{ p.username }}</span><time datetime="{{ conv.last.created_at | isodate }}">{{ conv.last.created_at | date(true) }}</time></span>
+        <span class="inbox-snippet">{% if conv.last.sender_id == member.id %}You: {% endif %}{{ conv.last.body | truncate(110) }}</span>
+      </span>
+      {% if conv.unread %}<span class="count" aria-label="{{ conv.unread }} unread">{{ conv.unread }}</span>{% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="social-empty"><h2>Your inbox is empty</h2><p>Start a conversation above or from someone's profile. When you're offline, linked players can also reach you here with <code>/msg</code> in game.</p></div>
+{% endif %}
+{% endblock %}

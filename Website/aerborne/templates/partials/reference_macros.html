@@ -1,0 +1,10 @@
+{% macro status(value) -%}
+<span class="reference-status is-{{ value }}">{{ {'released':'Available', 'preview':'Preview', 'upcoming':'Planned'}.get(value, value) }}</span>
+{%- endmacro %}
+
+{% macro sidebar() -%}
+<aside class="reference-sidebar">
+  <div class="reference-toc" data-page-toc hidden><p class="eyebrow">On this page</p><nav aria-label="On this page"><ol></ol></nav></div>
+  <details class="reference-navigation" data-handbook-nav open><summary>Browse the Handbook</summary>{% include "partials/guide_sidebar.html" %}</details>
+</aside>
+{%- endmacro %}

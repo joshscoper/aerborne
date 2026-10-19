@@ -1,0 +1,86 @@
+{% extends "community/social_base.html" %}
+{% import "community/_people.html" as people_macros with context %}
+{% set social_tab = 'friends' %}
+{% block title %}Friends{% endblock %}
+{% block heading %}Friends{% endblock %}
+{% block social %}
+<form class="social-add" method="post" action="{{ url_for('community.friends') }}">
+  {{ c.csrf() }}
+  <label for="friend-name">Add a friend</label>
+  <div class="social-add-row"><input id="friend-name" name="username" maxlength="20" required placeholder="Website username" autocomplete="off"><button class="btn btn-primary" type="submit">Send request</button></div>
+  <p class="fine">When you've both linked Minecraft, friends made here also show in game under <code>/friends</code>.</p>
+</form>
+<nav class="pill-tabs" aria-label="Friends lists">
+  <a href="{{ url_for('community.friends') }}"{% if tab == 'friends' %} aria-current="page"{% endif %}>Friends <span>{{ people | length }}/{{ max_friends }}</span></a>
+  <a href="{{ url_for('community.friends', tab='requests') }}"{% if tab == 'requests' %} aria-current="page"{% endif %}>Requests <span>{{ incoming | length }}</span></a>
+  <a href="{{ url_for('community.friends', tab='blocked') }}"{% if tab == 'blocked' %} aria-current="page"{% endif %}>Blocked <span>{{ blocked | length }}</span></a>
+</nav>
+
+{% if tab == 'friends' %}
+  {% if people %}
+  <ul class="people-list">
+    {% for p in people %}
+    <li>
+      {{ people_macros.person(p) }}
+      <span class="people-actions">
+        <a class="btn btn-ghost btn-small" href="{{ url_for('community.conversation', username=p.username) }}">Message</a>
+        <details class="menu">
+          <summary aria-label="More for {{ p.username }}">•••</summary>
+          <div class="menu-panel">
+            <form method="post" action="{{ url_for('community.friend_action', username=p.username) }}" data-confirm="Remove {{ p.username }} from your friends?">{{ c.csrf() }}<input type="hidden" name="next" value="{{ url_for('community.friends') }}"><button class="linkish" name="action" value="remove">Remove friend</button></form>
+            <form method="post" action="{{ url_for('community.friend_action', username=p.username) }}" data-confirm="Block {{ p.username }}? This also removes them as a friend.">{{ c.csrf() }}<input type="hidden" name="next" value="{{ url_for('community.friends') }}"><button class="linkish danger-text" name="action" value="block">Block</button></form>
+          </div>
+        </details>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="social-empty"><h2>No friends yet</h2><p>Add someone above, use the button on their profile, or type <code>/friends add &lt;name&gt;</code> in game.</p></div>
+  {% endif %}
+
+{% elif tab == 'requests' %}
+  <h2 class="social-subhead">Waiting for you</h2>
+  {% if incoming %}
+  <ul class="people-list">
+    {% for p in incoming %}
+    <li>
+      {{ people_macros.person(p, False) }}
+      <form class="people-actions" method="post" action="{{ url_for('community.friend_action', username=p.username) }}">{{ c.csrf() }}<input type="hidden" name="next" value="{{ url_for('community.friends', tab='requests') }}">
+        <button class="btn btn-primary btn-small" name="action" value="accept">Accept</button>
+        <button class="btn btn-ghost btn-small" name="action" value="decline">Decline</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="fine">No requests waiting.</p>{% endif %}
+  <h2 class="social-subhead">You sent</h2>
+  {% if outgoing %}
+  <ul class="people-list">
+    {% for p in outgoing %}
+    <li>
+      {{ people_macros.person(p, False) }}
+      <form class="people-actions" method="post" action="{{ url_for('community.friend_action', username=p.username) }}">{{ c.csrf() }}<input type="hidden" name="next" value="{{ url_for('community.friends', tab='requests') }}">
+        <button class="btn btn-ghost btn-small" name="action" value="cancel">Cancel request</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="fine">No requests sent. Requests expire after 30 days.</p>{% endif %}
+
+{% else %}
+  <p class="fine">Blocked members can't message you or send friend requests, and their forum posts are folded away. Blocks between linked accounts also apply in game, like <code>/ignore</code>.</p>
+  {% if blocked %}
+  <ul class="people-list">
+    {% for p in blocked %}
+    <li>
+      {{ people_macros.person(p, False) }}
+      <form class="people-actions" method="post" action="{{ url_for('community.friend_action', username=p.username) }}">{{ c.csrf() }}<input type="hidden" name="next" value="{{ url_for('community.friends', tab='blocked') }}">
+        <button class="btn btn-ghost btn-small" name="action" value="unblock">Unblock</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<div class="social-empty"><h2>Nobody blocked</h2><p>You can block someone from their profile or a conversation.</p></div>{% endif %}
+{% endif %}
+{% endblock %}

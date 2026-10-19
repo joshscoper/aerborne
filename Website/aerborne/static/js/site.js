@@ -29,6 +29,7 @@
     if (data.state === "unconfigured") return "The public address is coming soon.";
     if (data.state === "maintenance") return "Under maintenance. " + (data.message || "Check back soon.");
     if (data.state === "offline") return "The server isn't answering right now. It may be restarting; check back in a few minutes.";
+    if (data.state !== "online") return "Live status couldn't load. Try refreshing in a moment.";
     var who = data.players === 1 ? "1 player" : data.players + " players";
     return "Online with " + who + (data.version ? " on " + data.version : "") + ". Checked " + ago(data.checked_at) + ".";
   }
@@ -37,11 +38,15 @@
     var text = card.querySelector("[data-status-text]");
     var players = card.querySelector("[data-players]");
     var icon = card.querySelector(".server-icon");
+    var available = data.online && data.state === "online";
+    var states = { online: "Online", offline: "Offline", maintenance: "Maintenance", unconfigured: "Coming soon", unknown: "Status unavailable" };
     card.setAttribute("data-state", data.state);
-    if (data.online && data.state !== "maintenance") {
+    card.querySelector('[data-status-state]').textContent = states[data.state] || states.unknown;
+    card.querySelector('[data-status-latency]').textContent = available ? data.latency_ms + ' ms' : '';
+    if (available) {
       card.setAttribute("data-bars", String(bars(data.latency_ms)));
       players.textContent = data.players + "/" + data.max;
-      if (data.favicon) icon.src = data.favicon;
+      icon.src = data.favicon || icon.getAttribute("data-default-icon");
     } else {
       card.removeAttribute("data-bars");
       players.textContent = "";
@@ -58,23 +63,37 @@
       if (el) el.textContent = value;
     };
     var states = { online: "Online", offline: "Offline", maintenance: "Maintenance", unconfigured: "Not announced yet" };
+    var available = data.online && data.state === "online";
     set("state", states[data.state] || "Unknown");
-    set("players", data.online ? data.players + " of " + data.max : "–");
-    set("version", data.online && data.version ? data.version : "–");
+    set("players", available ? data.players + " of " + data.max : "–");
+    set("version", available && data.version ? data.version : "–");
+    set("latency", available ? data.latency_ms + " ms" : "–");
     set("checked", data.checked_at ? ago(data.checked_at) : "–");
     set("last-online", data.last_online_at ? ago(data.last_online_at) : (data.online ? "Now" : "Not since this check started"));
   }
 
   function refresh(card) {
-    fetch(card.getAttribute("data-status-url"), { headers: { Accept: "application/json" } })
+    if (card.getAttribute('aria-busy') === 'true') return;
+    var button = card.querySelector('[data-status-refresh]');
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : null;
+    card.setAttribute('aria-busy', 'true');
+    button.disabled = true;
+    button.textContent = 'Checking…';
+    fetch(card.getAttribute("data-status-url"), { headers: { Accept: "application/json" }, cache: 'no-store', signal: controller ? controller.signal : undefined })
       .then(function (res) {
         if (!res.ok) throw new Error("status " + res.status);
         return res.json();
       })
       .then(function (data) { render(card, data); })
       .catch(function () {
-        card.setAttribute("data-state", "unknown");
-        card.querySelector("[data-status-text]").textContent = "Live status couldn't load. The address still works.";
+          render(card, {state: 'unknown', online: false});
+        })
+        .then(function () {
+          if (timer) clearTimeout(timer);
+          card.setAttribute('aria-busy', 'false');
+          button.disabled = false;
+          button.textContent = 'Refresh status';
       });
   }
 
@@ -272,11 +291,15 @@
     parallax();
     var cards = document.querySelectorAll(".server-card[data-status-url]");
     if (cards.length && window.fetch) {
+      Array.prototype.forEach.call(cards, function (card) {
+        card.querySelector('[data-status-refresh]').addEventListener('click', function () { refresh(card); });
+      });
       var tick = function () {
         if (!document.hidden) Array.prototype.forEach.call(cards, refresh);
       };
       tick();
       setInterval(tick, REFRESH_MS);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
     }
     Array.prototype.forEach.call(document.querySelectorAll("form[data-confirm]"), function (form) {
       form.addEventListener("submit", function (event) {

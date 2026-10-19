@@ -101,6 +101,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.anticheat.WatchdogPanel watchdogPanel;
     private net.nerdsmp.paper.webapi.WebApi webApi;
     private net.nerdsmp.paper.webapi.WebsiteRewards websiteRewards;
+    private net.nerdsmp.paper.webapi.WebsiteSocial websiteSocial;
     public net.nerdsmp.paper.webapi.WebApi webApi() { return webApi; }
     public net.nerdsmp.paper.permission.StaffPermissions staffPermissions() { return staffPermissions; }
     private DurableAuctionService auctions;
@@ -242,6 +243,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (websiteRewards != null) websiteRewards.close();
+        if (websiteSocial != null) websiteSocial.close();
         if (webApi != null) webApi.close();
         if (autoSmelt != null) autoSmelt.close();
         if (forestry != null) forestry.close();
@@ -640,6 +642,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Web API unavailable; no port-9028 listener enabled", failure); }
         try { websiteRewards = net.nerdsmp.paper.webapi.WebsiteRewards.start(this); }
         catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Website Arcade rewards unavailable", failure); }
+        try { websiteSocial = net.nerdsmp.paper.webapi.WebsiteSocial.start(this, social.websitePort()); social.website(websiteSocial); }
+        catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Website friends and messages sync unavailable", failure); }
     }
 
     private void registerResourcePackProvider(PluginManager plugins) {

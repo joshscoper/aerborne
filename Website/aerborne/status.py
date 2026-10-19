@@ -1,13 +1,18 @@
 """Live server status using Minecraft's Server List Ping.
 
-Standard library only. Results are cached per process so page views never hammer the server,
+Minecraft SRV records are resolved with dnspython. Results are cached per process so page views never hammer the server,
 and every answer carries the time it was checked so the site never passes off old data as live.
 """
 import json
+import ipaddress
+import random
 import socket
 import struct
 import threading
 import time
+
+import dns.exception
+import dns.resolver
 
 _cache = {}
 _last_success = {}
@@ -59,7 +64,33 @@ def _packet(packet_id, payload=b""):
     return _pack_varint(len(body)) + body
 
 
-def ping(host, port, timeout=3):
+def _resolve_target(host, port, timeout):
+    """Follow Java Edition's service record, retaining the public host for the handshake."""
+    if port != 25565 or host.lower() == "localhost":
+        return host, port
+    try:
+        ipaddress.ip_address(host)
+        return host, port
+    except ValueError:
+        pass
+    try:
+        records = list(dns.resolver.resolve("_minecraft._tcp." + host.rstrip(".") + ".",
+                                            "SRV", lifetime=timeout, search=False))
+    except (dns.exception.DNSException, OSError):
+        return host, port
+    if not records:
+        return host, port
+    priority = min(record.priority for record in records)
+    candidates = [record for record in records if record.priority == priority]
+    weights = [record.weight for record in candidates]
+    record = random.choices(candidates, weights=weights if any(weights) else None)[0]
+    destination = str(record.target).rstrip(".")
+    if not destination:
+        raise PingError("service unavailable")
+    return destination, int(record.port)
+
+
+def ping(host, port, timeout=3, use_srv=False):
     """Return the raw status JSON and round-trip time in milliseconds."""
     host_bytes = host.encode("utf-8")
     handshake = (
@@ -69,8 +100,9 @@ def ping(host, port, timeout=3):
         + struct.pack(">H", port)
         + _pack_varint(1)  # next state: status
     )
+    destination = _resolve_target(host, port, timeout) if use_srv else (host, port)
     started = time.time()
-    sock = socket.create_connection((host, port), timeout=timeout)
+    sock = socket.create_connection(destination, timeout=timeout)
     try:
         sock.settimeout(timeout)
         sock.sendall(_packet(0x00, handshake) + _packet(0x00))
@@ -109,20 +141,21 @@ def _summarise(data, latency):
     }
 
 
-def get_status(target, timeout=3, cache_seconds=30):
+def get_status(target, timeout=3, cache_seconds=30, use_srv=True):
     """Cached status for (host, port). Never raises; offline is a normal answer."""
     if target is None:
         return {"state": "unconfigured", "online": False, "configured": False}
 
     now = time.time()
+    cache_key = (target, use_srv)
     with _lock:
-        cached = _cache.get(target)
+        cached = _cache.get(cache_key)
         if cached and cached["expires"] > now:
             return dict(cached["value"])
 
     host, port = target
     try:
-        data, latency = ping(host, port, timeout)
+        data, latency = ping(host, port, timeout, use_srv=use_srv)
         value = _summarise(data, latency)
         ttl = cache_seconds
     except (OSError, PingError, ValueError, TypeError, AttributeError):
@@ -133,9 +166,9 @@ def get_status(target, timeout=3, cache_seconds=30):
     value["checked_at"] = int(now)
     with _lock:
         if value["online"]:
-            _last_success[target] = int(now)
-        value["last_online_at"] = _last_success.get(target)
-        _cache[target] = {"value": value, "expires": now + ttl}
+            _last_success[cache_key] = int(now)
+        value["last_online_at"] = _last_success.get(cache_key)
+        _cache[cache_key] = {"value": value, "expires": now + ttl}
     return dict(value)
 
 

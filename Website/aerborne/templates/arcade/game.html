@@ -1,44 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ game.name }} | Arcade{% endblock %}
 {% block description %}{{ game.blurb }}{% endblock %}
+{% block body_class %}arcade-game-page{% endblock %}
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/arcade.css') }}">
 <script src="{{ url_for('static', filename='js/arcade/engine.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/arcade/games.js') }}" defer></script>
 {% endblock %}
 {% block content %}
-<div class="wrap arcade-play">
-  <p class="crumbs"><a href="{{ url_for('arcade.index') }}">Arcade</a></p>
+<div class="wrap arcade-play tone-{{ game.tone }}">
+  <p class="crumbs"><a href="{{ url_for('arcade.index') }}">← All arcade games</a></p>
+  <header class="arcade-game-heading"><p class="eyebrow">{{ game.genre }} · {{ game.length }}</p><h1>{{ game.name }}</h1><p>{{ game.blurb }}</p></header>
   <div class="arcade-layout">
     <section class="arcade-stage" data-arcade="{{ game.slug }}" data-csrf="{{ csrf_token() }}"
-             data-start="{{ url_for('arcade.start', slug=game.slug) }}"
-             data-finish="{{ url_for('arcade.finish', token='TOKEN') }}"
-             data-img-base="{{ url_for('static', filename='img/') }}" aria-label="{{ game.name }}">
-      <div class="arcade-hud"><h1>{{ game.name }}</h1><div class="arcade-controls"><span class="arcade-score">Score <strong data-score>0</strong></span><button class="btn btn-ghost" type="button" data-pause disabled>Pause</button></div></div>
+      data-start="{{ url_for('arcade.start', slug=game.slug) }}" data-finish="{{ url_for('arcade.finish', token='TOKEN') }}"
+      data-img-base="{{ url_for('static', filename='img/') }}" data-per-mark="{{ game.per_mark }}" data-multiplier="{{ game.marks_per_unit or 1 }}" data-cap="{{ game.cap }}" aria-label="{{ game.name }}">
+      <div class="arcade-hud"><div class="arcade-score"><span>Score</span><strong data-score>0</strong></div><span class="arcade-round-stat" data-stat>Ready to play</span><button class="btn btn-ghost" type="button" data-pause disabled>Pause</button></div>
       <div class="arcade-frame">
         <canvas width="480" height="640" tabindex="0" aria-label="{{ game.name }} game area" aria-describedby="game-help">Your browser needs canvas support to play this game.</canvas>
         <div class="arcade-overlay" data-overlay>
-          <h2 data-title>{{ game.name }}</h2>
-          <p data-text role="status">{{ game.how }}</p>
+          <img class="arcade-overlay-icon" src="{{ url_for('static', filename='img/arcade/' ~ game.slug ~ '-256.webp') }}" alt="" width="140" height="140">
+          <p class="eyebrow" data-overlay-label>Ready when you are</p><h2 data-title>{{ game.name }}</h2>
+          <p data-text role="status">{{ game.hint or game.how }}</p>
           <button class="btn btn-primary btn-large" type="button" data-play>Play</button>
+          <button class="arcade-text-button" type="button" data-finish-run hidden>Finish this run</button>
         </div>
       </div>
-      <p class="arcade-help">Press P to pause. Your game also pauses when you switch tabs.</p>
+      <div class="arcade-run-foot"><span data-mode>Free to play</span><span data-estimate>Up to {{ game.cap }} Marks / run</span></div>
+      <p class="arcade-help">Press <kbd>P</kbd> to pause. Switching tabs pauses your game. Finish a paused run to save your current score.</p>
+      <p class="arcade-run-notice" data-run-notice role="status" hidden></p>
       <noscript><p class="notice notice-info">Enable JavaScript to play the arcade games.</p></noscript>
     </section>
     <aside class="arcade-side">
-      <div class="panel">
-        <h2>How to play</h2>
-        <p id="game-help">{{ game.how }}{% if game.slug in ('gem-rush', 'codex-memory') %} Or use the arrow keys to choose a gem or card, then Enter to select it.{% endif %}</p>
-        <p class="fine">Up to {{ game.cap }} Marks a run{% if best %} · your best: {{ best | number }}{% endif %}</p>
-        {% include "arcade/_status.html" %}
-      </div>
-      <div class="panel">
-        <h2>Top this week</h2>
-        {% if board %}
-        <ol class="mini-board mini-board-long">
-          {% for row in board %}<li><a class="rank-{{ row.rank_slug or 'none' }} name-ranked" href="{{ url_for('community.member_profile', username=row.username) }}">{{ row.username }}</a> <span>{{ row.best | number }}</span></li>{% endfor %}
-        </ol>
-        {% else %}<p class="fine">No scores yet this week. Be the first.</p>{% endif %}
+      <div class="panel arcade-instructions"><p class="eyebrow">The essentials</p><h2>How to play</h2><p id="game-help">{{ game.how }}{% if game.slug in ('gem-rush', 'codex-memory') %} Keyboard: use arrows to choose, then Enter or Space to select.{% endif %}</p><div class="arcade-reward-info"><span>Run reward limit</span><strong>{{ game.cap }} Marks</strong></div><p class="fine">{% if best is not none %}Your best: <strong data-best>{{ best | number }}</strong>{% else %}Your best: <strong data-best>—</strong>{% endif %}</p>{% include "arcade/_status.html" %}</div>
+      <div class="panel arcade-weekly"><p class="eyebrow">A little friendly competition</p><h2>Top this week</h2>
+        {% if board %}<ol class="mini-board mini-board-long">{% for row in board %}<li><a class="rank-{{ row.rank_slug or 'none' }} name-ranked" href="{{ url_for('community.member_profile', username=row.username) }}">{{ row.username }}</a><span>{{ row.best | number }}</span></li>{% endfor %}</ol>{% else %}<p class="fine">An open sky. Set the first score this week.</p>{% endif %}
       </div>
     </aside>
   </div>

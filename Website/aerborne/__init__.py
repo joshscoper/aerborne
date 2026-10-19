@@ -19,15 +19,15 @@ from .seed import ensure_default_settings, seed_default_admin, seed_forum, seed_
 
 # Top navigation. A group opens a small menu; the first link in a group is its overview page.
 NAV = [
-    {"label": "Play", "endpoint": "public.play"},
     {"label": "Explore", "endpoint": "public.explore"},
     {"label": "Game Guide", "id": "guide", "links": [
         ("public.guide", "Adventurer's Handbook", "Guides from your first island onwards"),
         ("public.codex", "Arcane Codex", "Every public enchantment and Aspect"),
-        ("public.companions", "Companions", "Pets and trails in the works"),
+        ("public.companions", "Companions", "Meet the companion characters"),
     ]},
     {"label": "Community", "id": "community", "links": [
         ("community.forum", "Forum", "Talk with other players"),
+        ("community.members", "Members", "Everyone in the community"),
         ("community.leaderboards", "Leaderboards", "Top adventurers and islands"),
         ("public.news", "News", "Updates, patch notes and events"),
         ("public.community", "Featured builds", "Islands picked by staff"),
@@ -66,13 +66,17 @@ def create_app(overrides=None):
     from .api import bp as api_bp
     from .arcade import bp as arcade_bp
     from .community import bp as community_bp, load_member
+    from . import social  # noqa: F401  (adds friends, messages and notifications to the community blueprint)
+    from . import members  # noqa: F401  (adds the members directory and data export)
     from .public import bp as public_bp
+    from .social_sync import bp as social_sync_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(community_bp)
     app.register_blueprint(arcade_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(social_sync_bp)
 
     app.teardown_appcontext(db.close_db)
     app.after_request(apply_headers)
