@@ -633,3 +633,22 @@ claims:
 # This opt-in is retained only for reviewing the old generated expedition prototypes.
 expeditions:
   generated-worlds: false
+
+# Companions, trails and supporter perks (/cosmetics, /companion, /trail, /emote).
+# Store purchases grant them through /nerdadmin entitlement grant <player> <product> <transaction>;
+# list every product id with /nerdadmin entitlement products. Everything here is visual only.
+# Until custom models exist, each companion is played by a small vanilla creature. Change its look below
+# (entity, variant, baby, flying, particle), or set free: true to give a companion or trail to everyone.
+# Bundle contents can be changed too; they must list real cosmetic product ids.
+cosmetics:
+  companions:
+    pufflet: { entity: HAPPY_GHAST, baby: true, flying: true, particle: CLOUD }
+    kitekit: { entity: FOX, variant: SNOW, baby: true }
+    mossbun: { entity: RABBIT, variant: BROWN, baby: true, particle: HAPPY_VILLAGER }
+    cindlet: { entity: FOX, variant: RED, baby: true, particle: SMALL_FLAME }
+    moonmoth: { entity: ALLAY, flying: true, particle: END_ROD }
+    starwhisk: { entity: CAT, variant: ALL_BLACK, baby: true, particle: WAX_OFF }
+  bundles:
+    cloudberry: [cosmetic.companion.pufflet, cosmetic.trail.cloudstep]
+    blooming-skies: [cosmetic.companion.mossbun, cosmetic.trail.petal-skip]
+    celestial-dreams: [cosmetic.companion.starwhisk, cosmetic.trail.stardust-waltz]

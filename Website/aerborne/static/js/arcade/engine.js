@@ -3,27 +3,32 @@
   "use strict";
   var factories = {};
   window.Arcade = { register: function (slug, factory) { factories[slug] = factory; } };
-  function loadImages(base) {
-    var images = {}, waits = [];
-    function add(name, file) {
+  function loadImages(base, slug, progress) {
+    var images = {}, waits = [], completed = 0, failed = [];
+    var catalog = window.ArcadeSpriteCatalog && window.ArcadeSpriteCatalog[slug];
+    if (!catalog) return Promise.reject(new Error("The sprite catalog is unavailable. Reload the page and try again."));
+    var total = Object.keys(catalog).length + 1;
+    function add(name, file, required) {
       waits.push(new Promise(function (resolve) {
         var im = new Image(), settled = false;
         function done(ok) {
           if (settled) return;
-          settled = true; images[name] = ok ? im : null; resolve();
+          settled = true; images[name] = ok ? im : null;
+          if (!ok && required) failed.push(name);
+          completed++; progress(completed, total); resolve();
         }
         im.onload = function () { done(true); };
         im.onerror = function () { done(false); };
         im.src = base + file;
-        setTimeout(function () { done(false); }, 5000);
+        setTimeout(function () { done(false); }, 10000);
       }));
     }
-    ["might", "precision", "aegis", "ward", "celerity", "vitality", "resolve", "affinity", "fortune"].forEach(function (n) { add(n, "aspects/" + n + "-96.webp"); });
-    add("pufflet", "companions/pufflet-avatar.webp");
-    add("kitekit", "companions/kitekit-avatar.webp");
-    add("crest", "brand/skycrest-192.webp");
-    add("landscape", "brand/hero-960.webp");
-    return Promise.all(waits).then(function () { return images; });
+    Object.keys(catalog).forEach(function (name) { add(name, catalog[name].file, true); });
+    add("landscape", "brand/hero-960.webp", false);
+    return Promise.all(waits).then(function () {
+      if (failed.length) throw new Error("Some game art could not load. Check your connection and try again.");
+      return images;
+    });
   }
   function post(url, csrf, body) {
     var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -47,6 +52,7 @@
     var button = root.querySelector("[data-play]"), pauseButton = root.querySelector("[data-pause]"), finishButton = root.querySelector("[data-finish-run]");
     var scoreEl = root.querySelector("[data-score]"), stat = root.querySelector("[data-stat]"), estimate = root.querySelector("[data-estimate]");
     var label = root.querySelector("[data-overlay-label]"), notice = root.querySelector("[data-run-notice]"), mode = root.querySelector("[data-mode]");
+    var actionTray = root.querySelector("[data-game-actions]"), actions = [];
     var csrf = root.dataset.csrf, slug = root.dataset.arcade, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = 480 * dpr; canvas.height = 640 * dpr;
@@ -58,6 +64,7 @@
     function marks(n) { return n.toLocaleString() + (n === 1 ? " Mark" : " Marks"); }
     function cleanup() {
       listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); }); listeners = [];
+      actions.forEach(function (action) { action.button.disabled = true; });
     }
     function show(t, body, caption) {
       title.textContent = t; text.textContent = body; button.textContent = caption;
@@ -93,7 +100,7 @@
     }
     function end(reason) {
       if (!running) return;
-      running = false; paused = false; pauseButton.disabled = true; finishButton.hidden = true;
+      running = false; paused = false; pauseButton.disabled = true; pauseButton.textContent = "Pause"; finishButton.hidden = true;
       root.dataset.state = "finished";
       current.stop(); cleanup(); stat.textContent = reason || "Run complete"; label.textContent = "Run complete";
       if (token) { show("Score: " + score.toLocaleString(), "Saving…", "Play again"); save(); }
@@ -103,6 +110,7 @@
       if (!running) return;
       paused = value; pauseButton.textContent = paused ? "Resume" : "Pause";
       root.dataset.state = paused ? "paused" : "playing";
+      actions.forEach(function (action) { action.button.disabled = paused || !action.enabled; });
       if (paused) {
         if (current.release) current.release();
         label.textContent = "Game paused"; finishButton.hidden = false;
@@ -114,13 +122,16 @@
       if (running && paused) { setPaused(false); return; }
       if (saving) return;
       button.disabled = true; button.textContent = "Getting ready…";
-      var ready = images ? Promise.resolve(images) : loadImages(root.dataset.imgBase);
+      var ready = images ? Promise.resolve(images) : loadImages(root.dataset.imgBase, slug, function (loaded, total) {
+        button.textContent = "Loading art… " + loaded + "/" + total;
+      });
       // Load art before issuing a timed run token; slow assets must not cost playing time.
       ready.then(function (loaded) {
         images = loaded;
         return post(root.dataset.start, csrf).catch(function (err) { return { practice: true, message: "Practice mode: scores cannot be saved right now. " + err.message }; });
       }).then(function (res) {
         cleanup(); token = res.practice ? null : res.token; practiceMessage = res.message || "";
+        actions = []; actionTray.textContent = ""; actionTray.hidden = true;
         retry = false; notice.hidden = !practiceMessage; notice.textContent = practiceMessage;
         mode.textContent = token ? "Score saving on" : "Practice run";
         report(0); overlay.hidden = true; running = true; paused = false; finishButton.hidden = true;
@@ -130,6 +141,15 @@
           ctx: ctx, W: 480, H: 640, canvas: canvas, reduced: reduced,
           paused: function () { return paused || !running; },
           img: function (name) { return images[name]; }, score: report, end: end,
+          bounds: function (name) { var sprite = window.ArcadeSpriteCatalog[slug][name]; return sprite && sprite.box; },
+          action: function (label, shortcut, callback) {
+            var el = document.createElement("button"), action = { button: el, enabled: true };
+            el.type = "button"; el.className = "btn btn-ghost"; el.textContent = label;
+            el.setAttribute("aria-keyshortcuts", shortcut); actionTray.appendChild(el); actionTray.hidden = false;
+            var handler = function () { if (running && !paused && action.enabled) { callback(); canvas.focus({ preventScroll: true }); } };
+            el.addEventListener("click", handler); listeners.push([el, "click", handler]); actions.push(action);
+            return function (caption, enabled) { el.textContent = caption; action.enabled = enabled; el.disabled = !enabled || paused || !running; };
+          },
           status: function (value) { if (stat.textContent !== value) stat.textContent = value; },
           on: function (target, type, fn, opts) {
             target.addEventListener(type, fn, opts); listeners.push([target, type, fn, opts]);
@@ -137,9 +157,9 @@
         };
         current = factories[slug](env); current.start();
         canvas.focus({ preventScroll: true }); root.scrollIntoView({ block: "start", behavior: "auto" });
-      }).catch(function () {
+      }).catch(function (err) {
         running = false; if (current) current.stop(); cleanup(); pauseButton.disabled = true;
-        show("Couldn't start", "Reload this page and try again.", "Try again");
+        show("Couldn't start", err.message || "Reload this page and try again.", "Try again");
       });
     }
     button.addEventListener("click", begin);

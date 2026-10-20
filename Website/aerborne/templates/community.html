@@ -1,39 +1,61 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
-{% block title %}Community{% endblock %}
+{% block title %}Featured builds{% endblock %}
+{% block body_class %}editorial-page builds-page{% endblock %}
+{% block description %}Discover Aerborne player islands and community builds, selected by staff and shared with their creators’ permission.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/editorial.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head">
-  <div class="wrap">
-    <h1>Community</h1>
-    <p class="lede">{{ settings.community_intro or "Islands, events and the people who build them." }}</p>
-    <p><a class="btn btn-discord" href="{{ url_for('public.discord') }}" rel="noopener">{% include "partials/discord_icon.svg" %} Join the Discord</a></p>
+<header class="page-head editorial-head builds-head">
+  <div class="wrap editorial-head-inner">
+    <div>
+      <p class="eyebrow">Made by the community</p>
+      <h1>Small islands.<br>Big imaginations.</h1>
+      <p class="lede">{% if settings.community_intro and settings.community_intro != "Share your island on Discord. With the builder's permission, staff feature favourites here." %}{{ settings.community_intro }}{% else %}Player creations worth a closer look. Welcome to Aerborne’s featured builds.{% endif %}</p>
+      <a class="btn btn-primary" href="{{ url_for('community.category', category_slug='islands') }}">Share your build <span aria-hidden="true">↗</span></a>
+    </div>
+    <img class="builds-head-art" src="{{ url_for('static', filename='img/forum/island-showcase-256.webp') }}" alt="" width="256" height="256">
   </div>
 </header>
 {% set group = 'community' %}{% include "partials/subnav.html" %}
-<div class="wrap">
+<div class="wrap editorial-content">
   <section aria-labelledby="builds-title">
-    <h2 id="builds-title">Featured builds</h2>
+    <div class="editorial-section-head">
+      <div><p class="eyebrow">The island gallery</p><h2 id="builds-title">Featured builds</h2></div>
+      {% if showcases %}<p>{{ showcases | length }} {{ 'build' if showcases | length == 1 else 'builds' }} · Selected by staff</p>{% endif %}
+    </div>
     {% if showcases %}
-    <div class="showcase-grid">
+    <div class="build-gallery">
       {% for build in showcases %}
-      <figure class="showcase" id="{{ build.slug }}">
-        {{ m.picture(build.image, build.image_alt, 'showcase-img') }}
-        <figcaption><strong>{{ build.title }}</strong> by {{ build.builder }}{% if build.summary %}<span>{{ build.summary }}</span>{% endif %}</figcaption>
+      <figure class="build-card" id="{{ build.slug }}">
+        {% if build.image %}
+        <a class="build-image-link" href="{{ image_url(build.image) }}" target="_blank" rel="noopener" aria-label="View full screenshot of {{ build.title }} (opens in a new tab)">
+          {{ m.picture(build.image, build.image_alt, 'build-image', lazy=not loop.first) }}
+          <span class="build-expand" aria-hidden="true">View screenshot ↗</span>
+        </a>
+        {% else %}<div class="build-image-placeholder"><img src="{{ url_for('static', filename='img/forum/island-showcase-256.webp') }}" alt="" width="128" height="128"><span>Screenshot coming soon</span></div>{% endif %}
+        <figcaption>
+          <div><h3>{{ build.title }}</h3>{% if build.summary %}<p>{{ build.summary }}</p>{% endif %}</div>
+          <p class="build-credit">Built by <strong>{{ build.builder }}</strong></p>
+        </figcaption>
       </figure>
       {% endfor %}
     </div>
     {% else %}
-    <p class="empty-invite">No builds featured yet. Staff pick favourites from the community, always with the builder's permission.</p>
+    <div class="editorial-empty builds-empty">
+      <div class="builds-empty-art" aria-hidden="true"><img src="{{ url_for('static', filename='img/forum/island-showcase-256.webp') }}" alt="" width="192" height="192"></div>
+      <div>
+        <p class="eyebrow">A little inspiration starts with you</p>
+        <h3>The gallery is waiting<br>for its first island.</h3>
+        <p>No builds have been featured yet. Show the community what you’re creating in the Island showcase forum.</p>
+        <a class="text-link" href="{{ url_for('community.category', category_slug='islands') }}">Explore the Island showcase <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
     {% endif %}
   </section>
-
-  <section aria-labelledby="events-title">
-    <h2 id="events-title">Events</h2>
-    {% if events %}
-    <div class="news-grid">{% for item in events %}{{ m.news_card(item) }}{% endfor %}</div>
-    {% else %}
-    <p>No events announced yet. They'll be posted in <a href="{{ url_for('public.news', category='event') }}">News</a>.</p>
-    {% endif %}
-  </section>
+  <aside class="build-invitation" aria-labelledby="share-title">
+    <div><p class="eyebrow">Your island could be next</p><h2 id="share-title">Built something you love?</h2><p>Post a few screenshots in the Island showcase forum and tell us who helped build it. Staff select features with the builder’s permission and credit the creators.</p></div>
+    <a class="btn btn-ghost" href="{{ url_for('community.category', category_slug='islands') }}">Show your island <span aria-hidden="true">↗</span></a>
+  </aside>
+  <div class="editorial-crosslinks"><a href="{{ url_for('public.news', category='event') }}">Community events <span aria-hidden="true">→</span></a><a href="{{ url_for('public.discord') }}">Find us on Discord <span aria-hidden="true">↗</span></a></div>
 </div>
 {% endblock %}

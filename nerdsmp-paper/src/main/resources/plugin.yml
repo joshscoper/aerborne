@@ -132,8 +132,21 @@ commands:
     description: Opt into or out of consensual PvP.
     usage: /duel <on|off|status>
   cosmetics:
-    description: Browse your unlocked cosmetics.
+    description: Open your wardrobe of companions, trails and supporter perks.
     usage: /cosmetics
+    aliases: [wardrobe]
+  companion:
+    description: Summon or send home one of your companions.
+    usage: /companion [list|dismiss|<name>]
+    aliases: [companions, pet, pets]
+  trail:
+    description: Wear one of your particle trails.
+    usage: /trail [list|off|<name>]
+    aliases: [trails]
+  emote:
+    description: Play a supporter emote for players nearby.
+    usage: /emote <name>
+    aliases: [emotes]
   menu:
     description: Browse your character, island, activities and settings.
     usage: /menu

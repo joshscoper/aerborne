@@ -133,6 +133,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private StaffManager staff;
     private PlayerSettingsService settings;
     private SocialManager social;
+    private net.nerdsmp.paper.cosmetic.CosmeticService cosmetics;
     private ChannelChatManager chat;
     private TradeManager trade;
     private TravelManager travel;
@@ -291,6 +292,9 @@ public final class NerdSmpPlugin extends JavaPlugin {
         }
         if (travel != null) {
             travel.close();
+        }
+        if (cosmetics != null) {
+            cosmetics.close();
         }
         if (social != null) {
             social.close();
@@ -487,6 +491,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             reputationContracts, excavation, fishing);
         staff = new StaffManager(this);
         social = new SocialManager(this, settings);
+        cosmetics = new net.nerdsmp.paper.cosmetic.CosmeticService(this);
         chat = new ChannelChatManager(this, settings, social, presentation, sessions);
         trade = new TradeManager(this, settings, social);
         if (skyblockEnabled) skyblock = new net.nerdsmp.paper.skyblock.SkyblockController(this);
@@ -588,6 +593,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(npcs, this);
         plugins.registerEvents(staff, this);
         plugins.registerEvents(social, this);
+        plugins.registerEvents(cosmetics, this);
+        cosmetics.start();
         plugins.registerEvents(chat, this);
         plugins.registerEvents(trade, this);
         plugins.registerEvents(travel, this);
@@ -681,7 +688,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "settings", "social", "friends", "ignore", "unignore", "msg", "reply", "channel", "globalchat",
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
             "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips"
-            , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall"
+            , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
+            "companion", "trail", "emote"
         );
         for (String name : names) {
             PluginCommand command = getCommand(name);
@@ -885,6 +893,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     public SocialManager social() {
         return social;
+    }
+
+    public net.nerdsmp.paper.cosmetic.CosmeticService cosmetics() {
+        return cosmetics;
     }
 
     public ChannelChatManager chat() {

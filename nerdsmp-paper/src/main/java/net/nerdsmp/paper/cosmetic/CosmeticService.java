@@ -1,0 +1,703 @@
+package net.nerdsmp.paper.cosmetic;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.nerdsmp.api.model.AccountId;
+import net.nerdsmp.api.service.EntitlementService;
+import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.player.PlayerSettingsService;
+import net.nerdsmp.paper.presentation.Chat;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Registry;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Breedable;
+import org.bukkit.entity.Cat;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fox;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Rabbit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityCombustEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitTask;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+
+/**
+ * Companions, trails, supporter badges, name colours, emotes, wardrobe presets and keepsakes.
+ *
+ * <p>Ownership comes from store entitlements (see {@link CosmeticCatalog}), read when a player joins and
+ * every minute after. The chosen look is saved per account. Companions are ordinary vanilla creatures with
+ * their AI off, made invulnerable, silent and non-solid, and never saved to the world; this service moves
+ * them every two ticks. Players can hide other players' companions and trails in /settings.
+ */
+public final class CosmeticService implements Listener, AutoCloseable {
+    public static final int PRESETS = 3;
+    private static final long REFRESH_MILLIS = 60_000L;
+    private static final long EMOTE_COOLDOWN_MILLIS = 5_000L;
+    private static final Duration KEEPSAKE_COOLDOWN = Duration.ofDays(1);
+    private static final double VIEW_DISTANCE = 40.0D;
+
+    /** How a player's name looks in chat, the tab list and above their head. */
+    public record Style(String badge, NamedTextColor nameColor, boolean supporter, String tierName) {
+        static final Style PLAIN = new Style("", null, false, "");
+    }
+
+    /** The saved look: which companion and trail are out, and the chosen name colour. */
+    public record Loadout(String companion, String trail, String nameColor) {
+        static final Loadout EMPTY = new Loadout("", "", "");
+    }
+
+    private final NerdSmpPlugin plugin;
+    private final CosmeticCatalog catalog;
+    private final NamespacedKey companionKey;
+    private final NamespacedKey keepsakeKey;
+    private final Map<UUID, CosmeticCatalog.Ownership> owned = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> nextRefresh = new ConcurrentHashMap<>();
+    private final Map<UUID, Loadout> loadouts = new HashMap<>();
+    private final Map<UUID, Entity> active = new HashMap<>();
+    private final Map<UUID, Location> lastSeen = new HashMap<>();
+    private final Map<UUID, Long> lastEmote = new HashMap<>();
+    private final Map<UUID, Long> respawnAt = new HashMap<>();
+    private BukkitTask task;
+    private long tick;
+
+    public CosmeticService(NerdSmpPlugin plugin) {
+        this.plugin = plugin;
+        this.catalog = load(plugin.getConfig().getConfigurationSection("cosmetics"), plugin);
+        this.companionKey = new NamespacedKey(plugin, "companion_owner");
+        this.keepsakeKey = new NamespacedKey(plugin, "keepsake_owner");
+    }
+
+    public void start() {
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::step, 20L, 2L);
+        Bukkit.getOnlinePlayers().forEach(this::joined);
+    }
+
+    public CosmeticCatalog catalog() { return catalog; }
+
+    // --- Ownership --------------------------------------------------------------------------
+
+    public CosmeticCatalog.Ownership ownership(Player player) {
+        return owned.getOrDefault(player.getUniqueId(), CosmeticCatalog.Ownership.NONE);
+    }
+
+    /** Re-reads a player's purchases, telling them about anything new. Called after the store grants something. */
+    public void refresh(Player player) {
+        AccountId account = account(player);
+        if (account == null) return;
+        UUID id = player.getUniqueId();
+        nextRefresh.put(id, System.currentTimeMillis() + REFRESH_MILLIS);
+        plugin.entitlements().activeEntitlements(account, Instant.now()).thenAccept(entitlements -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            List<String> products = entitlements.stream().map(EntitlementService.Entitlement::productId).toList();
+            CosmeticCatalog.Ownership next = catalog.ownership(products);
+            CosmeticCatalog.Ownership previous = owned.put(id, next);
+            if (previous != null) announce(player, previous, next);
+            applyLoadout(player);
+            plugin.presentation().refresh(player);
+        })).exceptionally(error -> {
+            plugin.getLogger().log(Level.WARNING, "Could not read cosmetics for " + player.getName(), error);
+            return null;
+        });
+    }
+
+    private void announce(Player player, CosmeticCatalog.Ownership before, CosmeticCatalog.Ownership after) {
+        for (String slug : after.companions()) {
+            if (!before.companions().contains(slug)) catalog.companion(slug).ifPresent(c ->
+                Chat.success(player, "Your <white>" + c.name() + "</white> companion is ready. Summon it with <white>/companion " + c.slug() + "</white>."));
+        }
+        for (String slug : after.trails()) {
+            if (!before.trails().contains(slug)) catalog.trail(slug).ifPresent(t ->
+                Chat.success(player, "Your <white>" + t.name() + "</white> trail is ready. Wear it with <white>/trail " + t.slug() + "</white>."));
+        }
+        if (after.tier().isPresent() && !after.tier().equals(before.tier())) {
+            Chat.success(player, "Thank you for supporting Aerborne! Your " + after.tier().get().badge() + " <white>"
+                + after.tier().get().name() + "</white> perks are on. Open <white>/cosmetics</white> to choose your look.");
+        }
+    }
+
+    // --- The saved look ---------------------------------------------------------------------
+
+    public Loadout loadout(Player player) { return loadouts.getOrDefault(player.getUniqueId(), Loadout.EMPTY); }
+
+    private Loadout readLoadout(AccountId account) {
+        return plugin.playerData().read(account, yaml -> new Loadout(yaml.getString("cosmetics.companion", ""),
+            yaml.getString("cosmetics.trail", ""), yaml.getString("cosmetics.name-color", "")));
+    }
+
+    private void save(Player player, Loadout next) {
+        loadouts.put(player.getUniqueId(), next);
+        AccountId account = account(player);
+        if (account == null) return;
+        try {
+            plugin.playerData().update(account, yaml -> {
+                yaml.set("cosmetics.companion", next.companion());
+                yaml.set("cosmetics.trail", next.trail());
+                yaml.set("cosmetics.name-color", next.nameColor());
+            });
+        } catch (RuntimeException error) {
+            plugin.getLogger().log(Level.WARNING, "Could not save cosmetics for " + player.getName(), error);
+        }
+    }
+
+    /** Summons the companion and trail a player has chosen, if they still own them. */
+    private void applyLoadout(Player player) {
+        Loadout look = loadout(player);
+        CosmeticCatalog.Ownership own = ownership(player);
+        if (!look.companion().isEmpty() && own.companions().contains(look.companion())) {
+            if (!active.containsKey(player.getUniqueId())) respawnAt.put(player.getUniqueId(), 0L);
+        } else {
+            despawn(player.getUniqueId());
+        }
+    }
+
+    // --- Commands ---------------------------------------------------------------------------
+
+    public void summon(Player player, String slug) {
+        Optional<CosmeticCatalog.Companion> companion = catalog.companion(slug);
+        if (companion.isEmpty()) {
+            Chat.error(player, "No companion is called that. Choose one with <white>/companion</white>.");
+            return;
+        }
+        if (!ownership(player).companions().contains(companion.get().slug())) {
+            Chat.error(player, "You don't have " + companion.get().name() + " yet. Companions come from the store at aerborne.net/store.");
+            return;
+        }
+        Loadout look = loadout(player);
+        save(player, new Loadout(companion.get().slug(), look.trail(), look.nameColor()));
+        despawn(player.getUniqueId());
+        respawnAt.put(player.getUniqueId(), 0L);
+        Chat.success(player, companion.get().name() + " is here.");
+    }
+
+    public void dismiss(Player player) {
+        Loadout look = loadout(player);
+        if (look.companion().isEmpty() && !active.containsKey(player.getUniqueId())) {
+            Chat.notice(player, "You don't have a companion out.");
+            return;
+        }
+        save(player, new Loadout("", look.trail(), look.nameColor()));
+        despawn(player.getUniqueId());
+        Chat.success(player, "Your companion is resting.");
+    }
+
+    public void wearTrail(Player player, String slug) {
+        Loadout look = loadout(player);
+        if (slug == null || slug.isEmpty() || slug.equalsIgnoreCase("off")) {
+            save(player, new Loadout(look.companion(), "", look.nameColor()));
+            Chat.success(player, "Trail off.");
+            return;
+        }
+        Optional<CosmeticCatalog.Trail> trail = catalog.trail(slug);
+        if (trail.isEmpty()) {
+            Chat.error(player, "No trail is called that. Choose one with <white>/trail</white>.");
+            return;
+        }
+        if (!ownership(player).trails().contains(trail.get().slug())) {
+            Chat.error(player, "You don't have the " + trail.get().name() + " trail yet. Trails come from the store at aerborne.net/store.");
+            return;
+        }
+        save(player, new Loadout(look.companion(), trail.get().slug(), look.nameColor()));
+        Chat.success(player, "Wearing the <white>" + trail.get().name() + "</white> trail.");
+    }
+
+    /** Moves to the next colour in the player's palette, ending at their tier's own colour. Returns the new choice. */
+    public String cycleNameColor(Player player) {
+        List<String> palette = ownership(player).palette();
+        if (palette.isEmpty()) {
+            Chat.error(player, "Name colours come with a supporter rank.");
+            return "";
+        }
+        Loadout look = loadout(player);
+        int index = palette.indexOf(look.nameColor());
+        String next = index + 1 >= palette.size() ? "" : palette.get(index + 1);
+        save(player, new Loadout(look.companion(), look.trail(), next));
+        plugin.presentation().refresh(player);
+        return next;
+    }
+
+    public void emote(Player player, String id) {
+        Optional<CosmeticCatalog.Emote> emote = catalog.emote(id);
+        if (emote.isEmpty()) {
+            Chat.usage(player, "/emote <" + String.join("|", catalog.emoteIds()) + ">");
+            return;
+        }
+        if (!ownership(player).emotes()) {
+            Chat.error(player, "Emotes come with the Cloudkeeper and Starweaver ranks.");
+            return;
+        }
+        if (!plugin.staff().canCommunicate(player.getUniqueId())) {
+            Chat.error(player, "You can't use emotes while muted.");
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (lastEmote.getOrDefault(player.getUniqueId(), 0L) + EMOTE_COOLDOWN_MILLIS > now) {
+            Chat.notice(player, "Wait a moment before your next emote.");
+            return;
+        }
+        lastEmote.put(player.getUniqueId(), now);
+        Style style = style(player);
+        String line = style.badge() + " <" + colorName(style.nameColor()) + ">" + Chat.escape(player.getName()) + "</"
+            + colorName(style.nameColor()) + "> <gray>" + emote.get().action() + ".</gray>";
+        Particle particle = particle(emote.get().particle(), Particle.HAPPY_VILLAGER);
+        Location above = player.getLocation().add(0, 2.2D, 0);
+        for (Player viewer : player.getWorld().getPlayers()) {
+            if (viewer.getLocation().distanceSquared(player.getLocation()) > 24 * 24) continue;
+            if (viewer != player && plugin.social().isIgnoring(viewer.getUniqueId(), player.getUniqueId())) continue;
+            Chat.send(viewer, line);
+            viewer.spawnParticle(particle, above, 8, 0.4D, 0.3D, 0.4D, 0.0D);
+        }
+    }
+
+    // --- Presets and keepsake ---------------------------------------------------------------
+
+    public Optional<Loadout> preset(Player player, int slot) {
+        AccountId account = account(player);
+        if (account == null || slot < 1 || slot > PRESETS) return Optional.empty();
+        return plugin.playerData().read(account, yaml -> {
+            String base = "cosmetics.presets." + slot;
+            if (!yaml.isConfigurationSection(base)) return Optional.empty();
+            return Optional.of(new Loadout(yaml.getString(base + ".companion", ""), yaml.getString(base + ".trail", ""),
+                yaml.getString(base + ".name-color", "")));
+        });
+    }
+
+    public void savePreset(Player player, int slot) {
+        AccountId account = account(player);
+        if (account == null || slot < 1 || slot > PRESETS) return;
+        if (!ownership(player).presets()) {
+            Chat.error(player, "Wardrobe presets come with the Starweaver rank.");
+            return;
+        }
+        Loadout look = loadout(player);
+        plugin.playerData().update(account, yaml -> {
+            String base = "cosmetics.presets." + slot;
+            yaml.set(base + ".companion", look.companion());
+            yaml.set(base + ".trail", look.trail());
+            yaml.set(base + ".name-color", look.nameColor());
+        });
+        Chat.success(player, "Saved your current look to preset " + slot + ".");
+    }
+
+    public void applyPreset(Player player, int slot) {
+        if (!ownership(player).presets()) {
+            Chat.error(player, "Wardrobe presets come with the Starweaver rank.");
+            return;
+        }
+        Optional<Loadout> preset = preset(player, slot);
+        if (preset.isEmpty()) {
+            Chat.notice(player, "Preset " + slot + " is empty. Save your current look to it first.");
+            return;
+        }
+        CosmeticCatalog.Ownership own = ownership(player);
+        Loadout look = preset.get();
+        Loadout usable = new Loadout(own.companions().contains(look.companion()) ? look.companion() : "",
+            own.trails().contains(look.trail()) ? look.trail() : "",
+            own.palette().contains(look.nameColor()) ? look.nameColor() : "");
+        save(player, usable);
+        despawn(player.getUniqueId());
+        applyLoadout(player);
+        plugin.presentation().refresh(player);
+        Chat.success(player, "Wearing preset " + slot + ".");
+    }
+
+    public boolean keepsakeReady(Player player) {
+        AccountId account = account(player);
+        if (account == null) return false;
+        long last = plugin.playerData().read(account, yaml -> yaml.getLong("cosmetics.keepsake-claimed-at", 0L));
+        return Instant.ofEpochMilli(last).plus(KEEPSAKE_COOLDOWN).isBefore(Instant.now());
+    }
+
+    public void claimKeepsake(Player player) {
+        AccountId account = account(player);
+        if (account == null) return;
+        if (!ownership(player).keepsake()) {
+            Chat.error(player, "The Starweaver Lantern keepsake comes with the Starweaver rank.");
+            return;
+        }
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.hasItemMeta() && account.value().toString().equals(
+                item.getItemMeta().getPersistentDataContainer().get(keepsakeKey, PersistentDataType.STRING))) {
+                Chat.notice(player, "You're already carrying your Starweaver Lantern.");
+                return;
+            }
+        }
+        if (!keepsakeReady(player)) {
+            Chat.notice(player, "You can claim another Starweaver Lantern a day after your last one.");
+            return;
+        }
+        ItemStack lantern = new ItemStack(Material.SOUL_LANTERN);
+        ItemMeta meta = lantern.getItemMeta();
+        meta.itemName(Component.text("Starweaver Lantern", NamedTextColor.LIGHT_PURPLE));
+        meta.lore(List.of(Component.text("A keepsake from the skies, holding a little starlight.", NamedTextColor.GRAY),
+            Component.text("Decorative only. Thank you for supporting Aerborne.", NamedTextColor.DARK_GRAY)));
+        meta.setEnchantmentGlintOverride(true);
+        meta.getPersistentDataContainer().set(keepsakeKey, PersistentDataType.STRING, account.value().toString());
+        lantern.setItemMeta(meta);
+        if (!player.getInventory().addItem(lantern).isEmpty()) {
+            Chat.error(player, "Make room in your inventory first.");
+            return;
+        }
+        plugin.playerData().update(account, yaml -> yaml.set("cosmetics.keepsake-claimed-at", System.currentTimeMillis()));
+        Chat.success(player, "Your Starweaver Lantern is in your inventory.");
+    }
+
+    // --- Name style -------------------------------------------------------------------------
+
+    public Style style(Player player) {
+        Optional<CosmeticCatalog.Tier> tier = ownership(player).tier();
+        if (tier.isEmpty()) return Style.PLAIN;
+        String chosen = loadout(player).nameColor();
+        String colour = !chosen.isEmpty() && tier.get().palette().contains(chosen) ? chosen : tier.get().color();
+        return new Style(tier.get().badge(), named(colour, NamedTextColor.GOLD), true, tier.get().name());
+    }
+
+    static NamedTextColor named(String name, NamedTextColor fallback) {
+        NamedTextColor colour = name == null ? null : NamedTextColor.NAMES.value(name.toLowerCase(Locale.ROOT));
+        return colour == null ? fallback : colour;
+    }
+
+    private static String colorName(NamedTextColor colour) {
+        return colour == null ? "white" : NamedTextColor.NAMES.key(colour);
+    }
+
+    // --- Companions in the world ------------------------------------------------------------
+
+    public boolean isCompanion(Entity entity) {
+        return entity != null && entity.getPersistentDataContainer().has(companionKey, PersistentDataType.STRING);
+    }
+
+    private void step() {
+        tick++;
+        long now = System.currentTimeMillis();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID id = player.getUniqueId();
+            if (nextRefresh.getOrDefault(id, 0L) <= now && owned.containsKey(id)) refresh(player);
+            try {
+                moveCompanion(player, now);
+                drawTrail(player);
+            } catch (RuntimeException error) {
+                plugin.getLogger().log(Level.WARNING, "Cosmetics paused for " + player.getName(), error);
+                despawn(id);
+            }
+        }
+    }
+
+    private boolean hidden(Player player) {
+        return player.isDead() || player.getGameMode() == GameMode.SPECTATOR || player.isInvisible()
+            || player.hasPotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
+    }
+
+    private void moveCompanion(Player player, long now) {
+        UUID id = player.getUniqueId();
+        Loadout look = loadout(player);
+        Optional<CosmeticCatalog.Companion> chosen = catalog.companion(look.companion());
+        if (chosen.isEmpty() || !ownership(player).companions().contains(chosen.get().slug()) || hidden(player)) {
+            despawn(id);
+            return;
+        }
+        CosmeticCatalog.Companion companion = chosen.get();
+        Entity entity = active.get(id);
+        Location at = player.getLocation();
+        FollowMath.Point target = FollowMath.target(at.getX(), at.getY(), at.getZ(), at.getYaw(), companion.flying(), tick);
+        if (!companion.flying()) target = new FollowMath.Point(target.x(), ground(at.getWorld(), target), target.z(), target.yaw());
+        if (entity == null || !entity.isValid() || !entity.getWorld().equals(at.getWorld())) {
+            despawn(id);
+            if (respawnAt.getOrDefault(id, 0L) > now) return;
+            entity = spawn(player, companion, new Location(at.getWorld(), target.x(), target.y(), target.z(), target.yaw(), 0));
+            if (entity == null) {
+                respawnAt.put(id, now + 30_000L);
+                return;
+            }
+            active.put(id, entity);
+            return;
+        }
+        Location current = entity.getLocation();
+        FollowMath.Point next = FollowMath.step(new FollowMath.Point(current.getX(), current.getY(), current.getZ(), current.getYaw()),
+            target, companion.flying());
+        entity.teleport(new Location(at.getWorld(), next.x(), next.y(), next.z(), next.yaw(), 0));
+        if (entity instanceof Ageable ageable && companion.baby() && ageable.isAdult()) ageable.setBaby();
+        if (!companion.particle().isEmpty() && tick % 10 == 0) {
+            Particle particle = particle(companion.particle(), null);
+            if (particle != null) {
+                Location spot = entity.getLocation().add(0, companion.flying() ? 0.4D : 0.5D, 0);
+                for (Player viewer : viewers(player)) viewer.spawnParticle(particle, spot, 1, 0.15D, 0.15D, 0.15D, 0.0D);
+            }
+        }
+    }
+
+    /** The surface a walking companion stands on: the first solid block at or below the spot, else the owner's height. */
+    private static double ground(World world, FollowMath.Point point) {
+        int x = (int) Math.floor(point.x()), z = (int) Math.floor(point.z());
+        int top = (int) Math.floor(point.y() + 0.5D);
+        for (int y = top; y >= top - 4 && y >= world.getMinHeight(); y--) {
+            Block block = world.getBlockAt(x, y, z);
+            if (!block.isPassable()) return y + Math.max(0.0D, Math.min(1.0D, block.getBoundingBox().getMaxY() - y));
+        }
+        return point.y();
+    }
+
+    private Entity spawn(Player owner, CosmeticCatalog.Companion companion, Location location) {
+        EntityType type = entityType(companion.entity());
+        if (type == null || type.getEntityClass() == null || !LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
+            plugin.getLogger().warning("Companion " + companion.slug() + " uses an unknown creature: " + companion.entity());
+            return null;
+        }
+        @SuppressWarnings("unchecked")
+        Class<LivingEntity> kind = (Class<LivingEntity>) type.getEntityClass();
+        return location.getWorld().spawn(location, kind, CreatureSpawnEvent.SpawnReason.CUSTOM, false, (LivingEntity raw) -> {
+            raw.getPersistentDataContainer().set(companionKey, PersistentDataType.STRING, owner.getUniqueId().toString());
+            raw.setPersistent(false);
+            raw.setInvulnerable(true);
+            raw.setSilent(true);
+            raw.setGravity(false);
+            raw.customName(Component.text(owner.getName() + "'s " + companion.name(), named(companion.color(), NamedTextColor.WHITE)));
+            raw.setCustomNameVisible(false);
+            raw.setAI(false);
+            raw.setCollidable(false);
+            raw.setCanPickupItems(false);
+            raw.setRemoveWhenFarAway(false);
+            if (raw instanceof Mob mob) mob.setAware(false);
+            if (raw instanceof Ageable ageable) {
+                if (companion.baby()) ageable.setBaby(); else ageable.setAdult();
+            }
+            if (raw instanceof Breedable breedable) breedable.setAgeLock(true);
+            variant(raw, companion.variant());
+            for (Player viewer : Bukkit.getOnlinePlayers()) {
+                if (viewer != owner && !plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS)) {
+                    viewer.hideEntity(plugin, raw);
+                }
+            }
+        });
+    }
+
+    private static void variant(Entity entity, String variant) {
+        if (variant == null || variant.isEmpty()) return;
+        try {
+            String key = variant.toLowerCase(Locale.ROOT);
+            if (entity instanceof Fox fox) fox.setFoxType(Fox.Type.valueOf(variant.toUpperCase(Locale.ROOT)));
+            else if (entity instanceof Rabbit rabbit) rabbit.setRabbitType(Rabbit.Type.valueOf(variant.toUpperCase(Locale.ROOT)));
+            else if (entity instanceof Cat cat) {
+                Cat.Type type = io.papermc.paper.registry.RegistryAccess.registryAccess()
+                    .getRegistry(io.papermc.paper.registry.RegistryKey.CAT_VARIANT).get(NamespacedKey.minecraft(key));
+                if (type != null) cat.setCatType(type);
+            }
+        } catch (IllegalArgumentException ignored) {
+            // An unknown variant leaves the creature's default look.
+        }
+    }
+
+    private void despawn(UUID owner) {
+        Entity entity = active.remove(owner);
+        if (entity != null && entity.isValid()) entity.remove();
+    }
+
+    // --- Trails -----------------------------------------------------------------------------
+
+    private void drawTrail(Player player) {
+        UUID id = player.getUniqueId();
+        Location now = player.getLocation();
+        Location before = lastSeen.put(id, now);
+        Optional<CosmeticCatalog.Trail> trail = catalog.trail(loadout(player).trail());
+        if (trail.isEmpty() || !ownership(player).trails().contains(trail.get().slug()) || hidden(player) || before == null
+            || !before.getWorld().equals(now.getWorld())) return;
+        double dx = now.getX() - before.getX(), dz = now.getZ() - before.getZ();
+        boolean moving = dx * dx + dz * dz > 0.0025D;
+        double turned = Math.abs(((now.getYaw() - before.getYaw()) % 360 + 540) % 360 - 180);
+        List<TrailPatterns.Puff> puffs = TrailPatterns.frame(trail.get().pattern(), tick, now.getYaw(), turned, moving);
+        if (puffs.isEmpty()) return;
+        Particle particle = particle(trail.get().particle(), Particle.END_ROD);
+        List<Player> viewers = viewers(player);
+        for (TrailPatterns.Puff puff : puffs) {
+            Location spot = now.clone().add(puff.x(), puff.y(), puff.z());
+            for (Player viewer : viewers) viewer.spawnParticle(particle, spot, puff.count(), puff.spread(), puff.spread(), puff.spread(), 0.0D);
+        }
+    }
+
+    /** The owner plus nearby players who show other players' cosmetics. */
+    private List<Player> viewers(Player owner) {
+        List<Player> out = new ArrayList<>();
+        out.add(owner);
+        Location at = owner.getLocation();
+        for (Player viewer : owner.getWorld().getPlayers()) {
+            if (viewer == owner || !viewer.canSee(owner) || viewer.getLocation().distanceSquared(at) > VIEW_DISTANCE * VIEW_DISTANCE) continue;
+            if (plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS)) out.add(viewer);
+        }
+        return out;
+    }
+
+    /** Applies a viewer's choice to every companion already out. */
+    public void updateVisibility(Player viewer) {
+        boolean show = plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS);
+        active.forEach((owner, entity) -> {
+            if (owner.equals(viewer.getUniqueId()) || !entity.isValid()) return;
+            if (show) viewer.showEntity(plugin, entity); else viewer.hideEntity(plugin, entity);
+        });
+    }
+
+    // --- Events -----------------------------------------------------------------------------
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> joined(event.getPlayer()), 40L);
+    }
+
+    private void joined(Player player) {
+        if (!player.isOnline()) return;
+        AccountId account = account(player);
+        if (account == null) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> joined(player), 40L);
+            return;
+        }
+        loadouts.put(player.getUniqueId(), readLoadout(account));
+        updateVisibility(player);
+        refresh(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        UUID id = event.getPlayer().getUniqueId();
+        despawn(id);
+        owned.remove(id);
+        nextRefresh.remove(id);
+        loadouts.remove(id);
+        lastSeen.remove(id);
+        lastEmote.remove(id);
+        respawnAt.remove(id);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDeath(PlayerDeathEvent event) { despawn(event.getPlayer().getUniqueId()); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawn(PlayerRespawnEvent event) { respawnAt.put(event.getPlayer().getUniqueId(), System.currentTimeMillis() + 1_000L); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChange(PlayerChangedWorldEvent event) { despawn(event.getPlayer().getUniqueId()); }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onDamage(EntityDamageEvent event) { if (isCompanion(event.getEntity())) event.setCancelled(true); }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCombust(EntityCombustEvent event) { if (isCompanion(event.getEntity())) event.setCancelled(true); }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onTarget(EntityTargetEvent event) {
+        if (isCompanion(event.getTarget()) || isCompanion(event.getEntity())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteract(PlayerInteractEntityEvent event) {
+        // No feeding, taming, leashing, naming, riding or trading with someone's companion.
+        if (isCompanion(event.getRightClicked())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteractAt(PlayerInteractAtEntityEvent event) {
+        if (isCompanion(event.getRightClicked())) event.setCancelled(true);
+    }
+
+    @Override
+    public void close() {
+        if (task != null) task.cancel();
+        new ArrayList<>(active.keySet()).forEach(this::despawn);
+        // Companions are never saved, but sweep any left by a crash in loaded worlds just in case.
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) if (isCompanion(entity)) entity.remove();
+        }
+    }
+
+    // --- Helpers ----------------------------------------------------------------------------
+
+    private AccountId account(Player player) {
+        return plugin.sessions().account(player.getUniqueId()).orElse(null);
+    }
+
+    private static EntityType entityType(String name) {
+        if (name == null || name.isBlank()) return null;
+        EntityType type = Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT)));
+        if (type != null) return type;
+        try { return EntityType.valueOf(name.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException missing) { return null; }
+    }
+
+    /** A particle that needs no extra data, by name; the fallback when the name is unknown on this server version. */
+    static Particle particle(String name, Particle fallback) {
+        if (name == null || name.isBlank()) return fallback;
+        try {
+            Particle particle = Particle.valueOf(name.toUpperCase(Locale.ROOT));
+            return particle.getDataType() == Void.class ? particle : fallback;
+        } catch (IllegalArgumentException missing) {
+            return fallback;
+        }
+    }
+
+    /** Reads looks, free unlocks and bundle contents from config.yml over the website's defaults. */
+    static CosmeticCatalog load(ConfigurationSection section, NerdSmpPlugin plugin) {
+        CosmeticCatalog defaults = CosmeticCatalog.defaults();
+        if (section == null) return defaults;
+        List<CosmeticCatalog.Companion> companions = new ArrayList<>();
+        for (CosmeticCatalog.Companion c : defaults.companions()) {
+            ConfigurationSection s = section.getConfigurationSection("companions." + c.slug());
+            companions.add(s == null ? c : new CosmeticCatalog.Companion(c.slug(), c.name(), c.species(),
+                s.getString("entity", c.entity()), s.getString("variant", c.variant()), s.getBoolean("baby", c.baby()),
+                s.getBoolean("flying", c.flying()), s.getString("particle", c.particle()), c.color(), s.getBoolean("free", c.free())));
+        }
+        List<CosmeticCatalog.Trail> trails = new ArrayList<>();
+        for (CosmeticCatalog.Trail t : defaults.trails()) {
+            ConfigurationSection s = section.getConfigurationSection("trails." + t.slug());
+            trails.add(s == null ? t : new CosmeticCatalog.Trail(t.slug(), t.name(), t.summary(), t.pattern(),
+                s.getString("particle", t.particle()), t.color(), s.getBoolean("free", t.free())));
+        }
+        List<CosmeticCatalog.Bundle> bundles = new ArrayList<>();
+        for (CosmeticCatalog.Bundle b : defaults.bundles()) {
+            List<String> contents = section.isList("bundles." + b.slug()) ? section.getStringList("bundles." + b.slug()) : b.contents();
+            bundles.add(new CosmeticCatalog.Bundle(b.slug(), b.name(), contents.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList()));
+        }
+        try {
+            return new CosmeticCatalog(companions, trails, defaults.tiers(), bundles, defaults.emotes());
+        } catch (IllegalArgumentException invalid) {
+            plugin.getLogger().warning("Ignoring cosmetics settings in config.yml: " + invalid.getMessage());
+            return defaults;
+        }
+    }
+
+    Set<UUID> activeOwners() { return Set.copyOf(active.keySet()); }
+}

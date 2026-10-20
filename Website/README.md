@@ -190,11 +190,17 @@ The profile editor groups appearance, personal details and links into keyboard-a
 
 **Tebex:** create a webstore and packages in Tebex, configure delivery with its Minecraft plugin, then paste each package URL into the matching website product. Add its exact price, set availability to Released and publish. The website links to hosted checkout; no card handling or Tebex secret belongs in browser code. Website rank assignments are manual until a separate verified purchase sync is implemented. See [Tebex integration methods](https://docs.tebex.io/developers/integration-methods).
 
+**Delivering purchases in game:** every store item has a *Game product id* (Admin → Store items), for example `cosmetic.companion.pufflet`, `cosmetic.trail.comet-tail`, `cosmetic.rank.starweaver` or `cosmetic.bundle.cloudberry`. In each Tebex package, add the command `nerdadmin entitlement grant {username} <game product id> {transaction}`, and for refunds and chargebacks `nerdadmin entitlement revoke {transaction} Refunded`. The server refuses unknown ids, never grants the same transaction twice, and lists every id with `/nerdadmin entitlement products`. Players use what they bought with `/cosmetics`, `/companion`, `/trail` and `/emote`. What each item does in game is described in `docs/COSMETICS.md` in the plugin repository.
+
 ## Arcade reward setup
 
 Sky Hop, Gem Rush, Cloud Catch, Codex Memory, Forge Strike and Rune Breaker support visitor practice and saved member scores. Minecraft linking is required to earn Marks. The default daily limit is 1,000 per member, with 75–100 Marks per-run caps and 15 rewarded runs per game per UTC day. Revision 7 upgrades the original 200-Mark allowance; custom limits, including zero, are preserved. Change the cap or close the Arcade in Admin → Settings. Closing also removes its navigation and home-page feature.
 
 Larger run rewards are split into payouts of at most 50 Marks, compatible with the existing collector ceiling. Finish requests return the saved receipt when retried, without issuing duplicate payouts. A failed save can be retried from the game-over screen.
+
+The games use the supplied 115-sprite collection in `aerborne/static/img/arcade/sprites/`. Only the selected game's sprites load when Play is pressed; visible alpha bounds in `static/js/arcade/assets.js` preserve proportions and keep collision geometry separate from decorative glows. The source WebP files are copied unchanged. From the source checkout, re-import the complete archive with `python tools/import_arcade_sprites.py PATH_TO_ZIP` in an environment with Pillow; the import tool is not included in the upload bundle, and Pillow is not needed by the game runtime.
+
+Sky Hop scores island gaps and collectibles. Gem Rush charges a burst after eight match groups and awards one five-second bonus for a third-step cascade. Cloud Catch has timed shields and magnets. Codex Memory has eight pairs with picture-and-name matching. Forge Strike changes hammer, anvil and ingot states as you play. Rune Breaker includes armour, explosive bricks, temporary wider paddles and a one-use floor shield.
 
 The existing game plugin includes a queue collector in `WebsiteRewards`. To enable delivery:
 
@@ -345,3 +351,49 @@ On a newer Python than 3.6, install a current Pillow (`pip install Pillow`) inst
   It's shown small and labelled "Concept art". Replace it in the admin when finished art arrives.
   `static/img/island.svg` is original, generated block by block for this site.
 - The footer carries the "Not an official Minecraft product" notice. Keep it.
+
+## RSS subscriptions
+
+The news RSS feed is `/news/feed.xml`. The News page's **Follow with RSS** link opens
+`/news/subscribe`, where visitors can copy the address into any feed reader. Each category also
+has its own feed, for example `/news/feed.xml?category=patch`. Feeds include the latest 20 public
+posts, publication dates, stable permalink GUIDs and absolute links. Drafts, archived posts and
+scheduled posts are excluded. ETag and Last-Modified headers support conditional reader requests.
+Set `AERBORNE_SITE_URL=https://your-domain.example` on hosting so readers receive canonical links;
+local development uses the local address. RSS is a pull subscription; it does not send email.
+
+## Featured streamers
+
+Open **Community → Featured streamers** (`/community/streamers`). To add someone, open
+**Staff dashboard → Content → Featured streamers → New streamer**, choose Twitch, YouTube or
+Kick, enter their channel, add optional creator art and a short introduction, and set **Published**.
+Use Sort order to arrange channels; confirmed live channels appear first. Draft, scheduled and
+archived entries stay hidden. Admins, editors and moderators can curate this list. Writers cannot.
+
+Twitch and Kick accept a channel name or an HTTPS channel URL. YouTube accepts a `UC…` channel
+ID, an `@handle`, or the corresponding channel URL. The site validates these and builds platform
+links itself; arbitrary URLs are not fetched. Visitors watch on the creator's platform. No player,
+chat or third-party tracking scripts are embedded.
+
+Configure these environment variables on the web host, then restart the website:
+
+| Platform | Variables | Official setup |
+| --- | --- | --- |
+| Twitch | `AERBORNE_TWITCH_CLIENT_ID`, `AERBORNE_TWITCH_CLIENT_SECRET` | [Register an application](https://dev.twitch.tv/docs/authentication/register-app/) |
+| YouTube | `AERBORNE_YOUTUBE_API_KEY` | [Enable YouTube Data API v3 and create a server API key](https://developers.google.com/youtube/v3/getting-started) |
+| Kick | `AERBORNE_KICK_CLIENT_ID`, `AERBORNE_KICK_CLIENT_SECRET` | [Create a Kick application](https://docs.kick.com/getting-started/kick-apps-setup) |
+
+These belong only in the server environment. They are never included in browser responses, forms,
+public status JSON or the release ZIP. Twitch and Kick app tokens are obtained and refreshed
+server-side; creators do not need to sign in to Aerborne to authorize public live checks.
+
+Status checks use the official [Twitch Get Streams](https://dev.twitch.tv/docs/api/reference/#get-streams),
+[YouTube search](https://developers.google.com/youtube/data/reference/rest/v3/search/list) and
+[Kick Channels](https://docs.kick.com/apis/channels) APIs. Results are cached in SQLite across web
+workers. Twitch, Kick and already-discovered YouTube broadcasts refresh at most once a minute
+while the page is in use. YouTube discovery searches run at least 30 minutes apart, stretched
+according to the number of featured YouTube channels to target at most 80 searches/day for this
+site. Quotas vary by project; check the Google Cloud console if the same project serves other apps.
+There is no polling when nobody uses the page, and no external checks for unconfigured providers.
+API errors and missing credentials show **status unavailable**, never a stale live badge or a false
+offline claim. Staff see which platform connections still need setup on the streamer page.

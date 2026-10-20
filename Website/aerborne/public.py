@@ -1,13 +1,14 @@
 """Public pages. Everything shown here is published content or verified configuration."""
 import sqlite3
+import hashlib
 
 from flask import (Blueprint, Response, abort, current_app, g, redirect, render_template, request,
-                   send_from_directory, url_for)
+                   send_from_directory, url_for, jsonify)
 
 from . import content
 from .content import lines, published, published_one, related_links
 from .content_types import ASPECTS, GUIDE_CATEGORIES, NEWS_CATEGORIES, STORE_CATEGORIES, get_type
-from .db import get_db, now_str, utcnow
+from .db import get_db, now_str, parse_time, utcnow
 
 bp = Blueprint("public", __name__)
 
@@ -250,10 +251,30 @@ def render_news(item, preview=False):
 
 @bp.route("/news/feed.xml")
 def news_feed():
-    items = published("news", limit=20)
-    base = current_app.config["SITE_URL"] or request.url_root.rstrip("/")
-    xml = render_template("feed.xml", items=items, base=base)
-    return Response(xml, mimetype="application/rss+xml")
+    category = request.args.get("category", "")
+    if category and category not in dict(NEWS_CATEGORIES):
+        abort(404)
+    items = published("news", "category = ?" if category else "", (category,) if category else (), limit=20)
+    base = (current_app.config["SITE_URL"] or request.url_root).rstrip("/")
+    modified = max((parse_time(row[key]) for row in items for key in ('updated_at', 'publish_at', 'created_at')
+                    if parse_time(row[key])), default=None)
+    xml = render_template("feed.xml", items=items, base=base, category=category, modified=modified)
+    response = Response(xml, content_type="application/rss+xml; charset=utf-8")
+    response.set_etag(hashlib.sha256(response.get_data()).hexdigest())
+    if modified:
+        response.last_modified = modified
+    response.headers['Cache-Control'] = 'public, max-age=60'
+    return response.make_conditional(request)
+
+
+@bp.route("/news/subscribe")
+def news_subscribe():
+    category = request.args.get("category", "")
+    if category and category not in dict(NEWS_CATEGORIES):
+        abort(404)
+    base = (current_app.config['SITE_URL'] or request.url_root).rstrip('/')
+    feed_url = base + url_for('public.news_feed', category=category or None)
+    return render_template('news_subscribe.html', feed_url=feed_url, category=category, categories=NEWS_CATEGORIES)
 
 
 # --- Store -----------------------------------------------------------------------------------
@@ -302,8 +323,33 @@ def render_product(item, preview=False):
 
 @bp.route("/community")
 def community():
-    return render_template("community.html", showcases=published("showcases"),
-                           events=published("news", "category = ?", ("event",), limit=3))
+    return render_template("community.html", showcases=published("showcases"))
+
+
+@bp.route('/community/streamers')
+def streamers():
+    from . import streaming
+    rows = []
+    for index, item in enumerate(published('streamers')):
+        row = dict(item)
+        row['display_order'] = index
+        row['channel_url'] = streaming.channel_url(row['platform'], row['channel'])
+        row['platform_label'] = streaming.PLATFORMS.get(row['platform'], row['platform'])
+        row['live'] = streaming.cached_status(row, current_app.config, get_db())
+        rows.append(row)
+    rows.sort(key=lambda row: row['live']['state'] != 'live')
+    missing = [label for key, label in streaming.PLATFORMS.items() if not streaming.configured(key, current_app.config)]
+    return render_template('streamers.html', streamers=rows, platforms=streaming.PLATFORMS, missing_platforms=missing)
+
+
+@bp.route('/community/streamers/status')
+def streamer_status():
+    from . import streaming
+    rows = [dict(item) for item in published('streamers')]
+    statuses = streaming.get_statuses(rows, dict(current_app.config), get_db())
+    response = jsonify(channels=statuses)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @bp.route("/support")
@@ -372,7 +418,7 @@ def sitemap():
     base = current_app.config["SITE_URL"] or request.url_root.rstrip("/")
     paths = [url_for("public." + name) for name in (
         "index", "play", "status_page", "explore", "guide", "codex", "companions", "news", "store",
-        "community", "support")]
+        "community", "streamers", "support")]
     for key, endpoint in (("regions", "region"), ("guides", "guide_article"), ("companions", "companion"),
                           ("news", "news_article"), ("products", "store_item"), ("pages", "page")):
         paths += [url_for("public." + endpoint, slug=row["slug"]) for row in published(key)]

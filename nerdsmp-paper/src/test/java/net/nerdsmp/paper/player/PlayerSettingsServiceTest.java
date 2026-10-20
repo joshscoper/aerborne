@@ -22,7 +22,8 @@ class PlayerSettingsServiceTest {
         assertFalse(settings.enabled(player, PlayerSettingsService.Setting.PARTY_REQUESTS));
         assertFalse(settings().enabled(player, PlayerSettingsService.Setting.COOP_INVITES));
         assertTrue(settings.enabled(player, PlayerSettingsService.Setting.FRIEND_REQUESTS));
-        assertEquals(13, settings.snapshot(player).size());
+        assertEquals(14, settings.snapshot(player).size());
+        assertTrue(settings.enabled(player, PlayerSettingsService.Setting.OTHERS_COSMETICS), "Other players' cosmetics show by default");
         assertTrue(settings.enabled(player, PlayerSettingsService.Setting.TREE_FELLING));
         assertTrue(settings.enabled(player, PlayerSettingsService.Setting.TREE_REPLANTING));
     }

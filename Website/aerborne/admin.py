@@ -271,6 +271,17 @@ def _read_form(ctype, item):
             errors[f.name] = "Pick an image from the list."
 
     slug = values.get("slug")
+    if ctype.key == 'streamers':
+        from .streaming import normalize_channel
+        channel = normalize_channel(values.get('platform'), values.get('channel'))
+        if not channel:
+            errors['channel'] = 'Enter a valid channel for the selected platform. YouTube needs a UC channel ID or @handle.'
+        else:
+            values['channel'] = channel
+            duplicate = get_db().execute('SELECT id FROM streamers WHERE platform = ? AND channel = ? COLLATE NOCASE',
+                                         (values.get('platform'), channel)).fetchone()
+            if duplicate and (item is None or duplicate['id'] != item['id']):
+                errors['channel'] = 'This channel is already in Featured streamers. Edit its existing entry.'
     if slug and "slug" not in errors:
         clash = get_db().execute("SELECT id FROM %s WHERE slug = ?" % ctype.table, (slug,)).fetchone()
         if clash and (item is None or clash["id"] != item["id"]):

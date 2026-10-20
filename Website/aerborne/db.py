@@ -53,6 +53,11 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS stream_status_cache (
+    cache_key TEXT PRIMARY KEY,
+    payload TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS page_views (
     day TEXT NOT NULL,
     path TEXT NOT NULL,

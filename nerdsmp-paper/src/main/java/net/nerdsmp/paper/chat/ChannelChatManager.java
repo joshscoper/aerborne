@@ -261,7 +261,7 @@ public final class ChannelChatManager implements Listener {
         }
         var audience = HomesteadChatPolicy.audience(home);
         Component line = Component.text("[" + home.name() + "] ", NamedTextColor.DARK_AQUA)
-            .append(presentation.chatPrefix(sender)).append(sender.displayName().colorIfAbsent(NamedTextColor.WHITE))
+            .append(presentation.chatPrefix(sender)).append(sender.displayName().colorIfAbsent(nameColour(sender)))
             .append(Component.text(" > ", NamedTextColor.DARK_GRAY)).append(message);
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             AccountId member = sessions.account(viewer.getUniqueId()).orElse(null);
@@ -286,7 +286,7 @@ public final class ChannelChatManager implements Listener {
         if (!plugin.staff().canCommunicate(sender.getUniqueId())) { Chat.error(sender, "You cannot use chat while muted."); return; }
         var audience = IslandChatPolicy.audience(island);
         Component line = Component.text("[" + island.name() + "] ", NamedTextColor.DARK_AQUA)
-            .append(presentation.chatPrefix(sender)).append(Component.text(sender.getName(), NamedTextColor.WHITE))
+            .append(presentation.chatPrefix(sender)).append(Component.text(sender.getName(), nameColour(sender)))
             .append(Component.text(" > ", NamedTextColor.DARK_GRAY)).append(message);
         for (Player viewer : Bukkit.getOnlinePlayers()) {
             var account = sessions.account(viewer.getUniqueId()).orElse(null);
@@ -311,7 +311,7 @@ public final class ChannelChatManager implements Listener {
     private Component line(Player source, ChatChannel channel, Component message) {
         return Component.empty().append(channel.component()).append(Component.space())
             .append(presentation.chatPrefix(source))
-            .append(source.displayName().colorIfAbsent(NamedTextColor.WHITE))
+            .append(source.displayName().colorIfAbsent(nameColour(source)))
             .append(Component.text(" › ", NamedTextColor.DARK_GRAY)).append(message);
     }
 
@@ -380,5 +380,11 @@ public final class ChannelChatManager implements Listener {
             }
             return null;
         }
+    }
+
+    /** A supporter's chosen name colour, otherwise white. */
+    private NamedTextColor nameColour(Player player) {
+        NamedTextColor chosen = presentation.nameColor(player);
+        return chosen == null ? NamedTextColor.WHITE : chosen;
     }
 }

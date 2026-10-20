@@ -94,6 +94,9 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "grave" -> grave(sender, args);
             case "duel" -> duel(sender, args);
             case "cosmetics" -> cosmetics(sender);
+            case "companion" -> companion(sender, args);
+            case "trail" -> trail(sender, args);
+            case "emote" -> emote(sender, args);
             case "menu" -> menu(sender);
             case "profile" -> profile(sender);
             case "hud" -> hud(sender);
@@ -708,6 +711,59 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         return true;
     }
 
+    private boolean companion(CommandSender sender, String[] args) {
+        Player player = player(sender);
+        if (player == null) return true;
+        var cosmetics = plugin.cosmetics();
+        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+            var own = cosmetics.ownership(player);
+            Chat.info(player, "Companions <white>" + own.companions().size() + "/" + cosmetics.catalog().companions().size() + "</white>");
+            for (var companion : cosmetics.catalog().companions()) {
+                boolean has = own.companions().contains(companion.slug());
+                Chat.send(player, (has ? "<click:run_command:'/companion " + companion.slug() + "'><hover:show_text:'<gray>Click to summon</gray>'><green>●</green> <white>"
+                    : "<dark_gray>○ ") + companion.name() + (has ? "</white></hover></click>" : "</dark_gray>") + " <gray>" + companion.species() + "</gray>");
+            }
+            if (own.companions().isEmpty()) Chat.info(player, "Companions come from the store at <white>aerborne.net/store</white>.");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("dismiss") || args[0].equalsIgnoreCase("hide") || args[0].equalsIgnoreCase("off")) {
+            cosmetics.dismiss(player);
+            return true;
+        }
+        cosmetics.summon(player, args[0]);
+        return true;
+    }
+
+    private boolean trail(CommandSender sender, String[] args) {
+        Player player = player(sender);
+        if (player == null) return true;
+        var cosmetics = plugin.cosmetics();
+        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+            var own = cosmetics.ownership(player);
+            Chat.info(player, "Trails <white>" + own.trails().size() + "/" + cosmetics.catalog().trails().size() + "</white>");
+            for (var trail : cosmetics.catalog().trails()) {
+                boolean has = own.trails().contains(trail.slug());
+                Chat.send(player, (has ? "<click:run_command:'/trail " + trail.slug() + "'><hover:show_text:'<gray>Click to wear</gray>'><green>●</green> <white>"
+                    : "<dark_gray>○ ") + trail.name() + (has ? "</white></hover></click>" : "</dark_gray>") + " <gray>" + trail.summary() + "</gray>");
+            }
+            if (own.trails().isEmpty()) Chat.info(player, "Trails come from the store at <white>aerborne.net/store</white>.");
+            return true;
+        }
+        cosmetics.wearTrail(player, args[0]);
+        return true;
+    }
+
+    private boolean emote(CommandSender sender, String[] args) {
+        Player player = player(sender);
+        if (player == null) return true;
+        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+            Chat.usage(player, "/emote <" + String.join("|", plugin.cosmetics().catalog().emoteIds()) + ">");
+            return true;
+        }
+        plugin.cosmetics().emote(player, args[0]);
+        return true;
+    }
+
     private boolean menu(CommandSender sender) {
         Player player = player(sender);
         if (player != null) {
@@ -939,9 +995,19 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             sender.sendRichMessage("<green>Gave " + target.getName() + " a " + enchantment.displayName() + " tome.</green>");
             return true;
         }
-        if (args[0].equalsIgnoreCase("entitlement") && args.length >= 3) {
+        if (args[0].equalsIgnoreCase("entitlement") && args.length >= 2) {
             if (!sender.hasPermission("nerdsmp.store.fulfill")) {
                 Chat.noPermission(sender);
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("products")) {
+                var catalog = plugin.cosmetics().catalog();
+                sender.sendRichMessage("<gold>Store product ids</gold> <gray>(grant <player> <product> <transaction> [days])</gray>");
+                catalog.tiers().forEach(t -> sender.sendRichMessage("<white>" + t.product() + "</white> <gray>" + t.name() + " rank</gray>"));
+                catalog.companions().forEach(c -> sender.sendRichMessage("<white>" + c.product() + "</white> <gray>" + c.name() + " companion</gray>"));
+                catalog.trails().forEach(t -> sender.sendRichMessage("<white>" + t.product() + "</white> <gray>" + t.name() + " trail</gray>"));
+                catalog.bundles().forEach(b -> sender.sendRichMessage("<white>" + b.product() + "</white> <gray>" + b.name() + ": "
+                    + String.join(", ", b.contents().stream().map(catalog::describe).toList()) + "</gray>"));
                 return true;
             }
             if (args[1].equalsIgnoreCase("revoke") && args.length >= 4) {
@@ -956,7 +1022,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 String transaction = args[4];
                 Integer days = args.length >= 6 ? positiveInt(args[5]) : null;
                 if (!allowedPaidProduct(product)) {
-                    sender.sendRichMessage("<red>Product is outside the cosmetic-only allowlist.</red>");
+                    sender.sendRichMessage("<red>Unknown product " + product + ". Use a cosmetic id such as cosmetic.companion.pufflet; see /nerdadmin entitlement products.</red>");
                     return true;
                 }
                 Instant expires = days == null ? null : Instant.now().plus(Duration.ofDays(days));
@@ -965,12 +1031,16 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                         sync(() -> sender.sendRichMessage("<red>Unknown player; entitlement held for support review.</red>"));
                         return;
                     }
-                    plugin.entitlements().grant(optional.get(), product, transaction, expires).thenAccept(result -> sync(() ->
-                        sender.sendRichMessage("<yellow>Entitlement grant result: " + result + ".</yellow>")));
+                    plugin.entitlements().grant(optional.get(), product, transaction, expires).thenAccept(result -> sync(() -> {
+                        sender.sendRichMessage("<yellow>Entitlement grant result: " + result + ".</yellow>");
+                        Player online = target.getPlayer();
+                        if (online != null) plugin.cosmetics().refresh(online);
+                    }));
                 });
                 return true;
             }
             Chat.usage(sender, "/nerdadmin entitlement grant <player> <product> <transaction> [days]");
+            Chat.usage(sender, "/nerdadmin entitlement products");
             Chat.usage(sender, "/nerdadmin entitlement revoke <transaction> <reason>");
             return true;
         }
@@ -989,9 +1059,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     }
 
     private boolean allowedPaidProduct(String product) {
-        return product.equals("supporter_monthly")
-            || product.equals("supporter_annual")
-            || product.startsWith("cosmetic.");
+        return plugin.cosmetics().catalog().known(product);
     }
 
     private void refund(AccountId accountId, long amount, String reason) {
@@ -1097,6 +1165,11 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "campaign" -> args.length == 1 ? List.of("contribute")
                 : args.length == 2 ? plugin.getConfig().getStringList("campaign.categories") : List.of();
             case "grave" -> args.length == 1 ? List.of("locate", "recover") : List.of();
+            case "companion" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
+                java.util.stream.Stream.of("list", "dismiss"), plugin.cosmetics().ownership(player).companions().stream()).toList() : List.of();
+            case "trail" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
+                java.util.stream.Stream.of("list", "off"), plugin.cosmetics().ownership(player).trails().stream()).toList() : List.of();
+            case "emote" -> args.length == 1 ? plugin.cosmetics().catalog().emoteIds() : List.of();
             case "duel" -> args.length == 1 ? List.of("on", "off", "status") : List.of();
             case "relics" -> args.length == 1 ? List.of("inspect", "sets") : List.of();
             case "npc" -> plugin.npcs().tabCompleteNpc(sender, args);

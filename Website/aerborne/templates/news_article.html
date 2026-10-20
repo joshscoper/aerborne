@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
+{% import "partials/editorial_macros.html" as editorial with context %}
 {% block title %}{{ item.title }}{% endblock %}
 {% block description %}{{ item.summary }}{% endblock %}
-{% block body_class %}reading-page{% endblock %}
+{% block body_class %}reading-page news-reading-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/editorial.css') }}">{% endblock %}
 {% block content %}
 <article class="article">
   <header class="article-head">
     <div class="wrap-narrow">
       <p class="crumbs"><a href="{{ url_for('public.news') }}">News</a> / <a href="{{ url_for('public.news', category=item.category) }}">{{ option_label('news', 'category', item.category) }}</a></p>
+      <p class="eyebrow">The Aerborne journal</p>
       <h1>{{ item.title }}</h1>
       <p class="meta">
         <time datetime="{{ (item.publish_at or item.created_at) | isodate }}">{{ (item.publish_at or item.created_at) | date }}</time>
@@ -21,13 +24,14 @@
     {% if item.image %}<figure class="article-figure">{{ m.picture(item.image, item.image_alt, lazy=False) }}</figure>{% endif %}
     <div class="prose">{{ item.body | markdown }}</div>
     {{ m.related_list(related) }}
+    <a class="news-back" href="{{ url_for('public.news') }}">← All news & updates</a>
   </div>
 </article>
 {% if more %}
 <section class="band band-paper">
   <div class="wrap">
-    <h2>More news</h2>
-    <div class="news-grid">{% for n in more %}{{ m.news_card(n) }}{% endfor %}</div>
+    <div class="editorial-section-head"><h2>Keep exploring</h2><a class="text-link" href="{{ url_for('public.news') }}">All news →</a></div>
+    <div class="dispatch-grid">{% for n in more %}{{ editorial.news_card(n) }}{% endfor %}</div>
   </div>
 </section>
 {% endif %}

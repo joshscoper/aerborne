@@ -23,7 +23,7 @@ PUBLIC_PATHS = [
     "/forum", "/forum/general", "/leaderboards", "/account/login", "/account/register", "/account/recover",
     "/", "/play", "/status", "/explore", "/explore/your-island", "/guide",
     "/guide/section/getting-started", "/guide/first-island", "/codex", "/codex?tier=signature",
-    "/companions", "/companions/pufflet", "/news", "/news/welcome", "/news/feed.xml", "/store",
+    "/companions", "/companions/pufflet", "/news", "/news/welcome", "/news/feed.xml", "/news/subscribe", "/community/streamers", "/store",
     "/store/supporter-ranks", "/community", "/support", "/support/rules", "/sitemap.xml", "/robots.txt",
 ]
 
@@ -62,6 +62,75 @@ class SiteTest(unittest.TestCase):
 
 
 class PublicPagesTest(SiteTest):
+    def test_news_archive_and_build_gallery(self):
+        from aerborne.seed_updates import _insert
+        conn = self.db()
+        for number in range(14):
+            _insert(conn, 'news', {'slug': 'archive-%d' % number, 'title': 'Archive story %d' % number,
+                                  'category': 'patch', 'summary': 'A published update.', 'body': 'Update details.'})
+        _insert(conn, 'news', {'slug': 'hidden-draft', 'title': 'Hidden draft', 'category': 'patch', 'status': 'draft'})
+        _insert(conn, 'news', {'slug': 'future-post', 'title': 'Future post', 'category': 'patch', 'publish_at': '2099-01-01T00:00:00Z'})
+        _insert(conn, 'showcases', {'slug': 'garden', 'title': 'Cloud garden', 'builder': 'Garden Builder',
+                                  'creator_permission': 1, 'image': 'static:img/brand/sky-kingdom-800.webp',
+                                  'image_alt': 'Gallery test image'})
+        _insert(conn, 'showcases', {'slug': 'draft-build', 'title': 'Draft build', 'status': 'draft'})
+        conn.commit()
+        conn.close()
+        first = self.client.get('/news?category=patch').get_data(as_text=True)
+        second = self.client.get('/news?category=patch&page=2').get_data(as_text=True)
+        self.assertEqual(first.count('<article class="dispatch-card'), 12)
+        self.assertEqual(second.count('<article class="dispatch-card'), 2)
+        self.assertEqual(first.count('dispatch-lead'), 1)
+        self.assertNotIn('dispatch-lead', second)
+        stories = lambda page: set(re.findall(r'<h[23]><a href="/news/(archive-\d+)">', page))
+        self.assertEqual(len(stories(first) | stories(second)), 14)
+        self.assertFalse(stories(first) & stories(second))
+        self.assertIn('category=patch&amp;page=2', first)
+        self.assertIn('Page 2 of 2', second)
+        for page in (first, second):
+            self.assertNotIn('Hidden draft', page)
+            self.assertNotIn('Future post', page)
+        empty = self.client.get('/news?category=event').get_data(as_text=True)
+        self.assertIn('No event posts yet.', empty)
+        gallery = self.client.get('/community').get_data(as_text=True)
+        self.assertIn('Cloud garden', gallery)
+        self.assertIn('Garden Builder', gallery)
+        self.assertIn('View full screenshot of Cloud garden', gallery)
+        self.assertIn('alt="Gallery test image"', gallery)
+        self.assertNotIn('Draft build', gallery)
+        self.assertEqual(self.client.get('/forum/islands').status_code, 200)
+
+    def test_welcome_update_preserves_custom_copy(self):
+        from aerborne import seed_updates
+        from aerborne.seed import NEWS
+        original_summary = 'A home for guides, news and the Arcane Codex while Aerborne is in private testing.'
+        original_body = """Aerborne now has a proper home on the web.
+
+- The **Game Guide** walks new players from their first island to their first enchantment.
+- The **Arcane Codex** lists every enchantment that's public knowledge. Hidden recipes stay hidden;
+  discovering them is part of the game.
+- **Companions** shows the pets we're designing. They're concept art for now, and we'll say so
+  until each one is in the game.
+
+Aerborne is still in private testing. We'll post here when that changes.
+"""
+        conn = self.db()
+        revised = next(item for item in NEWS if item['slug'] == 'welcome')
+        for author, summary, body, expected_summary, expected_body in [
+            ('starter content', original_summary, original_body, revised['summary'], revised['body']),
+            ('starter content', 'Owner summary', 'Owner body', 'Owner summary', 'Owner body'),
+            ('Josh', original_summary, original_body, original_summary, original_body),
+        ]:
+            conn.execute("UPDATE news SET summary = ?, body = ?, updated_by = ? WHERE slug = 'welcome'", (summary, body, author))
+            conn.execute("UPDATE settings SET value = '8' WHERE key = 'seed_rev'")
+            conn.commit()
+            self.assertTrue(seed_updates.apply(conn))
+            row = conn.execute("SELECT summary, body FROM news WHERE slug = 'welcome'").fetchone()
+            self.assertEqual(row['summary'], expected_summary)
+            self.assertEqual(row['body'], expected_body)
+            self.assertFalse(seed_updates.apply(conn))
+        conn.close()
+
     def test_reference_catalog_and_internal_links(self):
         class Links(HTMLParser):
             def __init__(self):
@@ -1262,6 +1331,41 @@ class ProfileTest(SocialHelpers):
         self.client.post("/admin/forum/members/%d/badges" % ava, data={"_csrf": token, "badge_id": badge, "action": "revoke"},
                          follow_redirects=True)
         self.assertNotIn("Speedrunner", self.client.get("/members/Ava").get_data(as_text=True))
+
+
+class CosmeticsContentTest(SiteTest):
+    def test_companions_trails_and_store_match_the_game(self):
+        conn = self.db()
+        products = dict(conn.execute("SELECT slug, game_product FROM products").fetchall())
+        self.assertEqual(products["pufflet-companion"], "cosmetic.companion.pufflet")
+        self.assertEqual(products["comet-tail-trail"], "cosmetic.trail.comet-tail")
+        self.assertEqual(products["starweaver"], "cosmetic.rank.starweaver")
+        self.assertEqual(products["celestial-dreams"], "cosmetic.bundle.celestial-dreams")
+        self.assertNotIn(None, products.values(), "Every store item says what the server grants")
+        includes = conn.execute("SELECT includes FROM products WHERE slug = 'cloudberry'").fetchone()[0]
+        self.assertEqual(includes, "Pufflet companion\nCloudstep trail")
+        companion = conn.execute("SELECT access, acquisition FROM companions WHERE slug = 'moonmoth'").fetchone()
+        self.assertEqual(companion[0], "purchased")
+        self.assertIn("/companion moonmoth", companion[1])
+        self.assertIn("/companion", conn.execute("SELECT body FROM guides WHERE slug = 'commands'").fetchone()[0])
+        conn.close()
+        page = self.client.get("/companions/moonmoth").get_data(as_text=True)
+        self.assertIn("/companion moonmoth", page)
+        self.assertIn("goes on sale when the store opens", page)
+        self.assertEqual(page.count("/companion moonmoth"), 1)
+
+    def test_staff_edits_to_store_items_survive_the_update(self):
+        from aerborne import seed_updates
+        conn = self.db()
+        conn.execute("UPDATE products SET includes = 'Pufflet companion\nCompanion menu entry', updated_by = 'boss' WHERE slug = 'pufflet-companion'")
+        conn.execute("UPDATE companions SET acquisition = 'Not announced yet', updated_by = 'boss' WHERE slug = 'pufflet'")
+        conn.execute("UPDATE settings SET value = '9' WHERE key = 'seed_rev'")
+        conn.commit()
+        seed_updates.apply(conn)
+        self.assertEqual(conn.execute("SELECT includes FROM products WHERE slug = 'pufflet-companion'").fetchone()[0],
+                         "Pufflet companion\nCompanion menu entry")
+        self.assertEqual(conn.execute("SELECT acquisition FROM companions WHERE slug = 'pufflet'").fetchone()[0], "Not announced yet")
+        conn.close()
 
 
 class FakeServer(threading.Thread):

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "partials/macros.html" as m with context %}
+{% block title %}Featured streamers{% endblock %}
+{% block body_class %}editorial-page streamers-page{% endblock %}
+{% block description %}Discover featured Aerborne creators on Twitch, YouTube and Kick. See who is live and visit their channels.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/editorial.css') }}"><script src="{{ url_for('static', filename='js/streamers.js') }}" defer></script>{% endblock %}
+{% block content %}
+<header class="page-head editorial-head"><div class="wrap editorial-head-inner"><div><p class="eyebrow">From the community, on your screen</p><h1>A little company.<br>A whole lot of sky.</h1><p class="lede">Meet our featured streamers. Catch a live adventure or find your next favourite creator.</p></div><div class="stream-hero-art" aria-hidden="true"><img src="{{ url_for('static', filename='img/forum/general-chat-256.webp') }}" alt="" width="208" height="208"><span>Twitch · YouTube · Kick</span></div></div></header>
+{% set group = 'community' %}{% include "partials/subnav.html" %}
+<div class="wrap editorial-content" data-streamers data-status-url="{{ url_for('public.streamer_status') }}">
+  {% if edit_link %}<aside class="stream-staff-tools"><div><strong>Your featured creators</strong><p>Add a channel, choose an image and publish it here.{% if missing_platforms %} Automatic checks still need credentials for {{ missing_platforms | join(', ') }}; see the README’s Featured streamers setup.{% endif %}</p></div><a class="btn btn-ghost" href="{{ url_for('admin.content_edit', key='streamers') }}">Add a streamer +</a></aside>{% endif %}
+  <section aria-labelledby="streamers-heading">
+    <div class="editorial-section-head"><div><p class="eyebrow">Featured streamers</p><h2 id="streamers-heading">Find your next live adventure.</h2></div>{% if streamers %}<p>{{ streamers | length }} featured {{ 'channel' if streamers | length == 1 else 'channels' }}</p>{% endif %}</div>
+    {% if streamers %}
+    <div class="stream-toolbar" data-stream-filters hidden><label for="stream-platform">Platform <select id="stream-platform"><option value="all">All platforms</option>{% for key, label in platforms.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label><label class="stream-live-only"><input type="checkbox" id="stream-live-only"> Live now only</label><span class="stream-summary" data-stream-summary role="status">Checking live channels…</span></div>
+    <noscript><p class="fine">Enable JavaScript for automatic live checks. You can visit any channel below.</p></noscript>
+    <div class="stream-grid" data-stream-grid>
+      {% for creator in streamers %}
+      {% set state = creator.live.state %}
+      <article class="stream-card stream-{{ creator.platform }}" data-stream-card data-slug="{{ creator.slug }}" data-platform="{{ creator.platform }}" data-state="{{ state }}" data-order="{{ creator.display_order }}" id="{{ creator.slug }}">
+        <div class="stream-card-art"><span class="stream-platform-tag">{{ creator.platform_label }}</span><span class="stream-badge" data-stream-badge>{{ {'live':'Live now','offline':'Offline','checking':'Checking…','unavailable':'Status unavailable','unconfigured':'Live status unavailable'}.get(state, 'Status unavailable') }}</span>{% if creator.image %}{{ m.picture(creator.image, creator.image_alt, 'stream-avatar') }}{% else %}<img class="stream-avatar stream-avatar-crest" src="{{ url_for('static', filename='img/brand/skycrest-192.webp') }}" alt="" width="96" height="96">{% endif %}</div>
+        <div class="stream-card-copy"><h3>{{ creator.name }}</h3>{% if creator.summary %}<p class="stream-bio">{{ creator.summary }}</p>{% endif %}<p class="stream-current" data-stream-title{% if state != 'live' or not creator.live.title %} hidden{% endif %}>{{ creator.live.title or '' }}</p><p class="stream-details" data-stream-details>{% if state in ('unconfigured', 'unavailable') %}Visit the channel for its current live status.{% elif state == 'offline' %}Catch their next stream on {{ creator.platform_label }}.{% else %}Live status updates automatically.{% endif %}</p><a class="btn btn-ghost stream-watch" href="{{ creator.live.watch_url or creator.channel_url }}" data-channel-url="{{ creator.channel_url }}" data-watch-link target="_blank" rel="noopener"><span data-watch-label>{% if state == 'live' %}Watch live{% else %}Visit channel{% endif %}</span> <span aria-hidden="true">↗</span><span class="sr-only">: {{ creator.name }} on {{ creator.platform_label }} (opens in a new tab)</span></a></div>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="editorial-empty stream-filter-empty" data-stream-empty hidden><div><h3>No channels match just now.</h3><p>Try another platform or turn off “Live now only” to discover more creators.</p></div></div>
+    <p class="stream-footnote">Live channels appear first. Status is cached; YouTube discovery can take longer. Streams open on the creator’s platform.</p>
+    {% else %}
+    <div class="editorial-empty"><img src="{{ url_for('static', filename='img/forum/general-chat-256.webp') }}" alt="" width="128" height="128"><div><p class="eyebrow">The next adventure is taking shape</p><h3>Our creator lineup is on its way.</h3><p>Featured Twitch, YouTube and Kick channels will appear here as the team adds them.</p><a class="text-link" href="{{ url_for('community.forum') }}">Meet the community →</a></div></div>
+    {% endif %}
+  </section>
+  <aside class="editorial-note"><div><h2>More ways to stay in the loop.</h2><p>Catch the latest updates and see what other players are building.</p></div><div class="editorial-crosslinks"><a href="{{ url_for('public.news') }}">Read the news →</a><a href="{{ url_for('public.community') }}">Featured builds →</a></div></aside>
+</div>
+{% endblock %}

@@ -246,12 +246,28 @@ TYPES = [
         Field("entitlement_note", "Entitlement details", help="For timed items, how long it lasts."),
         Field("platforms", "Platforms", default="Java Edition"),
         Field("tebex_url", "Tebex package link", "url", help="Checkout happens on Tebex, never on this site."),
+        Field("game_product", "Game product id",
+              help="What the server grants, e.g. cosmetic.companion.pufflet. In Tebex, set the package command to "
+                   "nerdadmin entitlement grant {username} <this id> {transaction}. /nerdadmin entitlement products lists them all."),
         Field("image", "Image", "image"),
         Field("image_alt", "Image description"),
         Field("concept_art", "Image is concept art", "bool", default=1),
         Field("availability", "Availability", "select", options=AVAILABILITY, default="upcoming"),
     ], title_field="name", roles=("admin", "editor"), endpoint="public.store_item",
         description="The store catalog. Only cosmetics; payment stays on Tebex."),
+
+    ContentType("streamers", "streamers", "Featured streamers", "streamer", [
+        Field("name", "Display name", required=True),
+        Field("slug", "URL slug", "slug", required=True),
+        Field("platform", "Platform", "select", required=True,
+              options=[("twitch", "Twitch"), ("youtube", "YouTube"), ("kick", "Kick")]),
+        Field("channel", "Channel", required=True,
+              help="Twitch or Kick: channel name or channel URL. YouTube: @handle, UC channel ID or channel URL."),
+        Field("summary", "About this creator", "textarea"),
+        Field("image", "Creator image", "image"),
+        Field("image_alt", "Image description"),
+    ], title_field="name", roles=("admin", "editor", "moderator"), endpoint="public.streamers",
+        description="Staff-selected creators. Live status comes from Twitch, YouTube or Kick. Publish to feature; archive to remove."),
 
     ContentType("showcases", "showcases", "Community builds", "community build", [
         Field("title", "Title", required=True),

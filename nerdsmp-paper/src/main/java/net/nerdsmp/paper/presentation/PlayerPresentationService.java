@@ -158,15 +158,10 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             plugin.campaigns().activeCampaign().toCompletableFuture();
         long now = System.currentTimeMillis();
         boolean refreshEntitlements = nextEntitlementRefresh.getOrDefault(playerId, 0L) <= now;
-        CompletableFuture<Boolean> supporter = !refreshEntitlements
-            ? CompletableFuture.completedFuture(supporterStatus.getOrDefault(playerId, false))
-            : plugin.entitlements().activeEntitlements(accountId, Instant.now()).toCompletableFuture()
-                .thenApply(entitlements -> {
-                    boolean active = entitlements.stream()
-                        .map(EntitlementService.Entitlement::productId)
-                        .anyMatch(product -> product.equals("supporter_monthly") || product.equals("supporter_annual"));
-                    return active;
-                });
+        // Supporter ranks (Skyfarer, Cloudkeeper, Starweaver and the older subscriptions) come from the wardrobe,
+        // which reads store entitlements once a minute.
+        CompletableFuture<Boolean> supporter = CompletableFuture.completedFuture(
+            plugin.cosmetics() != null && plugin.cosmetics().ownership(player).supporter());
 
         CompletableFuture.allOf(balance, progression, campaign, supporter)
             .orTimeout(10, java.util.concurrent.TimeUnit.SECONDS).whenComplete((ignored, error) -> {
@@ -206,9 +201,23 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         PlayerView view = view(player);
         return switch (view.role()) {
             case STAFF -> miniMessage.deserialize("<red><bold>STAFF</bold></red> <dark_gray>•</dark_gray> ");
-            case SUPPORTER -> miniMessage.deserialize("<gold>✦</gold> ");
+            case SUPPORTER -> miniMessage.deserialize(supporterBadge(player) + " ");
             case ADVENTURER -> Component.empty();
         };
+    }
+
+    /** The supporter tier's badge, with the tier name on hover. */
+    private String supporterBadge(Player player) {
+        var style = plugin.cosmetics() == null ? null : plugin.cosmetics().style(player);
+        if (style == null || !style.supporter()) return "<gold>✦</gold>";
+        return "<hover:show_text:'<gray>" + escape(style.tierName()) + " supporter</gray>'>" + style.badge() + "</hover>";
+    }
+
+    /** The chosen supporter name colour, or null for the default. */
+    public NamedTextColor nameColor(Player player) {
+        if (plugin.cosmetics() == null) return null;
+        var style = plugin.cosmetics().style(player);
+        return style.supporter() ? style.nameColor() : null;
     }
 
     static ProgressionService.ProgressionSnapshot mergeSkillProgress(
@@ -398,14 +407,16 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         }
         String role = switch (view.role()) {
             case STAFF -> "<red><bold>STAFF</bold></red>";
-            case SUPPORTER -> "<gold>✦</gold>";
+            case SUPPORTER -> supporterBadge(player);
             case ADVENTURER -> "";
         };
         String separator = role.isEmpty() ? "" : " ";
+        NamedTextColor supporterColor = view.role() == Role.SUPPORTER ? nameColor(player) : null;
+        String nameTag = supporterColor == null ? "white" : NamedTextColor.NAMES.key(supporterColor);
         String listName = "<dark_gray>[</dark_gray><aqua>Lv " + view.adventurerLevel()
             + "</aqua> <dark_gray>•</dark_gray> <light_purple>" + escape(view.adventurerRank())
             + "</light_purple><dark_gray>]</dark_gray> " + role + separator
-            + "<white>" + player.getName() + "</white>";
+            + "<" + nameTag + ">" + player.getName() + "</" + nameTag + ">";
         String header = plugin.branding().tabHeaderMarkup();
         String footer = "<gray>" + Bukkit.getOnlinePlayers().size() + " online</gray> <dark_gray>•</dark_gray> "
                 + "<gold>" + VisualFormat.compact(view.marks()) + " Marks</gold>\n"
@@ -428,7 +439,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             return;
         }
         PlayerView view = view(target);
-        NameplateStyle next = new NameplateStyle(view.adventurerLevel(), view.adventurerRank(), view.role(), view.platform());
+        NameplateStyle next = new NameplateStyle(view.adventurerLevel(), view.adventurerRank(), view.role(), view.platform(),
+            view.role() == Role.SUPPORTER ? supporterBadge(target) : "", nameColor(target));
         if (next.equals(nameplateStyles.put(target.getUniqueId(), next))) return;
         boards.values().forEach(board -> applyNameplate(board, target));
     }
@@ -449,8 +461,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             team = board.registerNewTeam(teamId);
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
         }
-        team.prefix(nameplatePrefix(targetView));
-        team.color(nameplateColor(targetView));
+        team.prefix(nameplatePrefix(targetView, target));
+        team.color(nameplateColor(targetView, target));
         team.addEntry(target.getName());
     }
 
@@ -464,21 +476,22 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         return "np" + order + playerKey;
     }
 
-    private Component nameplatePrefix(PlayerView view) {
+    private Component nameplatePrefix(PlayerView view, Player target) {
         Component level = miniMessage.deserialize("<dark_gray>[</dark_gray><aqua>Lv " + view.adventurerLevel()
             + "</aqua> <dark_gray>•</dark_gray> <light_purple>" + escape(view.adventurerRank())
             + "</light_purple><dark_gray>]</dark_gray> ");
         return switch (view.role()) {
             case STAFF -> level.append(miniMessage.deserialize("<red><bold>STAFF</bold></red> <dark_gray>◆</dark_gray> "));
-            case SUPPORTER -> level.append(miniMessage.deserialize("<gold>✦</gold> "));
+            case SUPPORTER -> level.append(miniMessage.deserialize(supporterBadge(target) + " "));
             case ADVENTURER -> level;
         };
     }
 
-    private NamedTextColor nameplateColor(PlayerView view) {
+    private NamedTextColor nameplateColor(PlayerView view, Player target) {
+        NamedTextColor chosen = view.role() == Role.SUPPORTER ? nameColor(target) : null;
         return switch (view.role()) {
             case STAFF -> NamedTextColor.RED;
-            case SUPPORTER -> NamedTextColor.GOLD;
+            case SUPPORTER -> chosen == null ? NamedTextColor.GOLD : chosen;
             case ADVENTURER -> NamedTextColor.WHITE;
         };
     }
@@ -504,7 +517,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         }
     }
     private record TabFrame(String name, String header, String footer) { }
-    private record NameplateStyle(int level, String rank, Role role, PlatformIdentity.Platform platform) { }
+    private record NameplateStyle(int level, String rank, Role role, PlatformIdentity.Platform platform, String badge, NamedTextColor color) { }
 
     public enum Role {
         STAFF,

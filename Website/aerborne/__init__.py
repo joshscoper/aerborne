@@ -31,6 +31,7 @@ NAV = [
         ("community.leaderboards", "Leaderboards", "Top adventurers and islands"),
         ("public.news", "News", "Updates, patch notes and events"),
         ("public.community", "Featured builds", "Islands picked by staff"),
+        ("public.streamers", "Featured streamers", "Watch creators from the community"),
     ]},
     {"label": "Arcade", "endpoint": "arcade.index"},
     {"label": "Store", "endpoint": "public.store"},
@@ -143,6 +144,7 @@ LIST_EDIT = {
     "public.store": ("products", "Edit store items"),
     "public.store_category": ("products", "Edit store items"),
     "public.community": ("showcases", "Edit community builds"),
+    "public.streamers": ("streamers", "Manage featured streamers"),
     "public.support": ("faqs", "Edit FAQs"),
 }
 

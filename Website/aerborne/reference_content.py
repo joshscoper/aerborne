@@ -608,6 +608,14 @@ If the server is online and the problem continues, ask in [Discord](/discord) or
 | `/report <player> <reason>` | Private report to staff. |
 | `/settings` | Message, social and travel preferences. |
 
+## Wardrobe
+| Command | Purpose |
+|---|---|
+| `/cosmetics` | Wardrobe: companions, trails, name colour, presets and keepsake. |
+| `/companion [name]` / `/companion dismiss` | Summon one of your companions / send it home. |
+| `/trail [name]` / `/trail off` | Wear one of your particle trails / take it off. |
+| `/emote <name>` | Cloudkeeper and Starweaver emotes for players nearby. |
+
 Read confirmation screens and costs before committing. Research and imbuement need a station unless separate remote access is available; `/arcane` itself can be read anywhere.
 """, 'troubleshooting', 'Connection help | /guide/connection-help\nWebsite account | /guide/website-and-arcade'),
 ]

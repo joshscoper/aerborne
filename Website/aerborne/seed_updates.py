@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 8
+LATEST = 10
 C = "static:img/companions/"
 
 
@@ -31,6 +31,10 @@ def apply(conn):
         _rev7(conn)
     if current < 8:
         _rev8(conn)
+    if current < 9:
+        _rev9(conn)
+    if current < 10:
+        _rev10(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -40,6 +44,32 @@ def apply(conn):
 def _rev7(conn):
     # Raise the original allowance while retaining custom limits (including rewards disabled).
     conn.execute("UPDATE settings SET value = '1000' WHERE key = 'arcade_daily_cap' AND value = '200'")
+
+
+def _rev9(conn):
+    # Refresh only the original welcome copy, preserving staff and direct database edits.
+    from .seed import NEWS
+    row = conn.execute("SELECT id, summary, body FROM news WHERE slug = 'welcome' AND updated_by = 'starter content'").fetchone()
+    if not row:
+        return
+    original = {
+        "summary": "A home for guides, news and the Arcane Codex while Aerborne is in private testing.",
+        "body": """Aerborne now has a proper home on the web.
+
+- The **Game Guide** walks new players from their first island to their first enchantment.
+- The **Arcane Codex** lists every enchantment that's public knowledge. Hidden recipes stay hidden;
+  discovering them is part of the game.
+- **Companions** shows the pets we're designing. They're concept art for now, and we'll say so
+  until each one is in the game.
+
+Aerborne is still in private testing. We'll post here when that changes.
+""",
+    }
+    revised = next(item for item in NEWS if item['slug'] == 'welcome')
+    for field in ('summary', 'body'):
+        if row[field] == original[field]:
+            conn.execute("UPDATE news SET %s = ?, updated_at = ? WHERE id = ?" % field,
+                         (revised[field], now_str(), row['id']))
 
 
 STAFF_BADGES = [
@@ -57,6 +87,68 @@ def _rev8(conn):
     for slug, name, description, icon, tone in STAFF_BADGES:
         conn.execute("INSERT OR IGNORE INTO badges (slug, name, description, icon, tone, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                      (slug, name, description, icon, tone, now_str()))
+
+
+# Revision 10: the server now has companions, trails and supporter perks (nerdsmp-paper cosmetic package).
+GAME_PRODUCTS = {
+    "skyfarer": "cosmetic.rank.skyfarer", "cloudkeeper": "cosmetic.rank.cloudkeeper", "starweaver": "cosmetic.rank.starweaver",
+    "cloudberry": "cosmetic.bundle.cloudberry", "blooming-skies": "cosmetic.bundle.blooming-skies",
+    "celestial-dreams": "cosmetic.bundle.celestial-dreams",
+}
+COMPANION_SLUGS = ("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk")
+TRAIL_SLUGS = ("cloudstep", "petal-skip", "firefly-drift", "rune-ripple", "bubblehop", "comet-tail", "dandelion-drift", "stardust-waltz")
+STORE_INCLUDES = {
+    "skyfarer": ("Skyfarer badge\nName colour palette",
+                 "Skyfarer badge in chat, the tab list and above your head\nName colour palette (3 colours)"),
+    "cloudkeeper": ("Cloudkeeper badge\nName colour palette\nEmotes",
+                    "Cloudkeeper badge in chat, the tab list and above your head\nName colour palette (5 colours)\nSix emotes with /emote"),
+    "starweaver": ("Starweaver badge\nName colour palette\nEmotes\nWardrobe presets\nVisual keepsake",
+                   "Starweaver badge in chat, the tab list and above your head\nName colour palette (7 colours)\nSix emotes with /emote\n"
+                   "Three wardrobe presets\nStarweaver Lantern keepsake (decorative)"),
+    "cloudberry": ("To be confirmed", "Pufflet companion\nCloudstep trail"),
+    "pufflet-companion": ("Pufflet companion\nCompanion menu entry", "Pufflet, who follows you around\nSummon it from /cosmetics or /companion"),
+    "kitekit-companion": ("Kitekit companion\nCompanion menu entry", "Kitekit, who follows you around\nSummon it from /cosmetics or /companion"),
+    "mossbun-companion": ("Mossbun companion\nCompanion menu entry", "Mossbun, who follows you around\nSummon it from /cosmetics or /companion"),
+    "cindlet-companion": ("Cindlet companion\nCompanion menu entry", "Cindlet, who follows you around\nSummon it from /cosmetics or /companion"),
+    "moonmoth-companion": ("Moonmoth companion\nCompanion menu entry", "Moonmoth, who follows you around\nSummon it from /cosmetics or /companion"),
+    "starwhisk-companion": ("Starwhisk companion\nCompanion menu entry", "Starwhisk, who follows you around\nSummon it from /cosmetics or /companion"),
+    "blooming-skies": ("To be confirmed", "Mossbun companion\nPetal Skip trail"),
+    "celestial-dreams": ("To be confirmed", "Starwhisk companion\nStardust Waltz trail"),
+}
+STORE_SUMMARIES = {
+    "cloudberry": ("A cosmetic bundle. Contents to be confirmed.", "Pufflet and the Cloudstep trail, together."),
+    "blooming-skies": ("A cosmetic bundle. Contents to be confirmed.", "Mossbun and the Petal Skip trail, together."),
+    "celestial-dreams": ("A cosmetic bundle. Contents to be confirmed.", "Starwhisk and the Stardust Waltz trail, together."),
+}
+
+
+def _rev10(conn):
+    now = now_str()
+    for slug in COMPANION_SLUGS:
+        GAME_PRODUCTS[slug + "-companion"] = "cosmetic.companion." + slug
+        conn.execute("UPDATE companions SET acquisition = ?, access = 'purchased', updated_at = ? WHERE slug = ? "
+                     "AND updated_by = 'starter content' AND acquisition = 'Not announced yet'",
+                     ("From the store once it opens, alone or in a bundle. Summon it with /companion " + slug + ".", now, slug))
+    for slug in TRAIL_SLUGS:
+        GAME_PRODUCTS[slug + "-trail"] = "cosmetic.trail." + slug
+        conn.execute("UPDATE trails SET acquisition = ?, access = 'purchased', updated_at = ? WHERE slug = ? "
+                     "AND updated_by = 'starter content' AND acquisition = 'Not announced yet'",
+                     ("From the store once it opens. Wear it with /trail " + slug + ".", now, slug))
+    for slug, product in GAME_PRODUCTS.items():
+        conn.execute("UPDATE products SET game_product = ? WHERE slug = ? AND COALESCE(game_product, '') = ''", (product, slug))
+    for slug, (original, current) in STORE_INCLUDES.items():
+        conn.execute("UPDATE products SET includes = ?, updated_at = ? WHERE slug = ? AND updated_by = 'starter content' AND includes = ?",
+                     (current, now, slug, original))
+    for slug, (original, current) in STORE_SUMMARIES.items():
+        conn.execute("UPDATE products SET summary = ?, updated_at = ? WHERE slug = ? AND updated_by = 'starter content' AND summary = ?",
+                     (current, now, slug, original))
+    row = conn.execute("SELECT id, body FROM guides WHERE slug = 'commands' AND updated_by = 'starter content'").fetchone()
+    marker = "Read confirmation screens and costs before committing."
+    if row and "/companion" not in (row["body"] or "") and marker in (row["body"] or ""):
+        from .reference_content import GUIDES as REVIEWED
+        section = next(g["body"] for g in REVIEWED if g["slug"] == "commands").split("## Wardrobe", 1)[1].split(marker, 1)[0]
+        conn.execute("UPDATE guides SET body = ?, updated_at = ? WHERE id = ?",
+                     (row["body"].replace(marker, "## Wardrobe" + section + marker, 1), now, row["id"]))
 
 
 def _insert(conn, key, row):

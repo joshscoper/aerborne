@@ -1411,36 +1411,106 @@ public final class MenuManager implements Listener, AutoCloseable {
     }
 
     private void openCosmetics(Player player) {
-        var account = account(player);
-        if (account == null) {
-            return;
+        var cosmetics = plugin.cosmetics();
+        var catalog = cosmetics.catalog();
+        var own = cosmetics.ownership(player);
+        var look = cosmetics.loadout(player);
+        MenuInventory menu = detailMenu(View.COSMETICS, 54, "<gold><bold>Cosmetic Wardrobe</bold></gold>");
+        var tier = own.tier();
+        button(menu, 4, tier.isPresent() ? Material.NETHER_STAR : Material.ARMOR_STAND,
+            tier.map(t -> t.badge() + " <white>" + t.name() + "</white>").orElse("<white>Your wardrobe</white>"), List.of(
+                "<gray>Everything here is visual only and stays with your account.</gray>",
+                tier.isPresent() ? "<gray>Thank you for supporting Aerborne.</gray>"
+                    : "<gray>Companions, trails and ranks: aerborne.net/store</gray>"
+            ), ignored -> { });
+        int slot = 10;
+        for (var companion : catalog.companions()) {
+            boolean has = own.companions().contains(companion.slug());
+            boolean out = companion.slug().equals(look.companion());
+            Material egg = Material.matchMaterial(companion.entity() + "_SPAWN_EGG");
+            button(menu, slot++, has ? (egg == null ? Material.EGG : egg) : Material.GRAY_DYE,
+                (has ? "<" + companion.color() + ">" : "<gray>") + companion.name() + (out ? " <green>✔</green>" : "") + "</" + (has ? companion.color() : "gray") + ">",
+                List.of("<gray>" + companion.species() + "</gray>",
+                    has ? (out ? "<yellow>Click to send it home.</yellow>" : "<yellow>Click to summon.</yellow>")
+                        : "<dark_gray>Locked · aerborne.net/store</dark_gray>"),
+                target -> {
+                    if (!has) return;
+                    if (out) cosmetics.dismiss(target); else cosmetics.summon(target, companion.slug());
+                    openCosmetics(target);
+                });
         }
-        plugin.entitlements().activeEntitlements(account, Instant.now()).thenAccept(entitlements -> sync(() -> {
-            if (!player.isOnline()) {
-                return;
+        slot = 18;
+        for (var trail : catalog.trails()) {
+            boolean has = own.trails().contains(trail.slug());
+            boolean worn = trail.slug().equals(look.trail());
+            button(menu, slot++, has ? trailIcon(trail.slug()) : Material.GRAY_DYE,
+                (has ? "<" + trail.color() + ">" : "<gray>") + trail.name() + " trail" + (worn ? " <green>✔</green>" : "") + "</" + (has ? trail.color() : "gray") + ">",
+                List.of("<gray>" + trail.summary() + "</gray>",
+                    has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
+                        : "<dark_gray>Locked · aerborne.net/store</dark_gray>"),
+                target -> {
+                    if (!has) return;
+                    cosmetics.wearTrail(target, worn ? "off" : trail.slug());
+                    openCosmetics(target);
+                });
+        }
+        if (!own.palette().isEmpty()) {
+            var style = cosmetics.style(player);
+            button(menu, 29, Material.NAME_TAG, "<white>Name colour: <" + net.kyori.adventure.text.format.NamedTextColor.NAMES.key(style.nameColor()) + ">"
+                + player.getName() + "</" + net.kyori.adventure.text.format.NamedTextColor.NAMES.key(style.nameColor()) + "></white>", List.of(
+                    "<gray>How your name looks in chat, the tab list and above your head.</gray>",
+                    "<yellow>Click for the next colour.</yellow>"
+                ), target -> {
+                    cosmetics.cycleNameColor(target);
+                    openCosmetics(target);
+                });
+        }
+        button(menu, 31, own.emotes() ? Material.NOTE_BLOCK : Material.GRAY_DYE, own.emotes() ? "<white>Emotes</white>" : "<gray>Emotes</gray>",
+            own.emotes() ? List.of("<gray>Use</gray> <white>/emote <name></white><gray>:</gray>",
+                "<white>" + String.join(", ", catalog.emoteIds()) + "</white>")
+                : List.of("<dark_gray>Comes with the Cloudkeeper and Starweaver ranks.</dark_gray>"), ignored -> { });
+        if (own.keepsake()) {
+            button(menu, 33, Material.SOUL_LANTERN, "<light_purple>Starweaver Lantern</light_purple>", List.of(
+                "<gray>A decorative keepsake for your island.</gray>",
+                cosmetics.keepsakeReady(player) ? "<yellow>Click to claim.</yellow>" : "<gray>Claimed recently. One a day.</gray>"
+            ), target -> {
+                cosmetics.claimKeepsake(target);
+                openCosmetics(target);
+            });
+        }
+        if (own.presets()) {
+            for (int index = 1; index <= net.nerdsmp.paper.cosmetic.CosmeticService.PRESETS; index++) {
+                int number = index;
+                var preset = cosmetics.preset(player, number);
+                String summary = preset.map(p -> (p.companion().isEmpty() ? "No companion" : VisualFormat.titleCase(p.companion()))
+                    + " · " + (p.trail().isEmpty() ? "no trail" : VisualFormat.titleCase(p.trail()) + " trail")).orElse("Empty");
+                button(menu, 36 + number, preset.isPresent() ? Material.ARMOR_STAND : Material.LIGHT_GRAY_DYE,
+                    "<white>Wear preset " + number + "</white>", List.of("<gray>" + summary + "</gray>"), target -> {
+                        cosmetics.applyPreset(target, number);
+                        openCosmetics(target);
+                    });
+                button(menu, 40 + number, Material.WRITABLE_BOOK, "<white>Save to preset " + number + "</white>",
+                    List.of("<gray>Stores your current companion, trail and name colour.</gray>"), target -> {
+                        cosmetics.savePreset(target, number);
+                        openCosmetics(target);
+                    });
             }
-            MenuInventory menu = detailMenu(View.COSMETICS, 45, "<gold><bold>Cosmetic Wardrobe</bold></gold>");
-            if (entitlements.isEmpty()) {
-                button(menu, 22, Material.ARMOR_STAND, "<gray>No Cosmetics Yet</gray>", List.of(
-                    "<gray>Cosmetics are account-bound and visual only.</gray>"
-                ), ignored -> { });
-            } else {
-                int slot = 10;
-                for (EntitlementService.Entitlement entitlement : entitlements.stream()
-                    .sorted(java.util.Comparator.comparing(EntitlementService.Entitlement::productId)).toList()) {
-                    button(menu, slot++, Material.GLOW_INK_SAC,
-                        "<gold>" + VisualFormat.titleCase(entitlement.productId()) + "</gold>", List.of(
-                            "<gray>Yours to wear. Cannot be traded.</gray>",
-                            entitlement.expiresAt() == null ? "<green>Permanent</green>"
-                                : "<gray>Expires</gray> <white>" + entitlement.expiresAt() + "</white>"
-                        ), ignored -> { });
-                    if (slot == 17) {
-                        slot = 19;
-                    }
-                }
-            }
-            open(player, menu.inventory());
-        }));
+        }
+        open(player, menu.inventory());
+    }
+
+    private static Material trailIcon(String slug) {
+        return switch (slug) {
+            case "cloudstep" -> Material.WHITE_WOOL;
+            case "petal-skip" -> Material.PINK_PETALS;
+            case "firefly-drift" -> Material.GLOW_BERRIES;
+            case "rune-ripple" -> Material.ENCHANTED_BOOK;
+            case "bubblehop" -> Material.HEART_OF_THE_SEA;
+            case "comet-tail" -> Material.FIREWORK_ROCKET;
+            case "dandelion-drift" -> Material.DANDELION;
+            case "stardust-waltz" -> Material.AMETHYST_SHARD;
+            default -> Material.BLAZE_POWDER;
+        };
     }
 
     private void openSettings(Player player) {
@@ -1455,11 +1525,11 @@ public final class MenuManager implements Listener, AutoCloseable {
                 openSettings(target);
             });
         var options = net.nerdsmp.paper.player.PlayerSettingsService.Setting.values();
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24};
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
         Material[] materials = {
             Material.PAPER, Material.WRITABLE_BOOK, Material.PLAYER_HEAD,
             Material.BELL, Material.EMERALD, Material.LEAD, Material.GRASS_BLOCK, Material.ENDER_PEARL, Material.GLISTERING_MELON_SLICE,
-            Material.AMETHYST_CLUSTER, Material.FIREWORK_STAR, Material.DIAMOND_AXE, Material.OAK_SAPLING
+            Material.AMETHYST_CLUSTER, Material.FIREWORK_STAR, Material.DIAMOND_AXE, Material.OAK_SAPLING, Material.ALLAY_SPAWN_EGG
         };
         for (int index = 0; index < options.length; index++) {
             var option = options[index];
@@ -1471,6 +1541,9 @@ public final class MenuManager implements Listener, AutoCloseable {
                         "<yellow>Click to " + (enabled ? "disable" : "enable") + ".</yellow>"
                     ), target -> {
                         plugin.settings().toggle(target.getUniqueId(), option);
+                        if (option == net.nerdsmp.paper.player.PlayerSettingsService.Setting.OTHERS_COSMETICS) {
+                            plugin.cosmetics().updateVisibility(target);
+                        }
                         openSettings(target);
                     });
         }
@@ -1500,6 +1573,7 @@ public final class MenuManager implements Listener, AutoCloseable {
             case ISLAND_EFFECTS -> "<gray>Show chapter reveals, particles and celebration sounds.</gray>";
             case TREE_FELLING -> "<gray>Fell eligible trees with an axe. Sneak for individual logs.</gray>";
             case TREE_REPLANTING -> "<gray>Use plain saplings from your inventory after felling a tree.</gray>";
+            case OTHERS_COSMETICS -> "<gray>See other players' companions and particle trails.</gray>";
         };
     }
 

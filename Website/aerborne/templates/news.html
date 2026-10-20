@@ -1,32 +1,65 @@
 {% extends "base.html" %}
-{% import "partials/macros.html" as m with context %}
+{% import "partials/editorial_macros.html" as editorial with context %}
 {% block title %}News{% endblock %}
-{% block description %}Updates, patch notes, events and developer journals from {{ site.SITE_NAME }}.{% endblock %}
+{% block body_class %}editorial-page news-page{% endblock %}
+{% block description %}The latest Aerborne updates, patch notes, events and developer journals, all in one place.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/editorial.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head">
-  <div class="wrap">
-    <h1>News</h1>
-    <p class="lede">Updates, patch notes, events and developer journals. <a href="{{ url_for('public.news_feed') }}">Subscribe with RSS</a>.</p>
+<header class="page-head editorial-head">
+  <div class="wrap editorial-head-inner">
+    <div>
+      <p class="eyebrow">The Aerborne journal</p>
+      <h1>News & updates</h1>
+      <p class="lede">What’s new, what’s changed and what’s next above the clouds.</p>
+    </div>
+    <a class="editorial-feed" href="{{ url_for('public.news_subscribe', category=category or None) }}"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="4" cy="16" r="2" fill="currentColor"/><path d="M3 9a8 8 0 0 1 8 8M3 3a14 14 0 0 1 14 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Follow with RSS <span aria-hidden="true">↗</span></a>
   </div>
 </header>
 {% set group = 'community' %}{% include "partials/subnav.html" %}
-<div class="wrap">
-  <nav class="tabs" aria-label="News categories">
-    <a href="{{ url_for('public.news') }}"{% if not category %} aria-current="page"{% endif %}>Everything</a>
+<div class="wrap editorial-content">
+  <nav class="tabs news-filters" aria-label="News categories">
+    <a href="{{ url_for('public.news') }}"{% if not category %} aria-current="page"{% endif %}>All news</a>
     {% for key, label in categories %}
     <a href="{{ url_for('public.news', category=key) }}"{% if category == key %} aria-current="page"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>
   {% if items %}
-  <div class="news-grid">{% for item in items %}{{ m.news_card(item) }}{% endfor %}</div>
+    {% if page == 1 %}
+    <section class="news-lead" aria-label="Latest story">
+      {{ editorial.news_card(items[0], lead=True) }}
+    </section>
+    {% endif %}
+    {% set archive = items[1:] if page == 1 else items %}
+    {% if archive %}
+    <section aria-labelledby="news-list-heading">
+      <div class="editorial-section-head">
+        <h2 id="news-list-heading">{% if page == 1 %}More from Aerborne{% else %}Earlier stories{% endif %}</h2>
+        <p>{% if category %}{{ option_label('news', 'category', category) }}{% else %}From the team{% endif %}</p>
+      </div>
+      <div class="dispatch-grid">{% for item in archive %}{{ editorial.news_card(item) }}{% endfor %}</div>
+    </section>
+    {% endif %}
   {% else %}
-  <p class="empty">Nothing posted here yet.</p>
+  <section class="editorial-empty" aria-labelledby="news-empty-heading">
+    <img src="{{ url_for('static', filename='img/brand/skycrest-192.webp') }}" alt="" width="96" height="96">
+    <div>
+      <p class="eyebrow">Watch this space</p>
+      <h2 id="news-empty-heading">{% if category %}No {{ option_label('news', 'category', category) | lower }} posts yet.{% else %}The next chapter is on its way.{% endif %}</h2>
+      <p>{% if category %}New posts will appear here when the team publishes them.{% else %}Updates, events and stories from the team will appear here.{% endif %}</p>
+      <a class="text-link" href="{{ url_for('public.news') if category else url_for('community.forum') }}">{% if category %}Browse all news{% else %}Visit the forums{% endif %} <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
   {% endif %}
   {% if total_pages > 1 %}
-  <nav class="pager" aria-label="Pages">
-    {% if page > 1 %}<a class="pager-prev" href="{{ url_for('public.news', category=category or None, page=page - 1) }}">Newer</a>{% endif %}
-    {% if page < total_pages %}<a class="pager-next" href="{{ url_for('public.news', category=category or None, page=page + 1) }}">Older</a>{% endif %}
+  <nav class="editorial-pager" aria-label="News pages">
+    {% if page > 1 %}<a href="{{ url_for('public.news', category=category or None, page=page - 1) }}">← Newer</a>{% else %}<span></span>{% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}<a href="{{ url_for('public.news', category=category or None, page=page + 1) }}">Older →</a>{% else %}<span></span>{% endif %}
   </nav>
   {% endif %}
+  <aside class="editorial-note">
+    <div><h2>Join the conversation.</h2><p>Share an idea, ask a question or catch up with other players.</p></div>
+    <a class="text-link" href="{{ url_for('community.forum') }}">Visit the forums <span aria-hidden="true">↗</span></a>
+  </aside>
 </div>
 {% endblock %}

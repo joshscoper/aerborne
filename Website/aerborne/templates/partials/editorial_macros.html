@@ -1,0 +1,20 @@
+{% import "partials/macros.html" as m with context %}
+{% macro news_card(item, lead=False) -%}
+<article class="dispatch-card{% if lead %} dispatch-lead{% endif %}">
+  <a class="dispatch-art dispatch-art-{{ item.category }}{% if not item.image %} dispatch-art-fallback{% endif %}" href="{{ url_for('public.news_article', slug=item.slug) }}" tabindex="-1" aria-hidden="true">
+    {% if item.image %}
+      {{ m.picture(item.image, '', lazy=not lead) }}
+    {% else %}
+      <img src="{{ url_for('static', filename='img/brand/skycrest-192.webp') }}" alt="" width="192" height="192"{% if not lead %} loading="lazy"{% endif %}>
+      <span>{{ option_label('news', 'category', item.category) }}</span>
+    {% endif %}
+  </a>
+  <div class="dispatch-copy">
+    {% if lead %}<p class="eyebrow">Latest story</p>{% endif %}
+    <p class="dispatch-meta"><span class="dispatch-category dispatch-category-{{ item.category }}">{{ option_label('news', 'category', item.category) }}</span><time datetime="{{ (item.publish_at or item.created_at) | isodate }}">{{ (item.publish_at or item.created_at) | date }}</time>{% if item.version_tag %}<span class="dispatch-version">{{ item.version_tag }}</span>{% endif %}</p>
+    {% if lead %}<h2>{% else %}<h3>{% endif %}<a href="{{ url_for('public.news_article', slug=item.slug) }}">{{ item.title }}</a>{% if lead %}</h2>{% else %}</h3>{% endif %}
+    {% if item.summary %}<p class="dispatch-summary">{{ item.summary }}</p>{% endif %}
+    <div class="dispatch-footer">{% if item.author %}<span>{{ item.author }}</span>{% endif %}<span class="dispatch-read" aria-hidden="true">Read story ↗</span></div>
+  </div>
+</article>
+{%- endmacro %}

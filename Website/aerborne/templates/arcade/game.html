@@ -4,6 +4,7 @@
 {% block body_class %}arcade-game-page{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/arcade.css') }}">
+<script src="{{ url_for('static', filename='js/arcade/assets.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/arcade/engine.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/arcade/games.js') }}" defer></script>
 {% endblock %}
@@ -26,13 +27,16 @@
           <button class="arcade-text-button" type="button" data-finish-run hidden>Finish this run</button>
         </div>
       </div>
+      <div class="arcade-game-actions" data-game-actions aria-label="Game abilities" hidden></div>
       <div class="arcade-run-foot"><span data-mode>Free to play</span><span data-estimate>Up to {{ game.cap }} Marks / run</span></div>
       <p class="arcade-help">Press <kbd>P</kbd> to pause. Switching tabs pauses your game. Finish a paused run to save your current score.</p>
       <p class="arcade-run-notice" data-run-notice role="status" hidden></p>
       <noscript><p class="notice notice-info">Enable JavaScript to play the arcade games.</p></noscript>
     </section>
     <aside class="arcade-side">
-      <div class="panel arcade-instructions"><p class="eyebrow">The essentials</p><h2>How to play</h2><p id="game-help">{{ game.how }}{% if game.slug in ('gem-rush', 'codex-memory') %} Keyboard: use arrows to choose, then Enter or Space to select.{% endif %}</p><div class="arcade-reward-info"><span>Run reward limit</span><strong>{{ game.cap }} Marks</strong></div><p class="fine">{% if best is not none %}Your best: <strong data-best>{{ best | number }}</strong>{% else %}Your best: <strong data-best>—</strong>{% endif %}</p>{% include "arcade/_status.html" %}</div>
+      <div class="panel arcade-instructions"><p class="eyebrow">The essentials</p><h2>How to play</h2><p id="game-help">{{ game.how }}{% if game.slug in ('gem-rush', 'codex-memory') %} Keyboard: use arrows to choose, then Enter or Space to select.{% endif %}</p>
+        {% if game.specials %}<details class="arcade-rulebook"><summary>Rune types & power-ups</summary><ul>{% for special in game.specials %}<li><img src="{{ url_for('static', filename='img/arcade/sprites/' ~ game.slug ~ '/' ~ special.icon ~ '.webp') }}" alt="" width="42" height="42" loading="lazy"><p><strong>{{ special.name }}</strong>{{ special.detail }}</p></li>{% endfor %}</ul></details>{% endif %}
+        <div class="arcade-reward-info"><span>Run reward limit</span><strong>{{ game.cap }} Marks</strong></div><p class="fine">{% if best is not none %}Your best: <strong data-best>{{ best | number }}</strong>{% else %}Your best: <strong data-best>—</strong>{% endif %}</p>{% include "arcade/_status.html" %}</div>
       <div class="panel arcade-weekly"><p class="eyebrow">A little friendly competition</p><h2>Top this week</h2>
         {% if board %}<ol class="mini-board mini-board-long">{% for row in board %}<li><a class="rank-{{ row.rank_slug or 'none' }} name-ranked" href="{{ url_for('community.member_profile', username=row.username) }}">{{ row.username }}</a><span>{{ row.best | number }}</span></li>{% endfor %}</ol>{% else %}<p class="fine">An open sky. Set the first score this week.</p>{% endif %}
       </div>

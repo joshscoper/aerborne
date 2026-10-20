@@ -506,17 +506,16 @@ What this website does today, to describe accurately:
 
 NEWS = [
     {"title": "Welcome to the new Aerborne website", "slug": "welcome", "category": "journal",
-     "summary": "A home for guides, news and the Arcane Codex while Aerborne is in private testing.",
+     "summary": "Your home for Game Guides, server news and the Aerborne community.",
      "author": "Aerborne Team", "featured": 1,
      "related": "Start the Adventurer's Handbook | /guide\nBrowse the Arcane Codex | /codex",
-     "body": """Aerborne now has a proper home on the web.
+     "body": """Welcome to Aerborne’s home on the web. Find your next adventure, catch up on updates and meet the community.
 
-- The **Game Guide** walks new players from their first island to their first enchantment.
-- The **Arcane Codex** lists every enchantment that's public knowledge. Hidden recipes stay hidden;
-  discovering them is part of the game.
-- **Companions** shows the pets we're designing. They're concept art for now, and we'll say so
-  until each one is in the game.
+- **[Game Guide](/guide):** island progression, skills, equipment and everyday commands.
+- **[Arcane Codex](/codex):** published enchantments, with availability labels for previews.
+- **[Community forums](/forum):** questions, ideas and islands shared by other players.
+- **[Arcade](/arcade/):** six small games for a break between adventures. Sign in to save scores; link Minecraft to earn Marks.
 
-Aerborne is still in private testing. We'll post here when that changes.
+Aerborne is open to the public. Visit **[Play](/play)** for the server address and connection steps.
 """},
 ]

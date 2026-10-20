@@ -131,8 +131,9 @@
         <ul>
           <li><a href="{{ url_for('community.forum') }}">Forum</a></li>
           <li><a href="{{ url_for('community.leaderboards') }}">Leaderboards</a></li>
+          <li><a href="{{ url_for('public.streamers') }}">Featured streamers</a></li>
           {% if settings.arcade_enabled != '0' %}<li><a href="{{ url_for('arcade.index') }}">Arcade</a></li>{% endif %}
-          <li><a href="{{ url_for('public.news') }}">News</a> · <a href="{{ url_for('public.news_feed') }}">RSS</a></li>
+          <li><a href="{{ url_for('public.news') }}">News</a> · <a href="{{ url_for('public.news_subscribe') }}">RSS</a></li>
         </ul>
       </nav>
       <nav aria-label="Help">

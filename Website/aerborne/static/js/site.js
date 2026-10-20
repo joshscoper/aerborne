@@ -117,6 +117,14 @@
 
   // Without clipboard access, select the address so Ctrl+C works.
   function select(button, done) {
+    var target = button.getAttribute('data-copy-target');
+    var input = target && document.getElementById(target);
+    if (input && typeof input.select === 'function') {
+      input.focus();
+      input.select();
+      done('Press Ctrl+C');
+      return;
+    }
     var code = button.parentNode.querySelector("[data-address]");
     if (!code || !window.getSelection) return;
     var range = document.createRange();

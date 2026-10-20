@@ -150,7 +150,8 @@ public final class PlayerSettingsService implements AutoCloseable {
         ISLAND_DISPLAYS("island-displays", true, "Island showcases"),
         ISLAND_EFFECTS("island-effects", true, "Island celebration effects"),
         TREE_FELLING("tree-felling", true, "Tree felling"),
-        TREE_REPLANTING("tree-replanting", true, "Tree replanting");
+        TREE_REPLANTING("tree-replanting", true, "Tree replanting"),
+        OTHERS_COSMETICS("others-cosmetics", true, "Other players' companions and trails");
 
         private final String id;
         private final boolean defaultValue;
