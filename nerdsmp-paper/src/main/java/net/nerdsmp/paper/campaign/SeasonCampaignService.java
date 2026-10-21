@@ -261,6 +261,8 @@ public final class SeasonCampaignService implements CampaignService, Listener, A
         LivingEntity entity = event.getEntity();
         Player killer = entity.getKiller();
         if (killer == null || entity instanceof Player || plugin.mobs() == null) return;
+        // Expedition runs with hired allies earn no campaign progress at all.
+        if (plugin.expeditions() != null && plugin.expeditions().assisted(entity.getWorld())) return;
         String id = plugin.mobs().encounterId(entity);
         boolean hostile = entity instanceof Enemy;
         credit(killer, SourceType.KILL, id, 1, null, hostile);

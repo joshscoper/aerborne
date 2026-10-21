@@ -47,6 +47,12 @@ public final class ExpeditionValidator {
             error(issues, "Time limit must be 5-180 minutes.", "/expedition set time <minutes>");
         if (expedition.lives() != null && (expedition.lives() < 1 || expedition.lives() > 50))
             error(issues, "Lives must be 1-50.", "lives: in the expedition file");
+        if (expedition.difficulty() != null && (expedition.difficulty() < 1 || expedition.difficulty() > 5))
+            error(issues, "Difficulty must be 1-5 (now " + expedition.difficulty() + ").", "difficulty: in the expedition file");
+        if (expedition.difficulty() == null) warn(issues, "No difficulty rating; the menu estimates " + Difficulty.label(Difficulty.rating(expedition)) + " from the level.", "difficulty: 1-5 in the expedition file");
+        if (expedition.guide().isEmpty()) warn(issues, "No player guide yet. A short overview and a tip or two help players prepare.", "guide: in the expedition file");
+        for (String room : expedition.guide().rooms().keySet())
+            if (!expedition.rooms().containsKey(room)) warn(issues, "The guide has a tip for unknown room '" + room + "'.", "guide.rooms in the expedition file");
         if (!catalog.material(expedition.icon())) warn(issues, "Unknown menu icon '" + expedition.icon() + "'.", "/expedition set icon <material>");
         if (expedition.biome() != null && !catalog.biome(expedition.biome()))
             error(issues, "Unknown biome '" + expedition.biome() + "'.", "biome: in the expedition file");
@@ -115,6 +121,8 @@ public final class ExpeditionValidator {
                 }
                 case BOSS -> {
                     boss = true;
+                    if (encounter.bossDamage() < 0.1 || encounter.bossDamage() > 5 || encounter.bossHealth() < 0.1 || encounter.bossHealth() > 5)
+                        error(issues, name + " boss-damage and boss-health must be 0.1-5.", "rooms." + room.id() + ".encounter");
                     if (encounter.boss() == null) error(issues, name + " is a boss room without a boss.", "/expedition boss " + room.id() + " <mob>");
                     else if (!catalog.boss(encounter.boss()) && !catalog.mob(encounter.boss()))
                         error(issues, name + " boss '" + encounter.boss() + "' is not a known mob.", "/expedition boss " + room.id() + " <mob>");

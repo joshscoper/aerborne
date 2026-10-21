@@ -7,6 +7,7 @@ import net.nerdsmp.api.model.AccountId;
 import net.nerdsmp.api.model.ItemId;
 import net.nerdsmp.api.service.EconomyService;
 import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.expedition.content.Allies;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Point;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Room;
@@ -75,9 +76,20 @@ final class ExpeditionRun {
     private final BossBar statusBar = BossBar.bossBar(Component.empty(), 0, BossBar.Color.BLUE, BossBar.Overlay.NOTCHED_10);
     private long closeAt = -1;
     private boolean completed;
+    private final List<AllySlot> allies = new ArrayList<>();
+    private int healerClock;
+
+    /** One hired ally: its role, its current body (null while it waits to rejoin) and when it rejoins. */
+    private static final class AllySlot {
+        final Allies.Role role;
+        UUID entity;
+        long respawnAt = -1;
+
+        AllySlot(Allies.Role role) { this.role = role; }
+    }
 
     ExpeditionRun(ExpeditionService service, NerdSmpPlugin plugin, ExpeditionDefinition expedition, Tier tier,
-                  Set<Modifier> modifiers, List<UUID> members, boolean test, BuildCanvas.Plan plan) {
+                  Set<Modifier> modifiers, List<UUID> members, boolean test, BuildCanvas.Plan plan, List<Allies.Role> hired) {
         this.service = service;
         this.plugin = plugin;
         this.expedition = expedition;
@@ -86,10 +98,14 @@ final class ExpeditionRun {
         this.members = List.copyOf(members);
         this.test = test;
         this.plan = plan;
+        for (Allies.Role role : hired) allies.add(new AllySlot(role));
     }
 
     BuildCanvas.Plan plan() { return plan; }
     boolean completed() { return completed; }
+
+    /** A run with hired allies pays loot but never counts toward the campaign or the records. */
+    boolean assisted() { return !allies.isEmpty(); }
 
     // ---------------------------------------------------------------------------------------------
     // Lifecycle
@@ -127,6 +143,10 @@ final class ExpeditionRun {
                 Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(600))));
             player.showBossBar(statusBar);
         }
+        for (AllySlot slot : allies) spawnAlly(slot, spawn);
+        if (assisted()) broadcast("<aqua>Hired allies:</aqua> <white>" + String.join(", ", allies.stream()
+            .map(slot -> slot.role.title() + " (" + slot.role.job() + ")").toList()) + "</white>. <gray>This is an assisted run: "
+            + "it pays loot and Marks, but doesn't count toward the campaign or the expedition records.</gray>");
         broadcast("<gold>" + Chat.escape(expedition.title()) + "</gold> <gray>(" + Chat.escape(tier.title()) + ")</gray> <white>has begun.</white> "
             + "<gray>Your party has <white>" + progress.lives() + "</white> lives and <white>" + expedition.timeLimitMinutes()
             + "</white> minutes. Push forward into the first room.</gray>");
@@ -137,6 +157,7 @@ final class ExpeditionRun {
     }
 
     void tick(long now) {
+        if (state == State.ACTIVE || state == State.ENDING) tickAllies(now);
         if (state == State.ENDING) {
             if (completed) exitBeacon();
             updateStatus(now);
@@ -172,6 +193,11 @@ final class ExpeditionRun {
 
     void close() {
         state = State.CLOSED;
+        for (AllySlot slot : allies) {
+            Entity entity = slot.entity == null ? null : Bukkit.getEntity(slot.entity);
+            if (entity != null) entity.remove();
+            slot.entity = null;
+        }
         if (bossBar != null) for (Player player : online()) player.hideBossBar(bossBar);
         for (Player player : online()) player.hideBossBar(statusBar);
     }
@@ -247,7 +273,7 @@ final class ExpeditionRun {
             if (bossBar != null) for (Player player : online()) player.hideBossBar(bossBar);
             bossBar = null;
             String mobId = plugin.mobs().encounterId(entity);
-            for (UUID member : progress.present()) {
+            if (!assisted() && !test) for (UUID member : progress.present()) {
                 Player player = Bukkit.getPlayer(member);
                 if (player != null) plugin.campaign().recordBoss(player, mobId, expedition.id());
             }
@@ -311,6 +337,7 @@ final class ExpeditionRun {
             case Effect.DespawnRoom despawn -> despawn(despawn.room());
             case Effect.ResetRoom reset -> {
                 despawn(reset.room());
+                regroupAllies();
                 broadcast("<red>The party has fallen.</red> <gray>" + Chat.escape(expedition.rooms().get(reset.room()).title())
                     + " resets. Regroup and try again.</gray>");
             }
@@ -360,19 +387,20 @@ final class ExpeditionRun {
             long marks = Math.round(loot.marks() * tier.marks());
             if (marks > 0 && !test) plugin.economy().credit(account.get(), marks,
                 new EconomyService.TransactionReason("expedition.reward", expedition.id() + ":" + tier.id()), "expedition:" + id + ":" + account.get());
-            if (!test) plugin.campaign().recordExpedition(player, expedition.id(), tier.id());
+            if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), tier.id());
             player.showTitle(Title.title(Chat.render("<gold><bold>Expedition complete</bold></gold>"),
                 Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
             Chat.success(player, "Loot: <white>" + rewards.stream().mapToInt(ItemStack::getAmount).sum() + " items</white>"
                 + (marks > 0 ? " and " + Chat.marks(marks) : "") + (underPar ? " <yellow>(+1 timed roll)</yellow>" : "") + ".");
         }
-        boolean record = !test && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
+        boolean record = !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
         broadcast("<gold>Cleared in " + Chat.duration(Duration.ofSeconds(seconds)) + ".</gold>"
             + (record ? " <light_purple>New server record!</light_purple>" : "")
             + " <gray>Walk into the exit light, or use " + Chat.command("expedition leave") + ". The instance closes in "
             + Chat.duration(service.lingerAfterFinish()) + ".</gray>");
         if (test) broadcast("<yellow>Test run: no Marks, records or campaign progress were awarded.</yellow>");
+        else if (assisted()) broadcast("<gray>Allies helped with this run, so it doesn't count toward the campaign or the expedition records.</gray>");
     }
 
     List<ItemStack> takePendingLoot(UUID member) {
@@ -400,8 +428,10 @@ final class ExpeditionRun {
         Room room = expedition.rooms().get(roomId);
         var waves = room.encounter().waves();
         if (waves.isEmpty()) return;
+        double size = effectiveSize();
         waves.get(Math.floorMod(index, waves.size())).mobs().forEach((mob, count) -> {
-            for (int copy = 0; copy < count; copy++) spawn(room, mob, null, false);
+            int scaled = service.scaling().scaledCount(count, size, expedition.maxParty());
+            for (int copy = 0; copy < scaled; copy++) spawn(room, mob, null, false);
         });
     }
 
@@ -426,7 +456,9 @@ final class ExpeditionRun {
         Location at = new Location(world, point.x() + .5, point.y(), point.z() + .5, point.yaw(), 0);
         int level = Math.max(1, Math.min(100, expedition.level() + tier.levelBonus() + (asBoss ? room.encounter().bossLevelBonus() : 0)));
         boolean boss = asBoss || plugin.mobs().encounterBoss(mob);
-        double health = tier.health() * Modifier.healthMultiplier(modifiers, boss);
+        double health = tier.health() * Modifier.healthMultiplier(modifiers, boss)
+            * service.scaling().healthFactor(effectiveSize(), expedition.maxParty())
+            * (asBoss ? room.encounter().bossHealth() : 1);
         LivingEntity entity = plugin.mobs().spawnEncounter(mob, at, level, spawned -> {
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(true);
@@ -436,7 +468,7 @@ final class ExpeditionRun {
                 spawned.setHealth(max.getValue());
             }
         });
-        damage.put(entity.getUniqueId(), tier.damage() * Modifier.damageMultiplier(modifiers, boss));
+        damage.put(entity.getUniqueId(), tier.damage() * Modifier.damageMultiplier(modifiers, boss) * (asBoss ? room.encounter().bossDamage() : 1));
         if (!asBoss) mobs.computeIfAbsent(room.id(), key -> new HashSet<>()).add(entity.getUniqueId());
         if (entity instanceof Mob creature) nearestMember(at).ifPresent(creature::setTarget);
         world.spawnParticle(Particle.SMOKE, at.clone().add(0, 1, 0), 12, .3, .6, .3, .01);
@@ -538,6 +570,151 @@ final class ExpeditionRun {
                 else Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
             }
             case WAIT -> { }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Hired allies
+    // ---------------------------------------------------------------------------------------------
+
+    /** Players present plus weighted living allies, for party-size scaling. */
+    double effectiveSize() {
+        int players = progress == null ? members.size() : progress.present().size();
+        return service.scaling().effectiveSize(players, aliveAllies(), expedition.maxParty());
+    }
+
+    private int aliveAllies() {
+        int alive = 0;
+        for (AllySlot slot : allies) if (slot.entity != null && Bukkit.getEntity(slot.entity) instanceof LivingEntity living && !living.isDead()) alive++;
+        return alive;
+    }
+
+    boolean isAlly(Entity entity) {
+        if (entity == null || allies.isEmpty()) return false;
+        UUID uuid = entity.getUniqueId();
+        for (AllySlot slot : allies) if (uuid.equals(slot.entity)) return true;
+        return false;
+    }
+
+    double allyDamageMultiplier() { return service.allies().damageMultiplier() * tier.health(); }
+
+    void allyDied(LivingEntity entity) {
+        for (AllySlot slot : allies) {
+            if (!entity.getUniqueId().equals(slot.entity)) continue;
+            slot.entity = null;
+            slot.respawnAt = System.currentTimeMillis() + 15_000;
+            broadcast("<gray>Your " + slot.role.title() + " is down and will rejoin in 15 seconds.</gray>");
+        }
+    }
+
+    private void spawnAlly(AllySlot slot, Location at) {
+        Class<? extends Mob> type = switch (slot.role) {
+            case BULWARK -> org.bukkit.entity.IronGolem.class;
+            case BLADE -> org.bukkit.entity.Vindicator.class;
+            case ARCHER -> org.bukkit.entity.Skeleton.class;
+            case HEDGE_WITCH -> org.bukkit.entity.Witch.class;
+        };
+        Mob spawned = world.spawn(at, type, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM, false, mob -> {
+            mob.customName(Chat.render("<green>[Ally]</green> <white>" + slot.role.title() + "</white>"));
+            mob.setCustomNameVisible(true);
+            mob.setPersistent(true);
+            mob.setRemoveWhenFarAway(false);
+            mob.setCanPickupItems(false);
+            var max = mob.getAttribute(Attribute.MAX_HEALTH);
+            if (max != null) {
+                max.setBaseValue(slot.role.health() * tier.health());
+                mob.setHealth(max.getValue());
+            }
+            var equipment = mob.getEquipment();
+            if (equipment != null) {
+                if (slot.role == Allies.Role.BLADE) equipment.setItemInMainHand(new ItemStack(Material.IRON_AXE));
+                if (slot.role == Allies.Role.ARCHER) {
+                    equipment.setItemInMainHand(new ItemStack(Material.BOW));
+                    equipment.setHelmet(new ItemStack(Material.IRON_HELMET)); // Keeps the archer out of any sunlight.
+                }
+                equipment.setItemInMainHandDropChance(0);
+                equipment.setHelmetDropChance(0);
+            }
+            if (mob instanceof org.bukkit.entity.Raider raider) {
+                raider.setCanJoinRaid(false);
+                raider.setPatrolLeader(false);
+            }
+            // Allies choose their own targets: only encounter enemies, never players.
+            Bukkit.getMobGoals().removeAllGoals(mob, com.destroystokyo.paper.entity.ai.GoalType.TARGET);
+        });
+        slot.entity = spawned.getUniqueId();
+        slot.respawnAt = -1;
+        world.spawnParticle(Particle.HAPPY_VILLAGER, at.clone().add(0, 1, 0), 12, .4, .6, .4, 0);
+    }
+
+    /** Once a second: rejoin fallen allies, aim them at the nearest enemy, keep them with the party, heal. */
+    private void tickAllies(long now) {
+        if (allies.isEmpty() || world == null) return;
+        List<Player> party = online();
+        boolean heal = ++healerClock % 3 == 0;
+        for (AllySlot slot : allies) {
+            if (slot.entity == null) {
+                if (state == State.ACTIVE && slot.respawnAt >= 0 && now >= slot.respawnAt) spawnAlly(slot, respawnLocation());
+                continue;
+            }
+            if (!(Bukkit.getEntity(slot.entity) instanceof Mob ally) || ally.isDead()) continue;
+            Player anchor = party.stream().filter(player -> !player.isDead())
+                .min(java.util.Comparator.comparingDouble(player -> player.getLocation().distanceSquared(ally.getLocation()))).orElse(null);
+            LivingEntity enemy = state == State.ACTIVE ? nearestEnemy(ally.getLocation(), 24) : null;
+            if (enemy != null) {
+                if (ally.getTarget() == null || !ally.getTarget().equals(enemy) && !isEnemy(ally.getTarget())) ally.setTarget(enemy);
+            } else {
+                if (ally.getTarget() != null && !isEnemy(ally.getTarget())) ally.setTarget(null);
+                if (anchor != null) {
+                    double distance = anchor.getLocation().distanceSquared(ally.getLocation());
+                    if (distance > 32 * 32) ally.teleport(anchor.getLocation());
+                    else if (distance > 5 * 5) ally.getPathfinder().moveTo(anchor, 1.15);
+                }
+            }
+            if (heal && slot.role == Allies.Role.HEDGE_WITCH) mend(ally, party);
+        }
+    }
+
+    private void mend(Mob healer, List<Player> party) {
+        Player hurt = null;
+        double lowest = 1;
+        for (Player player : party) {
+            var max = player.getAttribute(Attribute.MAX_HEALTH);
+            double ratio = player.getHealth() / (max == null ? 20 : max.getValue());
+            if (!player.isDead() && ratio < lowest && player.getLocation().distanceSquared(healer.getLocation()) <= 16 * 16) {
+                hurt = player;
+                lowest = ratio;
+            }
+        }
+        if (hurt == null) return;
+        var max = hurt.getAttribute(Attribute.MAX_HEALTH);
+        hurt.setHealth(Math.min(max == null ? 20 : max.getValue(), hurt.getHealth() + 4));
+        world.spawnParticle(Particle.HEART, hurt.getLocation().add(0, 2, 0), 3, .3, .2, .3, 0);
+    }
+
+    private LivingEntity nearestEnemy(Location at, double radius) {
+        LivingEntity best = null;
+        double bestDistance = radius * radius;
+        for (UUID uuid : damage.keySet()) {
+            if (!(Bukkit.getEntity(uuid) instanceof LivingEntity living) || living.isDead() || !living.getWorld().equals(world)) continue;
+            double distance = living.getLocation().distanceSquared(at);
+            if (distance < bestDistance) {
+                best = living;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private boolean isEnemy(Entity entity) { return entity != null && damage.containsKey(entity.getUniqueId()); }
+
+    private void regroupAllies() {
+        Location at = respawnLocation();
+        for (AllySlot slot : allies) {
+            if (slot.entity != null && Bukkit.getEntity(slot.entity) instanceof Mob ally) {
+                ally.setTarget(null);
+                ally.teleport(at);
+            }
         }
     }
 

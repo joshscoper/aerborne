@@ -125,15 +125,26 @@ public final class ExpeditionMenu implements Listener {
         }
         if (records.isEmpty()) records.add("<gray>Nobody has cleared it yet.</gray>");
         board.set(42, MenuKit.item(Material.CLOCK, "<aqua>Server records</aqua>", records), (who, click) -> { });
+        board.set(38, MenuKit.item(Material.WRITTEN_BOOK, "<gold>Read the guide</gold>", MenuKit.withHint(List.of(
+            "<gray>The route, the boss, every mob</gray>", "<gray>and what they can drop.</gray>"), "open the guide")),
+            (who, click) -> openGuide(who, definition));
         board.set(MenuKit.backSlot(45), MenuKit.back("Expeditions"), (who, click) -> open(who));
         board.set(MenuKit.closeSlot(45), MenuKit.close(), (who, click) -> who.closeInventory());
         player.openInventory(board.inventory);
+    }
+
+    public void openGuide(Player player, ExpeditionDefinition definition) {
+        player.closeInventory();
+        player.openBook(ExpeditionGuideBook.build(plugin, service, definition));
     }
 
     private List<String> summary(Player player, ExpeditionDefinition definition) {
         List<String> lore = new ArrayList<>();
         for (String line : wrap(definition.description(), 38)) lore.add("<gray>" + Chat.escape(line) + "</gray>");
         if (!lore.isEmpty()) lore.add("");
+        int rating = net.nerdsmp.paper.expedition.content.Difficulty.rating(definition);
+        lore.add("<gold>" + net.nerdsmp.paper.expedition.content.Difficulty.stars(rating) + "</gold> <gray>"
+            + net.nerdsmp.paper.expedition.content.Difficulty.label(rating) + "</gray>");
         String realm = switch (definition.dimension()) { case NETHER -> "<red>The Nether</red>"; case END -> "<light_purple>The End</light_purple>"; case OVERWORLD -> "<green>Overworld</green>"; };
         lore.add(realm + " <dark_gray>·</dark_gray> <gray>level</gray> <white>" + definition.level() + "</white>");
         lore.add("<gray>Party</gray> <white>" + (definition.minParty() == definition.maxParty() ? definition.maxParty()

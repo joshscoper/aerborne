@@ -49,7 +49,16 @@ public interface PartyService {
         NOT_LEADER,
         TARGET_NOT_MEMBER,
         CANNOT_TARGET_SELF,
-        LEADER_MUST_PROMOTE_OR_DISBAND
+        LEADER_MUST_PROMOTE_OR_DISBAND,
+        /** The party is invite-only. */
+        NOT_OPEN,
+        /** The target already holds the most pending invitations allowed. */
+        TOO_MANY_INVITES,
+        /** The party's settings don't let this member do that. */
+        NOT_ALLOWED,
+        OPENED,
+        CLOSED,
+        UPDATED
     }
 
     record InviteView(UUID partyId, AccountId leader, Instant expiresAt) { }

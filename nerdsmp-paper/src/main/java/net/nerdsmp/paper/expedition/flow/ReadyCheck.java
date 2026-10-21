@@ -19,10 +19,18 @@ public final class ReadyCheck {
     private final Set<UUID> accepted = new HashSet<>();
     private final List<Matchmaker.Ticket> tickets;
     private final Instant deadline;
+    private final int allies;
     private State state = State.PENDING;
     private UUID decliner;
 
     public ReadyCheck(String expedition, String tier, List<UUID> members, List<Matchmaker.Ticket> tickets, Instant now, Duration timeout) {
+        this(expedition, tier, members, tickets, now, timeout, 0);
+    }
+
+    /** {@code allies} hired NPCs join the run once everyone is ready. */
+    public ReadyCheck(String expedition, String tier, List<UUID> members, List<Matchmaker.Ticket> tickets, Instant now, Duration timeout, int allies) {
+        if (allies < 0) throw new IllegalArgumentException("Ally count cannot be negative");
+        this.allies = allies;
         this.expedition = expedition;
         this.tier = tier;
         this.members = new LinkedHashSet<>(members);
@@ -37,6 +45,7 @@ public final class ReadyCheck {
     public List<UUID> orderedMembers() { return List.copyOf(members); }
     public List<Matchmaker.Ticket> tickets() { return tickets; }
     public State state() { return state; }
+    public int allies() { return allies; }
     public UUID decliner() { return decliner; }
     public Instant deadline() { return deadline; }
     public boolean accepted(UUID member) { return accepted.contains(member); }

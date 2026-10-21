@@ -53,6 +53,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
     private final boolean chatEnabled;
     private BukkitTask refreshTask;
     private final Map<UUID, Object> refreshTokens = new ConcurrentHashMap<>();
+    /** Players whose data changed while a refresh was already in flight; they refresh again after it. */
+    private final java.util.Set<UUID> refreshAgain = ConcurrentHashMap.newKeySet();
     private final Map<UUID, List<String>> sidebarFrames = new java.util.HashMap<>();
     private final Map<UUID, TabFrame> tabFrames = new java.util.HashMap<>();
     private final Map<UUID, NameplateStyle> nameplateStyles = new java.util.HashMap<>();
@@ -67,7 +69,12 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
     }
 
     public void start() {
-        long refreshTicks = Math.max(20L, plugin.getConfig().getLong("presentation.refresh-ticks", 20L));
+        // Marks changes push a refresh, so the timer is only a fallback for everything else.
+        if (plugin.economy() instanceof net.nerdsmp.paper.economy.ObservedEconomyService observed) {
+            observed.onChange(account -> runSync(() -> plugin.sessions().player(account).map(Bukkit::getPlayer)
+                .filter(Player::isOnline).ifPresent(this::refresh)));
+        }
+        long refreshTicks = Math.max(20L, plugin.getConfig().getLong("presentation.refresh-ticks", 100L));
         refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshAll, 1L, refreshTicks);
     }
 
@@ -149,7 +156,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
 
         UUID playerId = player.getUniqueId();
         Object token = new Object();
-        if (refreshTokens.putIfAbsent(playerId, token) != null) return;
+        if (refreshTokens.putIfAbsent(playerId, token) != null) { refreshAgain.add(playerId); return; }
         try {
         CompletableFuture<Long> balance = plugin.economy().balance(accountId).toCompletableFuture();
         CompletableFuture<ProgressionService.ProgressionSnapshot> progression =
@@ -189,6 +196,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
                 progressionSnapshots.put(player.getUniqueId(), latest);
                 views.put(player.getUniqueId(), next);
                 apply(player, next);
+                if (refreshAgain.remove(playerId)) refresh(player);
             });
         });
         } catch (RuntimeException error) {
@@ -275,9 +283,9 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         supporterStatus.clear();
         nextEntitlementRefresh.clear();
         hiddenHud.clear();
-        refreshTokens.clear(); sidebarFrames.clear(); tabFrames.clear(); nameplateStyles.clear();
+        refreshTokens.clear(); refreshAgain.clear(); sidebarFrames.clear(); tabFrames.clear(); nameplateStyles.clear();
     }
-    private void clearFrames(UUID id) { refreshTokens.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
+    private void clearFrames(UUID id) { refreshTokens.remove(id); refreshAgain.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
 
     private void refreshAll() {
         Bukkit.getOnlinePlayers().forEach(this::refresh);

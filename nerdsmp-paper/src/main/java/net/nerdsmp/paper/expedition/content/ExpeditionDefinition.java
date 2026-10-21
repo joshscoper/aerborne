@@ -32,7 +32,9 @@ public record ExpeditionDefinition(
     Loot loot,
     int campaignPoints,
     List<String> modifiers,
-    Map<String, TierOverride> tiers
+    Map<String, TierOverride> tiers,
+    Integer difficulty,
+    Guide guide
 ) {
     public static final String ID = "[a-z0-9_]{1,32}";
     public static final int MAX_PARTY = 5;
@@ -48,22 +50,6 @@ public record ExpeditionDefinition(
 
     public Optional<Room> roomAt(double x, double y, double z) {
         return rooms.values().stream().filter(room -> room.region() != null && room.region().contains(x, y, z)).findFirst();
-    }
-
-    /** Returns a copy with one field group replaced; setup commands edit definitions through these. */
-    public ExpeditionDefinition withRooms(Map<String, Room> next) {
-        return new ExpeditionDefinition(id, title, description, icon, dimension, biome, templateWorld, sample, published, level,
-            minParty, maxParty, timeLimitMinutes, lives, spawn, exit, next, loot, campaignPoints, modifiers, tiers);
-    }
-
-    public ExpeditionDefinition withPublished(boolean value) {
-        return new ExpeditionDefinition(id, title, description, icon, dimension, biome, templateWorld, sample, value, level,
-            minParty, maxParty, timeLimitMinutes, lives, spawn, exit, rooms, loot, campaignPoints, modifiers, tiers);
-    }
-
-    public ExpeditionDefinition withPoints(Point newSpawn, Point newExit) {
-        return new ExpeditionDefinition(id, title, description, icon, dimension, biome, templateWorld, sample, published, level,
-            minParty, maxParty, timeLimitMinutes, lives, newSpawn, newExit, rooms, loot, campaignPoints, modifiers, tiers);
     }
 
     public enum Dimension {
@@ -119,12 +105,6 @@ public record ExpeditionDefinition(
         public Room {
             points = List.copyOf(points);
         }
-
-        public Room withRegion(Box value) { return new Room(id, title, value, checkpoint, gate, points, encounter); }
-        public Room withCheckpoint(Point value) { return new Room(id, title, region, value, gate, points, encounter); }
-        public Room withGate(Box value) { return new Room(id, title, region, checkpoint, value, points, encounter); }
-        public Room withPoints(List<Point> value) { return new Room(id, title, region, checkpoint, gate, value, encounter); }
-        public Room withEncounter(Encounter value) { return new Room(id, title, region, checkpoint, gate, points, value); }
     }
 
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE }
@@ -134,8 +114,9 @@ public record ExpeditionDefinition(
      * thresholds; survive rooms release them in a loop until the timer ends.
      */
     public record Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus,
-                            int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts) {
-        public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of());
+                            int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts,
+                            double bossDamage, double bossHealth) {
+        public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1);
 
         public Encounter {
             waves = List.copyOf(waves);
@@ -144,15 +125,6 @@ public record ExpeditionDefinition(
         }
 
         public List<ScriptAction> script(String trigger) { return scripts.getOrDefault(trigger, List.of()); }
-
-        public Encounter withWaves(List<Wave> value) {
-            return new Encounter(type == EncounterType.NONE ? EncounterType.WAVES : type, value, boss, bossLevelBonus,
-                surviveSeconds, addsAtHealth, scripts);
-        }
-
-        public Encounter withBoss(String value) {
-            return new Encounter(EncounterType.BOSS, waves, value, bossLevelBonus, surviveSeconds, addsAtHealth, scripts);
-        }
     }
 
     /** Mob ids use the zone syntax: {@code custom:<id>} or {@code vanilla:<type>}. */
@@ -171,6 +143,21 @@ public record ExpeditionDefinition(
         public Loot {
             items = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(items));
         }
+    }
+
+    /**
+     * Player-facing advice shown in the expedition's in-game guide book and on the website: an overview,
+     * general tips, a line per room and notes on the boss. Everything is optional.
+     */
+    public record Guide(String overview, List<String> tips, Map<String, String> rooms, String boss) {
+        public static final Guide EMPTY = new Guide("", List.of(), Map.of(), "");
+
+        public Guide {
+            tips = List.copyOf(tips);
+            rooms = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(rooms));
+        }
+
+        public boolean isEmpty() { return overview.isBlank() && tips.isEmpty() && rooms.isEmpty() && boss.isBlank(); }
     }
 
     /** Optional per-expedition changes to a global difficulty tier. Null fields keep the global value. */

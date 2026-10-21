@@ -10,7 +10,6 @@ import net.nerdsmp.paper.gui.MenuKit;
 import net.nerdsmp.paper.gui.MenuManager;
 import net.nerdsmp.paper.presentation.Chat;
 import net.nerdsmp.paper.session.SessionRegistry;
-import net.nerdsmp.paper.storage.AtomicYamlFiles;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -51,6 +50,8 @@ public final class BankService implements Listener, AutoCloseable {
     private final Map<AccountId, BankHolder> openVaults = new HashMap<>();
     private final Set<AccountId> pending = ConcurrentHashMap.newKeySet();
     private final int defaultSlots;
+    private final net.nerdsmp.paper.storage.OrderedYamlWriter writer;
+    private org.bukkit.scheduler.BukkitTask flush;
     private final int maximumSlots;
     private final long baseCost;
     private final long costIncrement;
@@ -64,6 +65,7 @@ public final class BankService implements Listener, AutoCloseable {
         baseCost = Math.max(1L, plugin.getConfig().getLong("bank.slot-base-cost-marks", 250L));
         costIncrement = Math.max(0L, plugin.getConfig().getLong("bank.slot-cost-increment-marks", 125L));
         file = new File(plugin.getDataFolder(), "bank.yml");
+        writer = new net.nerdsmp.paper.storage.OrderedYamlWriter(plugin, file, "bank storage");
         load();
     }
 
@@ -162,7 +164,7 @@ public final class BankService implements Listener, AutoCloseable {
         if (event.getInventory().getHolder() instanceof BankHolder holder) {
             syncPage(holder);
             openVaults.remove(holder.account, holder);
-            save();
+            requestSave();
         }
     }
 
@@ -175,7 +177,9 @@ public final class BankService implements Listener, AutoCloseable {
                 openVaults.remove(holder.account, holder);
             }
         }
-        save();
+        if (flush != null) flush.cancel();
+        flush = null;
+        writer.flush(snapshot());
     }
 
     private void open(Player player, int requestedPage) {
@@ -315,7 +319,7 @@ public final class BankService implements Listener, AutoCloseable {
                     }
                     Vault current = vault(holder.account);
                     current.unlocked = Math.max(current.unlocked, Math.min(maximumSlots, expectedUnlocked + 1));
-                    save();
+                    requestSave();
                     if (player.isOnline()) {
                         player.playSound(player.getLocation(), Sound.BLOCK_VAULT_OPEN_SHUTTER, 0.8F, 1.2F);
                         Chat.success(player, "Bank slot " + current.unlocked + " unlocked"
@@ -423,7 +427,20 @@ public final class BankService implements Listener, AutoCloseable {
         }
     }
 
-    private synchronized void save() {
+    /**
+     * Coalesces saves: a burst of vault closes writes once, a second later. The YAML is built on the
+     * main thread (it holds live item stacks); only the disk write happens off it, in order.
+     */
+    private void requestSave() {
+        if (!plugin.isEnabled()) { writer.flush(snapshot()); return; }
+        if (flush != null) return;
+        flush = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            flush = null;
+            writer.submit(snapshot());
+        }, 20L);
+    }
+
+    private String snapshot() {
         YamlConfiguration yaml = new YamlConfiguration();
         vaults.forEach((account, vault) -> {
             String path = "accounts." + account;
@@ -434,11 +451,7 @@ public final class BankService implements Listener, AutoCloseable {
                 }
             }
         });
-        try {
-            AtomicYamlFiles.save(yaml, file);
-        } catch (IOException exception) {
-            plugin.getLogger().severe("Could not save bank storage: " + exception.getMessage());
-        }
+        return yaml.saveToString();
     }
 
     private ItemStack clone(ItemStack item) {

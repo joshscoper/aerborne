@@ -32,6 +32,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.event.world.EntitiesUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.projectiles.ProjectileSource;
@@ -92,6 +93,12 @@ public final class CustomMobManager implements Listener, AutoCloseable {
     private final org.bukkit.scheduler.BukkitTask startupTask;
     private final org.bukkit.scheduler.BukkitTask abilityTask;
     private int cleanupCycles;
+    /**
+     * Loaded mobs the ability tick has to look at: custom mobs and elite/boss tiers. Plain mobs (most
+     * of what's loaded on a busy island server) never enter it, so the tick no longer walks every
+     * living entity in every world. Main thread only.
+     */
+    private final Map<UUID, LivingEntity> active = new HashMap<>();
     private volatile boolean closed;
     private final Map<UUID, Long> lastAbilityAt = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> combatants = new ConcurrentHashMap<>();
@@ -250,8 +257,22 @@ public final class CustomMobManager implements Listener, AutoCloseable {
     }
 
     public void forget(LivingEntity entity) {
+        active.remove(entity.getUniqueId());
         lastAbilityAt.remove(entity.getUniqueId()); combatants.remove(entity.getUniqueId()); pendingAbilities.remove(entity.getUniqueId());
         authoredSnapshots.remove(entity.getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        for (Entity entity : event.getEntities()) if (entity instanceof LivingEntity living) track(living);
+    }
+
+    private void track(LivingEntity entity) {
+        if (closed || entity instanceof Player) return;
+        var data = entity.getPersistentDataContainer();
+        String tier = data.get(mobTierKey, PersistentDataType.STRING);
+        if (data.has(mobIdKey, PersistentDataType.STRING) || tier != null && !tier.equals(MobTier.STANDARD.name())
+            || tier == null && isVanillaBoss(entity.getType())) active.put(entity.getUniqueId(), entity);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -261,7 +282,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     @Override public void close() {
         closed = true; startupTask.cancel(); abilityTask.cancel();
-        authoredSnapshots.clear(); pendingAbilities.clear(); lastAbilityAt.clear(); combatants.clear();
+        active.clear(); authoredSnapshots.clear(); pendingAbilities.clear(); lastAbilityAt.clear(); combatants.clear();
     }
 
     /** Resolve only reviewed ground mobs. Boss encounters need their own capped mechanic lifecycle. */
@@ -341,6 +362,32 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     public boolean isCustomMob(LivingEntity entity) {
         return definition(entity) != null;
+    }
+
+    /** Base stats for guides. Health and damage are before level, tier and party scaling. */
+    public record MobSheet(String id, String name, EntityType type, boolean boss, boolean elite, Double health, Double attackDamage,
+                           String ability, double abilityRadius, double abilityDamage, long abilityCooldownSeconds,
+                           long markReward, String relicDrop, double relicChance, String lootProfile) {
+    }
+
+    /** The stat sheet for a {@code custom:<id>} or {@code vanilla:<type>} mob, or empty when unknown. */
+    public Optional<MobSheet> sheet(String id) {
+        if (id.startsWith("custom:")) {
+            MobDefinition definition = definitions.get(id.substring(7));
+            if (definition == null) return Optional.empty();
+            return Optional.of(new MobSheet(id, definition.name, definition.type, definition.boss,
+                !definition.boss && definition.rank != MobBlueprint.Rank.NORMAL, definition.health, definition.attackDamage,
+                definition.ability.name(), definition.abilityRadius, definition.abilityDamage, definition.abilityCooldownSeconds,
+                definition.markReward, definition.relicDrop, definition.relicChance,
+                definition.lootProfile == null || definition.lootProfile.isBlank() ? null : definition.lootProfile));
+        }
+        try {
+            EntityType type = encounterType(id);
+            return Optional.of(new MobSheet(id, "<white>" + humanName(type) + "</white>", type, isVanillaBoss(type), false, null, null,
+                "NONE", 0, 0, 0, 0, null, 0, null));
+        } catch (IllegalArgumentException unknown) {
+            return Optional.empty();
+        }
     }
 
     /** {@code custom:<id>} for authored mobs, otherwise {@code vanilla:<type>}; the same syntax zones and expeditions use. */
@@ -541,22 +588,21 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     private void tickAbilities() {
         if (closed) return;
+        // A mob that changed dimension comes back as a new handle under the same UUID.
+        active.replaceAll((uuid, entity) -> entity.isValid() || entity.isDead() ? entity
+            : Bukkit.getEntity(uuid) instanceof LivingEntity moved && moved.isValid() ? moved : entity);
+        active.values().removeIf(entity -> entity.isDead() || !entity.isValid());
         if (++cleanupCycles >= 5) {
             cleanupCycles = 0;
-            authoredSnapshots.retain(uuid -> {
-                Entity entity = Bukkit.getEntity(uuid);
-                return entity instanceof LivingEntity living && living.isValid() && !living.isDead();
-            });
-            lastAbilityAt.keySet().removeIf(uuid -> Bukkit.getEntity(uuid) == null);
-            combatants.keySet().removeIf(uuid -> Bukkit.getEntity(uuid) == null);
+            // Everything these caches describe is in the active set while it's alive and loaded.
+            authoredSnapshots.retain(active::containsKey);
+            lastAbilityAt.keySet().removeIf(uuid -> !active.containsKey(uuid));
+            combatants.keySet().removeIf(uuid -> !active.containsKey(uuid));
         }
         long now = System.currentTimeMillis();
-        for (var world : Bukkit.getWorlds()) {
-            for (LivingEntity entity : world.getLivingEntities()) {
+        {
+            for (LivingEntity entity : List.copyOf(active.values())) {
                 MobDefinition definition = definition(entity);
-                if (entity.isDead() || !entity.isValid()) {
-                    continue;
-                }
                 if (tier(entity) != MobTier.STANDARD) {
                     refreshCombatScale(entity, now);
                 }
@@ -586,6 +632,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
     private void upgradeLoadedMobs() {
         for (var world : Bukkit.getWorlds()) {
             for (LivingEntity entity : world.getLivingEntities()) {
+                track(entity);
                 MobDefinition definition = definition(entity);
                 if (definition != null
                     && !entity.getPersistentDataContainer().has(mobTierKey, PersistentDataType.STRING)) {
@@ -722,6 +769,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         data.set(baseAbilityDamageKey, PersistentDataType.DOUBLE, Math.max(0.0D, baseAbilityDamage));
         data.set(baseMarkRewardKey, PersistentDataType.LONG, Math.max(0L, baseMarkReward));
         data.set(mobTierKey, PersistentDataType.STRING, tier.name());
+        track(entity);
         applyScale(entity, tier, 1, restoreToFullHealth);
     }
 

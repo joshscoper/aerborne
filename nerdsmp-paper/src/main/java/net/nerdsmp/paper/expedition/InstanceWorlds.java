@@ -168,7 +168,8 @@ public final class InstanceWorlds {
         world.setStorm(false);
         world.setThundering(false);
         if (world.getEnvironment() == World.Environment.NORMAL) world.setTime(18_000);
-        world.setDifficulty(Difficulty.HARD);
+        // Normal, not Hard: Hard multiplies mob melee and ability damage by 1.5, and tiers own difficulty here.
+        world.setDifficulty(Difficulty.NORMAL);
         if (run) world.setAutoSave(false);
     }
 

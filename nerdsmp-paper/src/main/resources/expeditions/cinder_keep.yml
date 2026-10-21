@@ -9,6 +9,7 @@ dimension: nether
 biome: basalt_deltas
 sample: cinder_keep
 published: true
+difficulty: 3
 level: 20
 party: {min: 2, max: 5}
 time-limit-minutes: 30
@@ -53,6 +54,7 @@ rooms:
       type: boss
       boss: custom:keeper_of_embers
       boss-level-bonus: 4
+      boss-damage: 0.7
       adds-at-health: [75, 40]
       waves:
         - {"custom:sulfur_spawn": 2}
@@ -64,6 +66,18 @@ rooms:
           - "wait 2"
           - "spawn vanilla:blaze 2"
         clear: ["message <green>The last forge goes cold. Step onto the crying obsidian to leave.</green>"]
+guide:
+  overview: A Nether fortress for two or more players. The Blaze Forge hold is the hardest part, so bring fire protection and stay together.
+  tips:
+    - Bring fire resistance potions, plus a shield or blocks to stop blaze fireballs.
+    - Wither skeletons inflict Wither. Carry milk or plenty of food.
+    - Magma blocks line the walls and burn unless you sneak. Fight in the middle of each hall.
+    - The forge gives everyone 20 seconds of fire resistance as it starts. Use it to clear the first blazes.
+  rooms:
+    gatehouse: Three wither skeletons, then an Oathbreaker brute with more skeletons.
+    blaze_forge: Survive 60 seconds while Cinder Wraiths, blazes and magma cubes pour in. Keep moving and stay close to each other.
+    throne_of_embers: The Keeper of Embers waits on the gilded throne at the far end.
+  boss: The Keeper of Embers charges like a ravager and pulses fire around itself. At three-quarters health it brings Sulfur Spawn, and at 40% Cinder Wraiths. Two blazes join at half health. One player holds its attention while the rest clear the adds.
 loot:
   marks: 250
   items: {blaze_rod: 4, gold_ingot: 6, quartz: 12, experience_bottle: 5}

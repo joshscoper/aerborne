@@ -11,6 +11,8 @@ dimension: overworld
 # Built from code. Delete this line if you rebuild the template by hand.
 sample: hollow_barrow
 published: true
+# 1-5 stars on the expedition board: 1 Easy, 2 Moderate, 3 Challenging, 4 Hard, 5 Brutal.
+difficulty: 2
 # Base mob level. Each tier adds its own level bonus on top.
 level: 8
 party: {min: 1, max: 5}
@@ -59,6 +61,9 @@ rooms:
       type: boss
       boss: custom:the_hollow_huntsman
       boss-level-bonus: 3
+      # The Huntsman's sword and shockwave are tuned down for a first expedition (1.0 = as authored).
+      boss-damage: 0.6
+      boss-health: 0.85
       # Each threshold releases the next wave as adds.
       adds-at-health: [66, 33]
       waves:
@@ -68,6 +73,19 @@ rooms:
         start: ["message <dark_gray>A hollow voice: <italic>Who disturbs the King's rest?</italic></dark_gray>"]
         health-50: ["title <dark_red>The Huntsman calls the hunt|<gray>Bone answers bone</gray>", "sound entity.wither_skeleton.ambient 0.6"]
         clear: ["message <green>The King's Rest falls silent. Walk into the light at the far wall to leave.</green>"]
+# Shown in the guide book (/expedition guide hollow_barrow) and on the website.
+guide:
+  overview: A short crypt crawl and a good first expedition. Two waves of undead, a survival hold in the ossuary, then the Hollow Huntsman in his tomb.
+  tips:
+    - Bring a shield and a bow. Thorn Sentinels and skeletons shoot from the back of the gallery.
+    - In the ossuary, stay near the middle so spiders can't pin you against the walls.
+    - A ring of light around the Huntsman means a shockwave is coming. Step outside it.
+    - Deaths don't cost gear, but each one spends a shared life. Back off to the door when you're low.
+  rooms:
+    crypt_gallery: Zombies and a Thorn Sentinel come first, then Veil Stalkers and skeletons. Take out the archers early.
+    ossuary: Survive 45 seconds. The waves keep coming, but you only need to stay alive, not kill everything.
+    kings_rest: The Huntsman rises from the sarcophagus at the back of the hall.
+  boss: The Hollow Huntsman hits hard up close and sends out a shockwave every few seconds, marked by a ring of light. At two-thirds and one-third health he calls skeletons, then Veil Stalkers. Let one player keep him busy while the others clear the adds.
 loot:
   marks: 120
   items: {iron_ingot: 4, bone: 8, experience_bottle: 3}

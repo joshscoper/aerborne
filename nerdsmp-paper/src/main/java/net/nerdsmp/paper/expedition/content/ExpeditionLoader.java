@@ -74,7 +74,9 @@ public final class ExpeditionLoader {
             loot(yaml.getConfigurationSection("loot")),
             yaml.contains("campaign-points") ? integer(yaml, "campaign-points") : 0,
             lower(yaml.getStringList("modifiers")),
-            tiers);
+            tiers,
+            yaml.contains("difficulty") ? integer(yaml, "difficulty") : null,
+            guide(yaml.getConfigurationSection("guide")));
     }
 
     private static Room room(String id, ConfigurationSection room) {
@@ -126,7 +128,8 @@ public final class ExpeditionLoader {
             scripts.put(trigger.toLowerCase(Locale.ROOT), actions);
         }
         return new Encounter(type, waves, boss, section.contains("boss-level-bonus") ? integer(section, "boss-level-bonus") : 3,
-            section.contains("survive-seconds") ? integer(section, "survive-seconds") : 60, thresholds, scripts);
+            section.contains("survive-seconds") ? integer(section, "survive-seconds") : 60, thresholds, scripts,
+            multiplier(section, "boss-damage", path), multiplier(section, "boss-health", path));
     }
 
     @SuppressWarnings("unchecked")
@@ -152,6 +155,22 @@ public final class ExpeditionLoader {
             counts.put(entry.getKey().toLowerCase(Locale.ROOT), number.intValue());
         }
         return new Wave(counts, delay);
+    }
+
+    private static ExpeditionDefinition.Guide guide(ConfigurationSection section) {
+        if (section == null) return ExpeditionDefinition.Guide.EMPTY;
+        Map<String, String> rooms = new LinkedHashMap<>();
+        ConfigurationSection roomSection = section.getConfigurationSection("rooms");
+        if (roomSection != null) for (String room : roomSection.getKeys(false)) rooms.put(room, roomSection.getString(room, ""));
+        List<String> tips = section.isList("tips") ? section.getStringList("tips")
+            : section.contains("tips") ? List.of(section.getString("tips", "")) : List.of();
+        return new ExpeditionDefinition.Guide(section.getString("overview", "").strip(), tips, rooms, section.getString("boss", "").strip());
+    }
+
+    private static double multiplier(ConfigurationSection section, String key, String path) {
+        if (!section.contains(key)) return 1;
+        if (!section.isDouble(key) && !section.isInt(key)) throw new IllegalArgumentException(path + "." + key + ": must be a number such as 0.75.");
+        return section.getDouble(key);
     }
 
     private static Loot loot(ConfigurationSection section) {

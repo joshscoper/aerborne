@@ -114,6 +114,7 @@ public final class SessionListener implements Listener {
                     return null;
                 });
                 nerdSmp.marketController().onSessionReady(player);
+                if (nerdSmp.partyManager() != null) nerdSmp.partyManager().ready(player);
                 if (nerdSmp.skyblock() != null) nerdSmp.skyblock().ready(player);
             }
     }

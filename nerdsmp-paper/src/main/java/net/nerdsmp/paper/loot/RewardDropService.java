@@ -106,6 +106,57 @@ public final class RewardDropService implements Listener {
 
     public LootProfileStore profiles() { return profiles; }
 
+    /** One line of a mob's possible drops for guides: what, how likely per player kill, and how many. */
+    public record DropLine(String item, double chance, int minimum, int maximum) { }
+
+    /**
+     * What a player-killed mob of this kind can drop beyond its normal Minecraft drops, from the same
+     * tables the death handler rolls: an authored loot profile, supplemental tables, sealed gear and
+     * coin purses. Chances are at base reward scaling; looting and level add a little.
+     */
+    public List<DropLine> possibleDrops(EntityType type, boolean hostile, boolean boss, boolean elite, String lootProfile, long namedMarks) {
+        List<DropLine> lines = new ArrayList<>();
+        LootProfileDefinition profile = lootProfile == null ? null : profiles.find(lootProfile).orElse(null);
+        if (profile != null) {
+            for (var entry : profile.entries()) {
+                String item = switch (entry.kind()) {
+                    case MARKS -> "Marks";
+                    case ITEM -> itemName(new ItemId(entry.source()));
+                    case MATERIAL -> words(entry.source());
+                };
+                lines.add(new DropLine(item, entry.chance(), entry.minimum(), entry.maximum()));
+            }
+            if (profile.mode() == LootProfileDefinition.Mode.REPLACE) return List.copyOf(lines);
+        }
+        for (DropDefinition definition : tables.getOrDefault(type, List.of())) {
+            String item = definition.itemId != null ? itemName(definition.itemId)
+                : definition.special != SpecialDrop.NONE || definition.material == null ? words(definition.special.name())
+                : words(definition.material.name());
+            lines.add(new DropLine(item, definition.chance, definition.minimum, definition.maximum));
+        }
+        if (hostile) {
+            LootBand band = boss ? LootBand.BOSS : elite ? LootBand.ELITE : LootBand.STANDARD;
+            GearBand gear = hostileGear.bands.get(band);
+            List<ItemId> pool = hostileGear.pools.getOrDefault(type, hostileGear.defaultItems);
+            String examples = String.join(", ", pool.stream().limit(3).map(this::itemName).toList());
+            lines.add(new DropLine("Sealed gear (" + examples + (pool.size() > 3 ? "…" : "") + ")", Math.min(1, gear.chance), gear.rolls, gear.rolls));
+            PurseBand purse = coinPurses.bands.get(band);
+            int most = (int) Math.max(purse.maximumMarks, Math.min(LootProfileDefinition.MAX_MARKS, namedMarks));
+            lines.add(new DropLine("Coin purse (Marks)", Math.min(1, purse.chance), purse.minimumMarks, most));
+        }
+        return List.copyOf(lines);
+    }
+
+    private String itemName(ItemId itemId) {
+        return items.itemName(itemId).map(name -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+            .serialize(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(name))).orElse(words(itemId.value()));
+    }
+
+    private static String words(String raw) {
+        String text = raw.toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
+
     /** Rolls a staff-authored profile once, for rewards that are not mob drops (expedition finishes). */
     public List<ItemStack> rollProfile(String profileId) {
         return profiles.find(profileId).map(this::rollProfile).orElse(List.of());

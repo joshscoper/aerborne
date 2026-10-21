@@ -19,6 +19,7 @@ How each feature works for players, with its commands.
 
 **Adventure**
 - [Expeditions](EXPEDITIONS.md): instanced party adventures, the finder, tiers and modifiers, and the way into the Nether and the End
+- [Parties](PARTIES.md): the party menu, invites, open parties and the finder, and what happens when members go offline
 - [Season campaign](CAMPAIGN.md): server-wide goals, milestones, buffs and claimable rewards
 
 **Economy and trading**

@@ -643,6 +643,12 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return catalog.sets().values().stream().sorted((left, right) -> left.id().compareTo(right.id())).toList();
     }
 
+    /** The authored display name of a NerdSMP item, for guides and menus. */
+    public Optional<String> itemName(ItemId itemId) {
+        Definition definition = catalog.items().get(itemId);
+        return definition == null ? Optional.empty() : Optional.of(definition.name());
+    }
+
     public List<ItemId> itemIds() {
         return catalog.items().keySet().stream().sorted((left, right) -> left.value().compareTo(right.value())).toList();
     }

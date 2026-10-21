@@ -5,6 +5,23 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Parties rebuilt, and a performance pass (October 20)
+- [Parties](PARTIES.md) are rebuilt. `/party` opens a party menu; invites arrive as a chat card
+  with Accept and Decline buttons; a player can weigh invites from up to three parties at once.
+- Open parties and a party finder (`/party list`, `/party join`). Leaders can add a short note
+  and let members invite.
+- The whole party hears about every change. Parties survive restarts. An offline leader hands
+  over after a minute, and members offline for 15 minutes drop out. A leaving leader no longer
+  has to promote someone first.
+- Custom-mob abilities no longer scan every loaded entity each second: only custom, elite and
+  boss mobs are tracked.
+- Bank vaults, parties and playtime progress save off the main thread, and a burst of vault
+  closes writes once instead of once per close.
+- The sidebar updates as soon as Marks change. Its fallback refresh is now every 5 seconds
+  (`presentation.refresh-ticks: 100`) instead of a database read per player every second.
+  Existing servers keep their configured value until it is changed.
+- Removed the unused points-campaign service, which the season campaign replaced.
+
 ### Party expeditions and the season campaign (October 20)
 - [Expeditions](EXPEDITIONS.md) are now instanced party adventures for one to five players. Each
   run is a private copy of a template world with rooms (waves, survive, boss), gates, checkpoints,
@@ -20,6 +37,14 @@ date are placed where the README had them. Each linked doc has the detail.
   milestone rewards (server buffs, skill XP and job Marks boosts, claim-once items and Marks,
   expedition and feature unlocks) live in `campaign/season.yml`. Sample season: **The Ember Accord**.
 - `/expedition` no longer lists warps; use `/warps`. The World menu has Expeditions and Warps.
+- Party-size scaling: smaller groups meet fewer, softer enemies.
+- Difficulty ratings on expedition cards, and a guide per expedition (`/expedition guide <id>` and
+  `/expeditions/<id>` on the website) with the route, boss notes, every mob and its possible drops.
+- The Hollow Huntsman no longer one-shots players: run worlds use Normal difficulty instead of
+  Hard, and bosses take `boss-damage`/`boss-health` multipliers. The Barrow's boss is at 60% damage.
+- Hired allies: after a long wait in the finder, the queue leader can fill empty slots with
+  labelled NPC allies (Bulwark, Blade, Hedge-witch, Archer). These assisted runs pay loot but
+  count toward neither the campaign nor the expedition records.
 - Game API: public `/api/v1/expeditions` and `/api/v1/campaign`; the website has matching pages.
 
 ### Arcane Forge 2.0 (October 18)

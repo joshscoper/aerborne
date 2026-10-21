@@ -5,7 +5,6 @@ import net.nerdsmp.api.model.ItemId;
 import net.nerdsmp.api.model.PlatformIdentity;
 import net.nerdsmp.api.model.Skill;
 import net.nerdsmp.api.service.EconomyService;
-import net.nerdsmp.api.service.PartyService;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.chat.ChannelChatManager.ChatChannel;
 import net.nerdsmp.paper.grave.GraveManager;
@@ -81,7 +80,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "store" -> plugin.marketController().handleStore(sender, args);
             case "shops" -> plugin.npcs().showShops(sender, args);
             case "claim" -> claim(sender, args);
-            case "party" -> party(sender, args);
+            case "party" -> plugin.partyManager().command(sender, args);
             case "partychat" -> plugin.chat().handleDirect(sender, ChatChannel.PARTY, args);
             case "relics" -> relics(sender, args);
             case "campaign" -> campaign(sender, args);
@@ -427,92 +426,6 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             });
         });
         return true;
-    }
-
-    private boolean party(CommandSender sender, String[] args) {
-        Player player = player(sender);
-        if (player == null) {
-            return true;
-        }
-        AccountId account = account(player);
-        if (account == null) {
-            return true;
-        }
-        if (args.length == 0 || args[0].equalsIgnoreCase("info")) {
-            plugin.parties().partyOf(account).thenAccept(found -> sync(() -> {
-                if (!currentSession(player, account)) return;
-                if (found.isEmpty()) {
-                    player.sendRichMessage("<gray>You are not in a party. Invite someone with <white>/party invite \\<player></white>.</gray>");
-                    return;
-                }
-                PartyService.PartyView party = found.get();
-                player.sendRichMessage("<light_purple><bold>Your party</bold></light_purple> <gray>("
-                    + party.members().size() + "/" + plugin.getConfig().getInt("parties.maximum-size", 5) + ")</gray>");
-                party.members().forEach(member -> {
-                    Player online = plugin.sessions().player(member).map(Bukkit::getPlayer).orElse(null);
-                    if (online != null && !player.canSee(online)) online = null;
-                    String name = plugin.social().accountName(member);
-                    player.sendRichMessage((member.equals(party.leader()) ? "<gold>★ " : "<gray>• ")
-                        + escape(name) + (online == null ? " <dark_gray>(offline)</dark_gray>" : ""));
-                });
-            }));
-            return true;
-        }
-        String action = args[0].toLowerCase(Locale.ROOT);
-        if (action.equals("accept") && args.length == 1) {
-            plugin.parties().pendingInvite(account, Instant.now()).thenAccept(invite -> sync(() -> {
-                if (!currentSession(player, account)) return;
-                if (invite.isEmpty() || !plugin.settings().enabled(player.getUniqueId(), net.nerdsmp.paper.player.PlayerSettingsService.Setting.PARTY_REQUESTS)
-                    || plugin.social().blocked(account, invite.get().leader())) {
-                    Chat.error(player, "That party invitation is no longer available. Check your settings and ignored players."); return;
-                }
-                plugin.parties().accept(account, invite.get().partyId(), Instant.now()).thenAccept(result -> sync(() -> {
-                    if (currentSession(player, account)) player.sendRichMessage(partyResult(result));
-                }));
-            }));
-            return true;
-        }
-        if ((action.equals("leave") || action.equals("disband") || action.equals("deny")) && args.length == 1) {
-            CompletionStage<PartyService.PartyResult> result = switch (action) {
-                case "leave" -> plugin.parties().leave(account);
-                case "deny" -> plugin.parties().decline(account);
-                default -> plugin.parties().disband(account);
-            };
-            result.thenAccept(value -> sync(() -> { if (currentSession(player, account)) player.sendRichMessage(partyResult(value)); }));
-            return true;
-        }
-        if ((action.equals("invite") || action.equals("kick") || action.equals("promote")) && args.length == 2) {
-            Player target = Bukkit.getPlayerExact(args[1]);
-            AccountId targetAccount = action.equals("invite") ? target == null ? null : account(target) : plugin.social().knownAccount(args[1]).orElse(null);
-            if (targetAccount == null) {
-                Chat.error(player, action.equals("invite") ? "That player must be online." : "Choose a party member by name.");
-                return true;
-            }
-            if (action.equals("invite") && !plugin.social().canContact(player, target, net.nerdsmp.paper.player.PlayerSettingsService.Setting.PARTY_REQUESTS)) {
-                Chat.error(player, "That player is not accepting party invitations from you."); return true;
-            }
-            CompletionStage<PartyService.PartyResult> result = switch (action) {
-                case "invite" -> plugin.parties().invite(account, targetAccount, Instant.now());
-                case "kick" -> plugin.parties().kick(account, targetAccount);
-                default -> plugin.parties().promote(account, targetAccount);
-            };
-            result.thenAccept(value -> sync(() -> {
-                if (!currentSession(player, account)) return;
-                player.sendRichMessage(partyResult(value));
-                if (value == PartyService.PartyResult.INVITED && target != null && currentSession(target, targetAccount)) {
-                    target.sendRichMessage("<light_purple>" + escape(player.getName())
-                        + " invited you to a party. Use <white>/party accept</white> or <white>/party deny</white>.</light_purple>");
-                }
-            }));
-            return true;
-        }
-        Chat.usage(player, "/party [info|invite <player>|accept|deny|leave|kick <player>|promote <player>|disband]");
-        return true;
-    }
-
-    private boolean currentSession(Player player, AccountId account) {
-        return player.isOnline() && Bukkit.getPlayer(player.getUniqueId()) == player
-            && plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent();
     }
 
     private boolean recipes(CommandSender sender) {
@@ -1107,10 +1020,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "store" -> plugin.marketController().completeStore(sender, args);
             case "shops" -> plugin.npcs().completeShops(args);
             case "claim" -> plugin.skyblockEnabled() ? List.of() : plugin.homesteads().tabComplete(sender, args);
-            case "party" -> args.length == 1
-                ? List.of("info", "invite", "accept", "deny", "leave", "kick", "promote", "disband")
-                : args.length == 2 && (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("kick")
-                    || args[0].equalsIgnoreCase("promote")) ? partyTargets(sender, args[0]) : List.of();
+            case "party" -> plugin.partyManager().complete(sender, args);
             case "campaign" -> plugin.campaign().complete(sender, args);
             case "grave" -> args.length == 1 ? List.of("locate", "recover") : List.of();
             case "companion" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
@@ -1183,43 +1093,6 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "off", "false", "no" -> false;
             default -> null;
         };
-    }
-
-    private List<String> partyTargets(CommandSender sender, String action) {
-        if (!(sender instanceof Player player)) return List.of();
-        if (action.equalsIgnoreCase("invite")) return Bukkit.getOnlinePlayers().stream()
-            .filter(target -> plugin.social().canContact(player, target, net.nerdsmp.paper.player.PlayerSettingsService.Setting.PARTY_REQUESTS))
-            .map(Player::getName).sorted().toList();
-        AccountId actor = plugin.sessions().account(player.getUniqueId()).orElse(null); if (actor == null) return List.of();
-        var party = plugin.parties().partyOf(actor).toCompletableFuture().getNow(java.util.Optional.empty());
-        return party.filter(view -> view.leader().equals(actor)).map(view -> view.members().stream()
-            .filter(member -> !member.equals(actor)).map(plugin.social()::accountName).sorted().toList()).orElse(List.of());
-    }
-
-    private String partyResult(PartyService.PartyResult result) {
-        return switch (result) {
-            case INVITED -> "<green>Party invite sent.</green>";
-            case INVITE_PENDING -> "<yellow>That player already has a pending party invitation.</yellow>";
-            case DECLINED -> "<yellow>Party invitation declined.</yellow>";
-            case JOINED -> "<green>You joined the party.</green>";
-            case LEFT -> "<yellow>You left the party.</yellow>";
-            case KICKED -> "<yellow>Player removed from the party.</yellow>";
-            case PROMOTED -> "<green>Party leader transferred.</green>";
-            case DISBANDED -> "<yellow>Party disbanded.</yellow>";
-            case PARTY_FULL -> "<red>That party is full.</red>";
-            case NO_INVITE, INVITE_EXPIRED -> "<red>You do not have an active party invite.</red>";
-            case NOT_LEADER -> "<red>Only the party leader can do that.</red>";
-            case LEADER_MUST_PROMOTE_OR_DISBAND -> "<red>Promote another member or disband the party first.</red>";
-            case TARGET_ALREADY_IN_PARTY, ALREADY_IN_PARTY -> "<red>That player is already in a party.</red>";
-            case TARGET_NOT_MEMBER -> "<red>That player is not in your party.</red>";
-            case CANNOT_TARGET_SELF -> "<red>You cannot target yourself.</red>";
-            case NOT_IN_PARTY -> "<red>You are not in a party.</red>";
-        };
-    }
-
-
-    private String escape(String input) {
-        return input.replace("<", "\\<").replace(">", "\\>");
     }
 
 }

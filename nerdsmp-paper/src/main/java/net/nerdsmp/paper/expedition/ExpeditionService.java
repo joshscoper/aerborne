@@ -4,10 +4,12 @@ import net.nerdsmp.api.model.AccountId;
 import net.nerdsmp.api.model.ItemId;
 import net.nerdsmp.api.service.PartyService;
 import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.expedition.content.Allies;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
 import net.nerdsmp.paper.expedition.content.ExpeditionLoader;
 import net.nerdsmp.paper.expedition.content.ExpeditionValidator;
 import net.nerdsmp.paper.expedition.content.Modifier;
+import net.nerdsmp.paper.expedition.content.PartyScaling;
 import net.nerdsmp.paper.expedition.content.Tier;
 import net.nerdsmp.paper.expedition.flow.ExpeditionRecords;
 import net.nerdsmp.paper.expedition.flow.Matchmaker;
@@ -94,6 +96,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     private final Duration rejoinWindow;
     private final Duration linger;
     private final boolean vanillaPortals;
+    private PartyScaling scaling = PartyScaling.DEFAULT;
+    private Allies allies = Allies.DEFAULT;
+    private final Set<UUID> allyOffers = new HashSet<>();
     private final BukkitTask task;
     private ExpeditionSetup setup;
     private ExpeditionMenu menu;
@@ -126,11 +131,32 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     // Content
     // ---------------------------------------------------------------------------------------------
 
+    /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
+    static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
+        "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797"),
+        "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1"));
+
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
         for (String sample : SAMPLES) {
             File file = new File(folder, sample + ".yml");
             if (!file.exists()) plugin.saveResource("expeditions/" + sample + ".yml", false);
+            else if (PREVIOUS_SAMPLES.getOrDefault(sample, Set.of()).contains(sha256(file))) {
+                // An untouched earlier sample picks up new tuning and guides; any staff edit keeps the file as it is.
+                plugin.saveResource("expeditions/" + sample + ".yml", true);
+                plugin.getLogger().info("Updated the unedited sample expedition " + sample + ".yml to the current version.");
+            }
+        }
+    }
+
+    /** SHA-256 of the file with CRLF read as LF, so jars built on Windows and elsewhere match. */
+    static String sha256(File file) {
+        try {
+            String text = java.nio.file.Files.readString(file.toPath()).replace("\r\n", "\n");
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256").digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (java.io.IOException | java.security.NoSuchAlgorithmException failure) {
+            return "";
         }
     }
 
@@ -139,6 +165,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         List<String> messages = new ArrayList<>();
         try {
             tiers = Tier.load(plugin.getConfig().getConfigurationSection("expeditions.tiers"));
+            scaling = PartyScaling.load(plugin.getConfig().getConfigurationSection("expeditions.scaling"));
+            allies = Allies.load(plugin.getConfig().getConfigurationSection("expeditions.allies"));
         } catch (IllegalArgumentException invalid) {
             messages.add("expeditions.tiers in config.yml: " + invalid.getMessage() + " Using the built-in tiers.");
             tiers = Tier.DEFAULTS;
@@ -324,8 +352,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                     Chat.error(leader, "Only your party leader can start or queue an expedition. Leave the party to go solo.");
                     return;
                 }
+                members.add(leader); // The leader leads the ticket, so only they can accept hired allies.
                 for (AccountId member : view.members())
-                    plugin.sessions().player(member).map(Bukkit::getPlayer).ifPresent(members::add);
+                    plugin.sessions().player(member).map(Bukkit::getPlayer).filter(player -> !player.equals(leader)).ifPresent(members::add);
                 if (members.size() < view.members().size())
                     Chat.notice(leader, "Offline party members stay behind.");
             }
@@ -385,7 +414,11 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     }
 
     private void startCheck(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, UUID autoAccept) {
-        ReadyCheck check = new ReadyCheck(definition.id(), tier.id(), members, tickets, Instant.now(), readyTimeout);
+        startCheck(definition, tier, members, tickets, autoAccept, 0);
+    }
+
+    private void startCheck(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, UUID autoAccept, int allyCount) {
+        ReadyCheck check = new ReadyCheck(definition.id(), tier.id(), members, tickets, Instant.now(), readyTimeout, allyCount);
         checks.put(check.id(), check);
         if (autoAccept != null) check.accept(autoAccept);
         for (UUID member : members) {
@@ -397,7 +430,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 continue;
             }
             Chat.send(player, "<gold>Ready check:</gold> <white>" + Chat.escape(definition.title()) + "</white> <gray>(" + Chat.escape(tier.title())
-                + ", " + members.size() + " players)</gray>  <green><click:run_command:'/expedition ready'><hover:show_text:'Join the run'>[Ready]</hover></click></green>"
+                + ", " + members.size() + " players" + (allyCount > 0 ? " + " + allyCount + " hired allies" : "") + ")</gray>  <green><click:run_command:'/expedition ready'><hover:show_text:'Join the run'>[Ready]</hover></click></green>"
                 + "  <red><click:run_command:'/expedition decline'><hover:show_text:'Decline'>[Decline]</hover></click></red>"
                 + " <dark_gray>" + readyTimeout.toSeconds() + "s</dark_gray>");
         }
@@ -428,7 +461,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         ExpeditionDefinition definition = definitions.get(check.expedition());
         Optional<Tier> tier = definition == null ? Optional.empty() : tier(definition, check.tier());
         if (check.state() == ReadyCheck.State.READY && tier.isPresent()) {
-            launch(definition, tier.get(), check.orderedMembers(), check.tickets(), false);
+            launch(definition, tier.get(), check.orderedMembers(), check.tickets(), false, check.allies());
             return;
         }
         Player decliner = check.decliner() == null ? null : Bukkit.getPlayer(check.decliner());
@@ -446,14 +479,20 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** Builds the run world, then brings everyone in. Staff test runs skip records, Marks and campaign credit. */
     void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test) {
+        launch(definition, tier, members, tickets, test, 0);
+    }
+
+    /** {@code allyCount} hired NPC allies join the run; any allies make it an assisted run. */
+    void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test, int allyCount) {
         List<UUID> online = members.stream().filter(member -> Bukkit.getPlayer(member) != null && !runByPlayer.containsKey(member)).toList();
-        if (online.size() < (test ? 1 : definition.minParty())) {
+        if (online.isEmpty() || online.size() + allyCount < (test ? 1 : definition.minParty())) {
             matchmaker.requeue(tickets.stream().filter(ticket -> online.containsAll(ticket.members())).toList());
             online.forEach(member -> Chat.notice(Bukkit.getPlayer(member), "A player dropped out before the run began."));
             return;
         }
         BuildCanvas.Plan plan = definition.sample() == null ? null : SampleTemplates.plan(definition.sample());
-        ExpeditionRun run = new ExpeditionRun(this, plugin, definition, tier, modifiers(definition, tier), online, test, plan);
+        List<Allies.Role> hired = allies.pick(Math.min(allyCount, allies.slots(online.size(), definition.maxParty())));
+        ExpeditionRun run = new ExpeditionRun(this, plugin, definition, tier, modifiers(definition, tier), online, test, plan, hired);
         runs.put(run.id, run);
         for (UUID member : online) {
             runByPlayer.put(member, run);
@@ -487,6 +526,69 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (tier.isEmpty()) { Chat.error(staff, "Unknown tier for this expedition."); return; }
         matchmaker.leave(staff.getUniqueId());
         launch(definition, tier.get(), List.of(staff.getUniqueId()), List.of(), true);
+    }
+
+    /** Offers hired allies, once, to queue tickets that have waited past the offer time. */
+    private void offerAllies(Map<String, Matchmaker.Rules> rules, Instant now) {
+        if (!allies.enabled()) return;
+        Set<UUID> live = new HashSet<>();
+        for (Matchmaker.Ticket ticket : matchmaker.tickets()) {
+            live.add(ticket.id());
+            Matchmaker.Rules rule = rules.get(ticket.expedition());
+            if (rule == null || allyOffers.contains(ticket.id()) || !allies.offerable(ticket.queuedAt(), now, ticket.size(), rule.max())) continue;
+            allyOffers.add(ticket.id());
+            Player leader = Bukkit.getPlayer(ticket.members().get(0));
+            if (leader == null) continue;
+            int slots = allies.slots(ticket.size(), rule.max());
+            leader.playSound(leader.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 1F, 1.2F);
+            Chat.send(leader, "<gold>Still waiting?</gold> <gray>Start now with " + slots + " hired " + (slots == 1 ? "ally" : "allies")
+                + ". Allies fight beside you, but an assisted run doesn't count toward the campaign or the expedition records.</gray> "
+                + "<green><click:run_command:'/expedition allies'><hover:show_text:'Start with hired allies'>[Start with allies]</hover></click></green>");
+        }
+        allyOffers.retainAll(live);
+    }
+
+    /** {@code /expedition allies}: the ticket leader skips the rest of the wait and fills the empty slots with NPCs. */
+    public void startWithAllies(Player player) {
+        Optional<Matchmaker.Ticket> ticket = matchmaker.ticketOf(player.getUniqueId());
+        if (ticket.isEmpty()) {
+            Chat.notice(player, "Hired allies are offered once you've waited in the queue for a while.");
+            return;
+        }
+        if (!ticket.get().members().get(0).equals(player.getUniqueId())) {
+            Chat.error(player, "Only the player who queued the group can hire allies.");
+            return;
+        }
+        ExpeditionDefinition definition = definitions.get(ticket.get().expedition());
+        Optional<Tier> tier = definition == null ? Optional.empty() : tier(definition, ticket.get().tier());
+        if (definition == null || tier.isEmpty() || !playable(definition)) {
+            Chat.error(player, "That expedition is no longer open.");
+            return;
+        }
+        Instant now = Instant.now();
+        if (!allies.offerable(ticket.get().queuedAt(), now, ticket.get().size(), definition.maxParty())) {
+            Duration left = Duration.between(now, ticket.get().queuedAt().plus(allies.offerAfter()));
+            Chat.notice(player, allies.slots(ticket.get().size(), definition.maxParty()) == 0 ? "Your group is already full."
+                : "Allies are offered after " + Chat.duration(allies.offerAfter()) + " in the queue; " + Chat.duration(left.withNanos(0)) + " to go.");
+            return;
+        }
+        if (runs.size() + checks.size() >= maxInstances) {
+            Chat.error(player, "Every expedition instance is busy. You keep your place in the queue.");
+            return;
+        }
+        matchmaker.leave(player.getUniqueId());
+        int slots = allies.slots(ticket.get().size(), definition.maxParty());
+        if (ticket.get().size() == 1) launch(definition, tier.get(), ticket.get().members(), List.of(ticket.get()), false, slots);
+        else startCheck(definition, tier.get(), ticket.get().members(), List.of(ticket.get()), player.getUniqueId(), slots);
+    }
+
+    public PartyScaling scaling() { return scaling; }
+    public Allies allies() { return allies; }
+
+    /** True inside a run that hired allies; such runs earn no campaign progress or records. */
+    public boolean assisted(World world) {
+        ExpeditionRun run = runIn(world);
+        return run != null && run.assisted();
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -571,6 +673,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             if (members.size() == 1) launch(definition, tier.get(), members, group.tickets(), false);
             else startCheck(definition, tier.get(), members, group.tickets(), null);
         }
+        offerAllies(rules, now);
         long millis = System.currentTimeMillis();
         for (ExpeditionRun run : List.copyOf(runs.values())) {
             try {
@@ -725,16 +828,50 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onMobDeath(EntityDeathEvent event) {
         ExpeditionRun run = runIn(event.getEntity().getWorld());
-        if (run != null && !(event.getEntity() instanceof Player) && run.tracks(event.getEntity())) run.mobDied(event.getEntity());
+        if (run == null || event.getEntity() instanceof Player) return;
+        if (run.isAlly(event.getEntity())) {
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            run.allyDied(event.getEntity());
+        } else if (run.tracks(event.getEntity())) run.mobDied(event.getEntity());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
         ExpeditionRun run = runIn(event.getEntity().getWorld());
-        if (run == null || !(event.getEntity() instanceof Player)) return;
+        if (run == null) return;
         Entity source = event.getDamager();
         if (source instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter) source = shooter;
-        if (source instanceof LivingEntity living && run.tracks(living)) event.setDamage(event.getDamage() * run.damageMultiplier(living));
+        Entity victim = event.getEntity();
+        boolean friendlyVictim = victim instanceof Player || run.isAlly(victim);
+        boolean friendlySource = source instanceof Player || run.isAlly(source);
+        // Allies and players never hurt each other; allies hit enemies harder as tiers toughen them.
+        if (friendlyVictim && friendlySource && (run.isAlly(victim) || run.isAlly(source))) {
+            event.setCancelled(true);
+            return;
+        }
+        if (run.isAlly(source) && victim instanceof LivingEntity living && run.tracks(living)) {
+            event.setDamage(event.getDamage() * run.allyDamageMultiplier());
+            return;
+        }
+        if (friendlyVictim && source instanceof LivingEntity living && run.tracks(living)) event.setDamage(event.getDamage() * run.damageMultiplier(living));
+    }
+
+    /** The Hedge-witch's harming potions only touch enemies. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onAllyPotion(org.bukkit.event.entity.PotionSplashEvent event) {
+        ExpeditionRun run = runIn(event.getEntity().getWorld());
+        if (run == null || !(event.getPotion().getShooter() instanceof Entity thrower) || !run.isAlly(thrower)) return;
+        for (LivingEntity hit : event.getAffectedEntities())
+            if (hit instanceof Player || run.isAlly(hit)) event.setIntensity(hit, 0);
+    }
+
+    /** Allies never turn on the party, and nothing in a run makes them. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onAllyTarget(org.bukkit.event.entity.EntityTargetEvent event) {
+        ExpeditionRun run = runIn(event.getEntity().getWorld());
+        if (run != null && run.isAlly(event.getEntity()) && (event.getTarget() instanceof Player || run.isAlly(event.getTarget())))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -753,6 +890,13 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     public boolean command(CommandSender sender, String[] args) {
         String action = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
+        // "/expedition guide <id>" is the player's guide book; bare "/expedition guide" is the staff walkthrough.
+        if (action.equals("guide") && args.length == 2 && sender instanceof Player reader) {
+            definition(args[1]).filter(definition -> playable(definition) || reader.hasPermission(ADMIN))
+                .ifPresentOrElse(definition -> menu.openGuide(reader, definition),
+                    () -> Chat.error(reader, "Unknown expedition. See " + Chat.command("expedition list") + "."));
+            return true;
+        }
         if (setup != null && setup.handles(action)) return setup.command(sender, args);
         if (!(sender instanceof Player player)) {
             Chat.playersOnly(sender);
@@ -767,6 +911,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             case "leave" -> leave(player);
             case "ready", "accept" -> ready(player);
             case "decline" -> decline(player);
+            case "allies" -> startWithAllies(player);
             case "list" -> list(player);
             case "info" -> {
                 if (args.length != 2) Chat.usage(player, "/expedition info <expedition>");
@@ -795,8 +940,10 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         Chat.send(player, "<gold><bold>Expeditions</bold></gold>");
         for (ExpeditionDefinition definition : open) {
             Optional<String> lock = plugin.campaign().expeditionLock(definition.id());
+            int rating = net.nerdsmp.paper.expedition.content.Difficulty.rating(definition);
             Chat.send(player, "<gray>•</gray> <click:run_command:'/expedition info " + definition.id() + "'><aqua>" + Chat.escape(definition.title())
-                + "</aqua></click> <dark_gray>" + definition.dimension().key() + " · level " + definition.level() + " · "
+                + "</aqua></click> <gold>" + net.nerdsmp.paper.expedition.content.Difficulty.stars(rating) + "</gold> <dark_gray>"
+                + definition.dimension().key() + " · level " + definition.level() + " · "
                 + definition.minParty() + "-" + definition.maxParty() + " players</dark_gray>"
                 + lock.map(milestone -> " <red>sealed: " + Chat.escape(milestone) + "</red>").orElse(""));
         }
@@ -819,6 +966,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             Chat.info(player, "Queued for <white>" + Chat.escape(definition == null ? ticket.get().expedition() : definition.title()) + "</white> for "
                 + Chat.duration(Duration.between(ticket.get().queuedAt(), Instant.now())) + ". "
                 + matchmaker.waiting(ticket.get().expedition(), ticket.get().tier()) + " players are waiting for this run.");
+            if (definition != null && ticket.get().members().get(0).equals(uuid)
+                && allies.offerable(ticket.get().queuedAt(), Instant.now(), ticket.get().size(), definition.maxParty()))
+                Chat.info(player, "Tired of waiting? " + Chat.command("expedition allies") + " fills the empty places with hired allies.");
             return;
         }
         Chat.notice(player, "You aren't queued. Browse expeditions with " + Chat.command("expedition") + ".");
@@ -826,13 +976,13 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "list", "info", "status"));
+            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "allies", "list", "info", "guide", "status"));
             if (sender.hasPermission(ADMIN) && setup != null) options.addAll(setup.subcommands());
             return options;
         }
         String action = args[0].toLowerCase(Locale.ROOT);
-        if (setup != null && setup.handles(action)) return setup.complete(sender, args);
-        if (args.length == 2 && List.of("start", "queue", "info").contains(action))
+        if (setup != null && setup.handles(action) && !action.equals("guide")) return setup.complete(sender, args);
+        if (args.length == 2 && List.of("start", "queue", "info", "guide").contains(action))
             return definitions.values().stream().filter(definition -> playable(definition) || sender.hasPermission(ADMIN)).map(ExpeditionDefinition::id).toList();
         if (args.length == 3 && List.of("start", "queue").contains(action))
             return definition(args[1]).map(definition -> tiersFor(definition).stream().map(Tier::id).toList()).orElse(List.of());

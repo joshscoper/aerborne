@@ -114,7 +114,7 @@ commands:
     usage: /claim [help|mine|directory|plots|plot|map|members|flags|applications|bulletin|history|chat|create|expand]
   party:
     description: Create and manage a cooperative party.
-    usage: /party [info|invite <player>|accept|deny|leave|kick <player>|promote <player>|disband]
+    usage: /party [invite <player>|accept|deny|list|join <player>|leave|open|close|note <text>|kick <player>|promote <player>|disband]
   partychat:
     description: Send a private message to your party.
     usage: /partychat <message>

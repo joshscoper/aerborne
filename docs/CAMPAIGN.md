@@ -92,8 +92,11 @@ milestones:
 | `fish` | Catches, per item. | `materials` |
 | `kill` | Mobs a player kills. `hostile` matches any hostile mob. | `mobs` |
 | `boss` | Boss kills. Inside an expedition, every party member present gets the credit. | `mobs` |
-| `expedition` | Each member's completed run, times the tier multiplier. Staff test runs don't count. | `expeditions`, `tiers` |
+| `expedition` | Each member's completed run, times the tier multiplier. Staff test runs and assisted runs (with hired allies) don't count. | `expeditions`, `tiers` |
 | `contribute` | Items handed in with `/campaign contribute`, per item. | `materials` |
+
+Nothing inside an assisted expedition run counts: no kills, bosses or clears. See
+[hired allies](EXPEDITIONS.md).
 
 One action can feed several goals. Points are clamped to what's left of the player's daily cap
 for each goal.

@@ -22,7 +22,15 @@ final class PublicGameJson {
 
     private PublicGameJson() { }
 
+    /** Full detail when it fits the response budget; otherwise guides and bestiaries are left out. */
     static String expeditions(NerdSmpPlugin plugin, String sampled) {
+        String full = expeditions(plugin, sampled, true);
+        if (full.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= ApiSnapshot.MAX_RESPONSE_BYTES - 512) return full;
+        plugin.getLogger().warning("Expedition guides are too large for the web API budget; publishing the list without them.");
+        return expeditions(plugin, sampled, false);
+    }
+
+    private static String expeditions(NerdSmpPlugin plugin, String sampled, boolean detail) {
         var service = plugin.expeditions();
         JsonObject root = new JsonObject();
         root.addProperty("apiVersion", 1);
@@ -47,6 +55,16 @@ final class PublicGameJson {
                 .filter(room -> room.encounter().type() == ExpeditionDefinition.EncounterType.BOSS).count());
             entry.addProperty("timeLimitMinutes", definition.timeLimitMinutes());
             entry.addProperty("activeRuns", service.activeRuns(definition.id()));
+            int rating = net.nerdsmp.paper.expedition.content.Difficulty.rating(definition);
+            JsonObject difficulty = new JsonObject();
+            difficulty.addProperty("rating", rating);
+            difficulty.addProperty("label", net.nerdsmp.paper.expedition.content.Difficulty.label(rating));
+            entry.add("difficulty", difficulty);
+            if (detail) {
+                entry.add("guide", guide(definition));
+                entry.add("bestiary", bestiary(plugin, definition));
+                entry.add("rewards", rewards(plugin, definition));
+            }
             String seal = plugin.campaign() == null ? null : plugin.campaign().expeditionLock(definition.id()).orElse(null);
             if (seal == null) entry.add("sealedBy", com.google.gson.JsonNull.INSTANCE);
             else entry.addProperty("sealedBy", seal);
@@ -82,6 +100,80 @@ final class PublicGameJson {
         }
         root.add("expeditions", list);
         return root.toString();
+    }
+
+    private static JsonObject guide(ExpeditionDefinition definition) {
+        var guide = definition.guide();
+        JsonObject json = new JsonObject();
+        json.addProperty("overview", guide.overview());
+        JsonArray tips = new JsonArray();
+        guide.tips().stream().limit(12).forEach(tips::add);
+        json.add("tips", tips);
+        JsonArray rooms = new JsonArray();
+        for (var room : definition.roomList()) {
+            JsonObject row = new JsonObject();
+            row.addProperty("title", room.title());
+            row.addProperty("type", room.encounter().type().name().toLowerCase(Locale.ROOT));
+            if (room.encounter().type() == ExpeditionDefinition.EncounterType.SURVIVE) row.addProperty("seconds", room.encounter().surviveSeconds());
+            if (room.encounter().type() == ExpeditionDefinition.EncounterType.WAVES) row.addProperty("waves", room.encounter().waves().size());
+            row.addProperty("tip", guide.rooms().getOrDefault(room.id(), ""));
+            rooms.add(row);
+        }
+        json.add("rooms", rooms);
+        json.addProperty("boss", guide.boss());
+        return json;
+    }
+
+    private static JsonArray bestiary(NerdSmpPlugin plugin, ExpeditionDefinition definition) {
+        JsonArray list = new JsonArray();
+        for (var mob : net.nerdsmp.paper.expedition.ExpeditionBestiary.of(plugin, definition)) {
+            if (list.size() >= 16) break;
+            JsonObject row = new JsonObject();
+            row.addProperty("name", mob.name());
+            row.addProperty("role", mob.role());
+            JsonArray rooms = new JsonArray();
+            mob.rooms().forEach(rooms::add);
+            row.add("rooms", rooms);
+            if (mob.health() != null) row.addProperty("health", Math.round(mob.health()));
+            if (mob.damage() != null) row.addProperty("damage", Math.round(mob.damage()));
+            if (!mob.ability().isBlank()) row.addProperty("ability", mob.ability());
+            JsonArray drops = new JsonArray();
+            for (var drop : mob.drops()) {
+                if (drops.size() >= 8) break;
+                JsonObject line = new JsonObject();
+                line.addProperty("item", drop.item());
+                line.addProperty("chance", Math.round(drop.chance() * 10_000) / 10_000.0);
+                line.addProperty("min", drop.minimum());
+                line.addProperty("max", drop.maximum());
+                drops.add(line);
+            }
+            row.add("drops", drops);
+            list.add(row);
+        }
+        return list;
+    }
+
+    private static JsonObject rewards(NerdSmpPlugin plugin, ExpeditionDefinition definition) {
+        JsonObject json = new JsonObject();
+        json.addProperty("marks", definition.loot().marks());
+        JsonArray items = new JsonArray();
+        definition.loot().items().forEach((id, amount) -> {
+            JsonObject row = new JsonObject();
+            String name = words(id);
+            try {
+                name = plugin.items().itemName(new net.nerdsmp.api.model.ItemId(id))
+                    .map(value -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(value))).orElse(name);
+            } catch (IllegalArgumentException invalid) {
+                // Vanilla material: keep its plain name.
+            }
+            row.addProperty("name", name);
+            row.addProperty("amount", amount);
+            items.add(row);
+        });
+        json.add("items", items);
+        json.addProperty("profileRolls", definition.loot().profile() != null);
+        return json;
     }
 
     static String campaign(NerdSmpPlugin plugin, String sampled) {

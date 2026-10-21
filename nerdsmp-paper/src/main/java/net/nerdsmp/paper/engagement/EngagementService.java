@@ -9,7 +9,6 @@ import net.nerdsmp.paper.resource.HarvestClaims;
 import net.nerdsmp.paper.resource.ResourceMaterials;
 import net.nerdsmp.paper.resource.ResourceProvenanceService;
 import net.nerdsmp.paper.npc.ReputationContractService;
-import net.nerdsmp.paper.storage.AtomicYamlFiles;
 import net.nerdsmp.paper.storage.StablePlayerKey;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -33,7 +32,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -493,6 +491,8 @@ public final class EngagementService implements Listener, AutoCloseable {
         }
     }
 
+    private net.nerdsmp.paper.storage.OrderedYamlWriter progressWriter;
+
     private synchronized void saveProgress() {
         YamlConfiguration yaml = new YamlConfiguration();
         progress.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
@@ -504,11 +504,9 @@ public final class EngagementService implements Listener, AutoCloseable {
             value.questProgress.forEach((id, amount) -> yaml.set(path + ".quest-progress." + id, amount));
             yaml.set(path + ".claimed-quests", value.claimedQuests.stream().sorted().toList());
         });
-        try {
-            AtomicYamlFiles.save(yaml, dataFile);
-        } catch (IOException exception) {
-            plugin.getLogger().severe("Could not save engagement progress: " + exception.getMessage());
-        }
+        // Every player's record goes into one file; write it off the main thread (newest wins).
+        if (progressWriter == null) progressWriter = new net.nerdsmp.paper.storage.OrderedYamlWriter(plugin, dataFile, "engagement progress");
+        progressWriter.submit(yaml.saveToString());
     }
 
     private boolean isOre(Material material) {

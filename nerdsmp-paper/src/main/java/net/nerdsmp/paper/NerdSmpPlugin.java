@@ -54,7 +54,6 @@ import net.nerdsmp.paper.market.DurableMarketService;
 import net.nerdsmp.paper.market.MarketController;
 import net.nerdsmp.paper.market.AuctionController;
 import net.nerdsmp.paper.auction.DurableAuctionService;
-import net.nerdsmp.paper.service.InMemoryPartyService;
 import net.nerdsmp.paper.service.InMemoryProgressionService;
 import net.nerdsmp.paper.reputation.PlayerYamlReputationService;
 import net.nerdsmp.paper.session.SessionRegistry;
@@ -92,6 +91,11 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.claim.HomesteadController homesteads;
     private CampaignService campaigns;
     private PartyService parties;
+    private net.nerdsmp.paper.party.PartyRoster partyRoster;
+    private net.nerdsmp.paper.party.PartyManager partyManager;
+    private net.nerdsmp.paper.party.PartyMenu partyMenu;
+    /** Party notifications, presence, menu and {@code /party}. */
+    public net.nerdsmp.paper.party.PartyManager partyManager() { return partyManager; }
     private EntitlementService entitlements;
     private ReputationService reputation;
     private DurableMarketService market;
@@ -276,6 +280,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (mobs != null) mobs.close();
         if (skyblock != null) skyblock.close();
         if (expeditionSetup != null) expeditionSetup.close();
+        if (partyManager != null) partyManager.close();
         if (expeditions != null) expeditions.close();
         if (expeditionRoutes != null) expeditionRoutes.close();
         if (marketController != null) marketController.close();
@@ -387,6 +392,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         } else {
             throw new IllegalArgumentException("Unsupported storage.mode: " + storageMode);
         }
+        economy = new net.nerdsmp.paper.economy.ObservedEconomyService(economy);
 
         var regionPolicy = new net.nerdsmp.paper.claim.ClaimRegionPolicy(getConfig(), getServer().getWorlds());
         claims = new InMemoryClaimService(
@@ -397,10 +403,12 @@ public final class NerdSmpPlugin extends JavaPlugin {
             getConfig().getInt("claims.maximum-residents", 32),
             chunk -> skyblockEnabled || regionPolicy.test(chunk)
         );
-        parties = new InMemoryPartyService(
+        partyRoster = new net.nerdsmp.paper.party.PartyRoster(
             getConfig().getInt("parties.maximum-size", 5),
-            Duration.ofSeconds(getConfig().getLong("parties.invite-lifetime-seconds", 60L))
+            Duration.ofSeconds(getConfig().getLong("parties.invite-lifetime-seconds", 60L)),
+            Math.max(1, getConfig().getInt("parties.max-pending-invites", 3))
         );
+        parties = partyRoster;
         String marketSeason = getConfig().getString("season.id", "season-1");
         if (!marketSeason.matches("[a-zA-Z0-9_-]{1,64}")) {
             throw new IllegalArgumentException("Season id must be a safe market storage identifier");
@@ -524,6 +532,9 @@ public final class NerdSmpPlugin extends JavaPlugin {
         studioUi.setHome(developerStudio::open);
         watchdog = new WatchdogService(this);
         connections = new net.nerdsmp.paper.anticheat.ConnectionLog(this);
+        partyManager = new net.nerdsmp.paper.party.PartyManager(this, partyRoster);
+        partyMenu = new net.nerdsmp.paper.party.PartyMenu(this, partyManager);
+        partyManager.attach(partyMenu);
         expeditions = new net.nerdsmp.paper.expedition.ExpeditionService(this);
         expeditionSetup = new net.nerdsmp.paper.expedition.ExpeditionSetup(this, expeditions);
         expeditionMenu = new net.nerdsmp.paper.expedition.ExpeditionMenu(this, expeditions);
@@ -616,6 +627,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(forestry, this);
         if (expeditionRoutes != null) plugins.registerEvents(expeditionRoutes, this);
         plugins.registerEvents(expeditions, this);
+        plugins.registerEvents(partyManager, this);
+        plugins.registerEvents(partyMenu, this);
         plugins.registerEvents(expeditionSetup, this);
         plugins.registerEvents(expeditionMenu, this);
         presentation.start();
