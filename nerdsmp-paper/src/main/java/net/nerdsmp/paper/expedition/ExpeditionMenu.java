@@ -57,6 +57,11 @@ public final class ExpeditionMenu implements Listener {
                 lore.add(0, "<green><bold>★ Start here</bold></green> <gray>A short, gentle tour of how expeditions work.</gray>");
                 lore.add(1, "");
             }
+            Optional<ExpeditionDefinition> before = service.missingRequirement(player, definition);
+            if (before.isPresent()) {
+                lore.add("");
+                lore.add("<red>Clear " + Chat.escape(before.get().title()) + " first.</red>");
+            }
             if (lock.isPresent()) {
                 lore.add("");
                 lore.add("<red>Sealed until the campaign reaches</red>");

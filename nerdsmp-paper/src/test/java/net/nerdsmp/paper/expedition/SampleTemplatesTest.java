@@ -37,7 +37,11 @@ class SampleTemplatesTest {
         return material != Material.AIR && material != Material.CANDLE && material != Material.COBWEB;
     }
 
+    /** Maps laid out as one straight corridor south along X=0. */
+    private static final java.util.Set<String> LINEAR = java.util.Set.of("first_flight", "hollow_barrow", "cinder_keep", "sunken_aqueduct");
+
     @Test void everyStandingSpotHasFloorAndHeadroom() {
+        List<String> problems = new java.util.ArrayList<>();
         for (String id : ExpeditionService.SAMPLES) {
             ExpeditionDefinition expedition = definition(id);
             Map<Cell, Material> blocks = blocks(id);
@@ -45,14 +49,40 @@ class SampleTemplatesTest {
             for (var room : expedition.roomList()) {
                 spots.addAll(room.points());
                 if (room.checkpoint() != null) spots.add(room.checkpoint());
+                for (var puzzle : room.puzzles().values()) {
+                    if (puzzle.start() != null) spots.add(puzzle.start());
+                    for (var block : puzzle.blocks()) {
+                        String material = String.valueOf(blocks.get(new Cell(block.x(), block.y(), block.z())));
+                        boolean fits = switch (puzzle.type()) {
+                            case LEVERS -> material.equals("LEVER");
+                            case SEQUENCE -> material.equals("LEVER") || material.endsWith("_BUTTON");
+                            case PLATES -> material.endsWith("PRESSURE_PLATE");
+                            case TARGETS -> material.equals("TARGET");
+                            case REACH -> true;
+                        };
+                        if (!fits) problems.add(id + " " + room.id() + "/" + puzzle.id() + " block " + block.x() + "," + block.y() + "," + block.z() + " is " + material);
+                        // Something you shoot or press needs an open side to reach it from.
+                        boolean open = false;
+                        for (int[] side : new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, 1, 0}})
+                            open |= room.region().contains(block.x() + side[0] + .5, block.y() + side[1], block.z() + side[2] + .5)
+                                && !solid(blocks, block.x() + side[0], block.y() + side[1], block.z() + side[2]);
+                        if (puzzle.type() != ExpeditionDefinition.PuzzleType.REACH && !open)
+                            problems.add(id + " " + room.id() + "/" + puzzle.id() + " block " + block.x() + "," + block.y() + "," + block.z() + " is boxed in");
+                    }
+                }
             }
+            for (var fire : expedition.story().campfires().values())
+                if (blocks.get(new Cell(fire.at().x(), fire.at().y(), fire.at().z())) != Material.CAMPFIRE)
+                    problems.add(id + " campfire " + fire.id() + " is " + blocks.get(new Cell(fire.at().x(), fire.at().y(), fire.at().z())));
+            for (var npc : expedition.story().npcs().values()) spots.add(npc.at());
             for (var spot : spots) {
-                String where = id + " " + spot;
-                assertTrue(solid(blocks, spot.x(), spot.y() - 1, spot.z()), "floor under " + where);
-                assertFalse(solid(blocks, spot.x(), spot.y(), spot.z()), "feet at " + where);
-                assertFalse(solid(blocks, spot.x(), spot.y() + 1, spot.z()), "head at " + where);
+                String where = id + " " + spot.x() + "," + spot.y() + "," + spot.z();
+                if (!solid(blocks, spot.x(), spot.y() - 1, spot.z())) problems.add("no floor under " + where);
+                if (solid(blocks, spot.x(), spot.y(), spot.z())) problems.add("feet blocked at " + where + " by " + blocks.get(new Cell(spot.x(), spot.y(), spot.z())));
+                if (solid(blocks, spot.x(), spot.y() + 1, spot.z())) problems.add("head blocked at " + where);
             }
         }
+        assertEquals(List.of(), problems);
     }
 
     @Test void gatesAreBuiltAndRoomsConnect() {
@@ -65,7 +95,8 @@ class SampleTemplatesTest {
                 for (int x = gate.minX(); x <= gate.maxX(); x++) for (int y = gate.minY(); y <= gate.maxY(); y++) for (int z = gate.minZ(); z <= gate.maxZ(); z++)
                     assertEquals(Material.IRON_BARS, blocks.get(new Cell(x, y, z)), id + " gate of " + room.id() + " at " + x + "," + y + "," + z);
             }
-            // Walking south from the spawn along X=0 crosses only air and gates into the boss room (its dais starts there).
+            // Linear maps: walking south from the spawn along X=0 crosses only air and gates into the boss room.
+            if (!LINEAR.contains(id)) continue;
             var boss = expedition.roomList().get(expedition.rooms().size() - 1);
             for (int z = expedition.spawn().z(); z <= boss.region().minZ() + 4; z++) {
                 Material feet = blocks.getOrDefault(new Cell(0, 64, z), Material.AIR);
@@ -78,7 +109,7 @@ class SampleTemplatesTest {
         for (String id : ExpeditionService.SAMPLES) {
             assertSame(SampleTemplates.plan(id), SampleTemplates.plan(id));
             assertTrue(SampleTemplates.plan(id).size() > 5_000, id);
-            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> Math.abs(p.cell().x()) < 64 && p.cell().z() > -16 && p.cell().z() < 256), id);
+            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> Math.abs(p.cell().x()) < 128 && p.cell().z() > -128 && p.cell().z() < 256), id);
         }
         assertNull(SampleTemplates.plan("nope"));
         assertTrue(blocks("cinder_keep").containsValue(Material.MAGMA_BLOCK));

@@ -5,6 +5,21 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### The first campaign's expeditions (October 21)
+- The **Hollow Barrow** is rebuilt: a sexton at the mouth, bone rain in the ossuary, a new Lever
+  Vault with the Barrow Warden and four levers pulled in the order the candles flash, a brazier in
+  the antechamber, and a cutscene and phases for the Hollow Huntsman.
+- Four new expeditions, each opening once the one before it is cleared: **Thornwood Canopy**
+  (treetops, a jump course and an enemy-forces goal), the **Sunken Aqueduct** (a timed run with
+  valves, counterweights and geysers), **Gloomforge Mines** (a gauntlet of three mini-bosses before
+  the Deep Foreman) and the **Hall of the Three Wardens** (three wings and three bosses in any order).
+- Thirteen new expedition creatures: mini-bosses, bosses and elites with their own looks and
+  abilities.
+- `requires:` in an expedition file gates it behind other expeditions; the board shows the lock.
+- Cutscenes started by teleporting into a room now return players to where they arrived.
+- The web API carries the expedition list up to 60 KB, dropping bestiaries before guides when it
+  must, and says so once instead of on every refresh.
+
 ### Expedition engine and the First Flight tutorial (October 21)
 - [Expeditions](EXPEDITIONS.md) gain new room and run types: clear-every-enemy rooms, councils of
   two to four bosses, puzzle rooms, and run goals for bosses in any order, enemy forces, and beating

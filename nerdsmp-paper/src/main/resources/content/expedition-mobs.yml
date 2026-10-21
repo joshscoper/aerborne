@@ -17,3 +17,133 @@ mobs:
     ability: none
     mark-reward: 25
     equipment: {head: chainmail_helmet, chest: iron_chestplate, legs: chainmail_leggings, hand: stone_axe}
+
+  # The Hollow Barrow
+  barrow_warden:
+    name: "<gradient:#b2bec3:#636e72>Barrow Warden</gradient>"
+    type: skeleton
+    health: 120
+    attack-damage: 7
+    scale: 1.5
+    ability: none
+    mark-reward: 15
+    equipment: {head: iron_helmet, chest: chainmail_chestplate, hand: iron_sword, off-hand: shield}
+
+  # Thornwood Canopy
+  briar_matron:
+    name: "<gradient:#6ab04c:#2d3436>Briar Matron</gradient>"
+    type: spider
+    health: 160
+    attack-damage: 6
+    scale: 2.3
+    ability: none
+    mark-reward: 20
+  thornheart_shaman:
+    name: "<gradient:#badc58:#218c74><bold>The Thornheart Shaman</bold></gradient>"
+    type: evoker
+    boss: true
+    health: 520
+    attack-damage: 6
+    scale: 1.5
+    ability: none
+    mark-reward: 120
+
+  # The Sunken Aqueduct
+  sluice_keeper:
+    name: "<dark_aqua>Sluice Keeper</dark_aqua>"
+    type: drowned
+    health: 50
+    attack-damage: 6
+    scale: 1.2
+    ability: none
+    mark-reward: 6
+    equipment: {head: chainmail_helmet, hand: iron_shovel}
+  tidewarden:
+    name: "<gradient:#7ed6df:#130f40><bold>The Tidewarden</bold></gradient>"
+    type: drowned
+    boss: true
+    health: 600
+    attack-damage: 9
+    scale: 2.2
+    ability: none
+    mark-reward: 140
+    equipment: {head: turtle_helmet, hand: trident}
+
+  # Gloomforge Mines
+  gloom_miner:
+    name: "<gray>Gloom Miner</gray>"
+    type: zombie
+    health: 30
+    attack-damage: 5
+    ability: none
+    mark-reward: 2
+    equipment: {head: iron_helmet, hand: iron_pickaxe}
+  grell_overseer:
+    name: "<gradient:#e17055:#2d3436>Overseer Grell</gradient>"
+    type: vindicator
+    health: 140
+    attack-damage: 9
+    scale: 1.4
+    ability: none
+    mark-reward: 20
+    equipment: {head: iron_helmet, hand: iron_axe}
+  blastmaster:
+    name: "<gradient:#fdcb6e:#d63031>The Blastmaster</gradient>"
+    type: pillager
+    health: 120
+    attack-damage: 6
+    scale: 1.4
+    ability: none
+    mark-reward: 20
+    equipment: {head: leather_helmet, hand: crossbow}
+  slag_hound:
+    name: "<gradient:#ff7675:#2d3436>Slag Hound</gradient>"
+    type: ravager
+    health: 160
+    attack-damage: 8
+    scale: 0.75
+    ability: none
+    mark-reward: 20
+  deep_foreman:
+    name: "<gradient:#fab1a0:#2d3436><bold>The Deep Foreman</bold></gradient>"
+    type: zombie
+    boss: true
+    health: 750
+    attack-damage: 10
+    scale: 2.2
+    speed: 0.21
+    ability: none
+    mark-reward: 160
+    equipment: {head: iron_helmet, chest: iron_chestplate, legs: leather_leggings, hand: diamond_pickaxe}
+
+  # The Hall of the Three Wardens
+  ember_warden:
+    name: "<gradient:#ffbe76:#eb4d4b><bold>The Ember Warden</bold></gradient>"
+    type: blaze
+    boss: true
+    health: 450
+    attack-damage: 8
+    scale: 2.2
+    ability: none
+    mark-reward: 120
+  frost_warden:
+    name: "<gradient:#dff9fb:#22a6b3><bold>The Frost Warden</bold></gradient>"
+    type: stray
+    boss: true
+    health: 450
+    attack-damage: 7
+    scale: 2.0
+    ability: none
+    mark-reward: 120
+    equipment: {head: blue_ice, hand: bow}
+  stone_warden:
+    name: "<gradient:#b8e994:#3c6382><bold>The Stone Warden</bold></gradient>"
+    type: vindicator
+    boss: true
+    health: 520
+    attack-damage: 11
+    scale: 2.3
+    speed: 0.24
+    ability: none
+    mark-reward: 120
+    equipment: {head: mossy_cobblestone, hand: stone_axe}

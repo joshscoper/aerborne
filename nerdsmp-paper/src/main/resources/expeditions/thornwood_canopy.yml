@@ -1,0 +1,146 @@
+# Thornwood Canopy: decks and rope bridges among giant trees at night. Clear enough of the forest's
+# creatures (enemy forces) to wake the Thornheart Shaman. Full reference: docs/EXPEDITIONS.md.
+title: Thornwood Canopy
+description: Spiders own the treetops now. Thin their numbers and face the shaman at the Heart Tree.
+icon: dark_oak_sapling
+dimension: overworld
+sample: thornwood_canopy
+published: true
+difficulty: 3
+level: 12
+party: {min: 1, max: 5}
+time-limit-minutes: 30
+spawn: [0, 64, 4, 0]
+exit: [10, 64, 112]
+modifiers: []
+requires: [hollow_barrow]
+goal: forces
+forces: 30
+
+npcs:
+  ilsa:
+    name: Ranger Ilsa
+    entity: villager
+    at: [3, 64, 5, 90]
+    lines:
+      - "The canopy's crawling. Webs on every bough, and something big nesting past the hollow."
+      - "Thin them out and the shaman will come down from the Heart Tree. He won't show for a handful."
+      - "The archers on the west boughs are worth hunting if you're short. Nobody makes you, mind."
+      - "Fall off the branches and I'll haul you back up to the deck. Costs you nothing but pride."
+
+campfires:
+  rootgate_fire: {at: [-3, 64, 7], lit: true, title: Rootgate Fire}
+  hunters_fire: {at: [3, 64, 97], lit: false, title: Hunter's Fire}
+
+hazards:
+  thorn_burst: {type: eruption, area: [-12, 63, 104, 12, 63, 120], every: 8, count: 3, damage: 4}
+  spore_cloud: {type: gas, area: [-12, 63, 104, 12, 63, 120], every: 10, count: 2, damage: 0}
+
+cutscenes:
+  heart_tree:
+    - {at: [0.5, 76, 102, 0, 30], seconds: 3, text: "<dark_green>The Heart Tree stirs…</dark_green>"}
+    - {at: [0.5, 68, 112, 0, 6], seconds: 3, text: "<green>The Thornheart Shaman descends</green>"}
+
+mobs:
+  "custom:mire_weaver": {role: elite, abilities: [web, poison_cloud]}
+  "custom:thorn_sentinel": {role: normal, forces: 2}
+  "custom:briar_matron": {role: miniboss, abilities: [web, summon, poison_cloud], forces: 10}
+
+rooms:
+  bough_run:
+    title: The Bough Run
+    region: [-10, 40, 11, 10, 80, 41]
+    puzzles:
+      branches:
+        type: reach
+        title: Cross the branches to the hollow
+        area: [-4, 63, 42, 4, 67, 46]
+        start: [0, 64, 8, 0]
+        fail-below: 56
+    encounter:
+      type: puzzle
+      scripts:
+        start: ["say ilsa|Pads and beams, one at a time. The leaves hold better than they look."]
+  webbed_hollow:
+    title: The Webbed Hollow
+    region: [-10, 60, 42, 5, 75, 64]
+    checkpoint: [0, 64, 62, 0]
+    points: [[-7, 64, 46], [2, 64, 46], [-7, 64, 58], [2, 64, 58], [-3, 64, 52], [1, 64, 61]]
+    encounter:
+      type: clear
+      waves:
+        - {"vanilla:spider": 4, "custom:mire_weaver": 2, "vanilla:cave_spider": 2}
+      scripts:
+        start: ["say ilsa|Weavers! The pale ones spit webs and poison. Kill them first."]
+        clear: ["say ilsa|The hollow's clear. The archers' boughs are west if you want more; the nest is south."]
+  sentinel_boughs:
+    title: The Sentinel Boughs
+    optional: true
+    requires: [webbed_hollow]
+    region: [-24, 60, 49, -17, 75, 63]
+    points: [[-22, 64, 52], [-19, 64, 52], [-22, 64, 60], [-19, 64, 60], [-20, 64, 56]]
+    encounter:
+      type: clear
+      waves:
+        - {"custom:thorn_sentinel": 4, "vanilla:skeleton": 2}
+      scripts:
+        start: ["message <gray>Bowstrings creak in the boughs.</gray>"]
+  briar_nest:
+    title: The Briar Matron's Nest
+    requires: [webbed_hollow]
+    region: [-8, 60, 71, 11, 75, 92]
+    checkpoint: [0, 64, 91, 0]
+    points: [[0, 64, 81], [-5, 64, 75], [8, 64, 75], [-5, 64, 88], [8, 64, 88]]
+    encounter:
+      type: waves
+      waves:
+        - {"custom:briar_matron": 1, "vanilla:cave_spider": 3}
+        - {mobs: {"vanilla:spider": 3}, delay-seconds: 6}
+      scripts:
+        start:
+          - "say The Briar Matron|More flies for my web."
+          - "say ilsa|That's the Matron. Burn down her brood or she'll bury you in them."
+        clear: ["say ilsa|There's a hunter's fire past the nest. Light it; the grove is close."]
+  thornheart_grove:
+    title: The Thornheart Grove
+    requires: [briar_nest]
+    region: [-14, 60, 103, 14, 80, 130]
+    points: [[0, 64, 114], [-9, 64, 108], [9, 64, 108], [-10, 64, 116], [10, 64, 116]]
+    encounter:
+      type: boss
+      boss: custom:thornheart_shaman
+      boss-level-bonus: 3
+      abilities: [poison_cloud, tether]
+      phases:
+        - {at: 60, abilities: [poison_cloud, tether, summon], title: "The grove answers the shaman"}
+        - {at: 30, abilities: [fire_pools, tether, summon], title: "The Heart Tree bleeds"}
+      enrage-seconds: 360
+      adds-at-health: [50]
+      waves:
+        - {"vanilla:spider": 3}
+      scripts:
+        start:
+          - "cutscene heart_tree"
+          - "wait 6"
+          - "say The Thornheart Shaman|You burned my children. The wood remembers."
+        health-60: ["hazard start spore_cloud"]
+        health-30: ["hazard start thorn_burst", "say The Thornheart Shaman|Root and thorn, rise!"]
+        clear: ["hazard stop spore_cloud", "hazard stop thorn_burst", "say ilsa|The canopy's quiet. Head out by the east steps when you're ready."]
+
+guide:
+  overview: A night climb through the treetops. Thin out the spiders and archers (watch the enemy forces bar) until the Thornheart Shaman comes down to fight at the Heart Tree.
+  tips:
+    - The final grove stays shut until enemy forces reach 100%. The optional Sentinel Boughs to the west help if you're short.
+    - Falling off the Bough Run puts you back on the deck without spending a life.
+    - Mire Weavers are elites. Their webs pin you; break line of sight or kill them first.
+    - Bring fire resistance and a bucket of milk for the grove's spores.
+  rooms:
+    bough_run: A jump course of leaf pads and log beams. One step up, one long beam.
+    webbed_hollow: Spiders, cave spiders and two Mire Weavers all at once.
+    sentinel_boughs: Optional. Thorn Sentinels and skeletons shooting from a perch to the west; each counts double.
+    briar_nest: The Briar Matron webs and poisons, and calls more spiders. A second brood follows.
+    thornheart_grove: The Thornheart Shaman fights with fangs from the ground and summoned vexes, plus his own abilities.
+  boss: The Thornheart Shaman (an evoker) snaps rows of fangs up from the deck and calls vexes, as evokers do. He also drops poison clouds and chains players to him. At 60% the grove fills with spores and he calls spiders; at 30% fire pools join in and thorns burst from the deck. Spread out for the fangs, and kill the vexes fast.
+loot:
+  marks: 180
+  items: {string: 12, spider_eye: 4, experience_bottle: 4, oak_sapling: 2}

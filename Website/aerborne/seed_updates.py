@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 22
+LATEST = 23
 C = "static:img/companions/"
 
 
@@ -66,6 +66,8 @@ def apply(conn):
                          (PAGES[slug][2].strip(), now_str(), slug))
     if current < 22:
         _rev22(conn)
+    if current < 23:
+        _rev23(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -141,6 +143,27 @@ def _rev22(conn):
         summary = guide['summary'] if row['summary'] == REV20_PARTIES[1] else row['summary']
         conn.execute('UPDATE guides SET body = ?, summary = ?, updated_at = ? WHERE id = ?',
                      (guide['body'], summary, now_str(), row['id']))
+
+
+# The expeditions guide and region as revision 20 shipped them, before puzzles, campfires and the
+# first campaign's expeditions.
+REV20_EXPEDITIONS_GUIDE = '330894d81a2f3ccddbe683e73920a60ba5d86f0e54e26fdd836f79dbc5fc875b'
+REV20_EXPEDITIONS_POI = 'The Hollow Barrow, a crypt beneath the old hills\nCinder Keep, a fortress in the Nether'
+
+
+def _rev23(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED, REGIONS
+    guide = next(g for g in REVIEWED if g['slug'] == 'expeditions')
+    row = conn.execute("SELECT * FROM guides WHERE slug = 'expeditions'").fetchone()
+    if (row and row['updated_by'] == 'starter content'
+            and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == REV20_EXPEDITIONS_GUIDE):
+        conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
+    region = conn.execute("SELECT * FROM regions WHERE slug = 'expeditions'").fetchone()
+    if region and region['updated_by'] == 'starter content' and (region['points_of_interest'] or '') == REV20_EXPEDITIONS_POI:
+        fresh = REGIONS['expeditions']
+        conn.execute('UPDATE regions SET points_of_interest = ?, activities = ?, updated_at = ? WHERE id = ?',
+                     (fresh['points_of_interest'], fresh['activities'], now_str(), region['id']))
 
 
 def _rev18(conn):

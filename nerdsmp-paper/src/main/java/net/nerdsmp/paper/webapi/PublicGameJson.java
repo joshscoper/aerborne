@@ -22,15 +22,31 @@ final class PublicGameJson {
 
     private PublicGameJson() { }
 
-    /** Full detail when it fits the response budget; otherwise guides and bestiaries are left out. */
+    /** How much of each expedition the document carries: everything, guides without bestiaries, or the list. */
+    enum Detail { FULL, GUIDES, LIST }
+
+    private static volatile Detail published = Detail.FULL;
+
+    /**
+     * The most detail that fits the expeditions budget: everything, then without bestiaries, then the
+     * bare list. Staff are told once when the level changes, not on every refresh.
+     */
     static String expeditions(NerdSmpPlugin plugin, String sampled) {
-        String full = expeditions(plugin, sampled, true);
-        if (full.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= ApiSnapshot.MAX_RESPONSE_BYTES - 512) return full;
-        plugin.getLogger().warning("Expedition guides are too large for the web API budget; publishing the list without them.");
-        return expeditions(plugin, sampled, false);
+        for (Detail level : Detail.values()) {
+            String json = expeditions(plugin, sampled, level);
+            int bytes = json.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if (level != Detail.LIST && bytes > ApiSnapshot.MAX_EXPEDITIONS_BYTES - 512) continue;
+            if (level != published) {
+                published = level;
+                if (level == Detail.GUIDES) plugin.getLogger().info("The expedition list is large (" + bytes / 1024 + " KB); the web API now leaves out the bestiaries.");
+                else if (level == Detail.LIST) plugin.getLogger().warning("The expedition list is too large for the web API; publishing it without guides or bestiaries.");
+            }
+            return json;
+        }
+        throw new IllegalStateException("unreachable");
     }
 
-    private static String expeditions(NerdSmpPlugin plugin, String sampled, boolean detail) {
+    private static String expeditions(NerdSmpPlugin plugin, String sampled, Detail detail) {
         var service = plugin.expeditions();
         JsonObject root = new JsonObject();
         root.addProperty("apiVersion", 1);
@@ -60,9 +76,9 @@ final class PublicGameJson {
             difficulty.addProperty("rating", rating);
             difficulty.addProperty("label", net.nerdsmp.paper.expedition.content.Difficulty.label(rating));
             entry.add("difficulty", difficulty);
-            if (detail) {
+            if (detail != Detail.LIST) {
                 entry.add("guide", guide(definition));
-                entry.add("bestiary", bestiary(plugin, definition));
+                if (detail == Detail.FULL) entry.add("bestiary", bestiary(plugin, definition));
                 entry.add("rewards", rewards(plugin, definition));
             }
             String seal = plugin.campaign() == null ? null : plugin.campaign().expeditionLock(definition.id()).orElse(null);

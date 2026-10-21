@@ -70,8 +70,9 @@ public record ExpeditionDefinition(
      */
     public record Story(Goal goal, int forces, int timeBonusSeconds, boolean raid,
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
-                        Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time) {
-        public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null);
+                        Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
+                        List<String> requires) {
+        public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of());
 
         public Story {
             goal = goal == null ? Goal.ROOMS : goal;
@@ -81,6 +82,7 @@ public record ExpeditionDefinition(
             cutscenes = ordered(cutscenes);
             npcs = ordered(npcs);
             mobs = ordered(mobs);
+            requires = requires == null ? List.of() : List.copyOf(requires);
         }
 
         /** The profile for a wave mob id, or a plain one. */

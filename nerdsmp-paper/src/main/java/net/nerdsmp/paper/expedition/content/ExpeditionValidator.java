@@ -30,6 +30,9 @@ public final class ExpeditionValidator {
         /** Ability ids come from the built-in kit unless a server adds more. */
         default boolean ability(String id) { return Abilities.known(id); }
 
+        /** Whether an expedition id exists, for {@code requires:}. */
+        default boolean expedition(String id) { return true; }
+
         /** Entity types an expedition NPC may use. */
         default boolean npcEntity(String key) {
             return java.util.Set.of("villager", "wandering_trader", "piglin", "allay", "vindicator", "pillager", "witch", "skeleton",
@@ -252,6 +255,10 @@ public final class ExpeditionValidator {
 
     private static void story(List<Issue> issues, ExpeditionDefinition expedition, Catalog catalog) {
         var story = expedition.story();
+        for (String required : story.requires()) {
+            if (required.equals(expedition.id())) error(issues, "The expedition requires itself.", "requires: in the expedition file");
+            else if (!catalog.expedition(required)) error(issues, "requires names unknown expedition '" + required + "'.", "requires: in the expedition file");
+        }
         if (story.time() != null && (story.time() < 0 || story.time() > 23_999))
             error(issues, "time must be 0-23999 (6000 noon, 13000 dusk, 18000 midnight).", "time: in the expedition file");
         switch (story.goal()) {

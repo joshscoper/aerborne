@@ -144,7 +144,8 @@ public final class ExpeditionLoader {
         }
         return new ExpeditionDefinition.Story(goal, yaml.contains("forces") ? integer(yaml, "forces") : 0,
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
-            campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null);
+            campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
+            lower(yaml.getStringList("requires")));
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {

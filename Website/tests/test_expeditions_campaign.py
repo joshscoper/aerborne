@@ -186,5 +186,33 @@ class ExpeditionCampaignPagesTest(unittest.TestCase):
             self.assertIn(text, body)
 
 
+    def test_revision_23_refreshes_the_untouched_expedition_guide_and_region(self):
+        conn = self.db()
+        old = "## What an expedition is\nOld text.\n"
+        conn.execute("UPDATE guides SET body = ? WHERE slug = 'expeditions'", (old,))
+        conn.execute("UPDATE regions SET points_of_interest = ? WHERE slug = 'expeditions'", (seed_updates.REV20_EXPEDITIONS_POI,))
+        conn.execute("UPDATE settings SET value = '22' WHERE key = 'seed_rev'")
+        conn.commit()
+        with mock.patch.object(seed_updates, "REV20_EXPEDITIONS_GUIDE", hashlib.sha256(old.encode("utf-8")).hexdigest()):
+            self.assertTrue(seed_updates.apply(conn))
+        body = conn.execute("SELECT body FROM guides WHERE slug = 'expeditions'").fetchone()["body"]
+        self.assertIn("First Flight", body)
+        self.assertIn("Puzzles, campfires and bosses", body)
+        poi = conn.execute("SELECT points_of_interest FROM regions WHERE slug = 'expeditions'").fetchone()["points_of_interest"]
+        self.assertIn("Gloomforge Mines", poi)
+
+        conn.execute("UPDATE guides SET body = 'Staff copy.', updated_by = 'j0sh' WHERE slug = 'expeditions'")
+        conn.execute("UPDATE settings SET value = '22' WHERE key = 'seed_rev'")
+        conn.commit()
+        seed_updates.apply(conn)
+        self.assertEqual(conn.execute("SELECT body FROM guides WHERE slug = 'expeditions'").fetchone()["body"], "Staff copy.")
+        conn.close()
+
+    def test_new_sites_get_the_campaign_expeditions_in_the_guide(self):
+        body = self.client.get("/guide/expeditions").get_data(as_text=True)
+        for text in ("First Flight", "Thornwood Canopy", "The Hall of the Three Wardens", "weigh down pressure plates"):
+            self.assertIn(text, body)
+
+
 if __name__ == "__main__":
     unittest.main()

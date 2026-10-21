@@ -598,7 +598,9 @@ Party membership does not grant building, storage or visitor access to another p
     _guide('expeditions', 'Expeditions: party adventures',
            'Form a party of up to five, clear the rooms, beat the boss and leave with loot.', """
 ## What an expedition is
-An expedition is a short adventure for **one to five players** in a private instance: your party gets its own copy of the map, so nobody else's fight gets in your way. Each run is a chain of rooms. Enter a room to start it. Clear its waves, survive its timer or defeat its boss to open the way forward. Beat the final boss, collect your loot and walk into the exit light.
+An expedition is a short adventure for **one to five players** in a private instance: your party gets its own copy of the map, so nobody else's fight gets in your way. Each run is a set of rooms. Enter a room to start it. Clear its waves, survive its timer, solve its puzzle or defeat its boss to open the way forward. Some maps branch, so you choose the order. Win, collect your loot and walk into the exit light.
+
+New to expeditions? Start with **First Flight**, a gentle tour across the sky islands with Captain Wren. It's marked *Start here* on the board.
 
 The Nether and the End are reached through expeditions. Vanilla portals are sealed. Nether and End expeditions run in real Nether and End dimensions, with the same sky, fog and creatures.
 
@@ -624,7 +626,16 @@ A run with hired allies still pays loot and Marks, but it doesn't count toward t
 - **Checkpoints.** Clearing a room can move the party's respawn point forward.
 - **Disconnects.** Rejoin within a few minutes and you're put back into the run.
 
-There is also a time limit, shown on the bar at the top of the screen with the current room and lives left.
+While you're in a run, your sidebar shows the time left, your lives, every objective and your party's health. The bar at the top of the screen appears only for a boss or mini-boss.
+
+## Puzzles, campfires and bosses
+- **Puzzles**: pull levers, press buttons in the order shown, weigh down pressure plates by throwing items on them, shoot targets before time runs out, or cross a jump course. Falling off a course puts you back at its start without costing a life.
+- **Campfires**: right-click to light one between fights. Rest beside it out of combat to heal, and the party respawns there.
+- **Warnings**: elites, mini-bosses and bosses have special attacks, and every one is shown first: a red ring, cone or line on the ground, or a marker under a player. Step out of it. A meteor shadow is the exception: stand in it with the marked player to share the hit.
+- **Different goals**: most runs end at the boss, but some ask you to slay enough enemies first, beat the clock (each cleared room adds time), or defeat several bosses in any order.
+
+## The first campaign
+Each expedition opens once you've cleared the one before it: **The Hollow Barrow** (a crypt), **Thornwood Canopy** (treetops at night), **The Sunken Aqueduct** (a race against the water), **Gloomforge Mines** (three foremen and the Deep Foreman) and **The Hall of the Three Wardens** (three wings, three bosses). Each one's guide on the [expedition board](/expeditions) lists the route, the bosses and what they drop.
 
 ## Difficulty
 | Tier | What changes |
@@ -803,8 +814,8 @@ The artwork illustrates the intended Arcane City. It is not an in-game screensho
     'expeditions': dict(name='Expeditions', theme='Party adventures', availability='released',
         summary='Short adventures for a party of up to five in a private instance: rooms, bosses, loot, and the way into the Nether and the End.',
         requirements='Open /expedition in game. Some expeditions open only when the season campaign reaches a milestone.',
-        activities='Clear rooms of waves and survive timed holds\nDefeat a boss and claim your own loot\nTry Heroic and Mythic for bigger rewards\nQueue alone and let the finder fill your group',
-        points_of_interest='The Hollow Barrow, a crypt beneath the old hills\nCinder Keep, a fortress in the Nether',
+        activities='Clear rooms of waves and survive timed holds\nSolve lever, chime, plate, target and jump puzzles\nDefeat bosses with telegraphed attacks and claim your own loot\nTry Heroic and Mythic for bigger rewards\nQueue alone and let the finder fill your group',
+        points_of_interest='First Flight, the tutorial across the sky islands\nThe Hollow Barrow, a crypt beneath the old hills\nThornwood Canopy, treetops at night\nThe Sunken Aqueduct, flooded waterworks\nGloomforge Mines, deep galleries and their foremen\nThe Hall of the Three Wardens, a citadel in the sky\nCinder Keep, a fortress in the Nether',
         body='''## Your party, your instance
 Every run is a private copy of the map, built for your group alone. Gather a [party](/guide/parties) of up to five, start from `/expedition`, and answer the ready check. Or queue alone and the finder fills the empty places.
 

@@ -72,7 +72,8 @@ import java.util.logging.Level;
  */
 public final class ExpeditionService implements Listener, AutoCloseable {
     public static final String ADMIN = "nerdsmp.expedition.admin";
-    public static final List<String> SAMPLES = List.of("first_flight", "hollow_barrow", "cinder_keep");
+    public static final List<String> SAMPLES = List.of("first_flight", "hollow_barrow", "thornwood_canopy", "sunken_aqueduct",
+        "gloomforge_mines", "hall_of_wardens", "cinder_keep");
     /** The tutorial expedition, suggested to anyone who hasn't cleared it. */
     public static final String TUTORIAL = "first_flight";
 
@@ -136,7 +137,12 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
         "first_flight", Set.of(),
-        "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797"),
+        "thornwood_canopy", Set.of(),
+        "sunken_aqueduct", Set.of(),
+        "gloomforge_mines", Set.of(),
+        "hall_of_wardens", Set.of(),
+        "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
+            "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1"));
 
     private void installSamples() {
@@ -222,6 +228,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             @Override public boolean effect(String key) { return registered(Registry.MOB_EFFECT, key); }
             @Override public boolean sound(String key) { return registered(Registry.SOUND_EVENT, key); }
             @Override public boolean material(String key) { return Material.matchMaterial(key) != null; }
+            @Override public boolean expedition(String id) { return definitions.containsKey(id); }
             @Override public boolean biome(String key) {
                 try { TemplateGenerator.resolve(key); return true; } catch (RuntimeException unknown) { return false; }
             }
@@ -297,8 +304,22 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         boolean bypass = player.hasPermission("nerdsmp.progression.bypass") || player.hasPermission(ADMIN);
         Optional<String> lock = plugin.campaign().expeditionLock(definition.id());
         if (lock.isPresent() && !bypass) return Optional.of(definition.title() + " is sealed until the campaign reaches " + lock.get() + ".");
+        if (!bypass) for (String required : definition.story().requires()) {
+            if (records.clears(account.get().toString(), required) > 0) continue;
+            String title = definition(required).map(ExpeditionDefinition::title).orElse(required);
+            return Optional.of(player.getName() + " needs to clear " + title + " before " + definition.title() + ".");
+        }
         if (tier.requires() != null && !bypass && !records.cleared(account.get().toString(), definition.id(), tier.requires()))
             return Optional.of(player.getName() + " needs to clear " + definition.title() + " on " + tiers.get(tier.requires()).title() + " first.");
+        return Optional.empty();
+    }
+
+    /** The first expedition this player must still clear before {@code definition} opens to them. */
+    public Optional<ExpeditionDefinition> missingRequirement(Player player, ExpeditionDefinition definition) {
+        if (player.hasPermission("nerdsmp.progression.bypass") || player.hasPermission(ADMIN)) return Optional.empty();
+        String account = plugin.sessions().account(player.getUniqueId()).map(Object::toString).orElse("");
+        for (String required : definition.story().requires())
+            if (records.clears(account, required) == 0) return Optional.of(definition(required).orElse(null)).filter(java.util.Objects::nonNull);
         return Optional.empty();
     }
 
@@ -888,6 +909,17 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             event.setCancelled(true);
             living.setFireTicks(0);
         }
+    }
+
+    /**
+     * Thrown items and mobs press pressure plates inside expeditions: plate puzzles rely on it, and
+     * these private instances sit outside claimable land, where claim protection blocks it.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlate(org.bukkit.event.entity.EntityInteractEvent event) {
+        if (!event.isCancelled() || !event.getBlock().getType().name().endsWith("PRESSURE_PLATE")) return;
+        World world = event.getBlock().getWorld();
+        if (InstanceWorlds.isRunWorld(world) || isTemplate(world)) event.setCancelled(false);
     }
 
     /** Poison clouds from abilities and hazards touch only players. */

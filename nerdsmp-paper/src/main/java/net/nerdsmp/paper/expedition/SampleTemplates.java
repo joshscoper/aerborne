@@ -15,7 +15,11 @@ import java.util.function.Supplier;
 public final class SampleTemplates {
     private static final Map<String, Supplier<BuildCanvas.Plan>> SAMPLES = Map.of(
         "first_flight", FirstFlightTemplate::build,
-        "hollow_barrow", SampleTemplates::hollowBarrow,
+        "hollow_barrow", HollowBarrowTemplate::build,
+        "thornwood_canopy", ThornwoodTemplate::build,
+        "sunken_aqueduct", AqueductTemplate::build,
+        "gloomforge_mines", MinesTemplate::build,
+        "hall_of_wardens", WardensTemplate::build,
         "cinder_keep", SampleTemplates::cinderKeep);
     private static final Map<String, BuildCanvas.Plan> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -30,50 +34,15 @@ public final class SampleTemplates {
 
     record Palette(Material[] floor, Material[] wall, Material pillar, String pillarState, Material ceiling, Material light, String lightState) { }
 
-    private static final Palette BARROW = new Palette(
+    static final Palette BARROW = new Palette(
         new Material[]{Material.STONE_BRICKS, Material.MOSSY_STONE_BRICKS, Material.CRACKED_STONE_BRICKS, Material.STONE_BRICKS},
         new Material[]{Material.DEEPSLATE_BRICKS, Material.CRACKED_DEEPSLATE_BRICKS, Material.DEEPSLATE_BRICKS, Material.DEEPSLATE_TILES},
         Material.POLISHED_DEEPSLATE, "", Material.DEEPSLATE_TILES, Material.SOUL_LANTERN, "hanging=true");
 
-    private static final Palette KEEP = new Palette(
+    static final Palette KEEP = new Palette(
         new Material[]{Material.NETHER_BRICKS, Material.RED_NETHER_BRICKS, Material.CRACKED_NETHER_BRICKS, Material.NETHER_BRICKS},
         new Material[]{Material.POLISHED_BLACKSTONE_BRICKS, Material.CRACKED_POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE},
         Material.BASALT, "axis=y", Material.BLACKSTONE, Material.LANTERN, "hanging=true");
-
-    static BuildCanvas.Plan hollowBarrow() {
-        BuildCanvas b = new BuildCanvas();
-        // Barrow mouth (spawn), Crypt Gallery, Ossuary, the King's Rest.
-        hall(b, -5, 5, 0, 12, 68, BARROW);
-        hall(b, -7, 7, 14, 34, 69, BARROW);
-        hall(b, -8, 8, 36, 54, 69, BARROW);
-        hall(b, -10, 10, 56, 80, 73, BARROW);
-        doorway(b, 13, null, Material.CHISELED_STONE_BRICKS);
-        doorway(b, 35, Material.IRON_BARS, Material.CHISELED_STONE_BRICKS);
-        doorway(b, 55, Material.IRON_BARS, Material.CHISELED_STONE_BRICKS);
-        // Mouth: a worn stair down from the surface and a ring of candles round the party's arrival.
-        for (int x = -2; x <= 2; x++) b.block(x, 64, 0, Material.STONE_BRICK_STAIRS, "facing=north,half=bottom,shape=straight");
-        candles(b, new int[][]{{-3, 3}, {3, 3}, {-3, 7}, {3, 7}});
-        // Gallery: burial niches with bones and webs between the pillars.
-        for (int z = 16; z <= 32; z += 4) for (int x : new int[]{-7, 7}) {
-            b.block(x, 64, z, Material.BONE_BLOCK, "axis=y");
-            b.block(x, 69, z, Material.COBWEB);
-        }
-        candles(b, new int[][]{{-4, 18}, {4, 24}, {-3, 29}});
-        // Ossuary: bone pillars and chained ceiling.
-        for (int[] pillar : new int[][]{{-4, 41}, {4, 41}, {-4, 49}, {4, 49}}) {
-            for (int y = 64; y <= 69; y++) b.block(pillar[0], y, pillar[1], Material.BONE_BLOCK, "axis=y");
-        }
-        for (int z = 38; z <= 52; z += 7) for (int x : new int[]{-6, 0, 6}) b.block(x, 69, z, Material.IRON_CHAIN, "axis=y");
-        // King's Rest: a raised dais and sarcophagus where the Huntsman wakes.
-        b.box(-4, 64, 71, 4, 64, 75, Material.POLISHED_DEEPSLATE);
-        b.box(-1, 65, 73, 1, 65, 75, Material.CHISELED_DEEPSLATE);
-        for (int x = -4; x <= 4; x++) b.block(x, 64, 70, Material.POLISHED_DEEPSLATE_STAIRS, "facing=south,half=bottom,shape=straight");
-        candles(b, new int[][]{{-6, 66}, {6, 66}, {-6, 74}, {6, 74}, {-2, 79}, {2, 79}});
-        for (int x : new int[]{-9, 9}) for (int z = 60; z <= 76; z += 8) b.block(x, 73, z, Material.COBWEB);
-        // Exit: the cracked tomb wall at the far end, ringed by soul fire once the King falls.
-        b.box(-1, 63, 78, 1, 63, 79, Material.SOUL_SOIL);
-        return b.freeze();
-    }
 
     static BuildCanvas.Plan cinderKeep() {
         BuildCanvas b = new BuildCanvas();
@@ -107,12 +76,12 @@ public final class SampleTemplates {
     }
 
     /** An enclosed hall: interior X/Z inclusive, walking space from Y64 up to {@code top}. */
-    private static void hall(BuildCanvas b, int x1, int x2, int z1, int z2, int top, Palette p) {
+    static void hall(BuildCanvas b, int x1, int x2, int z1, int z2, int top, Palette p) {
         for (int x = x1 - 1; x <= x2 + 1; x++) for (int z = z1 - 1; z <= z2 + 1; z++) {
             boolean wall = x == x1 - 1 || x == x2 + 1 || z == z1 - 1 || z == z2 + 1;
             b.block(x, 62, z, p.wall()[0]);
             b.block(x, 63, z, pick(p.floor(), x, z, 11));
-            if (wall) for (int y = 64; y <= top; y++) b.block(x, y, z, pick(p.wall(), x * 7 + y, z, 5));
+            if (wall) for (int y = 64; y <= top; y++) b.block(x, y, z, SampleKit.pick(p.wall(), x * 31 + y * 17, z * 13 + y, 5));
             b.block(x, top + 1, z, p.ceiling());
         }
         for (int z = z1 + 2; z <= z2 - 1; z += 6) for (int x : new int[]{x1, x2}) {
@@ -122,7 +91,7 @@ public final class SampleTemplates {
     }
 
     /** A 3x3 opening in the wall row at {@code z}; with a material it is sealed (a room gate). */
-    private static void doorway(BuildCanvas b, int z, Material gate, Material lintel) {
+    static void doorway(BuildCanvas b, int z, Material gate, Material lintel) {
         for (int x = -1; x <= 1; x++) for (int y = 64; y <= 66; y++) {
             if (gate == null) b.block(x, y, z, Material.AIR);
             else b.block(x, y, z, gate, gate == Material.IRON_BARS ? "east=true,west=true" : "");
@@ -130,11 +99,11 @@ public final class SampleTemplates {
         b.box(-2, 67, z, 2, 67, z, lintel);
     }
 
-    private static void candles(BuildCanvas b, int[][] spots) {
+    static void candles(BuildCanvas b, int[][] spots) {
         for (int[] spot : spots) b.block(spot[0], 64, spot[1], Material.CANDLE, "candles=3,lit=true");
     }
 
-    private static void brazier(BuildCanvas b, int x, int z) {
+    static void brazier(BuildCanvas b, int x, int z) {
         b.block(x, 64, z, Material.NETHERRACK);
         b.block(x, 65, z, Material.FIRE);
     }

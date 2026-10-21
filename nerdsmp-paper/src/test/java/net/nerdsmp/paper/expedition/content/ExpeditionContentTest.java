@@ -44,18 +44,30 @@ class ExpeditionContentTest {
     }
 
     @Test void shippedSamplesLoadAndAreReadyToPublish() {
-        for (String id : List.of("hollow_barrow", "cinder_keep")) {
+        for (String id : net.nerdsmp.paper.expedition.ExpeditionService.SAMPLES) {
             ExpeditionDefinition definition = sample(id);
             assertTrue(definition.published(), id);
             assertEquals(id, definition.sample());
             assertEquals(List.of(), errors(definition), id);
             assertEquals(EncounterType.BOSS, definition.roomList().get(definition.rooms().size() - 1).encounter().type(), id);
+            assertFalse(definition.guide().isEmpty(), id + " ships a guide");
+            assertEquals(definition.rooms().keySet(), definition.guide().rooms().keySet(), id + ": a guide line for every room");
         }
+    }
+
+    @Test void theCampaignExpeditionsOpenOneAfterAnother() {
+        List<String> path = List.of("hollow_barrow", "thornwood_canopy", "sunken_aqueduct", "gloomforge_mines", "hall_of_wardens");
+        for (int index = 1; index < path.size(); index++)
+            assertEquals(List.of(path.get(index - 1)), sample(path.get(index)).story().requires(), path.get(index));
+        assertEquals(ExpeditionDefinition.Goal.FORCES, sample("thornwood_canopy").story().goal());
+        assertEquals(ExpeditionDefinition.Goal.TIMED, sample("sunken_aqueduct").story().goal());
+        assertEquals(ExpeditionDefinition.Goal.BOSSES, sample("hall_of_wardens").story().goal());
+        assertEquals(3, sample("hall_of_wardens").roomList().stream().filter(ExpeditionDefinition.Room::bossRoom).count());
     }
 
     @Test void barrowRoomsWavesScriptsAndLootParse() {
         ExpeditionDefinition barrow = sample("hollow_barrow");
-        assertEquals(List.of("crypt_gallery", "ossuary", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
+        assertEquals(List.of("crypt_gallery", "ossuary", "lever_vault", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
         var gallery = barrow.rooms().get("crypt_gallery");
         assertEquals(Map.of("vanilla:zombie", 3, "custom:thorn_sentinel", 1), gallery.encounter().waves().get(0).mobs());
         assertEquals(3, gallery.encounter().waves().get(1).delaySeconds());
@@ -67,7 +79,7 @@ class ExpeditionContentTest {
         var boss = barrow.rooms().get("kings_rest").encounter();
         assertEquals("custom:the_hollow_huntsman", boss.boss());
         assertEquals(List.of(66, 33), boss.addsAtHealth());
-        assertEquals(2, boss.script("health-50").size());
+        assertEquals(3, boss.script("health-50").size());
         assertEquals(120, barrow.loot().marks());
         assertEquals(4, barrow.loot().items().get("iron_ingot"));
         assertEquals(new ExpeditionDefinition.Point(0, 64, 4, 0), barrow.spawn());

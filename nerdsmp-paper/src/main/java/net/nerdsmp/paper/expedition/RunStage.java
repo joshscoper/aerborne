@@ -452,6 +452,12 @@ final class RunStage {
     boolean inCutscene(Player player) { return cameras.containsKey(player.getUniqueId()); }
 
     void cutscene(String id) {
+        // A room can start mid-teleport (an ender pearl, a staff tp), before the player has arrived;
+        // start next tick so the scene returns everyone to where they really are.
+        Bukkit.getScheduler().runTask(plugin, () -> { if (host.live()) play(id); });
+    }
+
+    private void play(String id) {
         Cutscene cutscene = host.expedition().story().cutscenes().get(id);
         if (cutscene == null || cutscene.shots().isEmpty()) return;
         for (Player player : host.online()) {

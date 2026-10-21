@@ -114,10 +114,20 @@ parties show in the menu and on the website.
 | Id | Where | Party | Rooms |
 |---|---|---|---|
 | `first_flight` | Sky islands at dusk, level 2 (tutorial) | 1–5 | Skyhop Crossing (jump course) → The Lever Lock (lever puzzle) → Wayfarer's Fire (campfire) → The Training Yard (2 waves, an elite) → The Sentinel's Rest (The Old Sentinel, slam; summons below 50%) |
-| `hollow_barrow` | Overworld crypt, level 8 | 1–5 | Crypt Gallery (2 waves) → Ossuary (survive 45 s) → King's Rest (The Hollow Huntsman, adds at 66%/33%) |
+| `hollow_barrow` | Overworld crypt, level 8, rooms | 1–5 | Crypt Gallery (2 waves, Veil Stalker elites) → Ossuary (survive 45 s under bone rain) → Lever Vault (Barrow Warden mini-boss + four levers in the candles' order) → antechamber brazier → King's Rest (The Hollow Huntsman: cleave, summon; below 50% slam, tether, falling masonry) |
+| `thornwood_canopy` | Treetops at night, level 12, forces (30) | 1–5 | Bough Run (jump course) → Webbed Hollow (clear) → Sentinel Boughs (optional, archers worth double) → Briar Matron's Nest (mini-boss) → Hunter's Fire → Thornheart Grove (The Thornheart Shaman, an evoker: fangs and vexes plus poison, tether; spores and thorn bursts) |
+| `sunken_aqueduct` | Flooded waterworks, level 16, timed (10 min, +2 min per room) | 1–5 | Sluice Hall (waves + three valves in the shown order, which drain the channel) → Cistern (survive 50 s, geysers) → Floodgate Control (clear + two counterweight plates) → Pumphouse Stove → Tidewarden's Basin (The Tidewarden: tether, frost nova; below 50% meteor, summon, geysers) |
+| `gloomforge_mines` | Deep mines, level 20, rooms | 1–5 | Ore Galleries (waves + three alarm targets in 25 s) → Grell's Shaft (Overseer Grell) → Blasting Hall (the Blastmaster + two ore-cart plates, blasting charges) → Slag Pits (the Slag Hound, rockfall) → Miners' Rest → Foreman's Delve (The Deep Foreman: slam, summon; below 50% meteor, charge, collapsing pillars) |
+| `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | From the concourse, three wings in any order: Ember Antechamber (four brazier targets) → Ember Throne; Frost Antechamber (four chimes in the shown order) → Frost Hall; Stone Antechamber (three plates) → Stone Court |
 | `cinder_keep` | Nether (basalt deltas), level 20 | 2–5 | Gatehouse (2 waves) → Blaze Forge (survive 60 s) → Throne of Embers (Keeper of Embers, adds at 75%/40%) |
 
-Ratings: Hollow Barrow 2 (Moderate), Cinder Keep 3 (Challenging). Both ship guides. Their bosses
+**The campaign path.** Each campaign expedition opens once you've cleared the one before it
+(`requires:`): the Hollow Barrow, then Thornwood Canopy, the Sunken Aqueduct, Gloomforge Mines and
+the Hall of the Three Wardens. In a party, every member must have cleared the earlier one. Staff and
+`nerdsmp.progression.bypass` skip the check, and the board shows "Clear … first" on locked cards.
+
+Ratings: First Flight 1, Hollow Barrow 2, Thornwood Canopy 3, Sunken Aqueduct 3, Gloomforge Mines 4,
+Hall of the Three Wardens 4, Cinder Keep 3. All ship guides. Their bosses
 are tuned down from the authored mobs: the Hollow Huntsman to 60% damage and 85% health, and the
 Keeper of Embers to 70% damage. An unarmoured player now survives a Huntsman hit, measured at 9–11
 damage instead of a one-shot.
@@ -249,6 +259,7 @@ forces: 120               # forces: enemy forces needed before the final room op
 time-bonus-seconds: 45    # timed: seconds added to the clock per cleared room
 time: 13600               # optional time of day for the run (0-23999)
 raid: false               # true allows parties of up to 8 (no hired allies)
+requires: [hollow_barrow] # expeditions each player must have cleared first
 rooms:
   east_wing:
     requires: []          # rooms that must be cleared first; omitted = the room above it

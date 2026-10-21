@@ -1,0 +1,148 @@
+# The Sunken Aqueduct: a race through flooded waterworks. The clock is short, but every room you
+# clear adds time. Full reference: docs/EXPEDITIONS.md.
+title: The Sunken Aqueduct
+description: The old waterworks are flooding and something drowned is turning the valves. Beat the rising water.
+icon: prismarine_bricks
+dimension: overworld
+sample: sunken_aqueduct
+published: true
+difficulty: 3
+level: 16
+party: {min: 1, max: 5}
+time-limit-minutes: 10
+spawn: [0, 64, 4, 0]
+exit: [0, 64, 121]
+modifiers: []
+requires: [thornwood_canopy]
+goal: timed
+time-bonus-seconds: 120
+
+npcs:
+  brann:
+    name: Engineer Brann
+    entity: villager
+    at: [-3, 64, 9, 90]
+    lines:
+      - "The whole works is flooding. You've got ten minutes, and every hall you clear buys you two more."
+      - "The sluice valves have to be turned in the right order. Watch the hall: the old mechanism lights them up."
+      - "The floodgates take counterweights. Throw anything heavy on the plates: blocks, tools, your lunch."
+      - "Whatever's down in the basin, it's been turning the valves. Drowned, but clever."
+
+campfires:
+  intake_fire: {at: [4, 64, 8], lit: true, title: Intake Fire}
+  pumphouse_stove: {at: [3, 64, 92], lit: false, title: Pumphouse Stove}
+
+setpieces:
+  sluice_water: {box: [4, 63, 14, 7, 63, 40], block: air, style: crumble}
+
+hazards:
+  cistern_geysers: {type: eruption, area: [-9, 63, 44, 9, 63, 64], every: 6, count: 3, damage: 4}
+  basin_geysers: {type: eruption, area: [-9, 63, 100, 9, 63, 118], every: 7, count: 3, damage: 5}
+
+cutscenes:
+  basin:
+    - {at: [0.5, 71, 99, 0, 28], seconds: 3, text: "<aqua>The Tidewarden's Basin</aqua>"}
+    - {at: [0.5, 67, 104, 0, 10], seconds: 3, text: "<dark_aqua>The water rises to meet you</dark_aqua>"}
+
+mobs:
+  "custom:bog_oracle": {role: elite, abilities: [mend, poison_cloud]}
+  "vanilla:drowned": {role: normal}
+  "custom:sluice_keeper": {role: elite, abilities: [tether, frost_nova]}
+
+rooms:
+  sluice_hall:
+    title: The Sluice Hall
+    region: [-8, 64, 14, 8, 70, 40]
+    checkpoint: [0, 64, 38, 0]
+    gate: [-1, 64, 41, 1, 66, 41]
+    points: [[-5, 64, 18], [0, 64, 22], [-5, 64, 30], [0, 64, 35], [-3, 64, 26]]
+    puzzles:
+      valves:
+        type: sequence
+        title: Turn the valves in order
+        blocks: [[-8, 65, 19], [-8, 65, 25], [-8, 65, 31]]
+        order: [2, 3, 1]
+        show: true
+    encounter:
+      type: waves
+      waves:
+        - {"vanilla:drowned": 3, "custom:bog_oracle": 1}
+        - {mobs: {"vanilla:drowned": 2, "custom:sluice_keeper": 1}, delay-seconds: 4}
+      scripts:
+        start: ["say brann|Valves are on the west wall. Watch for the lights, then turn them in that order!"]
+        solved-valves: ["break sluice_water", "message <aqua>The channel drains with a roar.</aqua>"]
+        clear: ["say brann|Sluice is open. Two more minutes on the clock!"]
+  cistern:
+    title: The Cistern
+    region: [-10, 64, 43, 10, 72, 65]
+    checkpoint: [0, 64, 63, 0]
+    gate: [-1, 64, 66, 1, 66, 66]
+    points: [[-8, 64, 46], [8, 64, 46], [-8, 64, 62], [8, 64, 62], [0, 64, 54]]
+    encounter:
+      type: survive
+      survive-seconds: 50
+      waves:
+        - {"vanilla:drowned": 3}
+        - {mobs: {"custom:bog_oracle": 1, "vanilla:drowned": 2}, delay-seconds: 10}
+      scripts:
+        start: ["title <aqua>Hold the cistern|<gray>The pumps need fifty seconds</gray>", "hazard start cistern_geysers"]
+        timer-35: ["message <yellow>Fifteen seconds! The pumps are catching!</yellow>"]
+        clear: ["hazard stop cistern_geysers"]
+  floodgate_control:
+    title: Floodgate Control
+    region: [-9, 64, 68, 9, 70, 88]
+    checkpoint: [0, 64, 86, 0]
+    gate: [-1, 64, 89, 1, 66, 89]
+    points: [[-6, 64, 71], [6, 64, 71], [-5, 64, 84], [5, 64, 84], [0, 64, 78]]
+    puzzles:
+      counterweights:
+        type: plates
+        title: Weigh down both floodgate plates
+        blocks: [[-6, 65, 75], [6, 65, 75]]
+    encounter:
+      type: clear
+      waves:
+        - {"custom:sluice_keeper": 2, "custom:bog_oracle": 1, "vanilla:drowned": 2}
+      scripts:
+        start: ["say brann|Throw anything on those plates. Both of them have to stay down!"]
+        clear: ["say brann|The floodgate's up! Stoke the pumphouse stove; the basin's right after."]
+  tidewardens_basin:
+    title: The Tidewarden's Basin
+    region: [-12, 64, 97, 12, 74, 122]
+    points: [[0, 64, 110], [-7, 64, 103], [7, 64, 103], [-7, 64, 116], [7, 64, 116]]
+    encounter:
+      type: boss
+      boss: custom:tidewarden
+      boss-level-bonus: 3
+      abilities: [tether, frost_nova]
+      phases:
+        - {at: 50, abilities: [tether, meteor, summon], title: "The tide turns"}
+      enrage-seconds: 240
+      adds-at-health: [70, 35]
+      waves:
+        - {"vanilla:drowned": 3}
+        - {"custom:sluice_keeper": 1, "vanilla:drowned": 2}
+      scripts:
+        start:
+          - "cutscene basin"
+          - "wait 6"
+          - "say The Tidewarden|The water was here first. It will be here last."
+        health-50: ["hazard start basin_geysers", "say The Tidewarden|Rise!"]
+        clear: ["hazard stop basin_geysers", "say brann|The water's going down! Out through the back, quick."]
+
+guide:
+  overview: A timed run through flooding waterworks. You start with ten minutes and each cleared room adds two. Turn the valves, hold the cistern, weigh down the floodgates and face the Tidewarden.
+  tips:
+    - The clock is the danger. Don't wait for stragglers; push room to room.
+    - Watch the Sluice Hall when you enter. The valves light up in the order to turn them; a wrong one resets the sequence.
+    - Floodgate plates need weight. Throw blocks or spare items onto them; a dropped item keeps a plate down.
+    - Bog Oracles heal their friends. Hit them hard while they channel to interrupt the heal.
+  rooms:
+    sluice_hall: Drowned and a Bog Oracle, then a Sluice Keeper. Turn the three valves in the order shown.
+    cistern: Survive fifty seconds while geysers burst from the floor; step out of the orange rings.
+    floodgate_control: Sluice Keepers chain and freeze you. Weigh down both plates with thrown items.
+    tidewardens_basin: The Tidewarden, a moat of water and geysers in the second half.
+  boss: The Tidewarden chains players to it and freezes anyone close. At two-thirds and one-third health drowned pour in. Below half it drops a crushing wave on one player (share it with them to split the damage), calls helpers, and geysers burst from the floor.
+loot:
+  marks: 220
+  items: {prismarine_shard: 12, heart_of_the_sea: 1, experience_bottle: 4}

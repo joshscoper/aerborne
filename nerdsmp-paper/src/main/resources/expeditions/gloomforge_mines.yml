@@ -1,0 +1,158 @@
+# Gloomforge Mines: a gauntlet of three mini-bosses through the deep galleries, then the Deep
+# Foreman himself. Full reference: docs/EXPEDITIONS.md.
+title: Gloomforge Mines
+description: The night shift never came back up. Fight through the foremen of the deep and silence the Gloomforge.
+icon: iron_pickaxe
+dimension: overworld
+sample: gloomforge_mines
+published: true
+difficulty: 4
+level: 20
+party: {min: 1, max: 5}
+time-limit-minutes: 35
+spawn: [0, 64, 5, 0]
+exit: [0, 64, 139]
+modifiers: []
+requires: [sunken_aqueduct]
+
+npcs:
+  hesk:
+    name: Old Miner Hesk
+    entity: villager
+    at: [-3, 64, 9, 90]
+    lines:
+      - "Three bosses ran the Gloomforge: Grell, the Blastmaster and that slag-fed hound. Now they answer to the Foreman."
+      - "Ring the alarms in the galleries. Shoot the targets on the three bell posts, quick as you can."
+      - "The Blastmaster's carts need loading before the far door opens. Throw ore on the plates, or anything heavy."
+      - "When the Foreman's angry the whole delve shakes. Stay off the pillars."
+
+campfires:
+  lift_fire: {at: [4, 64, 8], lit: true, title: Lift Station Fire}
+  miners_rest: {at: [3, 64, 109], lit: false, title: "Miners' Rest"}
+
+setpieces:
+  west_pillars: {box: [-7, 66, 121, -6, 76, 134], block: air, style: crumble}
+
+hazards:
+  blast_charges: {type: fire, area: [-9, 63, 62, 9, 63, 81], every: 8, count: 3, damage: 4}
+  pit_rockfall: {type: rocks, area: [-9, 63, 86, 9, 63, 103], every: 6, count: 3, damage: 5}
+  delve_rockfall: {type: rocks, area: [-12, 63, 115, 12, 63, 132], every: 6, count: 4, damage: 6}
+
+cutscenes:
+  foreman:
+    - {at: [0.5, 73, 116, 0, 25], seconds: 3, text: "<gold>The Foreman's Delve</gold>"}
+    - {at: [0.5, 68, 125, 0, 5], seconds: 3, text: "<dark_red>The Deep Foreman clocks in</dark_red>"}
+
+mobs:
+  "custom:gloom_miner": {role: normal}
+  "custom:grell_overseer": {role: miniboss, abilities: [charge, cleave]}
+  "custom:blastmaster": {role: miniboss, abilities: [barrage, fire_pools]}
+  "custom:slag_hound": {role: miniboss, abilities: [charge, leap]}
+  "vanilla:pillager": {role: elite, abilities: [barrage]}
+
+rooms:
+  ore_galleries:
+    title: The Ore Galleries
+    region: [-10, 64, 14, 10, 70, 38]
+    checkpoint: [0, 64, 36, 0]
+    gate: [-1, 64, 39, 1, 66, 39]
+    points: [[-5, 64, 18], [4, 64, 18], [-5, 64, 30], [4, 64, 30], [0, 64, 24]]
+    puzzles:
+      alarms:
+        type: targets
+        title: Shoot the three alarm targets
+        blocks: [[-6, 66, 19], [5, 66, 29], [-6, 66, 35]]
+        seconds: 25
+    encounter:
+      type: waves
+      waves:
+        - {"custom:gloom_miner": 4}
+        - {mobs: {"custom:gloom_miner": 2, "vanilla:pillager": 1}, delay-seconds: 4}
+      scripts:
+        start: ["say hesk|Shoot the targets on the bell posts, all three, quick! That raises the gate."]
+        solved-alarms: ["sound block.bell.use 0.8", "message <yellow>The alarm bells clang down the galleries.</yellow>"]
+  grells_shaft:
+    title: "Grell's Shaft"
+    region: [-8, 64, 41, 8, 70, 58]
+    checkpoint: [0, 64, 56, 0]
+    gate: [-1, 64, 59, 1, 66, 59]
+    points: [[-4, 64, 50], [-6, 64, 43], [5, 64, 56], [-6, 64, 56], [0, 64, 44]]
+    encounter:
+      type: waves
+      waves:
+        - {"custom:grell_overseer": 1, "custom:gloom_miner": 2}
+      scripts:
+        start: ["say Overseer Grell|Back to work, the lot of you! Or down the shaft!"]
+        clear: ["say hesk|Grell's down. The Blastmaster's next; mind his charges."]
+  blasting_hall:
+    title: The Blasting Hall
+    region: [-10, 64, 61, 10, 71, 82]
+    checkpoint: [0, 64, 80, 0]
+    gate: [-1, 64, 83, 1, 66, 83]
+    points: [[0, 64, 72], [-4, 64, 64], [4, 64, 64], [-4, 64, 79], [4, 64, 79]]
+    puzzles:
+      ore_carts:
+        type: plates
+        title: Load both ore carts
+        blocks: [[-6, 64, 66], [6, 64, 66]]
+    encounter:
+      type: waves
+      waves:
+        - {"custom:blastmaster": 1, "vanilla:pillager": 2}
+      scripts:
+        start: ["say The Blastmaster|Fire in the hole!", "hazard start blast_charges"]
+        clear: ["hazard stop blast_charges", "say hesk|Load those carts if you haven't. The door won't budge till they're full."]
+  slag_pits:
+    title: The Slag Pits
+    region: [-10, 64, 85, 10, 71, 104]
+    checkpoint: [0, 64, 102, 0]
+    gate: [-1, 64, 105, 1, 66, 105]
+    points: [[0, 64, 94], [-4, 64, 88], [4, 64, 88], [-4, 64, 101], [4, 64, 101]]
+    encounter:
+      type: waves
+      waves:
+        - {"custom:slag_hound": 1, "custom:gloom_miner": 2}
+      scripts:
+        start: ["message <red>Something huge snorts in the dark. The ceiling groans.</red>", "hazard start pit_rockfall"]
+        clear: ["hazard stop pit_rockfall", "say hesk|That's the last of them. Rest at the miners' fire; the Foreman's below."]
+  foremans_delve:
+    title: "The Foreman's Delve"
+    region: [-13, 64, 114, 13, 76, 140]
+    points: [[0, 64, 127], [-9, 64, 118], [9, 64, 118], [-9, 64, 130], [9, 64, 130]]
+    encounter:
+      type: boss
+      boss: custom:deep_foreman
+      boss-level-bonus: 4
+      abilities: [slam, summon]
+      phases:
+        - {at: 50, abilities: [slam, meteor, summon, charge], title: "The Foreman brings the roof down"}
+      enrage-seconds: 360
+      adds-at-health: [75, 40]
+      waves:
+        - {"custom:gloom_miner": 3}
+        - {"vanilla:pillager": 2, "custom:gloom_miner": 1}
+      scripts:
+        start:
+          - "cutscene foreman"
+          - "wait 6"
+          - "say The Deep Foreman|Shift's over when I say it's over."
+        health-50: ["break west_pillars", "hazard start delve_rockfall", "say The Deep Foreman|Bring it ALL down!"]
+        clear: ["hazard stop delve_rockfall", "say hesk|The Gloomforge goes quiet. First time in years. Out past the gold vein, friends."]
+
+guide:
+  overview: A gauntlet through the deep galleries. Ring the alarms, then beat three mini-bosses (Overseer Grell, the Blastmaster and the Slag Hound) before the Deep Foreman.
+  tips:
+    - Bring a bow and arrows. The galleries' alarm targets have to be hit within 25 seconds of the first.
+    - Throw anything heavy onto the Blasting Hall's two cart plates; an item on each keeps them down.
+    - Each mini-boss gets the boss bar. Kill its helpers first if you're struggling.
+    - In the Foreman's second half the west pillars collapse and rocks fall all through the delve. Keep moving.
+  rooms:
+    ore_galleries: Gloom miners and a pillager while you shoot the targets on three alarm posts.
+    grells_shaft: Overseer Grell charges and cleaves. Don't get knocked into the open shaft.
+    blasting_hall: The Blastmaster fires volleys and sets the floor alight, and blasting charges go off around the hall. Load both ore carts.
+    slag_pits: The Slag Hound charges and leaps while rock falls from the ceiling. Stay off the glowing slag.
+    foremans_delve: The Deep Foreman, his miners, and a cave-in.
+  boss: The Deep Foreman slams the ground and calls his miners; at three-quarters and two-fifths health more arrive. Below half he charges, drops a crushing rock on one player (stand with them to share it), the west pillars collapse and rocks fall throughout the delve.
+loot:
+  marks: 260
+  items: {raw_iron: 12, raw_gold: 6, diamond: 1, experience_bottle: 5}

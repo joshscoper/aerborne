@@ -1,5 +1,6 @@
-# The Hollow Barrow: the sample overworld expedition. Copy this file to start your own, or build one
-# in game with /expedition create <id>. Full reference: docs/EXPEDITIONS.md.
+# The Hollow Barrow: a crypt crawl and the first expedition of the campaign. Copy this file to
+# start your own, or build one in game with /expedition create <id>. Full reference:
+# docs/EXPEDITIONS.md.
 #
 # Coordinates are blocks in the template world (nerdsmp_exp_tpl_hollow_barrow). Every run is a fresh
 # copy of that world, so the same coordinates work in every run. Points are [x, y, z] or [x, y, z, yaw];
@@ -18,8 +19,37 @@ level: 8
 party: {min: 1, max: 5}
 time-limit-minutes: 25
 spawn: [0, 64, 4, 0]
-exit: [0, 64, 78]
+exit: [0, 64, 108]
 modifiers: []
+
+npcs:
+  sexton:
+    name: Old Sexton Pell
+    entity: zombie_villager
+    at: [-4, 64, 6, 270]
+    lines:
+      - "Forty years I've swept these halls. Never heard the bones so restless."
+      - "The King's Huntsman was buried with him. Loyal past death, that one."
+      - "The vault opens only to those who pull the levers in the order the candles show."
+      - "Mind the ossuary ceiling. When the dead stir, the bones come down with them."
+
+campfires:
+  mouth_fire: {at: [4, 64, 8], lit: true, title: Barrow Mouth}
+  antechamber_brazier: {at: [3, 64, 79], lit: false, title: Antechamber Brazier}
+
+hazards:
+  bone_rain: {type: rocks, area: [-7, 63, 37, 7, 63, 53], every: 7, count: 3, damage: 4}
+  falling_masonry: {type: rocks, area: [-10, 63, 85, 10, 63, 106], every: 9, count: 3, damage: 5}
+
+cutscenes:
+  king_wakes:
+    - {at: [0.5, 71, 86, 0, 25], seconds: 3, text: "<gray>The King's Rest…</gray>"}
+    - {at: [0.5, 67, 95, 0, 12], seconds: 3, text: "<dark_red>The Hollow Huntsman rises</dark_red>"}
+
+mobs:
+  "custom:veil_stalker": {role: elite, abilities: [blink]}
+  "custom:barrow_warden": {role: miniboss, abilities: [shield, cleave]}
+
 rooms:
   crypt_gallery:
     title: The Crypt Gallery
@@ -35,6 +65,7 @@ rooms:
         - {mobs: {"custom:veil_stalker": 2, "vanilla:skeleton": 2}, delay-seconds: 3}
       scripts:
         start: ["message <gray>Dust shivers from the niches. Something is waking.</gray>"]
+        wave-2: ["say sexton|Veil Stalkers! They step through shadow. Watch your backs!"]
         clear: ["message <gray>The bars to the ossuary grind upward.</gray>"]
   ossuary:
     title: The Ossuary
@@ -50,42 +81,76 @@ rooms:
         - {"vanilla:zombie": 3}
         - {mobs: {"custom:mire_weaver": 2, "vanilla:skeleton": 1}, delay-seconds: 12}
       scripts:
-        start: ["title <gold>Hold the ossuary|<gray>Survive until the bones fall still</gray>"]
+        start: ["title <gold>Hold the ossuary|<gray>Survive until the bones fall still</gray>", "hazard start bone_rain"]
         timer-30: ["message <yellow>The rattling slows. Fifteen more seconds!</yellow>"]
+        clear: ["hazard stop bone_rain"]
+  lever_vault:
+    title: The Lever Vault
+    region: [-9, 64, 56, 9, 71, 74]
+    checkpoint: [0, 64, 73, 0]
+    gate: [-1, 64, 75, 1, 66, 75]
+    points: [[-5, 64, 66], [-6, 64, 61], [6, 64, 61], [0, 64, 62], [4, 64, 67]]
+    puzzles:
+      vault_levers:
+        type: sequence
+        title: Pull the levers in the candles' order
+        blocks: [[-9, 65, 60], [9, 65, 60], [-9, 65, 67], [9, 65, 67]]
+        order: [3, 1, 4, 2]
+        show: true
+    encounter:
+      type: waves
+      waves:
+        - {"custom:barrow_warden": 1, "vanilla:skeleton": 2}
+      scripts:
+        start:
+          - "say The Barrow Warden|None pass the vault while I stand."
+          - "say sexton|The Warden! Bring it down, then mind the candles: they show the levers' order."
+        solved-vault_levers: ["sound block.iron_door.open 0.6"]
+        clear: ["say sexton|The vault yields. There's a brazier in the antechamber; rest before the King."]
   kings_rest:
     title: The King's Rest
-    region: [-10, 64, 56, 10, 73, 80]
+    region: [-11, 64, 84, 11, 74, 110]
     # The first point is where the boss rises; adds use the others.
-    points: [[0, 65, 72], [-8, 64, 62], [8, 64, 62], [-8, 64, 68], [8, 64, 68]]
+    points: [[0, 65, 99], [-8, 64, 88], [8, 64, 88], [-8, 64, 104], [8, 64, 104]]
     encounter:
       type: boss
       boss: custom:the_hollow_huntsman
       boss-level-bonus: 3
-      # The Huntsman's sword and shockwave are tuned down for a first expedition (1.0 = as authored).
+      # The Huntsman is tuned down for a first expedition (1.0 = as authored).
       boss-damage: 0.6
       boss-health: 0.85
+      abilities: [cleave, summon]
+      phases:
+        - {at: 50, abilities: [cleave, slam, tether], title: "The Huntsman calls the hunt"}
+      enrage-seconds: 300
       # Each threshold releases the next wave as adds.
       adds-at-health: [66, 33]
       waves:
         - {"vanilla:skeleton": 3}
         - {"custom:veil_stalker": 2}
       scripts:
-        start: ["message <dark_gray>A hollow voice: <italic>Who disturbs the King's rest?</italic></dark_gray>"]
-        health-50: ["title <dark_red>The Huntsman calls the hunt|<gray>Bone answers bone</gray>", "sound entity.wither_skeleton.ambient 0.6"]
-        clear: ["message <green>The King's Rest falls silent. Walk into the light at the far wall to leave.</green>"]
+        start:
+          - "cutscene king_wakes"
+          - "wait 6"
+          - "say The Hollow Huntsman|Who disturbs the King's rest?"
+        health-50: ["say The Hollow Huntsman|The hunt is called! Bone answers bone!", "hazard start falling_masonry", "sound entity.wither_skeleton.ambient 0.6"]
+        enrage: ["say The Hollow Huntsman|Enough! The King's patience ends!"]
+        clear: ["hazard stop falling_masonry", "say sexton|Rest now, old king. Walk into the light at the far wall to leave."]
+
 # Shown in the guide book (/expedition guide hollow_barrow) and on the website.
 guide:
-  overview: A short crypt crawl and a good first expedition. Two waves of undead, a survival hold in the ossuary, then the Hollow Huntsman in his tomb.
+  overview: A crypt crawl and the first stop of the campaign. Two waves of undead, a survival hold in the ossuary under falling bones, the Barrow Warden and its lever vault, then the Hollow Huntsman in his tomb.
   tips:
     - Bring a shield and a bow. Thorn Sentinels and skeletons shoot from the back of the gallery.
-    - In the ossuary, stay near the middle so spiders can't pin you against the walls.
+    - In the ossuary, stay near the middle and watch the floor for shadows; that's where bones fall.
+    - Kill the Warden's skeletons to break its shield, then watch the candles for the lever order.
     - A ring of light around the Huntsman means a shockwave is coming. Step outside it.
-    - Deaths don't cost gear, but each one spends a shared life. Back off to the door when you're low.
   rooms:
-    crypt_gallery: Zombies and a Thorn Sentinel come first, then Veil Stalkers and skeletons. Take out the archers early.
-    ossuary: Survive 45 seconds. The waves keep coming, but you only need to stay alive, not kill everything.
-    kings_rest: The Huntsman rises from the sarcophagus at the back of the hall.
-  boss: The Hollow Huntsman hits hard up close and sends out a shockwave every few seconds, marked by a ring of light. At two-thirds and one-third health he calls skeletons, then Veil Stalkers. Let one player keep him busy while the others clear the adds.
+    crypt_gallery: Zombies and a Thorn Sentinel come first, then Veil Stalkers (elites that blink behind you) and skeletons.
+    ossuary: Survive 45 seconds. Waves keep coming and bones rain from the ceiling; you only need to stay alive.
+    lever_vault: The Barrow Warden shields itself while its skeletons live. The vault also needs its four levers pulled in the order the candles flash; a wrong lever resets it.
+    kings_rest: The Huntsman rises from the sarcophagus. Light the antechamber brazier first so the party regroups close by.
+  boss: The Hollow Huntsman cleaves in front of him and calls skeletons. Below half health he adds a ground slam and a chain that drags one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead. Let one player keep him busy while the others clear the adds.
 loot:
   marks: 120
   items: {iron_ingot: 4, bone: 8, experience_bottle: 3}

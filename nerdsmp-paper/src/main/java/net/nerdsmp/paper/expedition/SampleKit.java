@@ -108,6 +108,72 @@ final class SampleKit {
         }
     }
 
+    /**
+     * A giant tree: a round trunk of {@code radius} from {@code baseY} to {@code topY} with flared
+     * roots at the bottom, and an ellipsoid crown of leaves above.
+     */
+    static void giantTree(BuildCanvas b, int cx, int cz, int baseY, int topY, int radius, int crown, Material log, Material leaves) {
+        for (int y = baseY; y <= topY; y++) {
+            double r = radius + (y < baseY + 4 ? (baseY + 4 - y) * .6 : 0);
+            for (int x = cx - (int) r - 1; x <= cx + r + 1; x++) for (int z = cz - (int) r - 1; z <= cz + r + 1; z++) {
+                double dx = x - cx, dz = z - cz;
+                if (dx * dx + dz * dz <= r * r + .5) b.block(x, y, z, log, "axis=y");
+            }
+        }
+        int crownY = topY + crown / 3;
+        int height = Math.max(3, crown * 2 / 3);
+        for (int x = cx - crown; x <= cx + crown; x++) for (int z = cz - crown; z <= cz + crown; z++)
+            for (int y = crownY - height; y <= crownY + height; y++) {
+                double dx = (x - cx) / (double) crown, dz = (z - cz) / (double) crown, dy = (y - crownY) / (double) height;
+                double inside = dx * dx + dy * dy + dz * dz + (noise(x * 7 + y, z, 101) - .5) * .25;
+                if (inside <= 1 && noise(x, z + y * 13, 103) > .08) b.block(x, y, z, leaves, "persistent=true");
+            }
+        // A few branches reaching out into the crown.
+        for (int[] dir : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+            for (int step = radius; step <= radius + crown / 2; step++)
+                b.block(cx + dir[0] * step, topY - 1 + step / 3, cz + dir[1] * step, log, dir[0] != 0 ? "axis=x" : "axis=z");
+    }
+
+    /** A plank deck with a fence rail round its edge, leaving openings where {@code open} says. */
+    static void deck(BuildCanvas b, int x1, int z1, int x2, int z2, int y, Material plank, Material rail,
+                     java.util.function.BiPredicate<Integer, Integer> open) {
+        for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) {
+            b.block(x, y, z, plank);
+            boolean edge = x == x1 || x == x2 || z == z1 || z == z2;
+            if (edge && !open.test(x, z)) b.block(x, y + 1, z, rail);
+            if (edge && (x == x1 || x == x2) && (z - z1) % 6 == 0) b.block(x, y - 1, z, Material.STRIPPED_SPRUCE_LOG, "axis=y");
+        }
+        // Struts down to the trunks below.
+        for (int x = x1; x <= x2; x += Math.max(1, (x2 - x1) / 2)) for (int z = z1; z <= z2; z += Math.max(1, (z2 - z1) / 2))
+            for (int y2 = y - 1; y2 >= y - 4; y2--) b.block(x, y2, z, Material.SPRUCE_FENCE);
+    }
+
+    /** A round plank deck with a rail round the rim, leaving the rail open where {@code open} says. */
+    static void roundDeck(BuildCanvas b, int cx, int cz, int radius, int y, Material plank, Material rail,
+                          java.util.function.BiPredicate<Integer, Integer> open) {
+        for (int x = cx - radius; x <= cx + radius; x++) for (int z = cz - radius; z <= cz + radius; z++) {
+            double distance = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+            if (distance > radius + .4) continue;
+            b.block(x, y, z, plank);
+            if (distance > radius - .6 && !open.test(x, z)) b.block(x, y + 1, z, rail);
+            if (distance > radius - .6 && Math.floorMod(x * 3 + z, 7) == 0)
+                for (int down = y - 1; down >= y - 5; down--) b.block(x, down, z, Material.SPRUCE_FENCE);
+        }
+    }
+
+    /** A leafy pad for jump courses: a log heart under a 3x3 of leaves. */
+    static void leafPad(BuildCanvas b, int cx, int y, int cz, Material leaves, Material log) {
+        for (int x = cx - 1; x <= cx + 1; x++) for (int z = cz - 1; z <= cz + 1; z++) b.block(x, y, z, leaves, "persistent=true");
+        b.block(cx, y, cz, log, "axis=y");
+        b.block(cx, y - 1, cz, log, "axis=y");
+        b.block(cx, y - 2, cz, leaves, "persistent=true");
+    }
+
+    /** A one-wide log beam from (x, y, z1) to (x, y, z2), a balance walk. */
+    static void beam(BuildCanvas b, int x, int y, int z1, int z2, Material log) {
+        for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) b.block(x, y, z, log, "axis=z");
+    }
+
     /** A ring of standing pillars, skipping any that would sit in the walking lane X -2..2 near the front. */
     static void pillarRing(BuildCanvas b, int cx, int y, int cz, int radius, int count, int height, int salt) {
         for (int index = 0; index < count; index++) {

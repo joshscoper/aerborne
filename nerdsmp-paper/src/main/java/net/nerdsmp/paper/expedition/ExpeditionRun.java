@@ -685,8 +685,10 @@ final class ExpeditionRun {
             Room room = progress.activeRoom();
             List<LivingEntity> spawned = new ArrayList<>();
             if (room == null) return spawned;
-            String mob = room.encounter().waves().isEmpty() || room.encounter().waves().getFirst().mobs().isEmpty() ? "vanilla:zombie"
-                : room.encounter().waves().getFirst().mobs().keySet().iterator().next();
+            // Helpers are the room's first ordinary mob, never another elite, mini-boss or boss.
+            String mob = room.encounter().waves().stream().flatMap(wave -> wave.mobs().keySet().stream())
+                .filter(id -> expedition.story().mob(id).role() == ExpeditionDefinition.Role.NORMAL && !plugin.mobs().encounterBoss(id))
+                .findFirst().orElse("vanilla:zombie");
             for (int copy = 0; copy < count; copy++) {
                 LivingEntity helper = spawnAt(room, mob, caster.getLocation().clone().add((copy * 2 - 1) * 1.5, 0, 1), false);
                 if (helper != null) spawned.add(helper);
@@ -769,6 +771,7 @@ final class ExpeditionRun {
         LivingEntity entity = plugin.mobs().spawnEncounter(mob, at, level, spawned -> {
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(true);
+            spawned.setCanPickupItems(false); // Counterweights thrown on plates stay where they land.
             var max = spawned.getAttribute(Attribute.MAX_HEALTH);
             if (max != null) {
                 max.setBaseValue(max.getBaseValue() * health);
