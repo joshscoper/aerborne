@@ -45,5 +45,19 @@ public final class BuildCanvas {
         public List<Placement> chunk(int x,int z) { return chunks.getOrDefault(new Chunk(x,z),List.of()); }
         public int size() { return size; }
         public List<Placement> placements() { return chunks.values().stream().flatMap(Collection::stream).toList(); }
+        private volatile String fingerprint;
+        /** A stable hash of every placement, so a world built from an older plan can be recognised. */
+        public String fingerprint() {
+            String cached=fingerprint;
+            if(cached!=null) return cached;
+            try {
+                var digest=java.security.MessageDigest.getInstance("SHA-256");
+                placements().stream().map(p->p.cell().x()+","+p.cell().y()+","+p.cell().z()+"="+p.block().state()).sorted()
+                    .forEach(line->digest.update((line+";").getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                cached=java.util.HexFormat.of().formatHex(digest.digest());
+            } catch(java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
+            fingerprint=cached;
+            return cached;
+        }
     }
 }

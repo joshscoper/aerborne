@@ -14,6 +14,7 @@ import java.util.function.Supplier;
  */
 public final class SampleTemplates {
     private static final Map<String, Supplier<BuildCanvas.Plan>> SAMPLES = Map.of(
+        "first_flight", FirstFlightTemplate::build,
         "hollow_barrow", SampleTemplates::hollowBarrow,
         "cinder_keep", SampleTemplates::cinderKeep);
     private static final Map<String, BuildCanvas.Plan> CACHE = new java.util.concurrent.ConcurrentHashMap<>();

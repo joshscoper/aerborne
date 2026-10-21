@@ -1,6 +1,6 @@
 # Parties
 
-Parties group up to five players for expeditions, shared rewards and party chat. Use them from
+Parties group up to eight players for expeditions, raids, shared rewards and party chat. Use them from
 `/party`, which opens the party menu, or with the subcommands below.
 
 ## For players
@@ -49,7 +49,7 @@ Settings in `config.yml`:
 
 ```yaml
 parties:
-  maximum-size: 5
+  maximum-size: 8                # raids take 8; regular expeditions cap their own groups at 5
   invite-lifetime-seconds: 60
   max-pending-invites: 3        # invites one player can hold, from different parties
   leader-handover-seconds: 60   # an offline leader hands over after this long (minimum 10)

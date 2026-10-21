@@ -1,0 +1,19 @@
+# Creatures made for expeditions. This file ships inside the plugin, so updates bring new ones
+# automatically. To change one on your server, copy its entry into content/mobs.yml: an entry
+# there with the same id overrides this file.
+#
+# Extra keys beyond content/mobs.yml's: scale (size, 1 = normal), speed (movement speed attribute),
+# equipment ({head, chest, legs, feet, hand, off-hand}: item ids), and ability: none for creatures
+# whose attacks come from the expedition ability kit instead of the built-in pulse.
+mobs:
+  old_sentinel:
+    name: "<gradient:#a4b0be:#57606f><bold>The Old Sentinel</bold></gradient>"
+    type: husk
+    boss: true
+    health: 140
+    attack-damage: 5
+    speed: 0.19
+    scale: 1.8
+    ability: none
+    mark-reward: 25
+    equipment: {head: chainmail_helmet, chest: iron_chestplate, legs: chainmail_leggings, hand: stone_axe}

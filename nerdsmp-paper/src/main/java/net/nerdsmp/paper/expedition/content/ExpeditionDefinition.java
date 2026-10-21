@@ -34,16 +34,133 @@ public record ExpeditionDefinition(
     List<String> modifiers,
     Map<String, TierOverride> tiers,
     Integer difficulty,
-    Guide guide
+    Guide guide,
+    Story story
 ) {
     public static final String ID = "[a-z0-9_]{1,32}";
     public static final int MAX_PARTY = 5;
+    /** Raids take larger groups. */
+    public static final int MAX_RAID = 8;
 
     public ExpeditionDefinition {
         Objects.requireNonNull(id, "id");
         rooms = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(rooms));
         modifiers = List.copyOf(modifiers);
         tiers = Map.copyOf(tiers);
+        story = story == null ? Story.EMPTY : story;
+    }
+
+    /** The largest group this expedition's type allows. */
+    public int partyCap() { return story.raid() ? MAX_RAID : MAX_PARTY; }
+
+    /**
+     * How a run is won. {@code ROOMS}: clear every required room. {@code BOSSES}: defeat every boss
+     * room, in any order the map allows. {@code FORCES}: slay enough enemies (each worth some
+     * forces) before the final room opens. {@code TIMED}: beat the clock, which each cleared room
+     * pushes back by {@link Story#timeBonusSeconds()}.
+     */
+    public enum Goal { ROOMS, BOSSES, FORCES, TIMED }
+
+    /** Encounter roles. Elites and mini-bosses carry abilities; mini-bosses also get a boss bar. */
+    public enum Role { NORMAL, ELITE, MINIBOSS, BOSS }
+
+    /**
+     * Everything beyond rooms and fights: the win condition, rest points, set pieces that change the
+     * map, arena hazards, cutscenes, talking characters and per-mob roles and abilities.
+     */
+    public record Story(Goal goal, int forces, int timeBonusSeconds, boolean raid,
+                        Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
+                        Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time) {
+        public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null);
+
+        public Story {
+            goal = goal == null ? Goal.ROOMS : goal;
+            campfires = ordered(campfires);
+            setpieces = ordered(setpieces);
+            hazards = ordered(hazards);
+            cutscenes = ordered(cutscenes);
+            npcs = ordered(npcs);
+            mobs = ordered(mobs);
+        }
+
+        /** The profile for a wave mob id, or a plain one. */
+        public MobProfile mob(String id) {
+            return mobs.getOrDefault(id, MobProfile.plain(id));
+        }
+
+        private static <T> Map<String, T> ordered(Map<String, T> map) {
+            return map == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(map));
+        }
+    }
+
+    /** A rest point. Lit campfires heal nearby players out of combat and become the respawn point. */
+    public record Campfire(String id, Point at, boolean lit, String title) { }
+
+    /** How a set piece appears or goes: all at once, rising layer by layer, or crumbling with dust. */
+    public enum PieceStyle { INSTANT, RISE, CRUMBLE }
+
+    /** A region of the map a script can fill ({@code build}), empty ({@code break}) or put back ({@code restore}). */
+    public record SetPiece(String id, Box box, String block, PieceStyle style) { }
+
+    /** Arena hazards, always telegraphed before they land. */
+    public enum HazardType { ROCKS, FIRE, ERUPTION, GAS }
+
+    /** A hazard over an area: every {@code everySeconds} it strikes {@code count} spots for {@code damage}. */
+    public record Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage) { }
+
+    /** One camera position; the camera glides from each shot to the next over {@code seconds}. */
+    public record Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text) { }
+
+    public record Cutscene(String id, List<Shot> shots) {
+        public Cutscene { shots = List.copyOf(shots); }
+
+        public int seconds() { return shots.stream().mapToInt(Shot::seconds).sum(); }
+    }
+
+    /** A talking character placed at run start. Right-click to hear the next line. */
+    public record Npc(String id, String name, String entity, Point at, List<String> lines) {
+        public Npc { lines = List.copyOf(lines); }
+    }
+
+    /**
+     * How a wave mob behaves in this expedition: its role, the abilities it uses and how much it
+     * counts toward enemy forces. Mobs not listed are normal and worth one.
+     */
+    public record MobProfile(String mob, Role role, List<String> abilities, int forces, String title) {
+        public MobProfile {
+            abilities = List.copyOf(abilities);
+        }
+
+        public static MobProfile plain(String mob) { return new MobProfile(mob, Role.NORMAL, List.of(), 1, null); }
+
+        public static int defaultForces(Role role) {
+            return switch (role) { case NORMAL -> 1; case ELITE -> 4; case MINIBOSS -> 12; case BOSS -> 0; };
+        }
+    }
+
+    /**
+     * A room puzzle. {@code LEVERS}: switch every lever on. {@code SEQUENCE}: use the blocks in
+     * {@code order} (mistakes reset; {@code show} flashes the order first). {@code PLATES}: hold every
+     * pressure plate down at once. {@code REACH}: get someone into {@code area}; anyone falling below
+     * {@code failBelowY} is put back at {@code start} without losing a life. {@code TARGETS}: hit every
+     * target block within {@code seconds}.
+     */
+    public enum PuzzleType { LEVERS, SEQUENCE, PLATES, REACH, TARGETS }
+
+    public record Puzzle(String id, PuzzleType type, String title, List<Point> blocks, List<Integer> order, boolean show,
+                         Box area, Point start, Integer failBelowY, int seconds) {
+        public Puzzle {
+            blocks = List.copyOf(blocks);
+            order = List.copyOf(order);
+        }
+
+        /** Block indexes in the order they must be used. */
+        public List<Integer> sequence() {
+            if (!order.isEmpty()) return order;
+            List<Integer> natural = new java.util.ArrayList<>();
+            for (int index = 0; index < blocks.size(); index++) natural.add(index);
+            return natural;
+        }
     }
 
     public List<Room> roomList() { return List.copyOf(rooms.values()); }
@@ -101,13 +218,38 @@ public record ExpeditionDefinition(
         public List<Integer> serialize() { return List.of(minX, minY, minZ, maxX, maxY, maxZ); }
     }
 
-    public record Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter) {
+    /**
+     * {@code requires} lists the rooms that must be cleared before this one can start; null means the
+     * room before it in the file. Optional rooms aren't needed to finish. Puzzles must all be solved
+     * (as well as the encounter) for the room to clear.
+     */
+    public record Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
+                       List<String> requires, boolean optional, Map<String, Puzzle> puzzles) {
         public Room {
             points = List.copyOf(points);
+            requires = requires == null ? null : List.copyOf(requires);
+            puzzles = puzzles == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(puzzles));
+        }
+
+        public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter) {
+            this(id, title, region, checkpoint, gate, points, encounter, null, false, Map.of());
+        }
+
+        public boolean bossRoom() {
+            return encounter.type() == EncounterType.BOSS || encounter.type() == EncounterType.COUNCIL;
         }
     }
 
-    public enum EncounterType { NONE, WAVES, BOSS, SURVIVE }
+    /**
+     * {@code CLEAR} releases every wave at once and clears when all are dead. {@code COUNCIL} is a
+     * fight against several bosses at once. {@code PUZZLE} has no fight; solving the puzzles clears it.
+     */
+    public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
+
+    /** A boss phase: below {@code atHealth} percent the boss switches to these abilities. */
+    public record Phase(int atHealth, List<String> abilities, String title) {
+        public Phase { abilities = List.copyOf(abilities); }
+    }
 
     /**
      * {@code waves} are the room's mob groups. Boss rooms use them as adds released at {@code addsAtHealth}
@@ -115,13 +257,30 @@ public record ExpeditionDefinition(
      */
     public record Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus,
                             int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts,
-                            double bossDamage, double bossHealth) {
-        public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1);
+                            double bossDamage, double bossHealth, List<String> bosses, List<String> abilities,
+                            List<Phase> phases, int enrageSeconds) {
+        public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1,
+            List.of(), List.of(), List.of(), 0);
 
         public Encounter {
             waves = List.copyOf(waves);
             addsAtHealth = List.copyOf(addsAtHealth);
             scripts = Map.copyOf(scripts);
+            bosses = bosses == null ? List.of() : List.copyOf(bosses);
+            abilities = abilities == null ? List.of() : List.copyOf(abilities);
+            phases = phases == null ? List.of() : List.copyOf(phases);
+        }
+
+        public Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus, int surviveSeconds,
+                         List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts, double bossDamage, double bossHealth) {
+            this(type, waves, boss, bossLevelBonus, surviveSeconds, addsAtHealth, scripts, bossDamage, bossHealth,
+                List.of(), List.of(), List.of(), 0);
+        }
+
+        /** Every boss this encounter spawns: the council, or the single boss. */
+        public List<String> bossList() {
+            if (type == EncounterType.COUNCIL) return bosses;
+            return type == EncounterType.BOSS && boss != null ? List.of(boss) : List.of();
         }
 
         public List<ScriptAction> script(String trigger) { return scripts.getOrDefault(trigger, List.of()); }

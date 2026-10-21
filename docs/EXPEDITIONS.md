@@ -24,7 +24,8 @@ Code: `nerdsmp-paper/.../expedition/` (service, runs, setup, menu, worlds), with
 | `/expedition list` / `info <id>` / `status` | Open expeditions, one expedition's tiers and records, your queue or run. |
 | `/expedition guide <id>` | The expedition's guide book: route, boss notes, every mob with its possible drops, and rewards. |
 
-**Parties.** The existing `/party` system is used as is: its maximum of five is the expedition cap.
+**Parties.** The [party system](PARTIES.md) holds up to eight; an expedition takes as many as its
+`party.max` (five at most, eight for a raid).
 Only the leader can start or queue. Online members get a 30-second ready check, and offline members
 stay behind. Solo players are a party of one.
 
@@ -62,10 +63,27 @@ A run with any hired ally is **assisted**. It still pays loot and Marks, but it 
 progress: no expedition credit, no boss credit, and no kill credit for anything killed inside it.
 Players are told when they accept the offer, at the start and at the finish.
 
-**In a run.** A boss bar shows the expedition, current room, lives and time left.
-- Walking (or teleporting) into the next room starts it. Rooms must be done in order.
-- Room types: **waves** (clear each wave, then the next is released), **survive** (waves keep
-  coming until the timer ends) and **boss** (adds are released at health thresholds).
+**In a run.** The sidebar becomes the run panel: tier and modifiers, the clock, party lives, every
+objective (✔ done, ▶ in progress, ○ open, ▪ locked; puzzles show their progress under the active
+room), and each member's health. There is one boss bar, and only for the boss (a council shares
+one bar) or, when no boss is up, a living mini-boss.
+- Walking (or teleporting) into a room starts it when the rooms it requires are cleared. By default
+  that's the room before it, so most maps run in order; a hub map can open several wings at once.
+  One room runs at a time.
+- Room types: **waves** (clear each wave, then the next is released), **clear** (every wave at once;
+  kill them all), **survive** (waves keep coming until the timer ends), **boss** (adds at health
+  thresholds), **council** (two to four bosses at once) and **puzzle** (no fight). Any room can also
+  have puzzles that must be solved before it clears.
+- **Puzzles**: levers to pull, buttons to press in order (some flash the order first; a mistake
+  resets it), pressure plates to hold down at once, targets to hit within a time, and jump courses.
+  Falling off a course puts you back at its start without spending a life.
+- **Campfires**: right-click to light one between fights. Out of combat, it heals two health a
+  second, tops up food and puts out fire, and the party then respawns there.
+- **Elites, mini-bosses and bosses** use the ability kit below. Every ability is telegraphed: a red
+  ring, cone or line, a marker under a player, or a chain, plus a sound, a moment before it lands.
+  Bosses can change abilities in phases and **enrage** if a fight runs too long.
+- **Arena events**: dialogue from characters and enemies, short cutscenes (the camera is taken for a
+  few seconds), falling rocks and other hazards, and parts of the map that rise, crumble or change.
 - Clearing a room opens its gate and can move the party's checkpoint forward.
 - **Deaths never drop gear** (keep inventory, no grave) but spend one shared party life. If everyone
   is down at once, it's a wipe: the room resets and the party regroups at the last checkpoint. At
@@ -95,6 +113,7 @@ parties show in the menu and on the website.
 
 | Id | Where | Party | Rooms |
 |---|---|---|---|
+| `first_flight` | Sky islands at dusk, level 2 (tutorial) | 1–5 | Skyhop Crossing (jump course) → The Lever Lock (lever puzzle) → Wayfarer's Fire (campfire) → The Training Yard (2 waves, an elite) → The Sentinel's Rest (The Old Sentinel, slam; summons below 50%) |
 | `hollow_barrow` | Overworld crypt, level 8 | 1–5 | Crypt Gallery (2 waves) → Ossuary (survive 45 s) → King's Rest (The Hollow Huntsman, adds at 66%/33%) |
 | `cinder_keep` | Nether (basalt deltas), level 20 | 2–5 | Gatehouse (2 waves) → Blaze Forge (survive 60 s) → Throne of Embers (Keeper of Embers, adds at 75%/40%) |
 
@@ -107,9 +126,15 @@ A server that already installed an earlier sample file gets the current one on t
 only when the installed file is byte-for-byte an earlier shipped version (line endings ignored).
 Any staff edit keeps the file as it is.
 
-Their templates are built from code (`SampleTemplates`), so the repository ships no world files.
-The first time a sample is edited or run, the build is generated from its plan. Edits staff make in
-the template carry into every later run. Cinder Keep is sealed by the sample season until the
+**First Flight** is the tutorial. Players who haven't cleared it see it first on the board, marked
+**Start here**. Captain Wren at the pier explains the basics when right-clicked, and talks the party
+through each room. It has only the Normal tier.
+
+Their templates are built from code (`SampleTemplates`, `FirstFlightTemplate`), so the repository
+ships no world files. The first time a sample is edited or run, the build is generated from its
+plan, and the template is stamped with the plan's fingerprint (`nerdsmp-plan.txt`). When an update
+changes the plan, the next edit or run rebuilds the template from the new one. To build on a sample
+by hand, delete its `sample:` line first: templates without it are never rebuilt. Cinder Keep is sealed by the sample season until the
 **Ember Gate** milestone.
 
 ## Building an expedition (staff)
@@ -169,7 +194,7 @@ template-world: nerdsmp_exp_tpl_cinder_keep   # default; or the world given to "
 sample: cinder_keep              # only for the shipped code-built samples
 published: true
 level: 20                        # base mob level; tiers add their bonus
-party: {min: 2, max: 5}          # 1-5
+party: {min: 2, max: 5}          # 1-5 (1-8 with raid: true)
 time-limit-minutes: 30           # 5-180
 lives: 10                        # optional; sets Normal's lives, other tiers keep their ratio
 spawn: [0, 64, 4, 0]             # [x, y, z] or [x, y, z, yaw]
@@ -216,10 +241,122 @@ guide, and when the guide has a tip for a room that doesn't exist.
 Quote mob ids inside `{}` maps (`"vanilla:zombie": 3`). The key is `scripts`, not `on`, because
 YAML reads a bare `on` as true.
 
+### Goals, rooms and puzzles
+
+```yaml
+goal: forces              # rooms (default) | bosses | forces | timed
+forces: 120               # forces: enemy forces needed before the final room opens
+time-bonus-seconds: 45    # timed: seconds added to the clock per cleared room
+time: 13600               # optional time of day for the run (0-23999)
+raid: false               # true allows parties of up to 8 (no hired allies)
+rooms:
+  east_wing:
+    requires: []          # rooms that must be cleared first; omitted = the room above it
+    optional: false       # optional rooms aren't needed to finish
+    puzzles:
+      levers: {type: levers, title: Pull the three levers, blocks: [[3, 65, 40], [-3, 65, 40], [0, 65, 44]]}
+      chimes: {type: sequence, blocks: [[...], [...], [...]], order: [2, 1, 3], show: true}
+      plates: {type: plates, blocks: [[...], [...]]}          # all held down at once
+      targets: {type: targets, blocks: [[...], [...]], seconds: 20}
+      course: {type: reach, area: [x1, y1, z1, x2, y2, z2], start: [0, 64, 10], fail-below: 55}
+    encounter:
+      type: council       # waves | clear | survive | boss | council | puzzle
+      bosses: [custom:a, custom:b, custom:c]   # council: 2-4, spawned at the first points
+      abilities: [cleave, slam]                # boss abilities from the kit
+      phases:                                  # switch abilities below a health %
+        - {at: 50, abilities: [meteor, summon], title: The council rages}
+      enrage-seconds: 240                      # bosses hit 50% harder and move faster after this
+```
+
+The **goal** decides when a run is won:
+
+| Goal | Win when |
+|---|---|
+| `rooms` | Every room that isn't optional is cleared. |
+| `bosses` | Every boss and council room is cleared, in any order the map allows. Other rooms are optional. |
+| `forces` | Every required room is cleared. The last one stays locked until enough enemy forces are slain; the sidebar shows the percentage. |
+| `timed` | Every required room is cleared before the clock runs out. Each cleared room adds `time-bonus-seconds`. |
+
+Smaller parties meet fewer enemies (see party-size scaling), so each kill is worth correspondingly
+more toward the forces goal; a solo player can always reach it.
+
+`/expedition check` reports rooms whose requirements can never be met, puzzle blocks outside their
+room, a forces goal without a target, and councils without enough spawn points.
+
+### Mobs, roles and abilities
+
+```yaml
+mobs:
+  "custom:emberbound": {role: miniboss, abilities: [charge, leap], forces: 12}
+  "vanilla:husk": {role: elite, abilities: [cleave], title: Drillmaster}
+```
+
+Roles: `normal` (forces 1), `elite` (1.6× health, 1.15× damage, forces 4), `miniboss` (3× health,
+1.3× damage, gets the boss bar when no boss is up, forces 12). An elite with no abilities listed
+rolls one from the elite pool; a mini-boss rolls two. A custom mob whose tier is already elite
+counts as one. Elites cast every 5 s at most, bosses every 3.5 s, each ability on its own cooldown.
+Ability damage is dealt as the caster, so tier, modifier and `boss-damage` multipliers apply.
+
+| Ability | Telegraph and effect | Cooldown |
+|---|---|---|
+| `charge` | A red line to the farthest player, then a rush that hits and knocks aside anyone in the way | 10 s |
+| `cleave` | A red cone in front, then a sweep | 7 s |
+| `slam` | A red ring around the caster, then a shockwave that launches everyone inside | 12 s |
+| `leap` | A red disc on a far player, then a landing that hits and slows | 14 s |
+| `blink` | Smoke, then it reappears behind a player | 9 s |
+| `fire_pools` | Orange discs under each player, then fire | 15 s |
+| `meteor` | A shadow follows one player, then locks; the impact is split between everyone standing in it | 18 s |
+| `summon` | Calls two helpers (the room's first wave mob) | 25 s |
+| `shield` | Summons two helpers and can't be hurt until they die | 30 s |
+| `frost_nova` | A pale ring, then freezes and slows everyone close | 14 s |
+| `poison_cloud` | A green disc, then a poison cloud that lingers | 12 s |
+| `tether` | A chain to the nearest player, then a pull; breaking line of sight snaps it | 16 s |
+| `barrage` | A volley of arrows at random players | 10 s |
+| `mend` | Heals itself and wounded allies by 15%; burst damage during the channel interrupts it | 16 s |
+| `web` | Pins a player in a cobweb | 12 s |
+
+Expedition creatures ship in the plugin as `content/expedition-mobs.yml`, so updates bring new ones.
+An entry with the same id in `content/mobs.yml` overrides the shipped one. Mob entries accept
+`scale` (size), `speed`, `equipment` (`head`, `chest`, `legs`, `feet`, `hand`, `off-hand`) and
+`ability: none` (no built-in pulse, for mobs whose attacks come from the kit).
+
+Enemies never hurt each other, poison clouds touch only players, and fire left by abilities or
+hazards doesn't burn enemies (a player's fire aspect still does).
+
+### Campfires, set pieces, hazards, cutscenes and characters
+
+```yaml
+campfires:
+  wayfarers_fire: {at: [3, 64, 68], lit: false, title: Wayfarer's Fire}
+setpieces:
+  bridge: {box: [-1, 63, 60, 1, 63, 70], block: spruce_planks, style: rise}   # instant | rise | crumble
+hazards:
+  rockfall: {type: rocks, area: [-9, 63, 78, 9, 63, 94], every: 6, count: 3, damage: 4}  # rocks | fire | eruption | gas
+cutscenes:
+  boss_wakes:
+    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: <gray>Something stirs…</gray>}
+    - {at: [0.5, 67, 113, 0, 8], seconds: 3}
+npcs:
+  wren: {name: Captain Wren, entity: villager, at: [2, 64, 3, 90], lines: [Welcome aboard!, ...]}
+```
+
+- **Campfires** are placed (unlit unless `lit: true`) when the run starts. Lighting one makes it the
+  respawn point, until another is lit or a room checkpoint is reached.
+- **Set pieces** are changed by scripts: `build` fills the box, `break` empties it and `restore` puts
+  back what the template had. `rise` builds layer by layer; `crumble` breaks in dusty batches.
+- **Hazards** always telegraph (a disc on the floor for about 1.5 s). About half of each strike aims
+  at players inside the area. `rocks` drop falling rock, `fire` leaves brief fire, `eruption`
+  launches players and `gas` leaves a poison cloud. Wipes stop every hazard.
+- **Cutscenes** glide the camera between shots (eased), showing each shot's text as a subtitle.
+  Players are spectators meanwhile; anyone who logs off mid-scene gets their game mode back on join.
+- **Characters** stand where placed, can't be hurt or traded with, and play their next line when
+  right-clicked. Scripts make them (or anyone) speak with `say`.
+
 ### Scripts
 
 Optional actions run on encounter events. Triggers: `start`, `clear`, `wave-N` (when wave N is
-released), `health-N` (boss at or below N%, once) and `timer-N` (N seconds after the room starts).
+released), `health-N` (boss at or below N%, once; councils use their average), `timer-N` (N seconds
+after the room starts), `down-N` (the Nth council boss falls), `solved-<puzzle>` and `enrage`.
 
 | Action | Example |
 |---|---|
@@ -232,6 +369,11 @@ released), `health-N` (boss at or below N%, once) and `timer-N` (N seconds after
 | `checkpoint` | Move the respawn point to this room now |
 | `wait <seconds>` | Delay the actions after it |
 | `command <console command>` | `{player}` runs it once per member; `{run}` is the run id |
+| `say <speaker>\|<line>` | `say wren\|Mind the gap!` (an npc id or any name) |
+| `cutscene <id>` | Play a cutscene for the party |
+| `build <piece>` / `break <piece>` / `restore <piece>` | Change a set piece |
+| `hazard <start\|stop\|pulse> <id>` | Run, stop or fire once a hazard |
+| `campfire <id>` | Light a campfire for the party |
 
 Scripts are parsed on load, so `/expedition check` reports unknown actions, rooms, mobs, effects
 or sounds before anyone plays.
@@ -264,6 +406,7 @@ tier, and modifiers.
 - `scaling`: `count-floor` (0.4), `health-floor` (0.5) and `ally-weight` (0.6).
 - `allies`: `enabled` (true), `offer-after-seconds` (120), `max` (4), `damage-multiplier` (1.5) and
   `roles` (bulwark, blade, hedge-witch, archer).
+- `log-abilities` (false): write a console line for every ability cast, for tuning fights.
 
 The setting `generated-worlds` only concerns the old open-world expedition prototypes.
 

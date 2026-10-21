@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
  */
 public record ScriptAction(Verb verb, List<String> args, String text) {
     /** Triggers an encounter can attach actions to. */
-    public static final Pattern TRIGGER = Pattern.compile("start|clear|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}");
+    public static final Pattern TRIGGER = Pattern.compile(
+        "start|clear|enrage|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
 
     public ScriptAction {
         args = List.copyOf(args);
@@ -37,7 +38,21 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         /** {@code wait <seconds>} delays the actions after it. */
         WAIT(1, false),
         /** {@code command <console command>}; {@code {player}} runs it once per member. */
-        COMMAND(1, true);
+        COMMAND(1, true),
+        /** {@code say <speaker>|<line>}: a line of dialogue. The speaker may be an npc id or any name. */
+        SAY(1, true),
+        /** {@code cutscene <id>} plays one of the expedition's cutscenes for the party. */
+        CUTSCENE(1, false),
+        /** {@code build <set piece>} fills a set piece in with its block. */
+        BUILD(1, false),
+        /** {@code break <set piece>} empties a set piece. */
+        BREAK(1, false),
+        /** {@code restore <set piece>} puts the set piece back as the template had it. */
+        RESTORE(1, false),
+        /** {@code hazard <start|stop|pulse> <id>} runs, stops or fires once one of the expedition's hazards. */
+        HAZARD(2, false),
+        /** {@code campfire <id>} lights a campfire for the party. */
+        CAMPFIRE(1, false);
 
         final int minimumArgs;
         final boolean freeText;
@@ -58,7 +73,8 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
             verb = Verb.valueOf(word);
         } catch (IllegalArgumentException unknown) {
             throw new IllegalArgumentException("Unknown script action '" + word.toLowerCase(Locale.ROOT)
-                + "'. Use message, title, sound, spawn, open, close, effect, checkpoint, wait or command.");
+                + "'. Use message, title, say, sound, spawn, open, close, effect, checkpoint, wait, command, cutscene, "
+                + "build, break, restore, hazard or campfire.");
         }
         String rest = space < 0 ? "" : trimmed.substring(space + 1).strip();
         List<String> args = rest.isEmpty() ? List.of() : verb.freeText ? List.of(rest) : List.of(rest.split("\\s+"));
@@ -75,6 +91,11 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
             }
             case WAIT -> positive(args.get(0), "wait seconds", 300);
             case SOUND -> { if (args.size() > 1) Double.parseDouble(args.get(1)); }
+            case SAY -> { if (!args.get(0).contains("|")) throw new IllegalArgumentException("say needs a speaker and a line: say <speaker>|<line>"); }
+            case HAZARD -> {
+                if (!List.of("start", "stop", "pulse").contains(args.get(0).toLowerCase(Locale.ROOT)))
+                    throw new IllegalArgumentException("hazard needs start, stop or pulse first: hazard start <id>");
+            }
             default -> { }
         }
         return new ScriptAction(verb, args, trimmed);

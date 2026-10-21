@@ -43,12 +43,20 @@ public final class ExpeditionMenu implements Listener {
         Board board = new Board(player.getUniqueId());
         board.inventory = Bukkit.createInventory(board, 45, Chat.render("<gold><bold>Expeditions</bold></gold>"));
         MenuKit.frame(board.inventory);
-        List<ExpeditionDefinition> open = service.definitions().stream()
-            .filter(definition -> service.playable(definition) || player.hasPermission(ExpeditionService.ADMIN) && definition.published()).toList();
+        List<ExpeditionDefinition> open = new java.util.ArrayList<>(service.definitions().stream()
+            .filter(definition -> service.playable(definition) || player.hasPermission(ExpeditionService.ADMIN) && definition.published()).toList());
+        // Players who haven't cleared the tutorial see it first, marked as the place to start.
+        String account = plugin.sessions().account(player.getUniqueId()).map(Object::toString).orElse("");
+        boolean newcomer = service.records().clears(account, ExpeditionService.TUTORIAL) == 0;
+        if (newcomer) open.sort(java.util.Comparator.comparing(definition -> !definition.id().equals(ExpeditionService.TUTORIAL)));
         for (int index = 0; index < open.size() && index < SLOTS.length; index++) {
             ExpeditionDefinition definition = open.get(index);
             Optional<String> lock = plugin.campaign().expeditionLock(definition.id());
             List<String> lore = summary(player, definition);
+            if (newcomer && definition.id().equals(ExpeditionService.TUTORIAL)) {
+                lore.add(0, "<green><bold>★ Start here</bold></green> <gray>A short, gentle tour of how expeditions work.</gray>");
+                lore.add(1, "");
+            }
             if (lock.isPresent()) {
                 lore.add("");
                 lore.add("<red>Sealed until the campaign reaches</red>");
@@ -63,7 +71,7 @@ public final class ExpeditionMenu implements Listener {
         if (open.isEmpty()) board.set(22, MenuKit.item(Material.COMPASS, "<gray>No expeditions open yet</gray>",
             List.of("<gray>Check back soon.</gray>")), (who, click) -> { });
         board.set(4, MenuKit.item(Material.BOOK, "<aqua>How expeditions work</aqua>", List.of(
-            "<gray>Team up with up to " + (ExpeditionDefinition.MAX_PARTY - 1) + " others in a</gray>",
+            "<gray>Team up with up to " + (ExpeditionDefinition.MAX_PARTY - 1) + " others (raids: " + (ExpeditionDefinition.MAX_RAID - 1) + ") in a</gray>",
             "<gray>private instance: clear the rooms,</gray>",
             "<gray>beat the boss, and leave with loot.</gray>",
             "",

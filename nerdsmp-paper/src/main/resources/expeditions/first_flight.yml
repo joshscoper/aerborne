@@ -1,0 +1,140 @@
+# First Flight: the tutorial expedition. A short, gentle run across the sky islands that shows
+# every part of an expedition: a jump course, a lever puzzle, a campfire, waves with an elite,
+# and a boss with a telegraphed attack. Full reference: docs/EXPEDITIONS.md.
+title: First Flight
+description: Your first expedition. Captain Wren shows you the ropes across the sky islands.
+icon: feather
+dimension: overworld
+sample: first_flight
+published: true
+difficulty: 1
+level: 2
+party: {min: 1, max: 5}
+time-limit-minutes: 20
+lives: 12
+# Just after sunset: the islands glow and nothing undead burns.
+time: 13600
+spawn: [0, 64, 0, 0]
+exit: [0, 64, 128]
+modifiers: []
+# The tutorial has one tier; Heroic and Mythic come with the real expeditions.
+tiers:
+  heroic: {enabled: false}
+  mythic: {enabled: false}
+
+npcs:
+  wren:
+    name: Captain Wren
+    entity: villager
+    at: [2, 64, 3, 90]
+    lines:
+      - "Welcome aboard! This is your first expedition: a private run for you and your party."
+      - "Your sidebar shows the clock, your party's lives and what to do next."
+      - "Falling off the stepping stones only sends you back to the start. No lives lost."
+      - "Campfires heal you between fights and become your respawn point. Light every one you find."
+      - "A ring on the ground means an attack is coming. Step out of it!"
+
+campfires:
+  wayfarers_fire: {at: [3, 64, 68], lit: false, title: "Wayfarer's Fire"}
+
+cutscenes:
+  sentinel_wakes:
+    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: "<gray>Something stirs atop the plinth…</gray>"}
+    - {at: [0.5, 67, 113, 0, 8], seconds: 3, text: "<gold>The Old Sentinel wakes</gold>"}
+
+mobs:
+  "vanilla:husk":
+    role: elite
+    abilities: [cleave]
+    title: Drillmaster
+
+rooms:
+  skyhop:
+    title: Skyhop Crossing
+    region: [-9, 40, 13, 9, 75, 38]
+    puzzles:
+      crossing:
+        type: reach
+        title: Hop across to the watchpost
+        area: [-4, 63, 40, 4, 67, 45]
+        start: [0, 64, 11, 0]
+        fail-below: 58
+    encounter:
+      type: puzzle
+      scripts:
+        start: ["say wren|Hop from stone to stone. Take your time; a fall just sends you back."]
+        clear: ["say wren|Nicely done! The watchpost is ahead. Its gate is locked."]
+  lever_lock:
+    title: The Lever Lock
+    region: [-10, 60, 39, 10, 75, 58]
+    checkpoint: [0, 64, 56, 0]
+    gate: [-1, 64, 59, 1, 66, 59]
+    puzzles:
+      levers:
+        type: levers
+        title: Pull the three old levers
+        blocks: [[-6, 65, 50], [6, 65, 50], [-4, 65, 56]]
+    encounter:
+      type: puzzle
+      scripts:
+        start: ["say wren|Three levers work the gate. Look around the ruins and pull every one."]
+        solved-levers: ["sound block.iron_door.open 0.7"]
+        clear: ["say wren|The gate's open. There's a campfire across the bridge: light it before the training yard."]
+  training_yard:
+    title: The Training Yard
+    region: [-12, 60, 76, 12, 75, 97]
+    checkpoint: [0, 64, 95, 0]
+    gate: [-1, 64, 98, 1, 66, 98]
+    points: [[-6, 64, 81], [6, 64, 81], [-6, 64, 91], [6, 64, 91], [0, 64, 86]]
+    encounter:
+      type: waves
+      waves:
+        - {"vanilla:zombie": 3}
+        - {mobs: {"vanilla:skeleton": 2, "vanilla:husk": 1}, delay-seconds: 4}
+      scripts:
+        start: ["say wren|Training dummies? No, these ones bite. Clear both waves."]
+        wave-2: ["say wren|See the husk? It's an elite: tougher, with an ability. Watch for the red arc in front of it and step aside."]
+        clear: ["say wren|Well fought. One last stop: the old watch statue. They say it still guards the islands."]
+  sentinels_rest:
+    title: The Sentinel's Rest
+    region: [-13, 60, 104, 13, 80, 129]
+    points: [[0, 64, 119], [-7, 64, 111], [7, 64, 111], [-7, 64, 121], [7, 64, 121]]
+    encounter:
+      type: boss
+      boss: custom:old_sentinel
+      boss-level-bonus: 1
+      # Gentle on purpose: the tutorial boss teaches the slam, it shouldn't punish standing still.
+      boss-damage: 0.25
+      boss-health: 0.8
+      abilities: [slam]
+      phases:
+        - {at: 50, abilities: [slam, summon], title: "The Sentinel calls its stone guards"}
+      adds-at-health: [35]
+      waves:
+        - {"vanilla:zombie": 2}
+      scripts:
+        start:
+          - "cutscene sentinel_wakes"
+          - "wait 6"
+          - "say The Old Sentinel|Who climbs to my watch? Turn back, little sparrows."
+          - "say wren|When the ground glows red around it, get out of the ring!"
+        health-50: ["say The Old Sentinel|Guards! To me!"]
+        clear: ["say wren|Well flown! Walk into the light behind the plinth to head home. Real expeditions await."]
+
+guide:
+  overview: The tutorial. A gentle run that shows how expeditions work, from jump courses and puzzles to campfires, elites and a boss. Talk to Captain Wren at the pier for tips.
+  tips:
+    - Your sidebar shows the clock, the party's lives and your objectives.
+    - Falling on a jump course puts you back at its start without spending a life.
+    - Campfires heal you out of combat and become your respawn point.
+    - A red ring or arc on the ground is an attack about to land. Step out of it.
+  rooms:
+    skyhop: Hop across the stepping stones to the watchpost island.
+    lever_lock: Pull the three levers hidden around the ruins to open the gate.
+    training_yard: Two easy waves. The husk is an elite with a frontal cleave.
+    sentinels_rest: The Old Sentinel slams the ground; a red ring shows where. At half health it calls two guards.
+  boss: The Old Sentinel is slow but hits hard. Every few seconds a red ring spreads around it, then it slams the ground; step outside the ring. Below half health it also summons two stone guards.
+
+loot:
+  marks: 60
+  items: {bread: 8, iron_ingot: 3, experience_bottle: 3, torch: 16}

@@ -215,6 +215,8 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     }
 
     private void showBoss(LivingEntity target, double health, Player viewer) {
+        // Expedition runs draw one bar for their own bosses; a second one here would just repeat it.
+        if (net.nerdsmp.paper.expedition.InstanceWorlds.isRunWorld(target.getWorld())) return;
         if (!canView(viewer, target, bossViewerRangeSquared)) {
             return;
         }

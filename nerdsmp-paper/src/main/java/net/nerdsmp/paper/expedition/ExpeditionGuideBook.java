@@ -58,9 +58,12 @@ final class ExpeditionGuideBook {
             String kind = switch (room.encounter().type()) {
                 case WAVES -> room.encounter().waves().size() + " waves";
                 case SURVIVE -> "survive " + room.encounter().surviveSeconds() + "s";
+                case CLEAR -> "clear every enemy";
                 case BOSS -> "boss";
-                case NONE -> "passage";
-            };
+                case COUNCIL -> room.encounter().bosses().size() + " bosses at once";
+                case PUZZLE -> "puzzle";
+                case NONE -> room.puzzles().isEmpty() ? "passage" : "puzzle";
+            } + (room.optional() ? ", optional" : "");
             book.text("dark_blue", index++ + ". " + room.title() + " (" + kind + ")");
             String tip = guide.rooms().get(room.id());
             if (tip != null && !tip.isBlank()) book.text("black", tip);

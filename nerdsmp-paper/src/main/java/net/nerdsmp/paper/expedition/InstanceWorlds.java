@@ -56,16 +56,63 @@ public final class InstanceWorlds {
         return loaded != null || Files.isDirectory(dimensionDirectory(expedition.templateWorld()));
     }
 
+    /** File in a code-built template's folder recording which plan built it. */
+    static final String PLAN_STAMP = "nerdsmp-plan.txt";
+
+    /**
+     * True when a code-built template on disk came from an older version of its plan. Such a template
+     * is rebuilt: code-built maps aren't meant to be edited by hand (the expedition file says to drop
+     * its sample: line before doing that).
+     */
+    boolean staleTemplate(ExpeditionDefinition expedition, BuildCanvas.Plan plan) {
+        if (plan == null || expedition.sample() == null) return false;
+        Path directory = dimensionDirectory(expedition.templateWorld());
+        if (!Files.isDirectory(directory)) return false;
+        try {
+            Path stamp = directory.resolve(PLAN_STAMP);
+            return !Files.isRegularFile(stamp) || !Files.readString(stamp).strip().equals(plan.fingerprint());
+        } catch (IOException unreadable) {
+            return true;
+        }
+    }
+
+    private void stamp(ExpeditionDefinition expedition, BuildCanvas.Plan plan) {
+        if (plan == null || expedition.sample() == null) return;
+        try {
+            Files.writeString(dimensionDirectory(expedition.templateWorld()).resolve(PLAN_STAMP), plan.fingerprint());
+        } catch (IOException failure) {
+            plugin.getLogger().log(Level.WARNING, "Could not stamp template " + expedition.templateWorld(), failure);
+        }
+    }
+
+    /** Deletes an unloaded template built from an older plan, so the next load builds the current one. */
+    private void refreshTemplate(ExpeditionDefinition expedition, BuildCanvas.Plan plan) {
+        if (Bukkit.getWorld(NamespacedKey.minecraft(expedition.templateWorld())) != null || !staleTemplate(expedition, plan)) return;
+        // Only the default template name is ever rebuilt; a custom template-world is left alone.
+        String standard = net.nerdsmp.paper.expedition.content.ExpeditionLoader.templateWorldName(expedition.id());
+        if (!expedition.templateWorld().equals(standard)) return;
+        try {
+            delete(dimensionDirectory(expedition.templateWorld()), standard);
+            plugin.getLogger().info("Rebuilding " + expedition.templateWorld() + " from the updated map for " + expedition.id() + ".");
+        } catch (IOException failure) {
+            plugin.getLogger().log(Level.WARNING, "Could not remove the outdated template " + expedition.templateWorld(), failure);
+        }
+    }
+
     /** Loads (or creates) the template so staff can build in it. */
     public World openTemplate(ExpeditionDefinition expedition, BuildCanvas.Plan plan) {
         World loaded = Bukkit.getWorld(NamespacedKey.minecraft(expedition.templateWorld()));
         if (loaded != null) return loaded;
+        refreshTemplate(expedition, plan);
+        // Only a template generated now, from this plan, gets the plan's stamp.
+        boolean fresh = !Files.isDirectory(dimensionDirectory(expedition.templateWorld()));
         World world = WorldCreator.ofKey(NamespacedKey.minecraft(expedition.templateWorld()))
             .environment(environment(expedition.dimension()))
             .generator(new TemplateGenerator(plan, expedition.biome(), expedition.dimension()))
             .generateStructures(false).createWorld();
         if (world == null) throw new IllegalStateException("Template world did not load: " + expedition.templateWorld());
         rules(world, false);
+        if (fresh) stamp(expedition, plan);
         return world;
     }
 
@@ -81,6 +128,7 @@ public final class InstanceWorlds {
      */
     public CompletableFuture<World> createRun(ExpeditionDefinition expedition, BuildCanvas.Plan plan) {
         String name = RUN_PREFIX + expedition.id() + "_" + counter.incrementAndGet();
+        refreshTemplate(expedition, plan);
         World template = Bukkit.getWorld(NamespacedKey.minecraft(expedition.templateWorld()));
         if (template != null) template.save();
         Path source = dimensionDirectory(expedition.templateWorld());
@@ -188,8 +236,13 @@ public final class InstanceWorlds {
     }
 
     private static void delete(Path directory) throws IOException {
+        delete(directory, RUN_PREFIX);
+    }
+
+    /** Deletes a world folder, but only one whose name starts with {@code prefix} (a run or a code-built template). */
+    private static void delete(Path directory, String prefix) throws IOException {
         if (!Files.exists(directory)) return;
-        if (!directory.getFileName().toString().startsWith(RUN_PREFIX)) throw new IOException("Refusing to delete " + directory);
+        if (!directory.getFileName().toString().startsWith(prefix)) throw new IOException("Refusing to delete " + directory);
         Files.walkFileTree(directory, new SimpleFileVisitor<>() {
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
                 Files.delete(file);

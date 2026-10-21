@@ -37,7 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class PlayerPresentationService implements Listener, AutoCloseable {
     private static final String OBJECTIVE_ID = "nerdhud";
-    private static final int SIDEBAR_LINES = 9;
+    /** Teams registered per board; the normal HUD uses 9, an overlay (an expedition run) up to all of them. */
+    private static final int SIDEBAR_LINES = 15;
+    private static final int HUD_LINES = 9;
 
     private final NerdSmpPlugin plugin;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
@@ -56,6 +58,10 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
     /** Players whose data changed while a refresh was already in flight; they refresh again after it. */
     private final java.util.Set<UUID> refreshAgain = ConcurrentHashMap.newKeySet();
     private final Map<UUID, List<String>> sidebarFrames = new java.util.HashMap<>();
+    /** Sidebars that replace the HUD for a while, such as the expedition run panel: title and lines. */
+    private final Map<UUID, Overlay> overlays = new ConcurrentHashMap<>();
+    private final Map<UUID, String> sidebarTitles = new java.util.HashMap<>();
+    private record Overlay(String title, List<String> lines) { }
     private final Map<UUID, TabFrame> tabFrames = new java.util.HashMap<>();
     private final Map<UUID, NameplateStyle> nameplateStyles = new java.util.HashMap<>();
     private volatile boolean closed;
@@ -285,7 +291,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         hiddenHud.clear();
         refreshTokens.clear(); refreshAgain.clear(); sidebarFrames.clear(); tabFrames.clear(); nameplateStyles.clear();
     }
-    private void clearFrames(UUID id) { refreshTokens.remove(id); refreshAgain.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
+    private void clearFrames(UUID id) { overlays.remove(id); sidebarTitles.remove(id); refreshTokens.remove(id); refreshAgain.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
 
     private void refreshAll() {
         Bukkit.getOnlinePlayers().forEach(this::refresh);
@@ -358,7 +364,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             String entry = entry(index);
             Team team = board.registerNewTeam("hud_" + index);
             team.addEntry(entry);
-            objective.getScore(entry).setScore(SIDEBAR_LINES - index);
+            if (index < HUD_LINES) objective.getScore(entry).setScore(SIDEBAR_LINES - index);
         }
         player.setScoreboard(board);
         return board;
@@ -375,6 +381,11 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             return;
         }
         if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        Overlay overlay = overlays.get(player.getUniqueId());
+        if (overlay != null) {
+            renderSidebar(board, objective, player, overlay.title(), overlay.lines());
+            return;
+        }
         var island = plugin.skyblock() == null ? null : plugin.skyblock().islands()
             .at(player.getLocation().getBlockX() >> 4, player.getLocation().getBlockZ() >> 4)
             .filter(i -> plugin.skyblock().isIslandWorld(player.getWorld())).orElse(null);
@@ -395,14 +406,47 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             island == null ? "<gray>Progress</gray> <aqua>" + VisualFormat.compact(view.campaignPoints()) + "</aqua>"
                 : "<gray>" + islandProgress.progressLabel() + "</gray>"
         );
-        List<String> previous = sidebarFrames.put(player.getUniqueId(), lines);
-        for (int index = 0; index < lines.size(); index++) {
-            if (previous != null && lines.get(index).equals(previous.get(index))) continue;
-            Team team = board.getTeam("hud_" + index);
-            if (team != null) {
-                team.prefix(miniMessage.deserialize(lines.get(index)));
+        renderSidebar(board, objective, player, plugin.branding().sidebarTitleMarkup(), lines);
+    }
+
+    /** Draws lines into the board's fixed teams, sending only what changed and hiding unused rows. */
+    private void renderSidebar(Scoreboard board, Objective objective, Player player, String title, List<String> lines) {
+        List<String> shown = lines.size() > SIDEBAR_LINES ? lines.subList(0, SIDEBAR_LINES) : lines;
+        if (!title.equals(sidebarTitles.put(player.getUniqueId(), title))) objective.displayName(miniMessage.deserialize(title));
+        List<String> previous = sidebarFrames.put(player.getUniqueId(), List.copyOf(shown));
+        int before = previous == null ? HUD_LINES : previous.size();
+        for (int index = 0; index < SIDEBAR_LINES; index++) {
+            String entry = entry(index);
+            if (index >= shown.size()) {
+                if (index < before || previous == null) board.resetScores(entry);
+                continue;
             }
+            if (index >= before) objective.getScore(entry).setScore(SIDEBAR_LINES - index);
+            if (previous != null && index < previous.size() && shown.get(index).equals(previous.get(index))) continue;
+            Team team = board.getTeam("hud_" + index);
+            if (team != null) team.prefix(miniMessage.deserialize(shown.get(index)));
         }
+    }
+
+    /**
+     * Replaces the player's sidebar with {@code lines} under {@code title} until {@link #clearOverlay}.
+     * Call it as often as the lines change; unchanged rows aren't resent.
+     */
+    public void showOverlay(Player player, String title, List<String> lines) {
+        overlays.put(player.getUniqueId(), new Overlay(title, List.copyOf(lines)));
+        Scoreboard board = boards.get(player.getUniqueId());
+        if (board == null || !hudVisible(player)) return;
+        Objective objective = board.getObjective(OBJECTIVE_ID);
+        if (objective != null) renderSidebar(board, objective, player, title, lines);
+    }
+
+    /** Puts the normal HUD back. */
+    public void clearOverlay(Player player) {
+        if (overlays.remove(player.getUniqueId()) == null) return;
+        PlayerView view = views.get(player.getUniqueId());
+        Scoreboard board = boards.get(player.getUniqueId());
+        if (view != null && board != null) applySidebar(board, player, view);
+        else refresh(player);
     }
 
     private void applyTab(Player player, PlayerView view) {

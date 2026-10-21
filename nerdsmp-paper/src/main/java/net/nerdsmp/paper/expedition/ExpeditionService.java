@@ -72,7 +72,9 @@ import java.util.logging.Level;
  */
 public final class ExpeditionService implements Listener, AutoCloseable {
     public static final String ADMIN = "nerdsmp.expedition.admin";
-    public static final List<String> SAMPLES = List.of("hollow_barrow", "cinder_keep");
+    public static final List<String> SAMPLES = List.of("first_flight", "hollow_barrow", "cinder_keep");
+    /** The tutorial expedition, suggested to anyone who hasn't cleared it. */
+    public static final String TUTORIAL = "first_flight";
 
     private final NerdSmpPlugin plugin;
     private final File folder;
@@ -133,6 +135,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
+        "first_flight", Set.of(),
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1"));
 
@@ -536,6 +539,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             live.add(ticket.id());
             Matchmaker.Rules rule = rules.get(ticket.expedition());
             if (rule == null || allyOffers.contains(ticket.id()) || !allies.offerable(ticket.queuedAt(), now, ticket.size(), rule.max())) continue;
+            if (definition(ticket.expedition()).map(definition -> definition.story().raid()).orElse(false)) continue; // Raids are players only.
             allyOffers.add(ticket.id());
             Player leader = Bukkit.getPlayer(ticket.members().get(0));
             if (leader == null) continue;
@@ -566,6 +570,10 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             return;
         }
         Instant now = Instant.now();
+        if (definition.story().raid()) {
+            Chat.notice(player, "Raids are for players only; hired allies can't come.");
+            return;
+        }
         if (!allies.offerable(ticket.get().queuedAt(), now, ticket.get().size(), definition.maxParty())) {
             Duration left = Duration.between(now, ticket.get().queuedAt().plus(allies.offerAfter()));
             Chat.notice(player, allies.slots(ticket.get().size(), definition.maxParty()) == 0 ? "Your group is already full."
@@ -746,6 +754,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        RunStage.restoreAfterCutscene(player, plugin);
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!player.isOnline()) return;
             ExpeditionRun run = runByPlayer.get(player.getUniqueId());
@@ -854,7 +863,77 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             event.setDamage(event.getDamage() * run.allyDamageMultiplier());
             return;
         }
+        // Enemies never hurt each other: a council's arrows or a slam shouldn't thin their own ranks.
+        if (victim instanceof LivingEntity hit && run.tracks(hit) && source instanceof LivingEntity attacker && run.tracks(attacker)) {
+            event.setCancelled(true);
+            return;
+        }
+        if (victim instanceof Player hurt) run.combat(hurt);
+        if (source instanceof Player attacker) run.combat(attacker);
+        if (run.isNpc(victim)) {
+            event.setCancelled(true);
+            return;
+        }
         if (friendlyVictim && source instanceof LivingEntity living && run.tracks(living)) event.setDamage(event.getDamage() * run.damageMultiplier(living));
+    }
+
+    /** Fire left by hazards and abilities is for players; it doesn't burn the enemies who cast it. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEnemyBurns(org.bukkit.event.entity.EntityDamageEvent event) {
+        if (event instanceof EntityDamageByEntityEvent || !(event.getEntity() instanceof LivingEntity living)) return;
+        var cause = event.getCause();
+        if (cause != org.bukkit.event.entity.EntityDamageEvent.DamageCause.FIRE && cause != org.bukkit.event.entity.EntityDamageEvent.DamageCause.CAMPFIRE) return;
+        ExpeditionRun run = runIn(living.getWorld());
+        if (run != null && run.tracks(living)) {
+            event.setCancelled(true);
+            living.setFireTicks(0);
+        }
+    }
+
+    /** Poison clouds from abilities and hazards touch only players. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCloud(org.bukkit.event.entity.AreaEffectCloudApplyEvent event) {
+        if (runIn(event.getEntity().getWorld()) != null) event.getAffectedEntities().removeIf(entity -> !(entity instanceof Player));
+    }
+
+    /** Campfires and puzzle blocks. Levers and buttons still work as normal; the run reads them. */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onUse(org.bukkit.event.player.PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null
+            || event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND) return;
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        if (run == null || run.world == null || !run.world.equals(event.getClickedBlock().getWorld())) return;
+        var type = event.getClickedBlock().getType();
+        // Food on a campfire or flint on it would change the rest point; the run handles campfires itself.
+        if (type == org.bukkit.Material.CAMPFIRE || type == org.bukkit.Material.SOUL_CAMPFIRE) event.setCancelled(true);
+        var block = event.getClickedBlock();
+        Bukkit.getScheduler().runTask(plugin, () -> run.interact(event.getPlayer(), block));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTargetHit(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (event.getHitBlock() == null || !(event.getEntity().getShooter() instanceof Player)) return;
+        ExpeditionRun run = runIn(event.getHitBlock().getWorld());
+        if (run != null) run.hitBlock(event.getHitBlock());
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTalk(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        ExpeditionRun run = runIn(event.getRightClicked().getWorld());
+        if (run == null || !run.isNpc(event.getRightClicked())) return;
+        event.setCancelled(true); // No trading with a dungeon guide.
+        if (event.getHand() == org.bukkit.inventory.EquipmentSlot.HAND) run.talk(event.getPlayer(), event.getRightClicked());
+    }
+
+    /** Falling rocks from a hazard never become blocks. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onRockLands(org.bukkit.event.entity.EntityChangeBlockEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.FallingBlock)) return;
+        ExpeditionRun run = runIn(event.getBlock().getWorld());
+        if (run != null && run.ownsRock(event.getEntity())) {
+            event.setCancelled(true);
+            event.getEntity().remove();
+        }
     }
 
     /** The Hedge-witch's harming potions only touch enemies. */
@@ -967,7 +1046,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 + Chat.duration(Duration.between(ticket.get().queuedAt(), Instant.now())) + ". "
                 + matchmaker.waiting(ticket.get().expedition(), ticket.get().tier()) + " players are waiting for this run.");
             if (definition != null && ticket.get().members().get(0).equals(uuid)
-                && allies.offerable(ticket.get().queuedAt(), Instant.now(), ticket.get().size(), definition.maxParty()))
+                && !definition.story().raid() && allies.offerable(ticket.get().queuedAt(), Instant.now(), ticket.get().size(), definition.maxParty()))
                 Chat.info(player, "Tired of waiting? " + Chat.command("expedition allies") + " fills the empty places with hired allies.");
             return;
         }

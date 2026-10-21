@@ -243,7 +243,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
     private MobDefinition authoredDefinition(MobBlueprint mob) {
         return new MobDefinition(mob.id(), miniMessage.escapeTags(mob.name()), mob.entityType(), false, mob.health(), mob.attackDamage(),
             mob.abilityRadius(), mob.abilityPower(), mob.abilityCooldownSeconds(), 0, null, 0,
-            true, mob.rank(), mob.level(), mob.movementSpeed(), mob.ability(), mob.experienceReward(), mob.lootProfile());
+            true, mob.rank(), mob.level(), mob.movementSpeed(), mob.ability(), mob.experienceReward(), mob.lootProfile(), Map.of(), 1);
     }
 
     /** Known content identity for authored loot assignments; never trust a display name. */
@@ -741,6 +741,21 @@ public final class CustomMobManager implements Listener, AutoCloseable {
             var movement = entity.getAttribute(Attribute.MOVEMENT_SPEED);
             if (movement != null) movement.setBaseValue(definition.movementSpeed);
         }
+        else if (definition.movementSpeed > 0) {
+            var movement = entity.getAttribute(Attribute.MOVEMENT_SPEED);
+            if (movement != null) movement.setBaseValue(definition.movementSpeed);
+        }
+        if (definition.scale != 1) {
+            var size = entity.getAttribute(Attribute.SCALE);
+            if (size != null) size.setBaseValue(definition.scale);
+        }
+        var gear = entity.getEquipment();
+        if (gear != null && !definition.equipment.isEmpty()) {
+            definition.equipment.forEach((slot, material) -> {
+                gear.setItem(slot, new org.bukkit.inventory.ItemStack(material));
+                gear.setDropChance(slot, 0F);
+            });
+        }
         initializeScale(entity, definition.boss ? MobTier.BOSS : (definition.rank == MobBlueprint.Rank.NORMAL ? MobTier.STANDARD : MobTier.ELITE),
             definition.health, definition.attackDamage, definition.abilityDamage, definition.markReward, true);
         entity.setRemoveWhenFarAway(!definition.boss);
@@ -985,6 +1000,20 @@ public final class CustomMobManager implements Listener, AutoCloseable {
             throw new IllegalStateException("content/mobs.yml is missing the mobs section");
         }
         Map<String, MobDefinition> loaded = new HashMap<>();
+        // Expedition creatures ship inside the jar so every update brings new ones; the same id in
+        // content/mobs.yml overrides the shipped version.
+        var shipped = plugin.getResource("content/expedition-mobs.yml");
+        if (shipped != null) try (var reader = new java.io.InputStreamReader(shipped, java.nio.charset.StandardCharsets.UTF_8)) {
+            ConfigurationSection extra = YamlConfiguration.loadConfiguration(reader).getConfigurationSection("mobs");
+            if (extra != null) readMobs(extra, loaded, "content/expedition-mobs.yml");
+        } catch (java.io.IOException failure) {
+            plugin.getLogger().warning("Could not read the shipped expedition mobs: " + failure.getMessage());
+        }
+        readMobs(mobs, loaded, "content/mobs.yml");
+        return Map.copyOf(loaded);
+    }
+
+    private static void readMobs(ConfigurationSection mobs, Map<String, MobDefinition> loaded, String file) {
         for (String id : mobs.getKeys(false)) {
             ConfigurationSection section = mobs.getConfigurationSection(id);
             if (section == null) {
@@ -1009,10 +1038,42 @@ public final class CustomMobManager implements Listener, AutoCloseable {
                 section.getLong("mark-reward", 1L),
                 section.getString("relic-drop"),
                 section.getDouble("relic-chance", 0.0D),
-                false, MobBlueprint.Rank.ELITE, 1, 0.0, MobBlueprint.Ability.PULSE, -1, ""
+                false, MobBlueprint.Rank.ELITE, 1, section.getDouble("speed", 0.0D), builtInAbility(section, id, file), -1, "",
+                equipment(section, id, file), section.getDouble("scale", 1.0D)
             ));
         }
-        return Map.copyOf(loaded);
+    }
+
+    /** {@code ability: pulse} (the default), {@code heal_self} or {@code none} for mobs driven by expedition abilities. */
+    private static MobBlueprint.Ability builtInAbility(ConfigurationSection section, String id, String file) {
+        String raw = section.getString("ability", "pulse");
+        try {
+            return MobBlueprint.Ability.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException invalid) {
+            throw new IllegalStateException(file + ": mob " + id + " ability must be pulse, heal_self or none, not " + raw);
+        }
+    }
+
+    /** {@code equipment: {head: iron_helmet, hand: mace, ...}}: what the creature wears and holds. */
+    private static Map<org.bukkit.inventory.EquipmentSlot, org.bukkit.Material> equipment(ConfigurationSection section, String id, String file) {
+        ConfigurationSection gear = section.getConfigurationSection("equipment");
+        if (gear == null) return Map.of();
+        Map<org.bukkit.inventory.EquipmentSlot, org.bukkit.Material> slots = new java.util.EnumMap<>(org.bukkit.inventory.EquipmentSlot.class);
+        for (String key : gear.getKeys(false)) {
+            org.bukkit.inventory.EquipmentSlot slot = switch (key.toLowerCase(Locale.ROOT)) {
+                case "head", "helmet" -> org.bukkit.inventory.EquipmentSlot.HEAD;
+                case "chest", "chestplate" -> org.bukkit.inventory.EquipmentSlot.CHEST;
+                case "legs", "leggings" -> org.bukkit.inventory.EquipmentSlot.LEGS;
+                case "feet", "boots" -> org.bukkit.inventory.EquipmentSlot.FEET;
+                case "hand", "main-hand" -> org.bukkit.inventory.EquipmentSlot.HAND;
+                case "off-hand", "offhand" -> org.bukkit.inventory.EquipmentSlot.OFF_HAND;
+                default -> throw new IllegalStateException(file + ": mob " + id + " has unknown equipment slot " + key);
+            };
+            org.bukkit.Material material = org.bukkit.Material.matchMaterial(gear.getString(key, ""));
+            if (material == null || !material.isItem()) throw new IllegalStateException(file + ": mob " + id + " equipment " + key + " is not an item");
+            slots.put(slot, material);
+        }
+        return slots;
     }
 
     private record MobDefinition(
@@ -1034,8 +1095,14 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         double movementSpeed,
         MobBlueprint.Ability ability,
         int experienceReward,
-        String lootProfile
+        String lootProfile,
+        Map<org.bukkit.inventory.EquipmentSlot, org.bukkit.Material> equipment,
+        double scale
     ) {
+        MobDefinition {
+            equipment = equipment == null ? Map.of() : Map.copyOf(equipment);
+            scale = scale <= 0 ? 1 : scale;
+        }
     }
 
 }

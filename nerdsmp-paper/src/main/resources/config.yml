@@ -218,6 +218,8 @@ progression:
 expeditions:
   # Runs that may be live at once. Each run is its own small world.
   max-instances: 6
+  # Write a console line whenever an expedition mob casts an ability, for tuning fights.
+  log-abilities: false
   # Seconds a ready check waits for everyone.
   ready-check-seconds: 30
   # The finder starts a group below full size once its first player has waited this long.
@@ -493,7 +495,8 @@ starter-kit:
   torches: 16
 
 parties:
-  maximum-size: 5
+  # Raids take up to 8; regular expeditions still cap their own groups at 5.
+  maximum-size: 8
   invite-lifetime-seconds: 60
   # Invitations one player can hold at once, from different parties.
   max-pending-invites: 3

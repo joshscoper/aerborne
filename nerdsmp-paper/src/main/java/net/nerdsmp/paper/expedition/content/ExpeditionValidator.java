@@ -26,6 +26,15 @@ public final class ExpeditionValidator {
         boolean sound(String key);
         boolean material(String key);
         boolean biome(String key);
+
+        /** Ability ids come from the built-in kit unless a server adds more. */
+        default boolean ability(String id) { return Abilities.known(id); }
+
+        /** Entity types an expedition NPC may use. */
+        default boolean npcEntity(String key) {
+            return java.util.Set.of("villager", "wandering_trader", "piglin", "allay", "vindicator", "pillager", "witch", "skeleton",
+                "zombie", "iron_golem", "illusioner", "evoker", "wither_skeleton", "zombie_villager").contains(key);
+        }
     }
 
     public enum Severity { ERROR, WARNING }
@@ -39,9 +48,11 @@ public final class ExpeditionValidator {
         if (expedition.spawn() == null) error(issues, "No party spawn point.", "/expedition set spawn");
         if (expedition.exit() == null) error(issues, "No exit point for the finish.", "/expedition set exit");
         if (expedition.rooms().isEmpty()) error(issues, "No rooms yet. Select a room with the wand.", "/expedition room add <name>");
-        if (expedition.minParty() < 1 || expedition.maxParty() > ExpeditionDefinition.MAX_PARTY || expedition.minParty() > expedition.maxParty())
-            error(issues, "Party size must be between 1 and " + ExpeditionDefinition.MAX_PARTY + " with min <= max (now "
-                + expedition.minParty() + "-" + expedition.maxParty() + ").", "/expedition set party <min> <max>");
+        int cap = expedition.partyCap();
+        if (expedition.minParty() < 1 || expedition.maxParty() > cap || expedition.minParty() > expedition.maxParty())
+            error(issues, "Party size must be between 1 and " + cap + (expedition.story().raid() ? " for a raid" : "")
+                + " with min <= max (now " + expedition.minParty() + "-" + expedition.maxParty() + ").", "/expedition set party <min> <max>");
+        story(issues, expedition, catalog);
         if (expedition.level() < 1 || expedition.level() > 100) error(issues, "Level must be 1-100.", "/expedition set level <1-100>");
         if (expedition.timeLimitMinutes() < 5 || expedition.timeLimitMinutes() > 180)
             error(issues, "Time limit must be 5-180 minutes.", "/expedition set time <minutes>");
@@ -110,10 +121,37 @@ public final class ExpeditionValidator {
                 if (!room.region().contains(room.points().get(point)))
                     error(issues, name + " spawn point #" + (point + 1) + " is outside the room.", "/expedition point " + room.id() + " remove " + (point + 1));
             var encounter = room.encounter();
-            if (encounter.type() != EncounterType.NONE && room.points().isEmpty())
+            if (encounter.type() != EncounterType.NONE && encounter.type() != EncounterType.PUZZLE && room.points().isEmpty())
                 error(issues, name + " has an encounter but no mob spawn points.", "Shift-right-click with the wand inside the room");
+            puzzles(issues, name, room);
+            if (room.requires() != null) for (String required : room.requires()) {
+                if (required.equals(room.id())) error(issues, name + " requires itself.", "rooms." + room.id() + ".requires");
+                else if (!expedition.rooms().containsKey(required))
+                    error(issues, name + " requires unknown room '" + required + "'.", "rooms." + room.id() + ".requires");
+            }
+            if (!encounter.abilities().isEmpty() || !encounter.phases().isEmpty()) {
+                for (String ability : encounter.abilities())
+                    if (!catalog.ability(ability)) error(issues, name + " uses unknown ability '" + ability + "'.", abilityFix());
+                for (var phase : encounter.phases()) for (String ability : phase.abilities())
+                    if (!catalog.ability(ability)) error(issues, name + " phase at " + phase.atHealth() + "% uses unknown ability '" + ability + "'.", abilityFix());
+                if (!room.bossRoom()) warn(issues, name + " lists boss abilities or phases but has no boss.", "Use them in a boss or council room");
+            }
+            if (encounter.enrageSeconds() != 0 && (encounter.enrageSeconds() < 30 || encounter.enrageSeconds() > 1800))
+                error(issues, name + " enrage-seconds must be 30-1800.", "rooms." + room.id() + ".encounter.enrage-seconds");
             switch (encounter.type()) {
-                case WAVES -> { if (encounter.waves().isEmpty()) error(issues, name + " is a wave room without waves.", "/expedition wave " + room.id() + " <mob> [count]"); }
+                case WAVES, CLEAR -> { if (encounter.waves().isEmpty()) error(issues, name + " is a wave room without waves.", "/expedition wave " + room.id() + " <mob> [count]"); }
+                case PUZZLE -> { if (room.puzzles().isEmpty()) error(issues, name + " is a puzzle room without puzzles.", "rooms." + room.id() + ".puzzles"); }
+                case COUNCIL -> {
+                    boss = true;
+                    if (encounter.bosses().size() < 2 || encounter.bosses().size() > 4)
+                        error(issues, name + " is a council of " + encounter.bosses().size() + "; use 2-4 bosses.", "rooms." + room.id() + ".encounter.bosses");
+                    for (String member : encounter.bosses())
+                        if (!catalog.boss(member) && !catalog.mob(member)) error(issues, name + " council boss '" + member + "' is not a known mob.", "rooms." + room.id() + ".encounter.bosses");
+                    if (room.points().size() < encounter.bosses().size())
+                        error(issues, name + " needs a spawn point for each council boss (the first " + encounter.bosses().size() + " points).", "Shift-right-click with the wand inside the room");
+                    if (encounter.bossDamage() < 0.1 || encounter.bossDamage() > 5 || encounter.bossHealth() < 0.1 || encounter.bossHealth() > 5)
+                        error(issues, name + " boss-damage and boss-health must be 0.1-5.", "rooms." + room.id() + ".encounter");
+                }
                 case SURVIVE -> {
                     if (encounter.waves().isEmpty()) error(issues, name + " is a survive room without waves to release.", "/expedition wave " + room.id() + " <mob> [count]");
                     if (encounter.surviveSeconds() < 10 || encounter.surviveSeconds() > 600)
@@ -144,13 +182,21 @@ public final class ExpeditionValidator {
             }
             for (var script : encounter.scripts().entrySet()) {
                 if (!ScriptAction.TRIGGER.matcher(script.getKey()).matches())
-                    error(issues, name + " has an unknown script trigger '" + script.getKey() + "'.", "Use start, clear, wave-N, health-N or timer-N");
-                if (script.getKey().startsWith("health-") && encounter.type() != EncounterType.BOSS)
+                    error(issues, name + " has an unknown script trigger '" + script.getKey() + "'.", "Use start, clear, enrage, wave-N, health-N, timer-N, down-N or solved-<puzzle>");
+                if (script.getKey().startsWith("health-") && !room.bossRoom())
                     warn(issues, name + " uses '" + script.getKey() + "' but has no boss.", "Use it in a boss room");
+                if (script.getKey().startsWith("down-") && encounter.type() != EncounterType.COUNCIL)
+                    warn(issues, name + " uses '" + script.getKey() + "' but isn't a council fight.", "Use it in a council room");
+                if (script.getKey().startsWith("solved-") && !room.puzzles().containsKey(script.getKey().substring(7)))
+                    error(issues, name + " has a script for unknown puzzle '" + script.getKey().substring(7) + "'.", "rooms." + room.id() + ".puzzles");
                 for (ScriptAction action : script.getValue()) checkAction(issues, name, action, expedition, catalog);
             }
         }
-        if (!rooms.isEmpty() && !boss) warn(issues, "No boss room. A boss gives the run a clear finale.", "/expedition boss <room> <mob>");
+        if (!rooms.isEmpty() && !boss) {
+            if (expedition.story().goal() == ExpeditionDefinition.Goal.BOSSES) error(issues, "The goal is bosses, but there's no boss room.", "/expedition boss <room> <mob>");
+            else warn(issues, "No boss room. A boss gives the run a clear finale.", "/expedition boss <room> <mob>");
+        }
+        unreachable(issues, expedition);
         if (expedition.exit() != null && !rooms.isEmpty()) {
             Room last = rooms.get(rooms.size() - 1);
             if (last.region() != null && !last.region().contains(expedition.exit()) && rooms.stream().noneMatch(room -> room.region() != null && room.region().contains(expedition.exit())))
@@ -164,8 +210,99 @@ public final class ExpeditionValidator {
 
     public static boolean publishable(List<Issue> issues) { return issues.stream().noneMatch(Issue::error); }
 
+    /** Rooms whose requirements can never all be met (a cycle, or a chain through one) can't start. */
+    private static void unreachable(List<Issue> issues, ExpeditionDefinition expedition) {
+        List<Room> rooms = expedition.roomList();
+        java.util.Set<String> cleared = new java.util.HashSet<>();
+        boolean progress = true;
+        while (progress) {
+            progress = false;
+            for (int index = 0; index < rooms.size(); index++) {
+                Room room = rooms.get(index);
+                if (cleared.contains(room.id())) continue;
+                List<String> requires = room.requires() != null ? room.requires() : index == 0 ? List.of() : List.of(rooms.get(index - 1).id());
+                if (requires.stream().allMatch(required -> cleared.contains(required) || !expedition.rooms().containsKey(required))) {
+                    cleared.add(room.id());
+                    progress = true;
+                }
+            }
+        }
+        for (Room room : rooms) if (!cleared.contains(room.id()))
+            error(issues, "Room '" + room.id() + "' can never start: its requirements loop back on themselves.", "rooms." + room.id() + ".requires");
+    }
+
+    private static void puzzles(List<Issue> issues, String name, Room room) {
+        for (var puzzle : room.puzzles().values()) {
+            String label = name + " puzzle '" + puzzle.id() + "'";
+            for (int index = 0; index < puzzle.blocks().size(); index++)
+                if (!room.region().contains(puzzle.blocks().get(index))) error(issues, label + " block #" + (index + 1) + " is outside the room.", "rooms." + room.id() + ".puzzles");
+            switch (puzzle.type()) {
+                case LEVERS, PLATES, TARGETS -> { if (puzzle.blocks().isEmpty()) error(issues, label + " lists no blocks.", "blocks: [[x, y, z], ...]"); }
+                case SEQUENCE -> {
+                    if (puzzle.blocks().size() < 2) error(issues, label + " needs at least two blocks to press in order.", "blocks: [[x, y, z], ...]");
+                }
+                case REACH -> {
+                    if (puzzle.area() == null) error(issues, label + " has no goal area.", "area: [x1, y1, z1, x2, y2, z2]");
+                    if (puzzle.failBelowY() != null && puzzle.start() == null) error(issues, label + " has fail-below but no start point to return fallers to.", "start: [x, y, z]");
+                }
+            }
+            if (puzzle.seconds() < 0 || puzzle.seconds() > 300) error(issues, label + " seconds must be 0-300.", "seconds:");
+        }
+    }
+
+    private static void story(List<Issue> issues, ExpeditionDefinition expedition, Catalog catalog) {
+        var story = expedition.story();
+        if (story.time() != null && (story.time() < 0 || story.time() > 23_999))
+            error(issues, "time must be 0-23999 (6000 noon, 13000 dusk, 18000 midnight).", "time: in the expedition file");
+        switch (story.goal()) {
+            case FORCES -> { if (story.forces() < 1 || story.forces() > 2000) error(issues, "A forces goal needs forces: 1-2000 (now " + story.forces() + ").", "forces: in the expedition file"); }
+            case TIMED -> {
+                if (story.timeBonusSeconds() < 0 || story.timeBonusSeconds() > 600) error(issues, "time-bonus-seconds must be 0-600.", "time-bonus-seconds:");
+            }
+            default -> { }
+        }
+        story.campfires().values().forEach(fire -> {
+            if (expedition.rooms().values().stream().anyMatch(room -> room.region() != null && room.region().contains(fire.at())
+                && room.encounter().type() != EncounterType.NONE && room.encounter().type() != EncounterType.PUZZLE))
+                warn(issues, "Campfire '" + fire.id() + "' is inside a fight room; it only heals between fights.", "campfires." + fire.id() + ".at");
+        });
+        story.setpieces().values().forEach(piece -> {
+            if (!catalog.material(piece.block())) error(issues, "Set piece '" + piece.id() + "' uses unknown block '" + piece.block() + "'.", "setpieces." + piece.id() + ".block");
+            if (piece.box().volume() > 8_192) error(issues, "Set piece '" + piece.id() + "' is too large (max 8192 blocks).", "setpieces." + piece.id() + ".box");
+        });
+        story.hazards().values().forEach(hazard -> {
+            String where = "hazards." + hazard.id();
+            if (hazard.everySeconds() < 2 || hazard.everySeconds() > 120) error(issues, "Hazard '" + hazard.id() + "' every must be 2-120 seconds.", where + ".every");
+            if (hazard.count() < 1 || hazard.count() > 12) error(issues, "Hazard '" + hazard.id() + "' count must be 1-12.", where + ".count");
+            if (hazard.damage() < 0 || hazard.damage() > 40) error(issues, "Hazard '" + hazard.id() + "' damage must be 0-40.", where + ".damage");
+        });
+        story.cutscenes().values().forEach(cutscene -> {
+            if (cutscene.shots().isEmpty()) error(issues, "Cutscene '" + cutscene.id() + "' has no shots.", "cutscenes." + cutscene.id());
+            if (cutscene.seconds() > 30) error(issues, "Cutscene '" + cutscene.id() + "' runs " + cutscene.seconds() + " s; keep it to 30.", "cutscenes." + cutscene.id());
+        });
+        story.npcs().values().forEach(npc -> {
+            if (!catalog.npcEntity(npc.entity())) error(issues, "NPC '" + npc.id() + "' uses an unsupported entity '" + npc.entity() + "'.", "npcs." + npc.id() + ".entity");
+            if (npc.lines().isEmpty()) warn(issues, "NPC '" + npc.id() + "' has nothing to say.", "npcs." + npc.id() + ".lines");
+        });
+        story.mobs().values().forEach(profile -> {
+            if (!catalog.mob(profile.mob())) error(issues, "Mob profile for unknown mob '" + profile.mob() + "'.", "mobs: in the expedition file");
+            for (String ability : profile.abilities())
+                if (!catalog.ability(ability)) error(issues, "Mob '" + profile.mob() + "' uses unknown ability '" + ability + "'.", abilityFix());
+            if (profile.forces() < 0 || profile.forces() > 100) error(issues, "Mob '" + profile.mob() + "' forces must be 0-100.", "mobs." + profile.mob() + ".forces");
+        });
+    }
+
+    private static String abilityFix() {
+        return "Use " + String.join(", ", Abilities.ids());
+    }
+
     private static void checkAction(List<Issue> issues, String room, ScriptAction action, ExpeditionDefinition expedition, Catalog catalog) {
+        var story = expedition.story();
         switch (action.verb()) {
+            case CUTSCENE -> { if (!story.cutscenes().containsKey(action.arg(0))) error(issues, room + " script plays unknown cutscene '" + action.arg(0) + "'.", action.text()); }
+            case BUILD, BREAK, RESTORE -> { if (!story.setpieces().containsKey(action.arg(0))) error(issues, room + " script names unknown set piece '" + action.arg(0) + "'.", action.text()); }
+            case HAZARD -> { if (!story.hazards().containsKey(action.arg(1))) error(issues, room + " script names unknown hazard '" + action.arg(1) + "'.", action.text()); }
+            case CAMPFIRE -> { if (!story.campfires().containsKey(action.arg(0))) error(issues, room + " script lights unknown campfire '" + action.arg(0) + "'.", action.text()); }
             case SPAWN -> { if (!catalog.mob(action.arg(0))) error(issues, room + " script spawns unknown mob '" + action.arg(0) + "'.", action.text()); }
             case OPEN, CLOSE -> {
                 Room target = expedition.rooms().get(action.arg(0));

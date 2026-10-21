@@ -78,7 +78,7 @@ class SampleTemplatesTest {
         for (String id : ExpeditionService.SAMPLES) {
             assertSame(SampleTemplates.plan(id), SampleTemplates.plan(id));
             assertTrue(SampleTemplates.plan(id).size() > 5_000, id);
-            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> Math.abs(p.cell().x()) < 32 && p.cell().z() > -4 && p.cell().z() < 96));
+            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> Math.abs(p.cell().x()) < 64 && p.cell().z() > -16 && p.cell().z() < 256), id);
         }
         assertNull(SampleTemplates.plan("nope"));
         assertTrue(blocks("cinder_keep").containsValue(Material.MAGMA_BLOCK));

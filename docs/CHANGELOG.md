@@ -5,6 +5,29 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Expedition engine and the First Flight tutorial (October 21)
+- [Expeditions](EXPEDITIONS.md) gain new room and run types: clear-every-enemy rooms, councils of
+  two to four bosses, puzzle rooms, and run goals for bosses in any order, enemy forces, and beating
+  the clock. Rooms can require other rooms, so a map can be a hub with wings, and can be optional.
+- Puzzles: levers, button sequences (with a shown order and a reset on mistakes), pressure plates
+  held at once, targets against the clock, and jump courses that put fallers back at the start
+  without costing a life.
+- The sidebar becomes the run panel (clock, lives, objectives with puzzle progress, party health),
+  and runs show a single boss bar: the boss (a council shares one) or a mini-boss. The old run
+  status bar is gone, and the general mob health bar no longer doubles up on expedition bosses.
+- Campfires heal out of combat and become the respawn point once lit.
+- Elites, mini-bosses and bosses use a kit of 15 telegraphed abilities. Bosses get phases and enrage
+  timers. Enemies no longer hurt each other.
+- Roleplay and arena tools: dialogue (`say`), talking characters, cutscenes, set pieces that rise or
+  crumble, and hazards (falling rocks, fire, eruptions, poison gas).
+- **First Flight**, a gentle tutorial across the sky islands with Captain Wren, is offered first to
+  anyone who hasn't cleared it.
+- Parties can hold up to eight, for raids; regular expeditions still take five.
+- Expedition creatures ship in `content/expedition-mobs.yml` and can set size, speed, equipment and
+  `ability: none`.
+- Code-built templates rebuild themselves when an update changes their map. Existing sample
+  templates rebuild once on the first run after updating.
+
 ### Parties rebuilt, and a performance pass (October 20)
 - [Parties](PARTIES.md) are rebuilt. `/party` opens a party menu; invites arrive as a chat card
   with Accept and Decline buttons; a player can weigh invites from up to three parties at once.
