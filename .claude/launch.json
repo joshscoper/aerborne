@@ -6,6 +6,11 @@
       "runtimeExecutable": "Website/.venv/Scripts/python.exe",
       "runtimeArgs": ["Website/manage.py", "run"],
       "port": 5000
+    },
+    {
+      "name": "aerborne-test-website",
+      "url": "http://127.0.0.1:5070",
+      "port": 5070
     }
   ]
 }
