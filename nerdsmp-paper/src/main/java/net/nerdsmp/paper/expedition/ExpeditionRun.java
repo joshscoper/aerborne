@@ -13,6 +13,7 @@ import net.nerdsmp.paper.expedition.content.Allies;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Point;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Room;
+import net.nerdsmp.paper.expedition.content.Keystone;
 import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.ScriptAction;
 import net.nerdsmp.paper.expedition.content.Tier;
@@ -56,6 +57,9 @@ final class ExpeditionRun {
 
     record BlockPos(int x, int y, int z) { }
 
+    /** A Mythic keystone run: whose key it is, the key, this week's affixes and the key's timer. */
+    record KeyRun(UUID holder, String account, Keystone.Key key, List<Modifier> affixes, long timerSeconds) { }
+
     final UUID id = UUID.randomUUID();
     private final ExpeditionService service;
     private final NerdSmpPlugin plugin;
@@ -91,6 +95,11 @@ final class ExpeditionRun {
     private boolean completed;
     private final List<AllySlot> allies = new ArrayList<>();
     private int healerClock;
+    /** The keystone this run is on, or null for a regular run. */
+    final KeyRun key;
+    /** True once the key's result (upgrade or deplete) has been written. */
+    boolean keySettled;
+    private final Set<UUID> raging = new HashSet<>();
 
     /** An encounter mob with abilities: its role, what it can cast, and when each is ready again. */
     private static final class Caster {
@@ -117,8 +126,9 @@ final class ExpeditionRun {
     }
 
     ExpeditionRun(ExpeditionService service, NerdSmpPlugin plugin, ExpeditionDefinition expedition, Tier tier,
-                  Set<Modifier> modifiers, List<UUID> members, boolean test, BuildCanvas.Plan plan, List<Allies.Role> hired) {
+                  Set<Modifier> modifiers, List<UUID> members, boolean test, BuildCanvas.Plan plan, List<Allies.Role> hired, KeyRun key) {
         this.service = service;
+        this.key = key;
         this.plugin = plugin;
         this.expedition = expedition;
         this.tier = tier;
@@ -155,6 +165,17 @@ final class ExpeditionRun {
 
     BuildCanvas.Plan plan() { return plan; }
     boolean completed() { return completed; }
+
+    /** The key's clock: time spent plus the death penalties. */
+    long keyClock(long now) {
+        long seconds = progress.phase() == RunProgress.Phase.COMPLETE ? progress.finishedSeconds() : progress.elapsedSeconds(now);
+        return seconds + (long) progress.deaths() * Keystone.DEATH_PENALTY_SECONDS;
+    }
+
+    /** The key's timer, plus any time a Timed-goal expedition added for cleared rooms. */
+    long keyTimer() {
+        return key.timerSeconds() + Math.max(0, progress.limitSeconds() - expedition.timeLimitMinutes() * 60L);
+    }
 
     /** A run with hired allies pays loot but never counts toward the campaign or the records. */
     boolean assisted() { return !allies.isEmpty(); }
@@ -201,9 +222,15 @@ final class ExpeditionRun {
         if (assisted()) broadcast("<aqua>Hired allies:</aqua> <white>" + String.join(", ", allies.stream()
             .map(slot -> slot.role.title() + " (" + slot.role.job() + ")").toList()) + "</white>. <gray>This is an assisted run: "
             + "it pays loot and Marks, but doesn't count toward the campaign or the expedition records.</gray>");
-        broadcast("<gold>" + Chat.escape(expedition.title()) + "</gold> <gray>(" + Chat.escape(tier.title()) + ")</gray> <white>has begun.</white> "
+        if (key != null) broadcast("<gold>" + Chat.escape(expedition.title()) + "</gold> <light_purple>(" + Chat.escape(tier.title())
+            + " keystone)</light_purple> <white>has begun.</white> <gray>Beat <white>" + Chat.duration(Duration.ofSeconds(key.timerSeconds()))
+            + "</white> to upgrade the key. There are no lives: each death adds <white>" + Keystone.DEATH_PENALTY_SECONDS
+            + "s</white> to the clock. Affixes: <white>" + Chat.escape(Keystone.describe(key.affixes())) + "</white>.</gray>");
+        else broadcast("<gold>" + Chat.escape(expedition.title()) + "</gold> <gray>(" + Chat.escape(tier.title()) + ")</gray> <white>has begun.</white> "
             + "<gray>Your party has <white>" + progress.lives() + "</white> lives and <white>" + expedition.timeLimitMinutes()
             + "</white> minutes. Push forward into the first room.</gray>");
+        for (Modifier affix : key == null ? List.<Modifier>of() : key.affixes())
+            broadcast("<light_purple>" + affix.title() + ":</light_purple> <gray>" + Chat.escape(affix.description()) + "</gray>");
         if (modifiers.contains(Modifier.TIMED))
             broadcast("<yellow>Timed:</yellow> <gray>finish within " + Chat.duration(Duration.ofSeconds(Modifier.parSeconds(expedition.timeLimitMinutes())))
                 + " for an extra loot roll.</gray>");
@@ -267,6 +294,8 @@ final class ExpeditionRun {
     }
 
     void close() {
+        // A key run that ends any way but a clear (a failure, everyone leaving, staff stopping it) depletes the key.
+        if (key != null && !keySettled && !test) service.depleteKey(this);
         state = State.CLOSED;
         for (AllySlot slot : allies) {
             Entity entity = slot.entity == null ? null : Bukkit.getEntity(slot.entity);
@@ -344,7 +373,19 @@ final class ExpeditionRun {
         return damage.containsKey(entity.getUniqueId());
     }
 
-    double damageMultiplier(Entity entity) { return damage.getOrDefault(entity.getUniqueId(), 1.0); }
+    double damageMultiplier(Entity entity) {
+        double multiplier = damage.getOrDefault(entity.getUniqueId(), 1.0);
+        // Raging: regular enemies hit 50% harder once they are low.
+        if (modifiers.contains(Modifier.RAGING) && !bosses.containsKey(entity.getUniqueId()) && entity instanceof LivingEntity living
+            && living.getHealth() < maxHealth(living) * .3) {
+            multiplier *= 1.5;
+            if (raging.add(entity.getUniqueId())) {
+                world.spawnParticle(Particle.ANGRY_VILLAGER, living.getLocation().add(0, living.getHeight(), 0), 6, .4, .3, .4, 0);
+                world.playSound(living.getLocation(), Sound.ENTITY_RAVAGER_ROAR, .5F, 1.6F);
+            }
+        }
+        return multiplier;
+    }
 
     void mobDied(LivingEntity entity) {
         UUID uuid = entity.getUniqueId();
@@ -391,6 +432,7 @@ final class ExpeditionRun {
                     if (player.getLocation().distanceSquared(at) <= 9 && members.contains(player.getUniqueId())) player.damage(4.0);
             }, 30L);
         }
+        if (modifiers.contains(Modifier.SANGUINE)) sanguinePool(at);
         if (modifiers.contains(Modifier.BOLSTERING)) {
             for (Set<UUID> group : mobs.values()) for (UUID other : group) {
                 if (!(Bukkit.getEntity(other) instanceof LivingEntity living) || bosses.containsKey(other)
@@ -404,6 +446,26 @@ final class ExpeditionRun {
                 world.spawnParticle(Particle.ANGRY_VILLAGER, living.getLocation().add(0, 1.5, 0), 3, .3, .3, .3, 0);
             }
         }
+    }
+
+    /** Sanguine: for 8 seconds the spot an enemy fell heals other enemies and stings players. */
+    private void sanguinePool(Location at) {
+        int[] pulses = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (state != State.ACTIVE || pulses[0]++ >= 16) {
+                task.cancel();
+                return;
+            }
+            world.spawnParticle(Particle.CRIMSON_SPORE, at.clone().add(0, .2, 0), 30, 1.1, .05, 1.1, 0);
+            if (pulses[0] % 2 != 0) return;
+            for (Set<UUID> group : mobs.values()) for (UUID other : group) {
+                if (bosses.containsKey(other) || !(Bukkit.getEntity(other) instanceof LivingEntity living) || !living.isValid()
+                    || living.getLocation().distanceSquared(at) > 6.25) continue;
+                living.setHealth(Math.min(maxHealth(living), living.getHealth() + maxHealth(living) * .08));
+                world.spawnParticle(Particle.HEART, living.getLocation().add(0, living.getHeight(), 0), 1, .2, .2, .2, 0);
+            }
+            for (Player player : online()) if (player.getLocation().distanceSquared(at) <= 6.25 && !player.isDead()) player.damage(1.5);
+        }, 10L, 10L);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -455,7 +517,9 @@ final class ExpeditionRun {
             }
             case Effect.Lives lives -> {
                 Player died = Bukkit.getPlayer(lives.died());
-                broadcast("<red>" + Chat.escape(died == null ? "A party member" : died.getName()) + " fell.</red> <gray>Lives left: <white>"
+                if (key != null) broadcast("<red>" + Chat.escape(died == null ? "A party member" : died.getName()) + " fell.</red> <gray>+"
+                    + Keystone.DEATH_PENALTY_SECONDS + "s on the key <dark_gray>(" + progress.deaths() + " deaths)</dark_gray></gray>");
+                else broadcast("<red>" + Chat.escape(died == null ? "A party member" : died.getName()) + " fell.</red> <gray>Lives left: <white>"
                     + Math.max(0, lives.remaining()) + "</white></gray>");
             }
             case Effect.Complete complete -> complete(complete.seconds(), complete.underPar(), now);
@@ -493,6 +557,7 @@ final class ExpeditionRun {
                 state = State.ENDING;
                 closeAt = now + 10_000;
                 broadcast("<red><bold>Expedition failed.</bold></red> <gray>" + Chat.escape(fail.reason()) + " You'll be returned in 10 seconds.</gray>");
+                if (key != null && !keySettled && !test) service.depleteKey(this);
                 for (Player player : online()) player.playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, .4F, .8F);
             }
         }
@@ -521,14 +586,16 @@ final class ExpeditionRun {
             long marks = Math.round(loot.marks() * tier.marks());
             if (marks > 0 && !test) plugin.economy().credit(account.get(), marks,
                 new EconomyService.TransactionReason("expedition.reward", expedition.id() + ":" + tier.id()), "expedition:" + id + ":" + account.get());
-            if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), tier.id());
+            if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), key != null ? "mythic" : tier.id());
             player.showTitle(Title.title(Chat.render("<gold><bold>Expedition complete</bold></gold>"),
                 Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
             Chat.success(player, "Loot: <white>" + rewards.stream().mapToInt(ItemStack::getAmount).sum() + " items</white>"
                 + (marks > 0 ? " and " + Chat.marks(marks) : "") + (underPar ? " <yellow>(+1 timed roll)</yellow>" : "") + ".");
         }
-        boolean record = !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
+        boolean record = key == null && !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
+        if (key != null && !test) service.settleKey(this, keyClock(now), party);
+        else if (tier.id().equals("mythic") && !test && !assisted()) service.grantFirstKeys(party.keySet());
         broadcast("<gold>Cleared in " + Chat.duration(Duration.ofSeconds(seconds)) + ".</gold>"
             + (record ? " <light_purple>New server record!</light_purple>" : "")
             + " <gray>Walk into the exit light, or use " + Chat.command("expedition leave") + ". The instance closes in "
@@ -1123,7 +1190,15 @@ final class ExpeditionRun {
         List<String> lines = new ArrayList<>();
         lines.add("<gray>" + Chat.escape(tier.title()) + (modifiers.isEmpty() ? "" : " <dark_gray>·</dark_gray> " + Chat.escape(modifierNames())) + "</gray>");
         String clock = String.format(Locale.ROOT, "%d:%02d", left / 60, left % 60);
-        lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
+        if (key != null) {
+            long keyLeft = keyTimer() - keyClock(now);
+            long shown = Math.abs(keyLeft);
+            String keyClock = String.format(Locale.ROOT, "%d:%02d", shown / 60, shown % 60);
+            lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
+                : keyLeft >= 0 ? "<light_purple>Key</light_purple> " + (keyLeft <= 60 ? "<yellow>" : "<white>") + keyClock + "</white>"
+                    + "   <gray>Deaths</gray> <red>" + progress.deaths() + "</red>"
+                : "<red>Over by " + keyClock + "</red>   <gray>Deaths</gray> <red>" + progress.deaths() + "</red>");
+        } else lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
             : "<gray>Time</gray> " + (left <= 60 ? "<red>" : left <= 300 ? "<yellow>" : "<white>") + clock + "</white>"
                 + "   <gray>Lives</gray> <red>❤ " + Math.max(0, progress.lives()) + "</red>");
         lines.add("<dark_gray>────────────</dark_gray>");

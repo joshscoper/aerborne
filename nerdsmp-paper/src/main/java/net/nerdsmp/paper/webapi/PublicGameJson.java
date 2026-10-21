@@ -7,6 +7,7 @@ import net.nerdsmp.paper.campaign.season.SeasonDefinition;
 import net.nerdsmp.paper.campaign.season.SeasonDefinition.Reward;
 import net.nerdsmp.paper.campaign.season.SeasonLedger;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.expedition.content.Keystone;
 import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.Tier;
 
@@ -55,6 +56,8 @@ final class PublicGameJson {
         root.addProperty("activeRuns", service.activeRuns());
         root.addProperty("maxInstances", service.maxInstances());
         root.addProperty("vanillaPortals", service.vanillaPortals());
+        root.add("keystones", keystones(service));
+        var keyPool = service.keyPool();
         JsonArray list = new JsonArray();
         for (ExpeditionDefinition definition : service.definitions()) {
             if (!service.playable(definition)) continue;
@@ -112,10 +115,49 @@ final class PublicGameJson {
                 tiers.add(row);
             }
             entry.add("tiers", tiers);
+            if (keyPool.contains(definition)) {
+                JsonObject keystone = new JsonObject();
+                keystone.addProperty("timerSeconds", Keystone.timerSeconds(definition.timeLimitMinutes()));
+                service.keystones().best(definition.id()).ifPresent(best -> {
+                    JsonObject row = new JsonObject();
+                    row.addProperty("level", best.level());
+                    row.addProperty("seconds", best.seconds());
+                    JsonArray party = new JsonArray();
+                    best.party().stream().filter(name -> name.matches("[A-Za-z0-9_]{3,16}")).forEach(party::add);
+                    row.add("party", party);
+                    keystone.add("best", row);
+                });
+                entry.add("keystone", keystone);
+            }
             list.add(entry);
         }
         root.add("expeditions", list);
         return root.toString();
+    }
+
+    /** This week's keystone affixes at the levels they join, and the rules a key follows. */
+    private static JsonObject keystones(net.nerdsmp.paper.expedition.ExpeditionService service) {
+        JsonObject json = new JsonObject();
+        json.addProperty("week", Keystone.week(java.time.LocalDate.now(java.time.ZoneOffset.UTC)));
+        json.addProperty("deathPenaltySeconds", Keystone.DEATH_PENALTY_SECONDS);
+        json.addProperty("levelScale", 0.08);
+        JsonArray affixes = new JsonArray();
+        for (int level : new int[]{4, 7, 10}) {
+            JsonObject row = new JsonObject();
+            row.addProperty("fromLevel", level);
+            JsonArray modifiers = new JsonArray();
+            for (Modifier modifier : service.affixes(level)) {
+                JsonObject value = new JsonObject();
+                value.addProperty("id", modifier.key());
+                value.addProperty("title", modifier.title());
+                value.addProperty("description", modifier.description());
+                modifiers.add(value);
+            }
+            row.add("modifiers", modifiers);
+            affixes.add(row);
+        }
+        json.add("affixes", affixes);
+        return json;
     }
 
     private static JsonObject guide(ExpeditionDefinition definition) {

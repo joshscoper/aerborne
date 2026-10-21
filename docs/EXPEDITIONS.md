@@ -20,6 +20,7 @@ Code: `nerdsmp-paper/.../expedition/` (service, runs, setup, menu, worlds), with
 | `/expedition queue <id> [tier]` | Join the finder, alone or with your whole party. |
 | `/expedition ready` / `decline` | Answer a ready check (also clickable in chat). |
 | `/expedition allies` | After a long wait in the finder: start now with hired NPC allies in the empty slots. |
+| `/expedition key [start]` | Show your Mythic keystone, or start it with your party. |
 | `/expedition leave` | Leave the queue, a ready check, or the run you're in. |
 | `/expedition list` / `info <id>` / `status` | Open expeditions, one expedition's tiers and records, your queue or run. |
 | `/expedition guide <id>` | The expedition's guide book: route, boss notes, every mob with its possible drops, and rewards. |
@@ -108,6 +109,32 @@ purses. The guide ends with the rewards. The website shows the same guide at
 **Records.** Each member's clears are kept per tier in `expedition-records.yml`. Heroic needs a
 Normal clear of that expedition, and Mythic a Heroic clear. Server totals, best times and best
 parties show in the menu and on the website.
+
+**Mythic keystones.** A member's first Mythic clear of any campaign expedition earns a personal
+keystone: a random open expedition with a Mythic tier (not the tutorial or a raid; staff-made
+expeditions with a Mythic tier count) at +2. `/expedition key` shows it, this week's affixes and the
+expedition's best key; `/expedition key start` (or left-clicking the board's keystone card) starts
+it for the holder's party. The holder must lead the party; there is no queue and no hired allies,
+and other members need only be allowed into the expedition itself.
+
+- **Scaling.** The run uses the expedition's Mythic tier with enemy health and damage ×1.08 per
+  level above +2 (compounding), two enemy levels per key level, an extra loot roll at +5 and +10,
+  and 10% more Marks per level.
+- **Affixes** change every Monday (UTC). From +4, Fortified or Tyrannical alternate weekly; from +7
+  a second affix rotates through Bolstering, Raging, Sanguine and Volatile; from +10 both Fortified
+  and Tyrannical apply. The Timed modifier is replaced by the key's own timer.
+- **The clock.** The timer is 60% of the time limit (plus any Timed-goal room bonuses). A key run
+  has no lives: each death adds 10 seconds. The sidebar shows the key's time left (or how far over
+  it is) and the deaths.
+- **Results.** Within 60% of the timer the key upgrades +3, within 80% +2, within the timer +1, and
+  it moves to another expedition. Over time it still pays out but drops one level and stays. A
+  failure, everyone leaving or staff stopping the run drops it one level too. Keys stay between +2
+  and +30.
+- **Records.** Timed keys are kept per player and per expedition in `expedition-keystones.yml`
+  (higher keys win; at the same level the faster clock wins). Key runs don't count toward the
+  regular tier records but do credit the campaign as Mythic clears. Members with no key earn one
+  from a key clear too.
+- **Staff.** `/expedition key give <player> <expedition> <level>` sets a player's key.
 
 ## Sample expeditions
 
@@ -407,6 +434,8 @@ tier, and modifiers.
 | `tyrannical` | Bosses +30% health, +15% damage |
 | `bolstering` | A dying enemy makes nearby enemies 15% tougher and 10% stronger |
 | `volatile` | Enemies burst 1.5 s after death (4 damage within 3 blocks) |
+| `raging` | Regular enemies deal 50% more damage below 30% health |
+| `sanguine` | A dying enemy leaves an 8 s pool (2.5 blocks) that heals other non-boss enemies 8% a second and stings players |
 | `timed` | Clear within 60% of the time limit for an extra loot roll |
 
 ## Configuration

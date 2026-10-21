@@ -5,6 +5,19 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Mythic keystones (October 21)
+- Clearing any campaign expedition on Mythic earns a **keystone**: a personal key to a random
+  campaign expedition at +2. The keyholder starts it for their party with `/expedition key start` or
+  the board's keystone card; there is no queue and no hired allies.
+- Each level adds 8% enemy health and damage over Mythic. Weekly affixes join at +4 (Fortified or
+  Tyrannical, alternating), +7 (Bolstering, Raging, Sanguine or Volatile, rotating) and +10 (both
+  Fortified and Tyrannical).
+- Key runs have no lives; each death adds 10 seconds. Beat the timer to upgrade the key by 1 to 3
+  levels and move it to a new expedition; finish late, fail or leave and it drops a level.
+- New affixes: **Raging** (low enemies hit harder) and **Sanguine** (fallen enemies leave a healing pool).
+- The highest timed keys are recorded per player and per expedition, and the website's expedition
+  pages show the timer, this week's affixes and the best key.
+
 ### The first campaign's expeditions (October 21)
 - The **Hollow Barrow** is rebuilt: a sexton at the mouth, bone rain in the ossuary, a new Lever
   Vault with the Barrow Warden and four levers pulled in the order the candles flash, a brazier in

@@ -148,7 +148,13 @@ def expedition(slug):
         if isinstance(raw, dict) and raw.get("id") == slug:
             tiers = [dict(t, bestParty=_names(t.get("bestParty"))) for t in raw.get("tiers") or [] if isinstance(t, dict)]
             bestiary = [m for m in raw.get("bestiary") or [] if isinstance(m, dict)]
-            return render_template("expedition.html", e=dict(raw, tiers=tiers, bestiary=bestiary), problem=None, slug=slug)
+            keystone = raw.get("keystone") if isinstance(raw.get("keystone"), dict) else None
+            if keystone and isinstance(keystone.get("best"), dict):
+                keystone = dict(keystone, best=dict(keystone["best"], party=_names(keystone["best"].get("party"))))
+            weekly = (data.get("keystones") or {}) if isinstance(data.get("keystones"), dict) else {}
+            affixes = [row for row in weekly.get("affixes") or [] if isinstance(row, dict) and row.get("modifiers")]
+            return render_template("expedition.html", e=dict(raw, tiers=tiers, bestiary=bestiary, keystone=keystone), affixes=affixes,
+                                   problem=None, slug=slug)
     abort(404)
 
 

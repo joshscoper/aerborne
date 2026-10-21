@@ -2,6 +2,7 @@ package net.nerdsmp.paper.expedition;
 
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.expedition.content.Keystone;
 import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.Tier;
 import net.nerdsmp.paper.gui.MenuKit;
@@ -85,9 +86,41 @@ public final class ExpeditionMenu implements Listener {
             "<gray>Deaths never cost your gear, but each</gray>",
             "<gray>one spends a shared party life.</gray>")), (who, click) -> { });
         board.set(42, status(player), (who, click) -> { who.closeInventory(); service.command(who, new String[]{"status"}); });
+        board.set(38, keystone(player), (who, click) -> {
+            who.closeInventory();
+            service.command(who, click.isLeftClick() && service.key(who).isPresent() ? new String[]{"key", "start"} : new String[]{"key"});
+        });
         board.set(MenuKit.backSlot(45), MenuKit.back("World & Trade"), (who, click) -> plugin.menus().open(who, MenuManager.View.WORLD));
         board.set(MenuKit.closeSlot(45), MenuKit.close(), (who, click) -> who.closeInventory());
         player.openInventory(board.inventory);
+    }
+
+    /** The keystone card: the player's key, its timer and this week's affixes, or how to earn one. */
+    private ItemStack keystone(Player player) {
+        Optional<Keystone.Key> key = service.key(player);
+        List<String> lore = new ArrayList<>();
+        if (key.isEmpty()) {
+            lore.add("<gray>Clear any campaign expedition on</gray>");
+            lore.add("<gray>Mythic to earn a keystone: a timed</gray>");
+            lore.add("<gray>run that grows harder as you beat it.</gray>");
+            lore.add("");
+            lore.add("<gray>This week from +7:</gray> <white>" + Chat.escape(Keystone.describe(service.affixes(7))) + "</white>");
+            return MenuKit.item(Material.ECHO_SHARD, "<light_purple>Mythic keystone</light_purple>", lore);
+        }
+        int level = key.get().level();
+        Optional<ExpeditionDefinition> definition = service.definition(key.get().expedition());
+        definition.ifPresent(found -> lore.add("<gray>Timer</gray> <white>" + Chat.duration(Duration.ofSeconds(Keystone.timerSeconds(found.timeLimitMinutes())))
+            + "</white> <gray>· deaths</gray> <white>+" + Keystone.DEATH_PENALTY_SECONDS + "s</white>"));
+        lore.add("<gray>Enemies</gray> <white>+" + Math.round((Keystone.scale(level) - 1) * 100) + "%</white> <gray>over Mythic</gray>");
+        lore.add("<gray>Affixes:</gray> <white>" + Chat.escape(Keystone.describe(service.affixes(level))) + "</white>");
+        service.keystones().best(key.get().expedition()).ifPresent(best -> lore.add("<gray>Server best</gray> <white>+" + best.level() + "</white>"));
+        lore.add("");
+        lore.add("<gray>Beat the timer to upgrade the key</gray>");
+        lore.add("<gray>(+2 under 80%, +3 under 60%).</gray>");
+        lore.add("");
+        lore.add("<yellow>Left-click:</yellow> <gray>start with your party</gray>");
+        lore.add("<yellow>Right-click:</yellow> <gray>details in chat</gray>");
+        return MenuKit.item(Material.ECHO_SHARD, "<light_purple>Keystone: " + service.keyName(key.get()) + "</light_purple>", lore);
     }
 
     public void openDetail(Player player, ExpeditionDefinition definition) {

@@ -8,10 +8,12 @@ import net.nerdsmp.paper.expedition.content.Allies;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
 import net.nerdsmp.paper.expedition.content.ExpeditionLoader;
 import net.nerdsmp.paper.expedition.content.ExpeditionValidator;
+import net.nerdsmp.paper.expedition.content.Keystone;
 import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.PartyScaling;
 import net.nerdsmp.paper.expedition.content.Tier;
 import net.nerdsmp.paper.expedition.flow.ExpeditionRecords;
+import net.nerdsmp.paper.expedition.flow.KeystoneStore;
 import net.nerdsmp.paper.expedition.flow.Matchmaker;
 import net.nerdsmp.paper.expedition.flow.ReadyCheck;
 import net.nerdsmp.paper.presentation.Chat;
@@ -51,6 +53,8 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,6 +85,11 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     private final File folder;
     private final InstanceWorlds worlds;
     private final ExpeditionRecords records;
+    private final KeystoneStore keystones;
+    /** Accounts whose key is in a ready check or a live run, so one key can't run twice. */
+    private final Set<String> keysInUse = new HashSet<>();
+    /** Ready checks that start a keystone, by check id. */
+    private final Map<UUID, ExpeditionRun.KeyRun> keyChecks = new HashMap<>();
     private final ReturnStore returns;
     private final Map<String, ExpeditionDefinition> definitions = new TreeMap<>();
     private final Map<String, YamlConfiguration> files = new HashMap<>();
@@ -118,6 +127,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         this.matchmaker = new Matchmaker(Duration.ofSeconds(Math.max(0, config.getLong("expeditions.queue-fill-seconds", 90))));
         this.worlds = new InstanceWorlds(plugin);
         this.records = new ExpeditionRecords(new File(plugin.getDataFolder(), "expedition-records.yml"));
+        this.keystones = new KeystoneStore(new File(plugin.getDataFolder(), "expedition-keystones.yml"));
         this.returns = new ReturnStore(new File(plugin.getDataFolder(), "expedition-returns.yml"), plugin.getLogger());
         installSamples();
         worlds.cleanupLeftovers();
@@ -249,6 +259,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     public File fileFor(String id) { return new File(folder, id + ".yml"); }
     public InstanceWorlds worlds() { return worlds; }
     ExpeditionRecords records() { return records; }
+    public KeystoneStore keystones() { return keystones; }
     ReturnStore returns() { return returns; }
     Duration rejoinWindow() { return rejoinWindow; }
     Duration lingerAfterFinish() { return linger; }
@@ -366,22 +377,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         }
         Optional<AccountId> account = plugin.sessions().account(leader.getUniqueId());
         if (account.isEmpty()) { Chat.accountLoading(leader); return; }
-        plugin.parties().partyOf(account.get()).thenAccept(party -> Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!leader.isOnline()) return;
-            List<Player> members = new ArrayList<>();
-            if (party.isEmpty()) members.add(leader);
-            else {
-                PartyService.PartyView view = party.get();
-                if (!view.leader().equals(account.get())) {
-                    Chat.error(leader, "Only your party leader can start or queue an expedition. Leave the party to go solo.");
-                    return;
-                }
-                members.add(leader); // The leader leads the ticket, so only they can accept hired allies.
-                for (AccountId member : view.members())
-                    plugin.sessions().player(member).map(Bukkit::getPlayer).filter(player -> !player.equals(leader)).ifPresent(members::add);
-                if (members.size() < view.members().size())
-                    Chat.notice(leader, "Offline party members stay behind.");
-            }
+        partyOf(leader, account.get(), "start or queue an expedition", members -> {
             if (members.size() > definition.maxParty()) {
                 Chat.error(leader, Chat.escape(definition.title()) + " allows up to " + definition.maxParty() + " players; your party has " + members.size() + ".");
                 return;
@@ -408,7 +404,198 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             for (Player member : members)
                 Chat.success(member, "Queued for <white>" + Chat.escape(definition.title()) + "</white> (" + Chat.escape(tier.get().title()) + "). "
                     + why + " Leave with " + Chat.command("expedition leave") + ".");
+        });
+    }
+
+    /** The leader's online party, leader first, or just the leader when solo. Tells a non-leader why not instead. */
+    private void partyOf(Player leader, AccountId account, String action, java.util.function.Consumer<List<Player>> then) {
+        plugin.parties().partyOf(account).thenAccept(party -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!leader.isOnline()) return;
+            List<Player> members = new ArrayList<>();
+            if (party.isEmpty()) members.add(leader);
+            else {
+                PartyService.PartyView view = party.get();
+                if (!view.leader().equals(account)) {
+                    Chat.error(leader, "Only your party leader can " + action + ". Leave the party to go solo.");
+                    return;
+                }
+                members.add(leader); // The leader leads the ticket, so only they can accept hired allies.
+                for (AccountId member : view.members())
+                    plugin.sessions().player(member).map(Bukkit::getPlayer).filter(player -> !player.equals(leader)).ifPresent(members::add);
+                if (members.size() < view.members().size())
+                    Chat.notice(leader, "Offline party members stay behind.");
+            }
+            then.accept(members);
         }));
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Mythic keystones
+    // ---------------------------------------------------------------------------------------------
+
+    /** Expeditions a keystone can roll: open campaign expeditions with a Mythic tier, not the tutorial or raids. */
+    public List<ExpeditionDefinition> keyPool() {
+        return definitions.values().stream().filter(definition -> playable(definition) && !definition.id().equals(TUTORIAL)
+            && !definition.story().raid() && tier(definition, "mythic").isPresent()).toList();
+    }
+
+    public Optional<Keystone.Key> key(Player player) {
+        return plugin.sessions().account(player.getUniqueId()).flatMap(account -> keystones.key(account.toString()));
+    }
+
+    /** This week's affixes at a key level. */
+    public List<Modifier> affixes(int level) { return Keystone.affixes(level, LocalDate.now(ZoneOffset.UTC)); }
+
+    /** A random key-pool expedition, avoiding {@code avoid} when there is a choice. */
+    private Optional<String> rollExpedition(String avoid) {
+        List<String> pool = new ArrayList<>(keyPool().stream().map(ExpeditionDefinition::id).toList());
+        if (pool.size() > 1) pool.remove(avoid);
+        if (pool.isEmpty()) return Optional.empty();
+        return Optional.of(pool.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(pool.size())));
+    }
+
+    /** Members with no keystone yet earn a +2 key from their first Mythic (or keyed) clear. */
+    void grantFirstKeys(Collection<String> accounts) {
+        for (String account : accounts) {
+            if (keystones.key(account).isPresent()) continue;
+            Optional<String> expedition = rollExpedition(null);
+            if (expedition.isEmpty()) return;
+            Keystone.Key key = new Keystone.Key(expedition.get(), Keystone.MIN_LEVEL);
+            keystones.setKey(account, key);
+            plugin.sessions().player(AccountId.parse(account)).map(Bukkit::getPlayer).ifPresent(player -> {
+                Chat.send(player, "<light_purple><bold>Mythic keystone earned!</bold></light_purple> <white>" + keyName(key) + "</white>. <gray>Start it with your party: "
+                    + Chat.command("expedition key start") + ". Beat its timer to upgrade it; see " + Chat.command("expedition key") + ".</gray>");
+                player.playSound(player.getLocation(), Sound.BLOCK_END_PORTAL_FRAME_FILL, 1F, 1.2F);
+            });
+        }
+    }
+
+    String keyName(Keystone.Key key) {
+        return Chat.escape(definition(key.expedition()).map(ExpeditionDefinition::title).orElse(key.expedition())) + " +" + key.level();
+    }
+
+    /** {@code /expedition key}: the player's keystone, this week's affixes and the expedition's best. */
+    private void showKey(Player player) {
+        Optional<Keystone.Key> key = key(player);
+        if (key.isEmpty()) {
+            Chat.notice(player, "You don't have a Mythic keystone. Clear any campaign expedition on Mythic to earn one.");
+            return;
+        }
+        int level = key.get().level();
+        Chat.send(player, "<light_purple><bold>Keystone:</bold></light_purple> <white>" + keyName(key.get()) + "</white>");
+        definition(key.get().expedition()).ifPresent(definition -> Chat.send(player, "<gray>Timer: <white>"
+            + Chat.duration(Duration.ofSeconds(Keystone.timerSeconds(definition.timeLimitMinutes()))) + "</white> · enemies <white>+"
+            + Math.round((Keystone.scale(level) - 1) * 100) + "%</white> over Mythic · each death <white>+" + Keystone.DEATH_PENALTY_SECONDS + "s</white></gray>"));
+        Chat.send(player, "<gray>Affixes this week: <white>" + Chat.escape(Keystone.describe(affixes(level))) + "</white>"
+            + (level < 4 ? " <dark_gray>(Fortified or Tyrannical joins at +4, a rotating affix at +7)</dark_gray>" : level < 7 ? " <dark_gray>(a rotating affix joins at +7)</dark_gray>" : "") + "</gray>");
+        keystones.best(key.get().expedition()).ifPresent(best -> Chat.send(player, "<gray>Server best here: <white>+" + best.level() + "</white> in "
+            + Chat.duration(Duration.ofSeconds(best.seconds())) + " by " + Chat.escape(String.join(", ", best.party())) + "</gray>"));
+        Chat.send(player, "<green><click:run_command:'/expedition key start'><hover:show_text:'Start your keystone with your party'>[Start keystone]</hover></click></green>");
+    }
+
+    /** Staff: {@code /expedition key give <player> <expedition> <level>} sets a player's keystone. */
+    private void giveKey(Player staff, String[] args) {
+        if (args.length != 5) { Chat.usage(staff, "/expedition key give <player> <expedition> <level>"); return; }
+        Player target = Bukkit.getPlayerExact(args[2]);
+        Optional<AccountId> account = target == null ? Optional.empty() : plugin.sessions().account(target.getUniqueId());
+        if (account.isEmpty()) { Chat.error(staff, "That player isn't online."); return; }
+        Optional<ExpeditionDefinition> definition = definition(args[3]).filter(keyPool()::contains);
+        if (definition.isEmpty()) { Chat.error(staff, "Keys go to open campaign expeditions with a Mythic tier."); return; }
+        int level;
+        try {
+            level = Integer.parseInt(args[4]);
+        } catch (NumberFormatException invalid) {
+            Chat.error(staff, "The level must be a number.");
+            return;
+        }
+        Keystone.Key key = new Keystone.Key(definition.get().id(), level);
+        keystones.setKey(account.get().toString(), key);
+        Chat.success(staff, Chat.escape(target.getName()) + " now holds <white>" + keyName(key) + "</white>.");
+    }
+
+    /** {@code /expedition key start}: the keyholder starts their key for their party. No queue, no hired allies. */
+    public void startKey(Player leader) {
+        Optional<AccountId> account = plugin.sessions().account(leader.getUniqueId());
+        if (account.isEmpty()) { Chat.accountLoading(leader); return; }
+        String holder = account.get().toString();
+        Optional<Keystone.Key> held = keystones.key(holder);
+        if (held.isEmpty()) {
+            Chat.error(leader, "You don't have a Mythic keystone. Clear any campaign expedition on Mythic to earn one.");
+            return;
+        }
+        if (keysInUse.contains(holder)) { Chat.error(leader, "Your keystone is already in a ready check or a run."); return; }
+        if (matchmaker.ticketOf(leader.getUniqueId()).isPresent() || checkOf(leader.getUniqueId()).isPresent()) {
+            Chat.error(leader, "You're already queued or in a ready check. Use " + Chat.command("expedition leave") + " first.");
+            return;
+        }
+        Keystone.Key key = held.get();
+        ExpeditionDefinition definition = definitions.get(key.expedition());
+        if (definition == null || !keyPool().contains(definition)) {
+            // The expedition was retired or closed: move the key somewhere it can be run.
+            Optional<String> moved = rollExpedition(key.expedition());
+            if (moved.isEmpty()) { Chat.error(leader, "No expedition can take a keystone right now."); return; }
+            key = new Keystone.Key(moved.get(), key.level());
+            keystones.setKey(holder, key);
+            Chat.notice(leader, "Your key's expedition is closed, so the key moved to <white>" + keyName(key) + "</white>.");
+            definition = definitions.get(key.expedition());
+        }
+        if (runs.size() + checks.size() >= maxInstances) {
+            Chat.error(leader, "Every expedition instance is busy. Try again in a few minutes.");
+            return;
+        }
+        ExpeditionDefinition chosen = definition;
+        Keystone.Key chosenKey = key;
+        List<Modifier> affixes = affixes(key.level());
+        Tier tier = Keystone.tier(tier(definition, "mythic").orElseThrow(), key.level(), affixes);
+        partyOf(leader, account.get(), "start a keystone", members -> {
+            if (members.size() > chosen.maxParty()) {
+                Chat.error(leader, Chat.escape(chosen.title()) + " allows up to " + chosen.maxParty() + " players; your party has " + members.size() + ".");
+                return;
+            }
+            if (keysInUse.contains(holder) || runs.size() + checks.size() >= maxInstances) return;
+            for (Player member : members) {
+                Optional<String> problem = problem(member, chosen, tier);
+                if (problem.isEmpty() && (matchmaker.ticketOf(member.getUniqueId()).isPresent() || checkOf(member.getUniqueId()).isPresent()))
+                    problem = Optional.of(member.getName() + " is already queued.");
+                if (problem.isPresent()) { Chat.error(leader, Chat.escape(problem.get())); return; }
+            }
+            ExpeditionRun.KeyRun run = new ExpeditionRun.KeyRun(leader.getUniqueId(), holder, chosenKey, affixes,
+                Keystone.timerSeconds(chosen.timeLimitMinutes()));
+            keysInUse.add(holder);
+            List<UUID> ids = members.stream().map(Player::getUniqueId).toList();
+            if (ids.size() == 1) launch(chosen, tier, ids, List.of(), false, 0, run);
+            else startCheck(chosen, tier, ids, List.of(), leader.getUniqueId(), 0, run);
+        });
+    }
+
+    /** A keyed run cleared: upgrade or deplete the key, record a timed best, and give members their first keys. */
+    void settleKey(ExpeditionRun run, long seconds, Map<String, String> party) {
+        ExpeditionRun.KeyRun key = run.key;
+        run.keySettled = true;
+        long timer = run.keyTimer();
+        int change = Keystone.change(seconds, timer);
+        String next = change > 0 ? rollExpedition(key.key().expedition()).orElse(key.key().expedition()) : key.key().expedition();
+        Keystone.Key upgraded = Keystone.after(key.key(), change, next);
+        keystones.setKey(key.account(), upgraded);
+        boolean record = change > 0 && !party.isEmpty() && keystones.recordTimed(run.expedition.id(), key.key().level(), seconds, party);
+        Player holder = Bukkit.getPlayer(key.holder());
+        String who = holder == null ? "The keyholder" : Chat.escape(holder.getName());
+        run.broadcast(change > 0
+            ? "<light_purple><bold>Keystone timed!</bold></light_purple> <gray>" + Chat.duration(Duration.ofSeconds(seconds)) + " of "
+                + Chat.duration(Duration.ofSeconds(timer)) + ". " + who + "'s key upgrades <white>+" + change + "</white> to <white>"
+                + keyName(upgraded) + "</white>.</gray>" + (record ? " <light_purple>New best key on this expedition!</light_purple>" : "")
+            : "<yellow>Keystone over time.</yellow> <gray>" + Chat.duration(Duration.ofSeconds(seconds)) + " of " + Chat.duration(Duration.ofSeconds(timer))
+                + ". The loot is yours, but " + who + "'s key drops to <white>" + keyName(upgraded) + "</white>.</gray>");
+        grantFirstKeys(party.keySet());
+    }
+
+    /** A keyed run failed or was abandoned: the key drops a level and stays on the same expedition. */
+    void depleteKey(ExpeditionRun run) {
+        ExpeditionRun.KeyRun key = run.key;
+        run.keySettled = true;
+        Keystone.Key depleted = Keystone.after(key.key(), -1, key.key().expedition());
+        keystones.setKey(key.account(), depleted);
+        run.broadcast("<yellow>The keystone is depleted.</yellow> <gray>It drops to <white>" + keyName(depleted) + "</white>.</gray>");
     }
 
     public void leave(Player player) {
@@ -442,8 +629,14 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     }
 
     private void startCheck(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, UUID autoAccept, int allyCount) {
+        startCheck(definition, tier, members, tickets, autoAccept, allyCount, null);
+    }
+
+    private void startCheck(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, UUID autoAccept,
+                            int allyCount, ExpeditionRun.KeyRun key) {
         ReadyCheck check = new ReadyCheck(definition.id(), tier.id(), members, tickets, Instant.now(), readyTimeout, allyCount);
         checks.put(check.id(), check);
+        if (key != null) keyChecks.put(check.id(), key);
         if (autoAccept != null) check.accept(autoAccept);
         for (UUID member : members) {
             Player player = Bukkit.getPlayer(member);
@@ -454,6 +647,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 continue;
             }
             Chat.send(player, "<gold>Ready check:</gold> <white>" + Chat.escape(definition.title()) + "</white> <gray>(" + Chat.escape(tier.title())
+                + (key != null ? " keystone, " + Chat.escape(Keystone.describe(key.affixes())) : "")
                 + ", " + members.size() + " players" + (allyCount > 0 ? " + " + allyCount + " hired allies" : "") + ")</gray>  <green><click:run_command:'/expedition ready'><hover:show_text:'Join the run'>[Ready]</hover></click></green>"
                 + "  <red><click:run_command:'/expedition decline'><hover:show_text:'Decline'>[Decline]</hover></click></red>"
                 + " <dark_gray>" + readyTimeout.toSeconds() + "s</dark_gray>");
@@ -483,11 +677,14 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (check.state() == ReadyCheck.State.PENDING) return;
         checks.remove(check.id());
         ExpeditionDefinition definition = definitions.get(check.expedition());
-        Optional<Tier> tier = definition == null ? Optional.empty() : tier(definition, check.tier());
+        ExpeditionRun.KeyRun key = keyChecks.remove(check.id());
+        Optional<Tier> tier = definition == null ? Optional.empty() : key != null
+            ? tier(definition, "mythic").map(mythic -> Keystone.tier(mythic, key.key().level(), key.affixes())) : tier(definition, check.tier());
         if (check.state() == ReadyCheck.State.READY && tier.isPresent()) {
-            launch(definition, tier.get(), check.orderedMembers(), check.tickets(), false, check.allies());
+            launch(definition, tier.get(), check.orderedMembers(), check.tickets(), false, check.allies(), key);
             return;
         }
+        if (key != null) keysInUse.remove(key.account());
         Player decliner = check.decliner() == null ? null : Bukkit.getPlayer(check.decliner());
         String reason = decliner != null ? Chat.escape(decliner.getName()) + " declined" : "Not everyone was ready in time";
         List<Matchmaker.Ticket> back = check.tickets().isEmpty() ? List.of() : check.innocentTickets();
@@ -508,15 +705,22 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** {@code allyCount} hired NPC allies join the run; any allies make it an assisted run. */
     void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test, int allyCount) {
+        launch(definition, tier, members, tickets, test, allyCount, null);
+    }
+
+    /** {@code key} is the keystone a keyed run is on, or null. */
+    void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test, int allyCount,
+                ExpeditionRun.KeyRun key) {
         List<UUID> online = members.stream().filter(member -> Bukkit.getPlayer(member) != null && !runByPlayer.containsKey(member)).toList();
         if (online.isEmpty() || online.size() + allyCount < (test ? 1 : definition.minParty())) {
+            if (key != null) keysInUse.remove(key.account());
             matchmaker.requeue(tickets.stream().filter(ticket -> online.containsAll(ticket.members())).toList());
             online.forEach(member -> Chat.notice(Bukkit.getPlayer(member), "A player dropped out before the run began."));
             return;
         }
         BuildCanvas.Plan plan = definition.sample() == null ? null : SampleTemplates.plan(definition.sample());
         List<Allies.Role> hired = allies.pick(Math.min(allyCount, allies.slots(online.size(), definition.maxParty())));
-        ExpeditionRun run = new ExpeditionRun(this, plugin, definition, tier, modifiers(definition, tier), online, test, plan, hired);
+        ExpeditionRun run = new ExpeditionRun(this, plugin, definition, tier, modifiers(definition, tier), online, test, plan, hired, key);
         runs.put(run.id, run);
         for (UUID member : online) {
             runByPlayer.put(member, run);
@@ -527,6 +731,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             if (failure != null || world == null) {
                 plugin.getLogger().log(Level.SEVERE, "Could not build expedition " + definition.id(), failure);
                 runs.remove(run.id);
+                if (key != null) keysInUse.remove(key.account());
                 online.forEach(member -> {
                     runByPlayer.remove(member, run);
                     Player player = Bukkit.getPlayer(member);
@@ -673,6 +878,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         }
         run.close();
         runs.remove(run.id);
+        if (run.key != null) keysInUse.remove(run.key.account());
         World world = run.world;
         if (world == null) return;
         runByWorld.remove(world.getUID());
@@ -1023,6 +1229,11 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             case "ready", "accept" -> ready(player);
             case "decline" -> decline(player);
             case "allies" -> startWithAllies(player);
+            case "key", "keystone" -> {
+                if (args.length >= 2 && args[1].equalsIgnoreCase("start")) startKey(player);
+                else if (args.length >= 2 && args[1].equalsIgnoreCase("give") && player.hasPermission(ADMIN)) giveKey(player, args);
+                else showKey(player);
+            }
             case "list" -> list(player);
             case "info" -> {
                 if (args.length != 2) Chat.usage(player, "/expedition info <expedition>");
@@ -1037,7 +1248,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             }
             default -> {
                 Chat.error(player, "Unknown expedition command.");
-                Chat.usage(player, "/expedition [start|queue|leave|ready|decline|list|info|status]");
+                Chat.usage(player, "/expedition [start|queue|leave|ready|decline|key|list|info|status]");
                 if (plugin.travel() != null && plugin.travel().warpNames().contains(action))
                     Chat.info(player, "Looking for the warp? Use " + Chat.command("warp " + action) + ".");
             }
@@ -1066,7 +1277,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (run != null) {
             Chat.info(player, "You're in <white>" + Chat.escape(run.expedition.title()) + "</white> (" + Chat.escape(run.tier.title()) + ")"
                 + (run.progress == null ? ", still preparing." : ", room " + Math.min(run.progress.roomCount(), run.progress.roomIndex() + 1)
-                + "/" + run.progress.roomCount() + ", " + run.progress.lives() + " lives left."));
+                + "/" + run.progress.roomCount() + (run.key != null ? ", " + run.progress.deaths() + " deaths." : ", " + run.progress.lives() + " lives left.")));
             return;
         }
         Optional<ReadyCheck> check = checkOf(uuid);
@@ -1087,12 +1298,14 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "allies", "list", "info", "guide", "status"));
+            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "allies", "key", "list", "info", "guide", "status"));
             if (sender.hasPermission(ADMIN) && setup != null) options.addAll(setup.subcommands());
             return options;
         }
         String action = args[0].toLowerCase(Locale.ROOT);
         if (setup != null && setup.handles(action) && !action.equals("guide")) return setup.complete(sender, args);
+        if (args.length == 2 && List.of("key", "keystone").contains(action))
+            return sender.hasPermission(ADMIN) ? List.of("start", "give") : List.of("start");
         if (args.length == 2 && List.of("start", "queue", "info", "guide").contains(action))
             return definitions.values().stream().filter(definition -> playable(definition) || sender.hasPermission(ADMIN)).map(ExpeditionDefinition::id).toList();
         if (args.length == 3 && List.of("start", "queue").contains(action))

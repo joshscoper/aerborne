@@ -12,6 +12,8 @@ public enum Modifier {
     TYRANNICAL("Tyrannical", "Bosses have 30% more health and hit 15% harder."),
     BOLSTERING("Bolstering", "When an enemy dies, nearby enemies grow stronger."),
     VOLATILE("Volatile", "Enemies burst shortly after they die. Step away from the bodies."),
+    RAGING("Raging", "Regular enemies hit 50% harder below 30% health. Finish them fast."),
+    SANGUINE("Sanguine", "Fallen enemies leave a pool that heals other enemies and hurts players. Pull fights away from it."),
     TIMED("Timed", "Finish within the par time for an extra loot roll.");
 
     private final String title;

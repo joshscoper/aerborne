@@ -83,6 +83,7 @@ public final class RunProgress {
     private final int finalRoom;
     private Phase phase = Phase.ACTIVE;
     private int lives;
+    private int deaths;
     private int active = -1;
     private String checkpoint;
     private int waveIndex = -1;
@@ -121,6 +122,10 @@ public final class RunProgress {
 
     public Phase phase() { return phase; }
     public int lives() { return lives; }
+    /** Every member death this run, wipes included. */
+    public int deaths() { return deaths; }
+    /** The run's limit, time bonuses included. */
+    public long limitSeconds() { return limitSeconds; }
     public Tier tier() { return tier; }
     public Set<Modifier> modifiers() { return modifiers; }
     public ExpeditionDefinition expedition() { return expedition; }
@@ -371,6 +376,7 @@ public final class RunProgress {
         List<Effect> effects = new ArrayList<>();
         if (phase != Phase.ACTIVE || !present.contains(member)) return effects;
         dead.add(member);
+        deaths++;
         lives--;
         effects.add(new Effect.Lives(lives, member));
         if (lives <= 0) {
