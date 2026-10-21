@@ -7,12 +7,12 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The wardrobe matches the website: six companions, eight trails, three supporter ranks and three bundles. */
+/** The wardrobe matches the website: seven companions, eight trails, three supporter ranks and three bundles. */
 class CosmeticCatalogTest {
     private final CosmeticCatalog catalog = CosmeticCatalog.defaults();
 
     @Test void matchesTheWebsiteCatalog() {
-        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk"), catalog.companionSlugs());
+        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip"), catalog.companionSlugs());
         assertEquals(List.of("cloudstep", "petal-skip", "firefly-drift", "rune-ripple", "bubblehop", "comet-tail",
             "dandelion-drift", "stardust-waltz"), catalog.trailSlugs());
         assertEquals(List.of("skyfarer", "cloudkeeper", "starweaver"), catalog.tiers().stream().map(CosmeticCatalog.Tier::slug).toList());
@@ -50,6 +50,30 @@ class CosmeticCatalogTest {
         assertFalse(cloudkeeper.keepsake());
     }
 
+    @Test void everyTebexBundleIncludesSkyfarerWithoutDowngradingOtherRanks() {
+        for (var bundle : catalog.bundles()) {
+            var owned = catalog.ownership(List.of(bundle.product()));
+            assertEquals("skyfarer", owned.tier().orElseThrow().slug());
+            assertEquals(1, owned.companions().size());
+            assertEquals(1, owned.trails().size());
+            var upgraded = catalog.ownership(List.of(bundle.product(), "cosmetic.rank.starweaver"));
+            assertEquals("starweaver", upgraded.tier().orElseThrow().slug());
+            var refunded = catalog.ownership(List.of("cosmetic.rank.cloudkeeper"));
+            assertEquals("cloudkeeper", refunded.tier().orElseThrow().slug());
+            assertTrue(refunded.companions().isEmpty());
+        }
+    }
+
+    @Test void formerBundleConfigDefaultsUpgradeWhileCustomContentsRemain() {
+        for (var bundle : catalog.bundles()) {
+            var former = bundle.contents().stream().filter(id -> !id.equals("cosmetic.rank.skyfarer")).toList();
+            assertEquals(bundle.contents(), CosmeticCatalog.configuredBundleContents(bundle, former));
+            assertEquals(bundle.contents(), CosmeticCatalog.configuredBundleContents(bundle, bundle.contents()));
+            var custom = List.of("cosmetic.companion.moonmoth", "cosmetic.rank.cloudkeeper");
+            assertEquals(custom, CosmeticCatalog.configuredBundleContents(bundle, custom));
+        }
+    }
+
     @Test void olderSubscriptionsKeepEveryPerkWithTheGoldStar() {
         var legacy = catalog.ownership(List.of("supporter_annual"));
         assertEquals("supporter", legacy.tier().orElseThrow().slug());
@@ -60,7 +84,7 @@ class CosmeticCatalogTest {
     @Test void nothingOwnedWithoutPurchasesUnlessMadeFree() {
         assertEquals(CosmeticCatalog.Ownership.NONE.companions(), catalog.ownership(List.of()).companions());
         assertFalse(catalog.ownership(List.of()).supporter());
-        var free = new CosmeticCatalog(List.of(new CosmeticCatalog.Companion("pufflet", "Pufflet", "Cloud puff", "HAPPY_GHAST", "", true, true, "", "white", true)),
+        var free = new CosmeticCatalog(List.of(new CosmeticCatalog.Companion("pufflet", "Pufflet", "Cloud puff", "pufflet", 1.0D, true, "", "white", true)),
             List.of(), List.of(), List.of(), List.of());
         assertEquals(Set.of("pufflet"), free.ownership(List.of()).companions());
     }

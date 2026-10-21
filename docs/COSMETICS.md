@@ -1,6 +1,6 @@
 # Cosmetics: companions, trails and supporter ranks
 
-Everything the website store sells is in game, and all of it is visual only: six companions, eight trails,
+Everything the website store sells is in game, and all of it is visual only: seven companions, eight trails,
 three supporter ranks and three bundles. Code lives in `nerdsmp-paper/src/main/java/net/nerdsmp/paper/cosmetic/`.
 
 ## For players
@@ -22,11 +22,15 @@ The chosen companion, trail and name colour are saved per account and come back 
 | Skyfarer | `cosmetic.rank.skyfarer` | Aqua ✦ badge in chat, the tab list and above your head; 3 name colours |
 | Cloudkeeper | `cosmetic.rank.cloudkeeper` | ☁ badge; 5 name colours; emotes |
 | Starweaver | `cosmetic.rank.starweaver` | ✧ badge; 7 name colours; emotes; 3 wardrobe presets; Starweaver Lantern keepsake |
-| Pufflet … Starwhisk companion | `cosmetic.companion.<name>` | That companion |
+| Pufflet … Lilypip companion | `cosmetic.companion.<name>` | That companion (`pufflet`, `kitekit`, `mossbun`, `cindlet`, `moonmoth`, `starwhisk`, `lilypip`) |
 | Cloudstep … Stardust Waltz trail | `cosmetic.trail.<name>` | That trail (`petal-skip`, `firefly-drift`, `rune-ripple`, `comet-tail`, `dandelion-drift`, `stardust-waltz`) |
-| Cloudberry bundle | `cosmetic.bundle.cloudberry` | Pufflet + Cloudstep |
-| Blooming Skies bundle | `cosmetic.bundle.blooming-skies` | Mossbun + Petal Skip |
-| Celestial Dreams bundle | `cosmetic.bundle.celestial-dreams` | Starwhisk + Stardust Waltz |
+| Cloudberry bundle | `cosmetic.bundle.cloudberry` | Pufflet + Cloudstep + Skyfarer rank |
+| Blooming Skies bundle | `cosmetic.bundle.blooming-skies` | Mossbun + Petal Skip + Skyfarer rank |
+| Celestial Dreams bundle | `cosmetic.bundle.celestial-dreams` | Starwhisk + Stardust Waltz + Skyfarer rank |
+
+The former two-item default bundle lists in existing `config.yml` files upgrade to include Skyfarer
+when loaded. Custom bundle contents remain intact. The bundle entitlement owns its included rank:
+revoking it removes that source of Skyfarer without removing separately owned ranks.
 
 Higher ranks include everything below them. The older `supporter_monthly` and `supporter_annual` products
 still work and carry every perk, shown with the classic gold ✦.
@@ -55,20 +59,42 @@ Staff can hand out a cosmetic for events or testing the same way, with a made-up
 
 ## How companions work
 
-Until custom models are made, each companion is played by a small vanilla creature: Pufflet is a ghastling,
-Kitekit a snow fox kit, Mossbun a bunny, Cindlet a red fox kit with embers, Moonmoth an allay and Starwhisk a
-black kitten with stardust. Change the creature, variant, size, flying and particle under `cosmetics.companions`
-in `config.yml`, or set `free: true` to give a companion or trail to everyone.
+![The six companion sculptures](companion-sculptures.png)
 
-A companion has its AI off and is invulnerable, silent, not solid and never saved to the world. Nobody can
-feed, tame, leash, name, ride or hurt it, mobs don't target it, and mob scaling and Arcane area effects skip it.
-It follows a couple of blocks behind its owner. If its owner is dead, a spectator or invisible, it is put away
-and comes back afterwards. After a long teleport it reappears beside the owner. Trails draw at most eight
-particles every two ticks, only while their owner moves (Stardust Waltz swirls when you turn), and only for
-players within 40 blocks who haven't hidden other players' cosmetics.
+*Preview in flat colours; in game each block has its normal texture.*
+
+Companions are block sculptures, in the style of the armor-stand pets on Hypixel and Mineplex. Each one is
+built from 10 to 28 small blocks: a white wool cloud with stubby feet (Pufflet), a sky-blue fox (Kitekit), a
+cream bunny with a moss garden and flowers on its back (Mossbun), a glowing ember with a flickering flame
+(Cindlet), an amethyst moth with stained-glass wings (Moonmoth) a black cat with glowing eyes and stardust
+(Starwhisk) and a lily frog with a lily-pad hat, clover necklace and water droplet (Lilypip).
+
+Each block is a **block display** entity, the modern version of an armor stand holding a block. Displays
+have no hitbox and no AI, never save to the world, cost far less than armor stands, and can be any size.
+All of a companion's blocks stand at the same spot and face the same way; each block's transformation
+places it within the model.
+
+**Shapes** live in `plugins/NerdSMP/companion-models.yml`, copied out of the jar on first start. Positions
+and sizes are in pixels (16 = one block), like a Blockbench model, so staff can reshape a companion or design
+a new one without code. If the edited file has a mistake, the server logs which part is wrong and uses the
+built-in models. `scale`, `flying`, `particle` and `model` for each companion are in `config.yml`.
+
+**Movement:** every two ticks the sculpture eases toward a spot behind its owner's shoulder. Walking companions
+stand on the ground; flying ones hover beside the owner's head with a gentle bob. It turns to face where it's
+going and reappears beside its owner after a long teleport. The client glides each block between updates
+(teleport and transformation interpolation), so movement looks smooth.
+
+**Animation:** parts are grouped. Legs (`leg_a`, `leg_b`) swing in opposite pairs while walking. Tails wag,
+heads nod, ears twitch, wings flap (harder for flyers) and flames flicker taller and shorter. Foxes and cats
+trot with a small bob, and Mossbun hops. Glowing parts (embers, the cat's eyes, moth wing spots) are lit at
+full brightness, and walking companions cast a soft shadow.
+
+**Rules:** a companion is put away while its owner is dead, a spectator or invisible, and returns afterwards.
+Players who hide other players' cosmetics don't see it. Nothing can interact with it.
 
 ## Tests
 
 `CosmeticCatalogTest` covers the catalog, product ids, bundles, tiers and older subscriptions.
-`CompanionMotionTest` covers following, snapping, facing and trail particle limits. Run them with the
+`CompanionMotionTest` covers following, snapping, facing and trail particle limits. `SculptureTest` checks every
+bundled model (real blocks, size, part count) and that legs, wings and flames pivot from the right place. Run them with the
 plugin's test suite.

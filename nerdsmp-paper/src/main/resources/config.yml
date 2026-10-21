@@ -666,18 +666,20 @@ claims:
 # Companions, trails and supporter perks (/cosmetics, /companion, /trail, /emote).
 # Store purchases grant them through /nerdadmin entitlement grant <player> <product> <transaction>;
 # list every product id with /nerdadmin entitlement products. Everything here is visual only.
-# Until custom models exist, each companion is played by a small vanilla creature. Change its look below
-# (entity, variant, baby, flying, particle), or set free: true to give a companion or trail to everyone.
-# Bundle contents can be changed too; they must list real cosmetic product ids.
+# Companions are block sculptures built from companion-models.yml in this folder; edit that file to reshape
+# them. Below, change a companion's size (scale 0.25-3), whether it flies, its particle or which model it
+# uses, or set free: true to give a companion or trail to everyone. Bundle contents can be changed too;
+# they must list real cosmetic product ids.
 cosmetics:
   companions:
-    pufflet: { entity: HAPPY_GHAST, baby: true, flying: true, particle: CLOUD }
-    kitekit: { entity: FOX, variant: SNOW, baby: true }
-    mossbun: { entity: RABBIT, variant: BROWN, baby: true, particle: HAPPY_VILLAGER }
-    cindlet: { entity: FOX, variant: RED, baby: true, particle: SMALL_FLAME }
-    moonmoth: { entity: ALLAY, flying: true, particle: END_ROD }
-    starwhisk: { entity: CAT, variant: ALL_BLACK, baby: true, particle: WAX_OFF }
+    pufflet: { scale: 1.0, flying: true, particle: CLOUD }
+    kitekit: { scale: 1.0, flying: false }
+    mossbun: { scale: 1.0, flying: false, particle: HAPPY_VILLAGER }
+    cindlet: { scale: 1.0, flying: true, particle: SMALL_FLAME }
+    moonmoth: { scale: 1.0, flying: true, particle: END_ROD }
+    starwhisk: { scale: 1.0, flying: false, particle: WAX_OFF }
+    lilypip: { scale: 0.85, flying: false, particle: DRIPPING_WATER }
   bundles:
-    cloudberry: [cosmetic.companion.pufflet, cosmetic.trail.cloudstep]
-    blooming-skies: [cosmetic.companion.mossbun, cosmetic.trail.petal-skip]
-    celestial-dreams: [cosmetic.companion.starwhisk, cosmetic.trail.stardust-waltz]
+    cloudberry: [cosmetic.companion.pufflet, cosmetic.trail.cloudstep, cosmetic.rank.skyfarer]
+    blooming-skies: [cosmetic.companion.mossbun, cosmetic.trail.petal-skip, cosmetic.rank.skyfarer]
+    celestial-dreams: [cosmetic.companion.starwhisk, cosmetic.trail.stardust-waltz, cosmetic.rank.skyfarer]

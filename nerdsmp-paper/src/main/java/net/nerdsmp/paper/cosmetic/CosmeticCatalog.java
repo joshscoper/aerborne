@@ -26,16 +26,15 @@ public final class CosmeticCatalog {
     public static final Set<String> LEGACY_SUPPORTER = Set.of("supporter_monthly", "supporter_annual");
 
     /**
-     * A companion and the vanilla creature that plays it until custom models exist.
+     * A companion, built as a block sculpture from companion-models.yml.
      *
-     * @param entity  Bukkit entity type name, e.g. {@code FOX}
-     * @param variant entity variant where the type has one (fox type, cat type, rabbit type), or empty
-     * @param baby    show the young form
-     * @param flying  hovers beside the owner instead of walking behind
+     * @param model    the sculpture's name in companion-models.yml
+     * @param scale    overall size; 1 = 16 pixels per block
+     * @param flying   hovers beside the owner instead of walking behind
      * @param particle ambient particle name, or empty
-     * @param free    owned by everyone without a purchase
+     * @param free     owned by everyone without a purchase
      */
-    public record Companion(String slug, String name, String species, String entity, String variant, boolean baby,
+    public record Companion(String slug, String name, String species, String model, double scale,
                             boolean flying, String particle, String color, boolean free) {
         public String product() { return COMPANION + slug; }
     }
@@ -100,12 +99,13 @@ public final class CosmeticCatalog {
     public static CosmeticCatalog defaults() {
         return new CosmeticCatalog(
             List.of(
-                new Companion("pufflet", "Pufflet", "Cloud puff", "HAPPY_GHAST", "", true, true, "CLOUD", "white", false),
-                new Companion("kitekit", "Kitekit", "Sky fox", "FOX", "SNOW", true, false, "", "aqua", false),
-                new Companion("mossbun", "Mossbun", "Moss bunny", "RABBIT", "BROWN", true, false, "HAPPY_VILLAGER", "green", false),
-                new Companion("cindlet", "Cindlet", "Ember sprite", "FOX", "RED", true, false, "SMALL_FLAME", "gold", false),
-                new Companion("moonmoth", "Moonmoth", "Moon moth", "ALLAY", "", false, true, "END_ROD", "light_purple", false),
-                new Companion("starwhisk", "Starwhisk", "Star cat", "CAT", "ALL_BLACK", true, false, "WAX_OFF", "yellow", false)),
+                new Companion("pufflet", "Pufflet", "Cloud puff", "pufflet", 1.0D, true, "CLOUD", "white", false),
+                new Companion("kitekit", "Kitekit", "Sky fox", "kitekit", 1.0D, false, "", "aqua", false),
+                new Companion("mossbun", "Mossbun", "Moss bunny", "mossbun", 1.0D, false, "HAPPY_VILLAGER", "green", false),
+                new Companion("cindlet", "Cindlet", "Ember sprite", "cindlet", 1.0D, true, "SMALL_FLAME", "gold", false),
+                new Companion("moonmoth", "Moonmoth", "Moon moth", "moonmoth", 1.0D, true, "END_ROD", "light_purple", false),
+                new Companion("starwhisk", "Starwhisk", "Star cat", "starwhisk", 1.0D, false, "WAX_OFF", "yellow", false),
+                new Companion("lilypip", "Lilypip", "Lily frog", "lilypip", 0.85D, false, "DRIPPING_WATER", "green", false)),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),
@@ -123,9 +123,9 @@ public final class CosmeticCatalog {
                 new Tier("starweaver", "Starweaver", 3, "<light_purple>✧</light_purple>", "light_purple",
                     List.of("aqua", "green", "yellow", "dark_aqua", "blue", "light_purple", "gold"), true, true, true)),
             List.of(
-                new Bundle("cloudberry", "Cloudberry", List.of(COMPANION + "pufflet", TRAIL + "cloudstep")),
-                new Bundle("blooming-skies", "Blooming Skies", List.of(COMPANION + "mossbun", TRAIL + "petal-skip")),
-                new Bundle("celestial-dreams", "Celestial Dreams", List.of(COMPANION + "starwhisk", TRAIL + "stardust-waltz"))),
+                new Bundle("cloudberry", "Cloudberry", List.of(COMPANION + "pufflet", TRAIL + "cloudstep", RANK + "skyfarer")),
+                new Bundle("blooming-skies", "Blooming Skies", List.of(COMPANION + "mossbun", TRAIL + "petal-skip", RANK + "skyfarer")),
+                new Bundle("celestial-dreams", "Celestial Dreams", List.of(COMPANION + "starwhisk", TRAIL + "stardust-waltz", RANK + "skyfarer"))),
             List.of(
                 new Emote("wave", "Wave", "waves", "WAX_OFF"),
                 new Emote("cheer", "Cheer", "cheers", "HAPPY_VILLAGER"),
@@ -136,6 +136,15 @@ public final class CosmeticCatalog {
     }
 
     public Collection<Companion> companions() { return companions.values(); }
+    /** Upgrade only the former two-item defaults; preserve genuinely customised bundle lists. */
+    static List<String> configuredBundleContents(Bundle defaults, List<String> configured) {
+        List<String> former = defaults.contents().stream().filter(id -> !id.equals(RANK + "skyfarer")).toList();
+        if (configured.size() == former.size() && new LinkedHashSet<>(configured).equals(new LinkedHashSet<>(former))) {
+            return defaults.contents();
+        }
+        return List.copyOf(configured);
+    }
+
     public Collection<Trail> trails() { return trails.values(); }
     public Collection<Tier> tiers() { return tiers.values(); }
     public Collection<Bundle> bundles() { return bundles.values(); }

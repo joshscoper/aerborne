@@ -1,0 +1,182 @@
+# Companion sculptures: each companion is built from small block displays, like the armor-stand pets
+# Hypixel and Mineplex made popular. Edit this file in plugins/NerdSMP/ and restart to reshape them.
+#
+# Units are pixels: 16 = one block. The model stands on the ground at 0,0,0 and faces +Z (forward).
+#   at:    centre of the block [x, y, z]       size: [width, height, depth]
+#   block: any block id (WHITE_WOOL, MOSS_BLOCK, POPPY, AMETHYST_BLOCK...)
+#   group: what moves it. leg_a / leg_b swing in opposite pairs while walking, tail wags, head nods,
+#          ear twitches, wing_left / wing_right flap, flame flickers. Leave it out for parts that stay still.
+#   glow:  true to light the part at full brightness (embers, eyes that shine).
+# pivots: where a group rotates from. Legs, ears and flames default to their own base, wings to their
+# inner edge, and heads and tails to their nearest end.
+# bounce: none, trot (a little bob while walking) or hop (rabbit hops).
+
+pufflet:
+  bounce: none
+  pivots:
+    wing_left: [-5, 6.5, -1]
+    wing_right: [5, 6.5, -1]
+  parts:
+    - { block: WHITE_WOOL, at: [0, 5, 0], size: [8, 7, 8] }
+    - { block: WHITE_WOOL, at: [0, 9.5, 0.5], size: [6, 3, 6] }
+    - { block: WHITE_WOOL, at: [-4.5, 5, 0], size: [3, 5, 6] }
+    - { block: WHITE_WOOL, at: [4.5, 5, 0], size: [3, 5, 6] }
+    - { block: WHITE_WOOL, at: [0, 5, -4.5], size: [6, 5, 3] }
+    - { block: BLACK_CONCRETE, at: [-1.8, 6, 4.1], size: [1.2, 1.6, 0.3] }
+    - { block: BLACK_CONCRETE, at: [1.8, 6, 4.1], size: [1.2, 1.6, 0.3] }
+    - { block: PINK_CONCRETE, at: [-3, 4.6, 4.1], size: [1.4, 0.8, 0.3] }
+    - { block: PINK_CONCRETE, at: [3, 4.6, 4.1], size: [1.4, 0.8, 0.3] }
+    - { block: LIGHT_GRAY_WOOL, at: [-2, 0.8, 1], size: [2, 1.6, 2], group: leg_a }
+    - { block: LIGHT_GRAY_WOOL, at: [2, 0.8, 1], size: [2, 1.6, 2], group: leg_b }
+    - { block: WHITE_WOOL, at: [-6.3, 6.5, -1], size: [1, 3, 4], group: wing_left }
+    - { block: WHITE_WOOL, at: [6.3, 6.5, -1], size: [1, 3, 4], group: wing_right }
+
+kitekit:
+  bounce: trot
+  pivots:
+    head: [0, 6, 3.5]
+    tail: [0, 6, -4.5]
+  parts:
+    - { block: WHITE_WOOL, at: [0, 5, 0], size: [5, 4, 9] }
+    - { block: LIGHT_BLUE_WOOL, at: [0, 7.2, -0.5], size: [4, 0.4, 7] }
+    - { block: WHITE_WOOL, at: [0, 7.5, 5.5], size: [6, 5, 5], group: head }
+    - { block: WHITE_WOOL, at: [0, 6.3, 8.8], size: [3, 2, 2], group: head }
+    - { block: BLACK_CONCRETE, at: [0, 6.9, 9.9], size: [1, 1, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [-1.6, 8.4, 8.1], size: [1, 1, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [1.6, 8.4, 8.1], size: [1, 1, 0.3], group: head }
+    - { block: LIGHT_BLUE_WOOL, at: [-2, 11.3, 5], size: [1.6, 2.6, 1], group: ear }
+    - { block: LIGHT_BLUE_WOOL, at: [2, 11.3, 5], size: [1.6, 2.6, 1], group: ear }
+    - { block: WHITE_WOOL, at: [-1.5, 1.5, 3], size: [1.6, 3, 1.6], group: leg_a }
+    - { block: WHITE_WOOL, at: [1.5, 1.5, 3], size: [1.6, 3, 1.6], group: leg_b }
+    - { block: WHITE_WOOL, at: [-1.5, 1.5, -3], size: [1.6, 3, 1.6], group: leg_b }
+    - { block: WHITE_WOOL, at: [1.5, 1.5, -3], size: [1.6, 3, 1.6], group: leg_a }
+    - { block: LIGHT_BLUE_WOOL, at: [0, 6, -7.5], size: [2.5, 2.5, 6], group: tail }
+    - { block: WHITE_WOOL, at: [0, 6, -11.2], size: [2.2, 2.2, 1.5], group: tail }
+
+mossbun:
+  bounce: hop
+  pivots:
+    head: [0, 5, 3]
+  parts:
+    - { block: WHITE_TERRACOTTA, at: [0, 4, 0], size: [6, 5, 7] }
+    - { block: MOSS_BLOCK, at: [0, 6.9, -0.3], size: [5.4, 1, 6] }
+    - { block: POPPY, at: [-1.3, 8.6, -1], size: [2.6, 2.6, 2.6] }
+    - { block: DANDELION, at: [1.4, 8.6, 0.8], size: [2.6, 2.6, 2.6] }
+    - { block: BLUE_ORCHID, at: [0.2, 8.6, -2.6], size: [2.6, 2.6, 2.6] }
+    - { block: WHITE_TERRACOTTA, at: [0, 6.5, 4.5], size: [5, 4.5, 4.5], group: head }
+    - { block: BLACK_CONCRETE, at: [-1.5, 7.3, 6.8], size: [0.9, 1.1, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [1.5, 7.3, 6.8], size: [0.9, 1.1, 0.3], group: head }
+    - { block: PINK_CONCRETE, at: [0, 6.2, 6.8], size: [0.8, 0.6, 0.3], group: head }
+    - { block: WHITE_TERRACOTTA, at: [-1.3, 11, 4], size: [1.3, 4.5, 1], group: ear }
+    - { block: WHITE_TERRACOTTA, at: [1.3, 11, 4], size: [1.3, 4.5, 1], group: ear }
+    - { block: PINK_TERRACOTTA, at: [-1.3, 11, 4.6], size: [0.7, 3.4, 0.2], group: ear }
+    - { block: PINK_TERRACOTTA, at: [1.3, 11, 4.6], size: [0.7, 3.4, 0.2], group: ear }
+    - { block: WHITE_TERRACOTTA, at: [-1.5, 0.8, 2.5], size: [1.5, 1.6, 2], group: leg_a }
+    - { block: WHITE_TERRACOTTA, at: [1.5, 0.8, 2.5], size: [1.5, 1.6, 2], group: leg_b }
+    - { block: WHITE_TERRACOTTA, at: [-2, 1, -2], size: [2, 2, 3], group: leg_b }
+    - { block: WHITE_TERRACOTTA, at: [2, 1, -2], size: [2, 2, 3], group: leg_a }
+    - { block: WHITE_WOOL, at: [0, 4.5, -4.3], size: [2.4, 2.4, 2], group: tail }
+
+cindlet:
+  bounce: none
+  pivots:
+    wing_left: [-3, 5, 0]
+    wing_right: [3, 5, 0]
+    flame: [0, 7, 0]
+  parts:
+    - { block: ORANGE_CONCRETE, at: [0, 4, 0], size: [6, 6, 6], glow: true }
+    - { block: YELLOW_CONCRETE, at: [0, 2.8, 3.1], size: [3.4, 2.4, 0.3], glow: true }
+    - { block: ORANGE_CONCRETE, at: [0, 8.2, 0], size: [4, 2.5, 4], group: flame, glow: true }
+    - { block: YELLOW_CONCRETE, at: [0, 10.2, 0], size: [2.5, 2, 2.5], group: flame, glow: true }
+    - { block: SHROOMLIGHT, at: [0, 11.8, 0], size: [1.3, 1.4, 1.3], group: flame, glow: true }
+    - { block: BLACK_CONCRETE, at: [-1.4, 5.3, 3.1], size: [1, 1.3, 0.3] }
+    - { block: BLACK_CONCRETE, at: [1.4, 5.3, 3.1], size: [1, 1.3, 0.3] }
+    - { block: ORANGE_TERRACOTTA, at: [-3.6, 4, 0], size: [1.2, 2, 1.2], group: wing_left }
+    - { block: ORANGE_TERRACOTTA, at: [3.6, 4, 0], size: [1.2, 2, 1.2], group: wing_right }
+    - { block: RED_CONCRETE, at: [0, 2.5, -3.6], size: [1.6, 1.6, 1.6], group: tail, glow: true }
+
+moonmoth:
+  bounce: none
+  pivots:
+    head: [0, 5, 3]
+    wing_left: [-1.5, 6, 0]
+    wing_right: [1.5, 6, 0]
+  parts:
+    - { block: AMETHYST_BLOCK, at: [0, 4.5, -2], size: [3, 3, 5] }
+    - { block: WHITE_WOOL, at: [0, 5, 1.5], size: [3.6, 3.6, 3] }
+    - { block: WHITE_WOOL, at: [0, 5.5, 4], size: [2.6, 2.6, 2.2], group: head }
+    - { block: BLACK_CONCRETE, at: [-0.8, 6, 5.2], size: [0.8, 0.8, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [0.8, 6, 5.2], size: [0.8, 0.8, 0.3], group: head }
+    - { block: GRAY_CONCRETE, at: [-0.7, 8.2, 4.3], size: [0.4, 3, 0.4], group: ear }
+    - { block: GRAY_CONCRETE, at: [0.7, 8.2, 4.3], size: [0.4, 3, 0.4], group: ear }
+    - { block: PURPLE_STAINED_GLASS, at: [-4.5, 6, 1], size: [6, 0.3, 5], group: wing_left }
+    - { block: PURPLE_STAINED_GLASS, at: [4.5, 6, 1], size: [6, 0.3, 5], group: wing_right }
+    - { block: MAGENTA_STAINED_GLASS, at: [-3.6, 5.6, -2.5], size: [4.5, 0.3, 4], group: wing_left }
+    - { block: MAGENTA_STAINED_GLASS, at: [3.6, 5.6, -2.5], size: [4.5, 0.3, 4], group: wing_right }
+    - { block: WHITE_CONCRETE, at: [-5.2, 6.3, 1.5], size: [1.4, 0.2, 1.4], group: wing_left, glow: true }
+    - { block: WHITE_CONCRETE, at: [5.2, 6.3, 1.5], size: [1.4, 0.2, 1.4], group: wing_right, glow: true }
+
+starwhisk:
+  bounce: trot
+  pivots:
+    head: [0, 6, 3.5]
+    tail: [0, 6, -4]
+  parts:
+    - { block: BLACK_WOOL, at: [0, 5, 0], size: [4.5, 4, 8] }
+    - { block: YELLOW_CONCRETE, at: [0, 4.5, 4.1], size: [1.4, 1.4, 0.3], glow: true }
+    - { block: LIGHT_BLUE_CONCRETE, at: [1.2, 7.1, 1], size: [0.6, 0.2, 0.6], glow: true }
+    - { block: WHITE_CONCRETE, at: [-1, 7.1, -2], size: [0.6, 0.2, 0.6], glow: true }
+    - { block: BLACK_WOOL, at: [0, 7.5, 5], size: [5, 4.5, 4.5], group: head }
+    - { block: YELLOW_CONCRETE, at: [-1.2, 8, 7.3], size: [1.1, 1.1, 0.3], group: head, glow: true }
+    - { block: YELLOW_CONCRETE, at: [1.2, 8, 7.3], size: [1.1, 1.1, 0.3], group: head, glow: true }
+    - { block: PINK_CONCRETE, at: [0, 7, 7.3], size: [0.6, 0.5, 0.3], group: head }
+    - { block: BLACK_WOOL, at: [-1.6, 10.5, 4.4], size: [1.4, 1.6, 1], group: ear }
+    - { block: BLACK_WOOL, at: [1.6, 10.5, 4.4], size: [1.4, 1.6, 1], group: ear }
+    - { block: PURPLE_CONCRETE, at: [-1.6, 10.3, 5], size: [0.7, 0.9, 0.2], group: ear }
+    - { block: PURPLE_CONCRETE, at: [1.6, 10.3, 5], size: [0.7, 0.9, 0.2], group: ear }
+    - { block: BLACK_WOOL, at: [-1.3, 1.5, 2.5], size: [1.4, 3, 1.4], group: leg_a }
+    - { block: BLACK_WOOL, at: [1.3, 1.5, 2.5], size: [1.4, 3, 1.4], group: leg_b }
+    - { block: BLACK_WOOL, at: [-1.3, 1.5, -2.5], size: [1.4, 3, 1.4], group: leg_b }
+    - { block: BLACK_WOOL, at: [1.3, 1.5, -2.5], size: [1.4, 3, 1.4], group: leg_a }
+    - { block: BLACK_WOOL, at: [0, 6.2, -5.5], size: [1.3, 1.3, 3], group: tail }
+    - { block: BLACK_WOOL, at: [0, 8.5, -7], size: [1.3, 4, 1.3], group: tail }
+
+lilypip:
+  bounce: hop
+  pivots:
+    head: [0, 7, 0.5]
+  parts:
+    # Sitting body: fresh green with a cream belly; the folded back legs are mossy.
+    - { block: LIME_CONCRETE_POWDER, at: [0, 4, -0.5], size: [8, 7, 7] }
+    - { block: SMOOTH_SANDSTONE, at: [0, 3.6, 3.1], size: [6, 5.6, 0.4] }
+    # Clover necklace with a little white flower.
+    - { block: GREEN_CONCRETE, at: [0, 6.9, 3.2], size: [7.2, 0.5, 0.4] }
+    - { block: WHITE_CONCRETE, at: [0, 6.2, 3.4], size: [1.4, 1.4, 0.3] }
+    - { block: YELLOW_CONCRETE, at: [0, 6.2, 3.6], size: [0.6, 0.6, 0.2], glow: true }
+    # Wide head with a cream chin, big shiny eyes, blushing cheeks and a smile.
+    - { block: LIME_CONCRETE_POWDER, at: [0, 9.6, 0.5], size: [10, 4.4, 8], group: head }
+    - { block: SMOOTH_SANDSTONE, at: [0, 7.7, 0.8], size: [9, 1.4, 7.8], group: head }
+    - { block: LIME_CONCRETE_POWDER, at: [-3, 12.4, 2], size: [3.4, 2.4, 3.2], group: head }
+    - { block: LIME_CONCRETE_POWDER, at: [3, 12.4, 2], size: [3.4, 2.4, 3.2], group: head }
+    - { block: BLACK_CONCRETE, at: [-3, 12.4, 3.7], size: [2.4, 2, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [3, 12.4, 3.7], size: [2.4, 2, 0.3], group: head }
+    - { block: WHITE_CONCRETE, at: [-2.5, 12.9, 3.9], size: [0.7, 0.7, 0.2], group: head, glow: true }
+    - { block: WHITE_CONCRETE, at: [3.5, 12.9, 3.9], size: [0.7, 0.7, 0.2], group: head, glow: true }
+    - { block: PINK_CONCRETE, at: [-4, 9.3, 4.6], size: [1.4, 0.8, 0.2], group: head }
+    - { block: PINK_CONCRETE, at: [4, 9.3, 4.6], size: [1.4, 0.8, 0.2], group: head }
+    - { block: PINK_TERRACOTTA, at: [0, 8.8, 4.6], size: [2.6, 0.8, 0.2], group: head }
+    # Lily-pad hat with a white flower, and a water droplet that wobbles.
+    - { block: GREEN_CONCRETE_POWDER, at: [-1.6, 12.3, -1.4], size: [7, 0.6, 7], group: head }
+    - { block: WHITE_CONCRETE, at: [0.4, 12.9, -2.4], size: [1.8, 0.6, 1.8], group: head }
+    - { block: YELLOW_CONCRETE, at: [0.4, 13.3, -2.4], size: [0.7, 0.3, 0.7], group: head, glow: true }
+    - { block: LIGHT_BLUE_STAINED_GLASS, at: [-5.4, 11.6, 1.6], size: [0.8, 1.2, 0.8], group: ear }
+    # Front legs and feet.
+    - { block: LIME_CONCRETE_POWDER, at: [-2.6, 2.4, 3], size: [1.8, 3.2, 1.8], group: leg_a }
+    - { block: LIME_CONCRETE_POWDER, at: [2.6, 2.4, 3], size: [1.8, 3.2, 1.8], group: leg_b }
+    - { block: SMOOTH_SANDSTONE, at: [-2.6, 0.4, 4], size: [2.6, 0.8, 2.6], group: leg_a }
+    - { block: SMOOTH_SANDSTONE, at: [2.6, 0.4, 4], size: [2.6, 0.8, 2.6], group: leg_b }
+    # Big back legs folded at the sides.
+    - { block: MOSS_BLOCK, at: [-4.8, 2.6, -1.2], size: [3, 5, 6], group: leg_b }
+    - { block: MOSS_BLOCK, at: [4.8, 2.6, -1.2], size: [3, 5, 6], group: leg_a }
+    - { block: SMOOTH_SANDSTONE, at: [-5.2, 0.4, 2.4], size: [3, 0.8, 3], group: leg_b }
+    - { block: SMOOTH_SANDSTONE, at: [5.2, 0.4, 2.4], size: [3, 0.8, 3], group: leg_a }

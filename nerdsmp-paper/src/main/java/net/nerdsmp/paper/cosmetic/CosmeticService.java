@@ -13,32 +13,19 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
-import org.bukkit.Registry;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Breedable;
-import org.bukkit.entity.Cat;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Fox;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Rabbit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityCombustEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -46,6 +33,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -64,9 +52,11 @@ import java.util.logging.Level;
  * Companions, trails, supporter badges, name colours, emotes, wardrobe presets and keepsakes.
  *
  * <p>Ownership comes from store entitlements (see {@link CosmeticCatalog}), read when a player joins and
- * every minute after. The chosen look is saved per account. Companions are ordinary vanilla creatures with
- * their AI off, made invulnerable, silent and non-solid, and never saved to the world; this service moves
- * them every two ticks. Players can hide other players' companions and trails in /settings.
+ * every minute after. The chosen look is saved per account. Companions are block sculptures, in the style of
+ * the armor-stand pets on Hypixel and Mineplex: each block of the model in companion-models.yml is a small
+ * block display entity. Displays have no hitbox, no AI and are never saved to the world. Every two ticks this
+ * service moves the whole sculpture and animates its legs, tails, wings and flames, and the client glides
+ * between frames. Players can hide other players' companions and trails in /settings.
  */
 public final class CosmeticService implements Listener, AutoCloseable {
     public static final int PRESETS = 3;
@@ -92,10 +82,12 @@ public final class CosmeticService implements Listener, AutoCloseable {
     private final Map<UUID, CosmeticCatalog.Ownership> owned = new ConcurrentHashMap<>();
     private final Map<UUID, Long> nextRefresh = new ConcurrentHashMap<>();
     private final Map<UUID, Loadout> loadouts = new HashMap<>();
-    private final Map<UUID, Entity> active = new HashMap<>();
+    private final Map<UUID, Sculpture> active = new HashMap<>();
+    private final Map<String, SculptureModel> models;
     private final Map<UUID, Location> lastSeen = new HashMap<>();
     private final Map<UUID, Long> lastEmote = new HashMap<>();
     private final Map<UUID, Long> respawnAt = new HashMap<>();
+    private final Map<UUID, Double> lastBounce = new HashMap<>();
     private BukkitTask task;
     private long tick;
 
@@ -104,6 +96,15 @@ public final class CosmeticService implements Listener, AutoCloseable {
         this.catalog = load(plugin.getConfig().getConfigurationSection("cosmetics"), plugin);
         this.companionKey = new NamespacedKey(plugin, "companion_owner");
         this.keepsakeKey = new NamespacedKey(plugin, "keepsake_owner");
+        this.models = loadModels(plugin);
+    }
+
+    /** One companion out in the world: its block displays, in the same order as the model's parts. */
+    private record Sculpture(SculptureModel model, CosmeticCatalog.Companion companion, List<BlockDisplay> parts) {
+        boolean valid(World world) {
+            return !parts.isEmpty() && parts.getFirst().isValid() && parts.getFirst().getWorld().equals(world);
+        }
+        Location location() { return parts.getFirst().getLocation(); }
     }
 
     public void start() {
@@ -435,33 +436,52 @@ public final class CosmeticService implements Listener, AutoCloseable {
             return;
         }
         CosmeticCatalog.Companion companion = chosen.get();
-        Entity entity = active.get(id);
+        Sculpture sculpture = active.get(id);
         Location at = player.getLocation();
         FollowMath.Point target = FollowMath.target(at.getX(), at.getY(), at.getZ(), at.getYaw(), companion.flying(), tick);
         if (!companion.flying()) target = new FollowMath.Point(target.x(), ground(at.getWorld(), target), target.z(), target.yaw());
-        if (entity == null || !entity.isValid() || !entity.getWorld().equals(at.getWorld())) {
+        if (sculpture == null || !sculpture.companion().equals(companion) || !sculpture.valid(at.getWorld())) {
             despawn(id);
             if (respawnAt.getOrDefault(id, 0L) > now) return;
-            entity = spawn(player, companion, new Location(at.getWorld(), target.x(), target.y(), target.z(), target.yaw(), 0));
-            if (entity == null) {
+            sculpture = spawn(player, companion, new Location(at.getWorld(), target.x(), target.y(), target.z(), target.yaw(), 0));
+            if (sculpture == null) {
                 respawnAt.put(id, now + 30_000L);
                 return;
             }
-            active.put(id, entity);
+            active.put(id, sculpture);
             return;
         }
-        Location current = entity.getLocation();
-        FollowMath.Point next = FollowMath.step(new FollowMath.Point(current.getX(), current.getY(), current.getZ(), current.getYaw()),
-            target, companion.flying());
-        entity.teleport(new Location(at.getWorld(), next.x(), next.y(), next.z(), next.yaw(), 0));
-        if (entity instanceof Ageable ageable && companion.baby() && ageable.isAdult()) ageable.setBaby();
+        Location current = sculpture.location();
+        FollowMath.Point here = new FollowMath.Point(current.getX(), current.getY() - lastBounce.getOrDefault(id, 0.0D),
+            current.getZ(), current.getYaw());
+        FollowMath.Point next = FollowMath.step(here, target, companion.flying());
+        double dx = next.x() - here.x(), dz = next.z() - here.z();
+        boolean moving = dx * dx + dz * dz > 0.0004D;
+        double lift = companion.flying() ? 0.0D : SculptureMath.bounce(sculpture.model().bounce(), tick, moving, companion.scale());
+        lastBounce.put(id, lift);
+        Location to = new Location(at.getWorld(), next.x(), next.y() + lift, next.z(), next.yaw(), 0);
+        List<SculptureModel.Part> parts = sculpture.model().parts();
+        for (int index = 0; index < parts.size(); index++) {
+            BlockDisplay display = sculpture.parts().get(index);
+            display.teleport(to);
+            if (parts.get(index).animated()) {
+                display.setInterpolationDelay(0);
+                display.setInterpolationDuration(3);
+                display.setTransformation(transformation(sculpture.model(), parts.get(index), moving, companion));
+            }
+        }
         if (!companion.particle().isEmpty() && tick % 10 == 0) {
             Particle particle = particle(companion.particle(), null);
             if (particle != null) {
-                Location spot = entity.getLocation().add(0, companion.flying() ? 0.4D : 0.5D, 0);
-                for (Player viewer : viewers(player)) viewer.spawnParticle(particle, spot, 1, 0.15D, 0.15D, 0.15D, 0.0D);
+                Location spot = to.clone().add(0, 0.5D * companion.scale(), 0);
+                for (Player viewer : viewers(player)) viewer.spawnParticle(particle, spot, 1, 0.2D, 0.2D, 0.2D, 0.0D);
             }
         }
+    }
+
+    private Transformation transformation(SculptureModel model, SculptureModel.Part part, boolean moving, CosmeticCatalog.Companion companion) {
+        SculptureMath.Pose pose = SculptureMath.pose(model, part, tick, moving, companion.flying(), companion.scale());
+        return new Transformation(pose.translation(), pose.rotation(), pose.scale(), new org.joml.Quaternionf());
     }
 
     /** The surface a walking companion stands on: the first solid block at or below the spot, else the owner's height. */
@@ -475,59 +495,56 @@ public final class CosmeticService implements Listener, AutoCloseable {
         return point.y();
     }
 
-    private Entity spawn(Player owner, CosmeticCatalog.Companion companion, Location location) {
-        EntityType type = entityType(companion.entity());
-        if (type == null || type.getEntityClass() == null || !LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
-            plugin.getLogger().warning("Companion " + companion.slug() + " uses an unknown creature: " + companion.entity());
+    /** Builds the sculpture: one small block display per part of the model, all standing at the companion's spot. */
+    private Sculpture spawn(Player owner, CosmeticCatalog.Companion companion, Location location) {
+        SculptureModel model = models.get(companion.model());
+        if (model == null) {
+            plugin.getLogger().warning("Companion " + companion.slug() + " uses a model missing from companion-models.yml: " + companion.model());
             return null;
         }
-        @SuppressWarnings("unchecked")
-        Class<LivingEntity> kind = (Class<LivingEntity>) type.getEntityClass();
-        return location.getWorld().spawn(location, kind, CreatureSpawnEvent.SpawnReason.CUSTOM, false, (LivingEntity raw) -> {
-            raw.getPersistentDataContainer().set(companionKey, PersistentDataType.STRING, owner.getUniqueId().toString());
-            raw.setPersistent(false);
-            raw.setInvulnerable(true);
-            raw.setSilent(true);
-            raw.setGravity(false);
-            raw.customName(Component.text(owner.getName() + "'s " + companion.name(), named(companion.color(), NamedTextColor.WHITE)));
-            raw.setCustomNameVisible(false);
-            raw.setAI(false);
-            raw.setCollidable(false);
-            raw.setCanPickupItems(false);
-            raw.setRemoveWhenFarAway(false);
-            if (raw instanceof Mob mob) mob.setAware(false);
-            if (raw instanceof Ageable ageable) {
-                if (companion.baby()) ageable.setBaby(); else ageable.setAdult();
+        List<Player> hiddenFrom = new ArrayList<>();
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            if (viewer != owner && !plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS)) hiddenFrom.add(viewer);
+        }
+        List<BlockDisplay> displays = new ArrayList<>();
+        try {
+            for (SculptureModel.Part part : model.parts()) {
+                org.bukkit.block.data.BlockData block = blockData(part.block());
+                boolean first = displays.isEmpty();
+                displays.add(location.getWorld().spawn(location, BlockDisplay.class, display -> {
+                    display.getPersistentDataContainer().set(companionKey, PersistentDataType.STRING, owner.getUniqueId().toString());
+                    display.setPersistent(false);
+                    display.setBlock(block);
+                    display.setTransformation(transformation(model, part, false, companion));
+                    display.setTeleportDuration(2);
+                    display.setInterpolationDuration(3);
+                    display.setViewRange(0.75F);
+                    if (part.glow()) display.setBrightness(new Display.Brightness(15, 15));
+                    if (first && !companion.flying()) {
+                        display.setShadowRadius((float) (0.35D * companion.scale()));
+                        display.setShadowStrength(0.6F);
+                    }
+                    for (Player viewer : hiddenFrom) viewer.hideEntity(plugin, display);
+                }));
             }
-            if (raw instanceof Breedable breedable) breedable.setAgeLock(true);
-            variant(raw, companion.variant());
-            for (Player viewer : Bukkit.getOnlinePlayers()) {
-                if (viewer != owner && !plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS)) {
-                    viewer.hideEntity(plugin, raw);
-                }
-            }
-        });
+        } catch (IllegalArgumentException invalid) {
+            displays.forEach(Entity::remove);
+            plugin.getLogger().warning("Companion " + companion.slug() + " can't be built: " + invalid.getMessage());
+            return null;
+        }
+        return new Sculpture(model, companion, List.copyOf(displays));
     }
 
-    private static void variant(Entity entity, String variant) {
-        if (variant == null || variant.isEmpty()) return;
-        try {
-            String key = variant.toLowerCase(Locale.ROOT);
-            if (entity instanceof Fox fox) fox.setFoxType(Fox.Type.valueOf(variant.toUpperCase(Locale.ROOT)));
-            else if (entity instanceof Rabbit rabbit) rabbit.setRabbitType(Rabbit.Type.valueOf(variant.toUpperCase(Locale.ROOT)));
-            else if (entity instanceof Cat cat) {
-                Cat.Type type = io.papermc.paper.registry.RegistryAccess.registryAccess()
-                    .getRegistry(io.papermc.paper.registry.RegistryKey.CAT_VARIANT).get(NamespacedKey.minecraft(key));
-                if (type != null) cat.setCatType(type);
-            }
-        } catch (IllegalArgumentException ignored) {
-            // An unknown variant leaves the creature's default look.
-        }
+    private static org.bukkit.block.data.BlockData blockData(String id) {
+        Material material = Material.matchMaterial(id);
+        if (material == null || !material.isBlock()) throw new IllegalArgumentException(id + " is not a block");
+        return material.createBlockData();
     }
 
     private void despawn(UUID owner) {
-        Entity entity = active.remove(owner);
-        if (entity != null && entity.isValid()) entity.remove();
+        Sculpture sculpture = active.remove(owner);
+        lastBounce.remove(owner);
+        if (sculpture != null) sculpture.parts().forEach(part -> { if (part.isValid()) part.remove(); });
     }
 
     // --- Trails -----------------------------------------------------------------------------
@@ -567,9 +584,12 @@ public final class CosmeticService implements Listener, AutoCloseable {
     /** Applies a viewer's choice to every companion already out. */
     public void updateVisibility(Player viewer) {
         boolean show = plugin.settings().enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.OTHERS_COSMETICS);
-        active.forEach((owner, entity) -> {
-            if (owner.equals(viewer.getUniqueId()) || !entity.isValid()) return;
-            if (show) viewer.showEntity(plugin, entity); else viewer.hideEntity(plugin, entity);
+        active.forEach((owner, sculpture) -> {
+            if (owner.equals(viewer.getUniqueId())) return;
+            for (BlockDisplay part : sculpture.parts()) {
+                if (!part.isValid()) continue;
+                if (show) viewer.showEntity(plugin, part); else viewer.hideEntity(plugin, part);
+            }
         });
     }
 
@@ -613,28 +633,6 @@ public final class CosmeticService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(PlayerChangedWorldEvent event) { despawn(event.getPlayer().getUniqueId()); }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onDamage(EntityDamageEvent event) { if (isCompanion(event.getEntity())) event.setCancelled(true); }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onCombust(EntityCombustEvent event) { if (isCompanion(event.getEntity())) event.setCancelled(true); }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onTarget(EntityTargetEvent event) {
-        if (isCompanion(event.getTarget()) || isCompanion(event.getEntity())) event.setCancelled(true);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onInteract(PlayerInteractEntityEvent event) {
-        // No feeding, taming, leashing, naming, riding or trading with someone's companion.
-        if (isCompanion(event.getRightClicked())) event.setCancelled(true);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onInteractAt(PlayerInteractAtEntityEvent event) {
-        if (isCompanion(event.getRightClicked())) event.setCancelled(true);
-    }
-
     @Override
     public void close() {
         if (task != null) task.cancel();
@@ -649,13 +647,6 @@ public final class CosmeticService implements Listener, AutoCloseable {
 
     private AccountId account(Player player) {
         return plugin.sessions().account(player.getUniqueId()).orElse(null);
-    }
-
-    private static EntityType entityType(String name) {
-        if (name == null || name.isBlank()) return null;
-        EntityType type = Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT)));
-        if (type != null) return type;
-        try { return EntityType.valueOf(name.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException missing) { return null; }
     }
 
     /** A particle that needs no extra data, by name; the fallback when the name is unknown on this server version. */
@@ -677,7 +668,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
         for (CosmeticCatalog.Companion c : defaults.companions()) {
             ConfigurationSection s = section.getConfigurationSection("companions." + c.slug());
             companions.add(s == null ? c : new CosmeticCatalog.Companion(c.slug(), c.name(), c.species(),
-                s.getString("entity", c.entity()), s.getString("variant", c.variant()), s.getBoolean("baby", c.baby()),
+                s.getString("model", c.model()).toLowerCase(Locale.ROOT), Math.clamp(s.getDouble("scale", c.scale()), 0.25D, 3.0D),
                 s.getBoolean("flying", c.flying()), s.getString("particle", c.particle()), c.color(), s.getBoolean("free", c.free())));
         }
         List<CosmeticCatalog.Trail> trails = new ArrayList<>();
@@ -689,7 +680,8 @@ public final class CosmeticService implements Listener, AutoCloseable {
         List<CosmeticCatalog.Bundle> bundles = new ArrayList<>();
         for (CosmeticCatalog.Bundle b : defaults.bundles()) {
             List<String> contents = section.isList("bundles." + b.slug()) ? section.getStringList("bundles." + b.slug()) : b.contents();
-            bundles.add(new CosmeticCatalog.Bundle(b.slug(), b.name(), contents.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList()));
+            bundles.add(new CosmeticCatalog.Bundle(b.slug(), b.name(), CosmeticCatalog.configuredBundleContents(
+                b, contents.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList())));
         }
         try {
             return new CosmeticCatalog(companions, trails, defaults.tiers(), bundles, defaults.emotes());
@@ -697,6 +689,42 @@ public final class CosmeticService implements Listener, AutoCloseable {
             plugin.getLogger().warning("Ignoring cosmetics settings in config.yml: " + invalid.getMessage());
             return defaults;
         }
+    }
+
+    /**
+     * Reads companion-models.yml from the plugin folder, copying the bundled one there first so staff can
+     * reshape the sculptures. Falls back to the bundled models if the edited file has a mistake.
+     */
+    static Map<String, SculptureModel> loadModels(NerdSmpPlugin plugin) {
+        Map<String, SculptureModel> builtIn;
+        try (var reader = new java.io.InputStreamReader(plugin.getResource("companion-models.yml"), java.nio.charset.StandardCharsets.UTF_8)) {
+            builtIn = SculptureModel.read(YamlConfiguration.loadConfiguration(reader));
+        } catch (java.io.IOException unreadable) {
+            throw new IllegalStateException("The built-in companion models can't be read", unreadable);
+        }
+        java.io.File file = new java.io.File(plugin.getDataFolder(), "companion-models.yml");
+        if (!file.exists()) plugin.saveResource("companion-models.yml", false);
+        Map<String, SculptureModel> custom;
+        try {
+            custom = SculptureModel.read(YamlConfiguration.loadConfiguration(file));
+        } catch (IllegalArgumentException invalid) {
+            plugin.getLogger().warning("companion-models.yml has a mistake (" + invalid.getMessage() + "); using the built-in companions.");
+            return builtIn;
+        }
+        // A file copied out before a new companion was added won't have its model; use the built-in one.
+        SculptureModel.Merge merged = SculptureModel.merge(builtIn, custom);
+        if (!merged.added().isEmpty()) {
+            plugin.getLogger().info("companion-models.yml has no model for " + String.join(", ", merged.added())
+                + "; using the built-in one. Copy it into the file from the plugin jar to reshape it.");
+        }
+        return merged.models();
+    }
+
+    /** The wardrobe icon for a companion: the main block of its sculpture. */
+    public Material icon(CosmeticCatalog.Companion companion) {
+        SculptureModel model = models.get(companion.model());
+        Material material = model == null ? null : Material.matchMaterial(model.parts().getFirst().block());
+        return material == null || !material.isItem() ? Material.ARMOR_STAND : material;
     }
 
     Set<UUID> activeOwners() { return Set.copyOf(active.keySet()); }

@@ -1383,8 +1383,7 @@ public final class MenuManager implements Listener, AutoCloseable {
         for (var companion : catalog.companions()) {
             boolean has = own.companions().contains(companion.slug());
             boolean out = companion.slug().equals(look.companion());
-            Material egg = Material.matchMaterial(companion.entity() + "_SPAWN_EGG");
-            button(menu, slot++, has ? (egg == null ? Material.EGG : egg) : Material.GRAY_DYE,
+            button(menu, slot++, has ? cosmetics.icon(companion) : Material.GRAY_DYE,
                 (has ? "<" + companion.color() + ">" : "<gray>") + companion.name() + (out ? " <green>✔</green>" : "") + "</" + (has ? companion.color() : "gray") + ">",
                 List.of("<gray>" + companion.species() + "</gray>",
                     has ? (out ? "<yellow>Click to send it home.</yellow>" : "<yellow>Click to summon.</yellow>")
