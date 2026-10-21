@@ -776,7 +776,7 @@ class ForumUpgradeTest(CommunityHelpers):
         frames = dict(conn.execute("SELECT slug, frame FROM ranks").fetchall())
         conn.close()
         self.assertEqual((frames["owner"], frames["moderator"], frames["skyfarer"], frames["media"]),
-                         ("admin", "staff", "skyfarer", "media"))
+                         ("owner", "staff", "skyfarer", "media"))
 
     def test_admin_rank_can_post_announcements(self):
         self.register("Flare")
