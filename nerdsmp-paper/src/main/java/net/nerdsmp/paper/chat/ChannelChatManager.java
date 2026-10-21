@@ -34,6 +34,9 @@ public final class ChannelChatManager implements Listener {
     private final PlayerPresentationService presentation;
     private final SessionRegistry sessions;
     private final double localRadiusSquared;
+    private final ChatConsole console = new ChatConsole();
+
+    public ChatConsole console() { return console; }
     private final Map<UUID, HomesteadChatPolicy.Selection> homesteadChannels = new HashMap<>();
     private final Map<UUID, IslandChatPolicy.Selection> islandChannels = new HashMap<>();
 
@@ -66,7 +69,7 @@ public final class ChannelChatManager implements Listener {
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent event) { homesteadChannels.remove(event.getPlayer().getUniqueId()); islandChannels.remove(event.getPlayer().getUniqueId()); }
+    public void onQuit(PlayerQuitEvent event) { homesteadChannels.remove(event.getPlayer().getUniqueId()); islandChannels.remove(event.getPlayer().getUniqueId()); console.forget(event.getPlayer().getUniqueId()); }
 
     public boolean handleIsland(CommandSender source, String[] args) {
         Player player = player(source); if (player == null || plugin.skyblock() == null) return true;
@@ -200,6 +203,8 @@ public final class ChannelChatManager implements Listener {
             sendParty(sender, message);
             return;
         }
+        String refusal = console.refuse(sender.getUniqueId(), channel.id(), sender.hasPermission("nerdsmp.staff"));
+        if (refusal != null) { sender.sendMessage(Component.text(refusal, NamedTextColor.RED)); return; }
         Collection<? extends Player> candidates = channel == ChatChannel.STAFF
             ? Bukkit.getOnlinePlayers().stream().filter(player -> player.hasPermission("nerdsmp.staff")).toList()
             : Bukkit.getOnlinePlayers();
@@ -219,6 +224,28 @@ public final class ChannelChatManager implements Listener {
         if (channel == ChatChannel.LOCAL && heard <= 1) {
             Chat.info(sender, "No one nearby heard you.");
         }
+        console.record(channel.id(), sender.getUniqueId(), sender.getName(),
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(message),
+            sender.getWorld().getName(), null, heard, false);
+    }
+
+    /** Staff-origin channel messages are always labelled with the authenticated panel login; no command execution. */
+    public String panelSend(String actor, String rawChannel, String message) {
+        ChatChannel channel = ChatChannel.parse(rawChannel);
+        if (channel != ChatChannel.GLOBAL && channel != ChatChannel.TRADE && channel != ChatChannel.STAFF)
+            throw new IllegalArgumentException("Choose Global, Trade or Staff for a panel message.");
+        if (message == null || message.isBlank() || message.length() > 256 || message.chars().anyMatch(Character::isISOControl))
+            throw new IllegalArgumentException("Write a message between 1 and 256 characters, on one line.");
+        plugin.staff().panelRecord(actor, "CHAT_SEND", null, channel.displayName(), message);
+        Component line = Component.empty().append(channel.component()).append(Component.space())
+            .append(Component.text("[" + actor + "] ", NamedTextColor.GOLD)).append(Component.text(message, NamedTextColor.WHITE));
+        int heard = 0;
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            if (channel == ChatChannel.STAFF && !viewer.hasPermission("nerdsmp.staff")) continue;
+            viewer.sendMessage(line); heard++;
+        }
+        console.record(channel.id(), null, actor, message, null, null, heard, true);
+        return "Sent to " + heard + " players in " + channel.displayName() + ".";
     }
 
     private void sendParty(Player sender, Component message) {

@@ -471,6 +471,14 @@ public final class StaffManager implements Listener, AutoCloseable {
 
     // ---- Web console API. Call on the main thread; results are detached JSON copies. ----
 
+    /** Chat interaction and channel policy changes share the existing durable staff audit. */
+    public synchronized void panelRecord(String actorName, String action, UUID target, String targetName, String detail) {
+        Instant now = Instant.now();
+        if (target != null) appendHistory(target, new HistoryRecord(action, actorName, detail, now));
+        audit.add(new AuditRecord(action, null, actorName, target, targetName, detail, now));
+        save();
+    }
+
     /** Applies a web-console moderation change with console authority, attributed to the panel login. */
     public String panelModerate(String actorName, String action, UUID targetId, String minutes, String detail) {
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetId);

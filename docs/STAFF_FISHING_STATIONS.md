@@ -18,6 +18,23 @@ The Staff Console is the web page staff use to watch and moderate the server. Wa
 
 Click any player to open their profile: live stats, inventory and ender chest, Watchdog evidence, case history and staff groups.
 
+The management-suite layout groups these views into **Operations**, **Trust & safety** and
+**Administration**. The overview's attention cards open the report, Watchdog and sanction queues.
+Use the global player finder (or press `/`) to open the player inspector from any section.
+Click a named table heading to sort ascending, and click it again to reverse the order.
+Long lists have 50 records per page; filters return to the first page. Date and duration columns
+sort by their underlying timestamps rather than their displayed labels.
+
+**Refresh** requests a new snapshot immediately. A connection notice distinguishes old values
+from a live snapshot when the server cannot be reached. The appearance switch remembers a light
+or dark theme in that browser. Narrow screens keep the section names in a horizontally scrolling
+navigation bar; tables scroll within their own surfaces.
+
+The supplied staff-console artwork is packaged in the plugin and served only after the same
+login checks as the console. No CDN, external font or tracking dependency is required.
+Install the rebuilt plugin JAR and restart the server to load the new resources. This redesign
+does not change the configured bind address, credentials, permissions or moderation behaviour.
+
 The profile's **Connection** tab shows:
 
 - **Client:** client brand, game version compared with the server's, language, view distance, and the hostname they connected through.

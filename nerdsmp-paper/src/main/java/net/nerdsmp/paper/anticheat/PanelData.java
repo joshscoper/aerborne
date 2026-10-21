@@ -85,6 +85,8 @@ final class PanelData implements PanelBackend {
                     case "resolve" -> plugin.staff().panelResolve(attributed, uuid(request, "report"), text(request, "reason", 180));
                     case "broadcast" -> broadcast(attributed, text(request, "message", 256));
                     case "message" -> message(attributed, uuid(request, "target"), text(request, "message", 256));
+                    case "chat-send" -> plugin.chat().panelSend(attributed, text(request, "channel", 16), text(request, "message", 256));
+                    case "chat-policy" -> chatPolicy(attributed, request);
                     case "clear-watchdog" -> clearWatchdog(attributed, uuid(request, "target"));
                     case "group-add", "group-remove" -> membership(actor, uuid(request, "target"), text(request, "group", 32), action.equals("group-add"));
                     case "label-player" -> labelPlayer(attributed, uuid(request, "target"), text(request, "label", 16), text(request, "hours", 6));
@@ -115,7 +117,9 @@ final class PanelData implements PanelBackend {
 
     private String broadcast(String actor, String message) {
         requireText(message, "Write a message between 1 and 256 characters.");
+        plugin.staff().panelRecord(actor, "CHAT_BROADCAST", null, "Everyone", message);
         Bukkit.broadcast(Component.text("[Staff] ", NamedTextColor.GOLD).append(Component.text(message, NamedTextColor.WHITE)));
+        plugin.chat().console().record("broadcast", null, actor, message, null, null, Bukkit.getOnlinePlayers().size(), true);
         return "Broadcast sent to " + Bukkit.getOnlinePlayers().size() + " players.";
     }
 
@@ -123,8 +127,22 @@ final class PanelData implements PanelBackend {
         requireText(message, "Write a message between 1 and 256 characters.");
         Player online = Bukkit.getPlayer(target);
         if (online == null) throw new IllegalArgumentException("That player is offline.");
+        plugin.staff().panelRecord(actor, "CHAT_DIRECT", target, online.getName(), message);
         online.sendMessage(Component.text("[Staff] ", NamedTextColor.GOLD).append(Component.text(message, NamedTextColor.WHITE)));
+        plugin.chat().console().record("direct", null, actor, message, null, online.getName(), 1, true);
         return "Message delivered to " + online.getName() + ".";
+    }
+
+    private String chatPolicy(String actor, JsonObject request) {
+        var settings = net.nerdsmp.paper.chat.ChatConsole.parseSettings(request);
+        String reason = text(request, "reason", 180);
+        if (reason == null || reason.length() < 3 || reason.chars().anyMatch(Character::isISOControl))
+            throw new IllegalArgumentException("Add a clear reason between 3 and 180 characters.");
+        String detail = "Public chat " + (settings.paused() ? "paused" : "open") + "; slow mode " + settings.slowSeconds() + "s — " + reason;
+        plugin.staff().panelRecord(actor, "CHAT_POLICY", null, "Public chat", detail);
+        plugin.chat().console().configure(settings);
+        return "Chat controls updated. Global, Local and Trade are " + (settings.paused() ? "paused" : "open")
+            + "; slow mode " + settings.slowSeconds() + " seconds. Staff are exempt.";
     }
 
     private String clearWatchdog(String actor, UUID target) {
@@ -191,6 +209,7 @@ final class PanelData implements PanelBackend {
             root.add("watchdog", plugin.watchdog().panelSnapshot());
             root.add("desk", plugin.staff().panelSnapshot());
             root.add("staff", staff());
+            root.add("chat", plugin.chat().console().snapshot());
             snapshot = PanelBackend.json(root);
         } catch (RuntimeException failure) {
             plugin.getLogger().log(java.util.logging.Level.WARNING, "Web console snapshot failed", failure);

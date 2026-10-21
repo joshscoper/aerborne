@@ -107,6 +107,33 @@ class WatchdogPanelTest {
     @Test void renderedJsonCannotInjectMarkupOrControlCharacters() {
         assertEquals("\"\\u003cscript\\u003e\\\"\\\\\\u000a\"", WatchdogPanel.quote("<script>\"\\\n"));
     }
+    @Test void suiteArtworkIsBundledAuthenticatedAndStrictlyAllowlisted() throws Exception {
+        try (var panel = WatchdogPanel.testListener(credentials())) {
+            var client = HttpClient.newHttpClient();
+            String root = "http://127.0.0.1:" + panel.port();
+            List<String> paths = new ArrayList<>(List.of("/suite.css", "/assets/brand.svg", "/assets/emblem.svg", "/assets/pattern.svg"));
+            for (String section : List.of("overview", "players", "locations", "watchdog", "reports", "sanctions", "server", "audit-log", "staff")) {
+                paths.add("/assets/nav-" + section + ".svg");
+                paths.add("/assets/art-" + section + ".webp");
+                paths.add("/assets/hero-" + section + ".webp");
+            }
+            for (String path : paths) {
+                var denied = client.send(HttpRequest.newBuilder(URI.create(root + path)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+                assertEquals(401, denied.statusCode(), path);
+                var response = client.send(HttpRequest.newBuilder(URI.create(root + path)).header("Authorization", auth("test-only-password")).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+                assertEquals(200, response.statusCode(), path);
+                assertTrue(response.body().length > 100, path);
+                String expected = path.endsWith(".webp") ? "image/webp" : path.endsWith(".svg") ? "image/svg+xml" : "text/css";
+                assertTrue(response.headers().firstValue("Content-Type").orElseThrow().startsWith(expected), path);
+                assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
+                assertFalse(response.headers().firstValue("Content-Security-Policy").orElseThrow().contains("unsafe-inline"));
+            }
+            for (String path : List.of("/assets/not-packaged.svg", "/assets/../index.html", "/assets/%2e%2e/security/watchdog-panel.yml", "/assets/brand.svg/extra")) {
+                var response = client.send(HttpRequest.newBuilder(URI.create(root + path)).header("Authorization", auth("test-only-password")).GET().build(), HttpResponse.BodyHandlers.ofString());
+                assertEquals(404, response.statusCode(), path);
+            }
+        }
+    }
     @Test void unexpectedHostNamesAreDeniedBeforeAnyCredentialsAreProcessed() throws Exception {
         try(var panel=WatchdogPanel.testListener(credentials()); var socket=new java.net.Socket("127.0.0.1",panel.port())) {
             socket.setSoTimeout(3000);

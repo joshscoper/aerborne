@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="dark">
 <title>Aerborne | Staff Console</title>
 <meta name="description" content="Aerborne staff console. Player support, server health and Watchdog moderation.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/panel.css">
+<link rel="stylesheet" href="/suite.css">
 <script src="/panel.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
-  <aside class="nav" aria-label="Sections">
+  <aside class="nav" id="workspace-nav" aria-label="Sections">
     <div class="brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5 7 8.5v6.8c0 5.6 3.8 10 9 11.7 5.2-1.7 9-6.1 9-11.7V8.5L16 5Z"/><path d="M10.5 16.5h3l1.5-3.5 2.2 6 1.6-2.5h2.7"/></svg>
-      <span>Aerborne<small>Staff Console</small></span>
+      <img class="brand-emblem" src="/assets/emblem.svg" alt="" width="40" height="40">
+      <div class="brand-title">Aerborne<small>Staff Console</small></div>
     </div>
-    <nav id="nav"></nav>
+    <button type="button" id="nav-toggle" class="secondary nav-toggle" aria-expanded="false" aria-controls="nav">Sections <span aria-hidden="true">▾</span></button>
+    <nav id="nav" aria-label="Staff console"></nav>
     <div class="nav-foot">
       <p id="link-state" class="link-state" data-state="connecting"><span class="dot"></span><span class="label">Connecting</span></p>
       <p id="whoami" class="whoami"></p>
@@ -28,10 +30,7 @@
 
   <main id="main" tabindex="-1">
     <header class="topbar">
-      <div>
-        <h1 id="view-title">Overview</h1>
-        <p id="view-sub" class="sub"></p>
-      </div>
+      <div class="workspace-path"><span>Aerborne</span><span aria-hidden="true">/</span><strong>Staff Console</strong></div>
       <div class="top-actions">
         <label class="search">
           <span class="visually-hidden">Find a player</span>
@@ -40,36 +39,51 @@
           <kbd>/</kbd>
         </label>
         <div id="finder-results" class="finder-results" role="listbox" hidden></div>
-        <button id="broadcast" class="secondary" type="button">Broadcast</button>
+        <button id="refresh-now" class="secondary" type="button" aria-label="Refresh server data">↻ <span>Refresh</span></button>
+        <button id="broadcast" class="primary" type="button">Broadcast</button>
       </div>
+    </header>
+    <div id="connection-notice" class="connection-notice" role="status" hidden></div>
+    <header class="view-header" id="view-header" data-section="overview">
+      <div class="view-header-copy"><p class="eyebrow" id="view-area">Live operations</p><h1 id="view-title">Overview</h1><p id="view-sub" class="sub">Connecting to your management workspace.</p></div>
+      <div class="view-header-side"><img id="view-art" src="/assets/art-overview.webp" alt="" width="64" height="64"><div id="view-context" class="view-context"></div></div>
     </header>
 
     <section class="view" data-view="overview">
-      <div class="pulse" id="pulse">
-        <div class="pulse-copy">
-          <p class="pulse-state" id="pulse-state">Waiting for the first server snapshot</p>
-          <p class="pulse-detail" id="pulse-detail"></p>
-        </div>
-        <div class="pulse-chart" id="pulse-chart"></div>
-      </div>
       <div class="kpis" id="kpis"></div>
-      <div class="grid two">
+      <div class="overview-workspace">
+        <article class="panel health-panel">
+          <header><h2>Server health</h2><button class="link" data-goto="server" type="button">Performance →</button></header>
+          <div class="pulse" id="pulse">
+            <div class="pulse-copy"><p class="pulse-state" id="pulse-state">Waiting for the first server snapshot</p><p class="pulse-detail" id="pulse-detail"></p></div>
+          </div>
+          <div class="chart-caption"><span><i aria-hidden="true"></i>Tick rate · TPS</span><span>Target: 20 TPS</span></div>
+          <div class="pulse-chart" id="pulse-chart"></div>
+          <div class="chart-times" id="pulse-times"></div>
+        </article>
+        <article class="panel queue-panel"><header><h2>Staff queues</h2><span class="hint">Review &amp; respond</span></header><div class="attention-grid" id="attention-grid"></div></article>
+      </div>
+      <div class="grid two overview-feeds">
+        <div class="overview-feed-column">
         <article class="panel">
           <header><h2>Under watch</h2><button class="link" data-goto="alerts" type="button">Open Watchdog</button></header>
           <div id="ov-watch"></div>
         </article>
         <article class="panel">
-          <header><h2>Latest alerts</h2><button class="link" data-goto="alerts" type="button">All alerts</button></header>
-          <div id="ov-alerts"></div>
-        </article>
-        <article class="panel">
           <header><h2>Open reports</h2><button class="link" data-goto="reports" type="button">All reports</button></header>
           <div id="ov-reports"></div>
+        </article>
+        </div>
+        <div class="overview-feed-column">
+        <article class="panel">
+          <header><h2>Latest alerts</h2><button class="link" data-goto="alerts" type="button">All alerts</button></header>
+          <div id="ov-alerts"></div>
         </article>
         <article class="panel">
           <header><h2>Staff activity</h2><button class="link" data-goto="audit" type="button">Audit log</button></header>
           <div id="ov-audit"></div>
         </article>
+        </div>
       </div>
     </section>
 
@@ -82,7 +96,31 @@
         </div>
         <label class="field grow"><span class="visually-hidden">Filter players</span><input id="players-filter" type="search" placeholder="Filter by name, world or group" autocomplete="off"></label>
       </div>
-      <div class="panel flush" id="players-table"></div>
+      <article class="panel flush"><header><h2>Player directory</h2><span class="hint">Select a player to investigate</span></header><div id="players-table"></div></article>
+    </section>
+
+    <section class="view" data-view="chat" hidden>
+      <div class="chat-workspace">
+        <article class="panel flush chat-panel">
+          <header><div><h2>Conversation</h2><p class="hint" id="chat-retention">Recent delivered messages · refreshes every 5 seconds</p></div><button type="button" class="secondary small" id="chat-pause">Pause updates</button></header>
+          <div class="toolbar chat-toolbar">
+            <label class="field"><span class="visually-hidden">Filter chat channel</span><select id="chat-channel"><option value="">All monitored channels</option><option value="global">Global</option><option value="local">Local</option><option value="trade">Trade</option><option value="staff">Staff</option><option value="broadcast">Broadcasts</option><option value="direct">Panel replies</option></select></label>
+            <label class="field grow"><span class="visually-hidden">Search chat</span><input id="chat-filter" type="search" placeholder="Search a player or message" autocomplete="off"></label>
+          </div>
+          <div id="chat-feed" class="chat-feed" role="log" aria-label="Server chat" aria-live="off" tabindex="0"></div>
+          <div class="chat-feed-foot"><span id="chat-feed-state" class="hint"></span><button type="button" class="link" id="chat-latest">Jump to latest ↓</button></div>
+          <form id="chat-compose" class="chat-compose">
+            <div class="chat-compose-label"><label for="chat-destination">Send as staff to</label><select id="chat-destination"><option value="global">Global</option><option value="trade">Trade</option><option value="staff">Staff only</option></select></div>
+            <div class="chat-compose-line"><label class="visually-hidden" for="chat-message">Staff chat message</label><input id="chat-message" type="text" maxlength="256" required placeholder="Write a staff message…" autocomplete="off"><button class="primary" type="submit" id="chat-send">Send message</button></div>
+            <p class="hint">Your console login is shown in game. Messages are recorded in the staff audit.</p><p class="form-error" id="chat-error" role="alert"></p>
+          </form>
+        </article>
+        <div class="chat-sidebar">
+          <article class="panel"><header><h2>Chat controls</h2><button class="link" id="chat-controls" type="button">Manage</button></header><div id="chat-policy-state"></div><p class="hint space-above">Applies to Global, Local and Trade. Staff bypass these controls; player mutes still apply. Controls reset on restart.</p></article>
+          <article class="panel"><header><h2>Moderation</h2></header><p class="sub">Select a player to open their record, or use Warn, Mute and Reply beside their message.</p><p class="hint space-above">Pause feed updates while reviewing context. Existing reasons, mute durations and audit records apply.</p></article>
+          <article class="panel"><header><h2>Channel visibility</h2></header><p class="hint">Global, Local, Trade and Staff messages appear after delivery. Local messages show their world. Panel replies are outgoing staff messages only.</p><p class="hint space-above">Party, island, homestead and player-to-player private messages are excluded. The last 300 messages are kept in memory until restart.</p></article>
+        </div>
+      </div>
     </section>
 
     <section class="view" data-view="locations" hidden>
@@ -103,15 +141,10 @@
     </section>
 
     <section class="view" data-view="alerts" hidden>
-      <div class="grid three">
-        <article class="panel"><header><h2>How Watchdog acts</h2></header><div id="wd-config"></div></article>
+      <div class="grid two">
         <article class="panel"><header><h2>Flags by check</h2><span class="hint" id="wd-range-label"></span></header><div id="wd-checks"></div></article>
         <article class="panel"><header><h2>Live suspicion</h2></header><div id="wd-live"></div></article>
       </div>
-      <article class="panel model-panel">
-        <header><h2>Combat model</h2><button id="train-model" class="secondary small" type="button">Train now</button></header>
-        <div id="wd-model"></div>
-      </article>
       <div class="toolbar">
         <label class="field"><span class="visually-hidden">Check</span><select id="wd-check"><option value="">All checks</option></select></label>
         <label class="field"><span class="visually-hidden">Time range</span>
@@ -122,7 +155,9 @@
         </label>
         <label class="field grow"><span class="visually-hidden">Filter alerts</span><input id="wd-filter" type="search" placeholder="Filter by player or detail" autocomplete="off"></label>
       </div>
-      <div class="panel flush" id="wd-table"></div>
+      <article class="panel flush space-below"><header><h2>Evidence log</h2><span class="hint">Select an entry to review the player</span></header><div id="wd-table"></div></article>
+      <details class="panel disclosure"><summary>Watchdog policy<span class="hint">Thresholds &amp; automatic actions</span></summary><div class="disclosure-body" id="wd-config"></div></details>
+      <details class="panel disclosure"><summary>Combat model<span class="hint">Training &amp; validation</span></summary><div class="disclosure-body"><header><button id="train-model" class="secondary small" type="button">Train now</button></header><div id="wd-model"></div></div></details>
     </section>
 
     <section class="view" data-view="reports" hidden>
@@ -131,6 +166,7 @@
           <button type="button" data-value="OPEN" aria-selected="true">Open</button>
           <button type="button" data-value="RESOLVED">Resolved</button>
         </div>
+        <label class="field grow"><span class="visually-hidden">Filter reports</span><input id="reports-filter" type="search" placeholder="Find a player, case or report detail" autocomplete="off"></label>
       </div>
       <div id="reports-list" class="stack"></div>
     </section>
@@ -145,10 +181,11 @@
     </section>
 
     <section class="view" data-view="sanctions" hidden>
-      <div class="grid three">
-        <article class="panel flush"><header><h2>Bans</h2></header><div id="sx-bans"></div></article>
-        <article class="panel flush"><header><h2>Mutes</h2></header><div id="sx-mutes"></div></article>
-        <article class="panel flush"><header><h2>Frozen</h2></header><div id="sx-freezes"></div></article>
+      <div class="toolbar"><div class="segmented" id="sanctions-scope" role="tablist" aria-label="Sanction type"><button type="button" data-value="bans" aria-selected="true">Bans</button><button type="button" data-value="mutes">Mutes</button><button type="button" data-value="freezes">Frozen</button></div><span class="hint">Review the player record before changing a sanction.</span></div>
+      <div class="grid sanctions-grid">
+        <article class="panel flush" data-sanction="bans"><header><h2>Active bans</h2></header><div id="sx-bans"></div></article>
+        <article class="panel flush" data-sanction="mutes" hidden><header><h2>Active mutes</h2></header><div id="sx-mutes"></div></article>
+        <article class="panel flush" data-sanction="freezes" hidden><header><h2>Frozen players</h2></header><div id="sx-freezes"></div></article>
       </div>
     </section>
 
@@ -157,7 +194,7 @@
         <label class="field"><span class="visually-hidden">Action</span><select id="audit-action"><option value="">All actions</option></select></label>
         <label class="field grow"><span class="visually-hidden">Filter audit log</span><input id="audit-filter" type="search" placeholder="Filter by staff, player or detail" autocomplete="off"></label>
       </div>
-      <div class="panel flush" id="audit-table"></div>
+      <article class="panel flush"><header><h2>Action history</h2><span class="hint">Attributed to the acting staff member</span></header><div id="audit-table"></div></article>
     </section>
 
     <section class="view" data-view="staff" hidden>
@@ -176,7 +213,8 @@
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" aria-label="Player profile" tabindex="-1" hidden>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Player inspector" tabindex="-1" hidden>
+  <div class="inspector-label"><span>Player inspector</span><span>Live server record</span></div>
   <div class="drawer-head" id="drawer-head"></div>
   <div class="drawer-actions" id="drawer-actions"></div>
   <div class="segmented tabs" id="drawer-tabs" role="tablist">

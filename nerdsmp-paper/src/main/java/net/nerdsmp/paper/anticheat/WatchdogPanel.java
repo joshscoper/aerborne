@@ -183,6 +183,7 @@ public final class WatchdogPanel implements AutoCloseable {
                 case "/" -> send(exchange, 200, "text/html", HTML);
                 case "/panel.js" -> send(exchange, 200, "text/javascript", SCRIPT);
                 case "/panel.css" -> send(exchange, 200, "text/css", CSS);
+                case "/suite.css" -> send(exchange, 200, "text/css", SUITE);
                 case "/favicon.svg" -> send(exchange, 200, "image/svg+xml", ICON);
                 case "/api/status" -> send(exchange, 200, "application/json", backend.status());
                 case "/api/session" -> {
@@ -190,7 +191,12 @@ public final class WatchdogPanel implements AutoCloseable {
                     send(exchange, 200, "application/json", PanelBackend.json(session));
                 }
                 default -> {
-                    if (path.startsWith("/api/player/")) {
+                    Asset asset = ASSETS.get(path);
+                    if (asset != null) {
+                        headers.set("Content-Type", asset.type());
+                        exchange.sendResponseHeaders(200, asset.bytes().length);
+                        exchange.getResponseBody().write(asset.bytes());
+                    } else if (path.startsWith("/api/player/")) {
                         UUID id;
                         try { id = UUID.fromString(path.substring("/api/player/".length())); }
                         catch (IllegalArgumentException invalid) { send(exchange, 404, "application/json", PanelBackend.Reply.error(404, "Unknown player.").json()); return; }
@@ -264,5 +270,25 @@ public final class WatchdogPanel implements AutoCloseable {
     private static final String HTML = resource("index.html");
     private static final String SCRIPT = resource("panel.js");
     private static final String CSS = resource("panel.css");
+    private static final String SUITE = resource("suite.css");
     private static final String ICON = resource("favicon.svg");
+    private record Asset(String type, byte[] bytes) {}
+    /** Exact bundled names only. No request path is ever used as a classpath or filesystem lookup. */
+    private static Map<String, Asset> assets() {
+        Map<String, Asset> result = new HashMap<>();
+        List<String> names = new ArrayList<>(List.of("brand.svg", "emblem.svg", "pattern.svg"));
+        for (String section : List.of("overview", "players", "locations", "watchdog", "reports", "sanctions", "server", "audit-log", "staff")) {
+            names.add("nav-" + section + ".svg");
+            names.add("hero-" + section + ".webp");
+            names.add("art-" + section + ".webp");
+        }
+        for (String name : names) {
+            try (InputStream stream = WatchdogPanel.class.getResourceAsStream("/panel/assets/" + name)) {
+                if (stream == null) throw new IllegalStateException("Missing staff console asset " + name);
+                result.put("/assets/" + name, new Asset(name.endsWith(".svg") ? "image/svg+xml" : "image/webp", stream.readAllBytes()));
+            } catch (IOException failure) { throw new IllegalStateException("Unreadable staff console asset " + name, failure); }
+        }
+        return Map.copyOf(result);
+    }
+    private static final Map<String, Asset> ASSETS = assets();
 }

@@ -87,11 +87,14 @@ const S = {
   playersScope: 'online', reportsScope: 'OPEN', geoScope: 'all',
   drawer: { uuid: null, name: '', tab: 'profile', detail: null, at: 0 },
   newestAlert: 0, timer: null,
+  refreshing: false,
+  chatPaused: false, chatFrozen: null, chatKey: null, chatSending: false,
 };
 
 const VIEWS = [
   { id: 'overview', label: 'Overview', sub: 'Server health, live alerts and everything waiting on staff.', icon: 'M4 4h6v8H4zM14 4h6v5h-6zM14 13h6v7h-6zM4 16h6v4H4z' },
   { id: 'players', label: 'Players', sub: 'Everyone online right now, plus every account that has joined.', icon: 'M15.5 19v-1.4a3.6 3.6 0 0 0-3.6-3.6H7.1a3.6 3.6 0 0 0-3.6 3.6V19M9.5 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20.5 19v-1.3a3.4 3.4 0 0 0-2.6-3.3M15.5 4.6a3 3 0 0 1 0 5.8' },
+  { id: 'chat', label: 'Chat', sub: 'Follow conversations, support players and manage public chat.', icon: 'M4 4h16v12H9l-5 4V4ZM8 8h8M8 12h5' },
   { id: 'locations', label: 'Locations', sub: 'Where players connect from, by each account\u2019s last-known country, region and city.', icon: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5' },
   { id: 'alerts', label: 'Watchdog', sub: 'Anti-cheat evidence, live suspicion scores and what Watchdog did about them.', icon: 'M12 3 5 5.8v5.4c0 4.4 3 7.9 7 9.3 4-1.4 7-4.9 7-9.3V5.8L12 3ZM8.5 12.5h2l1-2.5 1.7 4.5 1.1-2h1.7' },
   { id: 'reports', label: 'Reports', sub: 'Player reports filed with /report.', icon: 'M5 21V4M5 4h12l-2 4 2 4H5' },
@@ -132,22 +135,34 @@ async function act(payload, retried = false) {
   }
 }
 async function refresh() {
+  if (S.refreshing) return;
+  S.refreshing = true;
   clearTimeout(S.timer);
+  $('#refresh-now').disabled = true;
   try {
     const data = await api('/api/status');
     S.failures = 0;
-    setLink('live', 'Live');
     if (data.status === 'online') {
+      setLink('live', 'Live connection');
+      $('#connection-notice').hidden = true;
       announceAlerts(data);
       S.data = data;
       renderAll();
       if (S.drawer.uuid && Date.now() - S.drawer.at > 15000) loadDrawer(true);
+    } else {
+      setLink('lost', 'Snapshot unavailable');
+      $('#connection-notice').hidden = false;
+      $('#connection-notice').textContent = 'The console is reachable, but the server snapshot is not ready. Waiting for fresh data.';
     }
   } catch (error) {
     S.failures++;
     setLink('lost', error.status === 401 ? 'Signed out' : 'Connection lost');
     $('#updated').textContent = `${error.message} Showing the last data received; retrying.`;
+    $('#connection-notice').hidden = false;
+    $('#connection-notice').textContent = error.status === 401 ? 'Your session needs a new sign-in. Reload the console to reconnect.' : 'Connection interrupted. Values below are from the last successful snapshot; reconnecting automatically.';
   } finally {
+    S.refreshing = false;
+    $('#refresh-now').disabled = false;
     S.timer = setTimeout(refresh, document.hidden ? 20000 : Math.min(30000, 5000 * Math.max(1, S.failures)));
   }
 }
@@ -155,6 +170,9 @@ function setLink(state, label) {
   const el = $('#link-state');
   el.dataset.state = state;
   $('.label', el).textContent = label;
+  $('#view-header').dataset.connection = state;
+  const context = $('.context-status');
+  if (context) context.textContent = state === 'live' ? '● Live snapshot' : '● Last received snapshot';
 }
 
 /* ---------- Shared pieces ---------- */
@@ -197,22 +215,54 @@ function healthCell(health, max) {
 function pingCell(ping) {
   return h('span', { class: ping < 80 ? 'ping-good' : ping < 180 ? 'ping-ok' : 'ping-bad' }, `${fmt(ping)} ms`);
 }
-function empty(text) { return h('p', { class: 'empty' }, text); }
-function table(columns, rows, { onRow, emptyText = 'Nothing to show.', limit = 250 } = {}) {
+function sectionAsset(id = S.view) { return ({ alerts: 'watchdog', audit: 'audit-log', chat: 'reports' })[id] || id; }
+function empty(text) {
+  return h('div', { class: 'empty-state' }, h('img', { src: `/assets/art-${sectionAsset()}.webp`, alt: '', width: '64', height: '64', loading: 'lazy' }), h('p', { class: 'empty' }, text));
+}
+const tableStates = new Map();
+const tableCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+function table(columns, rows, { onRow, emptyText = 'Nothing to show.', limit = 50 } = {}) {
   if (!rows.length) return empty(emptyText);
+  const key = S.view + '-' + columns.map((c) => c.label.replace(/[^a-z0-9]/gi, '')).join('-');
+  const state = tableStates.get(key) || { column: -1, reverse: false, page: 0 };
+  tableStates.set(key, state);
+  let ordered = rows;
+  if (state.column >= 0) {
+    const col = columns[state.column];
+    ordered = rows.map((row) => ({ row, value: col.sort ? col.sort(row) : h('span', null, col.cell(row)).textContent }))
+      .sort((a, b) => (state.reverse ? -1 : 1) * (typeof a.value === 'number' && typeof b.value === 'number'
+        ? (a.value - b.value) || 0 : tableCollator.compare(String(a.value ?? ''), String(b.value ?? ''))))
+      .map((entry) => entry.row);
+  }
+  state.page = Math.min(state.page, Math.max(0, Math.ceil(rows.length / limit) - 1));
+  const start = state.page * limit;
   const body = h('tbody');
-  for (const row of rows.slice(0, limit)) {
-    const tr = h('tr', onRow ? { class: 'clickable', tabindex: '0', on: { click: () => onRow(row), keydown: (e) => { if (e.key === 'Enter') onRow(row); } } } : null);
+  for (const row of ordered.slice(start, start + limit)) {
+    const tr = h('tr', onRow ? { class: 'clickable', tabindex: '0', on: { click: () => onRow(row), keydown: (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onRow(row); } } } : null);
     for (const col of columns) tr.append(h('td', { class: col.cls }, col.cell(row)));
     body.append(tr);
   }
-  return h('div', null,
-    h('div', { class: 'table-wrap' }, h('table', null, h('thead', null, h('tr', null, columns.map((c) => h('th', { class: c.cls?.includes('num') ? 'num' : null }, c.label)))), body)),
-    rows.length > limit ? h('p', { class: 'more' }, `Showing ${fmt(limit)} of ${fmt(rows.length)}. Narrow the filter to see the rest.`) : null);
+  const heads = columns.map((col, index) => h('th', { scope: 'col', class: col.cls?.includes('num') ? 'num' : null,
+    'aria-sort': col.label ? (state.column === index ? state.reverse ? 'descending' : 'ascending' : 'none') : null },
+    col.label ? h('button', { type: 'button', class: 'table-sort', 'data-table-key': key, 'data-sort-index': String(index),
+      on: { click: (event) => {
+        state.reverse = state.column === index ? !state.reverse : false;
+        state.column = index; state.page = 0;
+        if (event.currentTarget.closest('#drawer')) renderDrawer(); else renderView();
+        $$('button[data-table-key]').find((button) => button.dataset.tableKey === key && button.dataset.sortIndex === String(index))?.focus();
+      } } }, col.label, h('span', { 'aria-hidden': 'true' }, state.column === index ? state.reverse ? '↓' : '↑' : '↕')) : null));
+  const changePage = (delta, event) => { state.page += delta; if (event.currentTarget.closest('#drawer')) renderDrawer(); else renderView(); };
+  return h('div', { class: 'data-table' },
+    h('div', { class: 'table-wrap' }, h('table', null, h('thead', null, h('tr', null, heads)), body)),
+    h('div', { class: 'table-footer' }, h('span', null, `${fmt(start + 1)}–${fmt(Math.min(start + limit, rows.length))} of ${plural(rows.length, 'record')}`),
+      rows.length > limit ? h('div', { class: 'table-pages' },
+        h('button', { type: 'button', class: 'secondary small', disabled: state.page === 0, on: { click: (event) => changePage(-1, event) } }, '← Previous'),
+        h('span', null, `${state.page + 1} / ${Math.ceil(rows.length / limit)}`),
+        h('button', { type: 'button', class: 'secondary small', disabled: start + limit >= rows.length, on: { click: (event) => changePage(1, event) } }, 'Next →')) : null));
 }
 function feedRow({ lead, title, detail, when, onClick }) {
   return h('div', { class: `feed-row${onClick ? ' clickable' : ''}`, tabindex: onClick ? '0' : null, on: onClick ? { click: onClick, keydown: (e) => { if (e.key === 'Enter') onClick(); } } : null },
-    lead, h('div', { class: 'shrink' }, h('div', { class: 'title' }, title), detail ? h('div', { class: 'detail' }, detail) : null),
+    lead, h('div', { class: 'shrink' }, h('div', { class: 'title' }, title), detail ? h('div', { class: 'detail', title: detail }, detail) : null),
     h('span', { class: 'when' }, when));
 }
 function kpi(label, value, unit, note, tone) {
@@ -239,6 +289,8 @@ function chart(xs, ys, { color = 'var(--amber)', min, max, digits = 1, unit = ''
   for (const v of [hi, lo + range / 2, lo]) plot.append(svg('line', { class: 'grid-line', x1: 0, x2: W, y1: y(v), y2: y(v) }));
   if (threshold != null && threshold > lo && threshold < hi) plot.append(svg('line', { class: 'threshold', x1: 0, x2: W, y1: y(threshold), y2: y(threshold) }));
   plot.append(svg('path', { class: 'area', d: `${line}L${W} ${H}L0 ${H}Z` }), svg('path', { class: 'line', d: line }));
+  plot.setAttribute('role', 'img');
+  plot.setAttribute('aria-label', `Trend from ${fmt(ys[0], digits)}${unit} to ${fmt(ys.at(-1), digits)}${unit}, ${clock(xs[0])} to ${clock(xs.at(-1))}`);
   box.append(plot);
   for (const v of [hi, lo + range / 2]) box.append(h('span', { class: 'axis', style: { '--y': `${(y(v) / H) * 100}%` } }, fmt(v, digits)));
   const cursor = h('div', { class: 'cursor', hidden: true });
@@ -261,19 +313,24 @@ function chart(xs, ys, { color = 'var(--amber)', min, max, digits = 1, unit = ''
 }
 function chartCard(title, now, unit, chartEl) {
   return h('article', { class: 'chart-card' },
-    h('header', null, h('h3', null, title), h('span', { class: 'now' }, now, unit ? h('small', null, unit) : null)), chartEl);
+    h('header', null, h('h3', null, title), h('span', { class: 'now' }, now, unit ? h('small', null, unit) : null)), chartEl,
+    h('div', { class: 'chart-times' }, h('span', null, S.data.history.t.length ? clock(S.data.history.t[0]) : 'Collecting samples'), h('span', null, S.data.history.t.length ? clock(S.data.history.t.at(-1)) : 'Now')));
 }
 
 /* ---------- Navigation ---------- */
 function buildNav() {
   const nav = $('#nav');
+  const groups = { overview: 'Operations', alerts: 'Trust & safety', server: 'Administration' };
   for (const view of VIEWS) {
+    if (groups[view.id]) nav.append(h('p', { class: 'nav-group-label' }, groups[view.id]));
     nav.append(h('button', { type: 'button', class: 'nav-item', 'data-view': view.id, on: { click: () => go(view.id) } },
-      icon(view.icon), h('span', { class: 'label' }, view.label), h('span', { class: 'count', hidden: true })));
+      view.id === 'chat' ? icon(view.icon) : h('img', { src: `/assets/nav-${sectionAsset(view.id)}.svg`, alt: '', width: '20', height: '20' }),
+      h('span', { class: 'label' }, view.label), h('span', { class: 'count', hidden: true })));
   }
 }
 function go(id, push = true) {
   const view = VIEWS.find((v) => v.id === id) || VIEWS[0];
+  const changed = S.view !== view.id;
   S.view = view.id;
   for (const section of $$('.view')) section.hidden = section.dataset.view !== view.id;
   for (const item of $$('.nav-item')) {
@@ -282,8 +339,19 @@ function go(id, push = true) {
   }
   $('#view-title').textContent = view.label;
   $('#view-sub').textContent = view.sub;
+  $('#view-header').dataset.section = view.id;
+  $('#view-area').textContent = ['overview', 'players', 'locations', 'chat'].includes(view.id) ? 'Live operations' : ['alerts', 'reports', 'sanctions'].includes(view.id) ? 'Trust & safety' : 'Administration';
+  $('#view-art').src = `/assets/art-${sectionAsset(view.id)}.webp`;
   if (push && location.hash !== `#${view.id}`) history.replaceState(null, '', `#${view.id}`);
   renderView();
+  const wasOpen = $('#workspace-nav').classList.contains('nav-open');
+  closeNav();
+  if (wasOpen) $('#nav-toggle').focus({ preventScroll: true });
+  if (changed) window.scrollTo({ top: 0, behavior: 'instant' });
+}
+function closeNav() {
+  $('#workspace-nav').classList.remove('nav-open');
+  $('#nav-toggle').setAttribute('aria-expanded', 'false');
 }
 function setCount(id, n, hot) {
   const el = $(`.nav-item[data-view="${id}"] .count`);
@@ -312,11 +380,12 @@ function renderAll() {
   setCount('sanctions', d.bans.length + d.desk.mutes.length + d.desk.freezes.length, false);
   document.title = reports + watch ? `(${reports + watch}) Staff Console` : 'Staff Console';
   $('#updated').textContent = `Updated ${clock(d.updated)}. Refreshes every 5 seconds while this tab is open.`;
+  fill('#view-context', h('span', { class: 'context-status' }, '● Live snapshot'), h('span', null, plural(d.server.online, 'player') + ' online'), h('span', null, `Updated ${clock(d.updated)}`));
   renderView();
 }
 function renderView() {
   if (!S.data) return;
-  ({ overview: renderOverview, players: renderPlayers, locations: renderLocations, alerts: renderAlerts, reports: renderReports, sanctions: renderSanctions,
+  ({ overview: renderOverview, players: renderPlayers, chat: renderChat, locations: renderLocations, alerts: renderAlerts, reports: renderReports, sanctions: renderSanctions,
     server: renderServer, audit: renderAudit, staff: renderStaff })[S.view]?.();
 }
 
@@ -326,31 +395,37 @@ function renderOverview() {
   const hot = watched();
   const reports = openReports();
   const lastHour = recentEvidence(3600e3);
-  const kicks = lastHour.filter((e) => e.action === 'KICK').length;
   const slow = srv.tps1 < 18, struggling = srv.tps1 < 15;
-  const severe = hot.filter((p) => p.score >= wd.setbackScore);
-  let level = 'calm', headline = 'All quiet';
-  if (struggling || severe.length) {
+  let level = 'calm', headline = 'Operating normally';
+  if (struggling) {
     level = 'alarm';
-    headline = struggling ? 'The server is struggling' : `${severe[0].name} needs a look now`;
-  } else if (hot.length || reports.length || slow) {
+    headline = 'Server performance is degraded';
+  } else if (slow || srv.mspt > 50) {
     level = 'watch';
-    headline = hot.length ? `${plural(hot.length, 'player')} under watch`
-      : reports.length ? `${plural(reports.length, 'report')} waiting` : 'The server is running slow';
+    headline = 'Tick performance needs a review';
   }
   $('#pulse').dataset.level = level;
   $('#pulse-state').textContent = headline;
-  $('#pulse-detail').textContent = `${fmt(srv.online)} of ${fmt(srv.maxPlayers)} online, ${fmt(srv.tps1, 1)} TPS, ${plural(lastHour.length, 'flag')} in the last hour.`;
-  fill('#pulse-chart', chart(d.history.t, d.history.tps, { min: 10, max: 20, threshold: 18, unit: ' TPS', color: level === 'alarm' ? 'var(--red)' : 'var(--amber)' }));
+  $('#pulse-detail').textContent = `${plural(lastHour.length, 'flag')} in the last hour · Uptime ${span(srv.uptime)}`;
+  fill('#pulse-chart', chart(d.history.t, d.history.tps, { min: 0, max: 21, threshold: 18, unit: ' TPS', color: 'var(--blue)' }));
+  fill('#pulse-times', h('span', null, d.history.t.length ? clock(d.history.t[0]) : 'Collecting samples'), h('span', null, d.history.t.length ? clock(d.history.t.at(-1)) : 'Now'));
 
   const memPct = srv.memoryUsed / srv.memoryMax;
   fill('#kpis',
     kpi('Players online', fmt(srv.online), `/ ${fmt(srv.maxPlayers)}`, `${plural(d.directory.length, 'known account')}`),
     kpi('TPS', fmt(srv.tps1, 1), null, `5m ${fmt(srv.tps5, 1)}, 15m ${fmt(srv.tps15, 1)}`, struggling ? 'bad' : slow ? 'warn' : 'good'),
     kpi('Tick time', fmt(srv.mspt, 1), 'ms', `95th percentile ${fmt(srv.msptP95, 1)} ms`, srv.mspt > 50 ? 'bad' : srv.mspt > 40 ? 'warn' : null),
-    kpi('Memory', fmt(srv.memoryUsed / 1024, 1), `/ ${fmt(srv.memoryMax / 1024, 1)} GB`, `${fmt(memPct * 100)}% of the heap`, memPct > 0.9 ? 'bad' : memPct > 0.75 ? 'warn' : null),
-    kpi('Open reports', fmt(reports.length), null, reports.length ? `Oldest ${ago(reports.at(-1).time)}` : 'Nothing waiting', reports.length ? 'warn' : null),
-    kpi('Flags last hour', fmt(lastHour.length), null, kicks ? `${plural(kicks, 'automatic kick')}` : 'No automatic kicks', kicks ? 'bad' : null));
+    kpi('Memory', fmt(srv.memoryUsed / 1024, 1), `/ ${fmt(srv.memoryMax / 1024, 1)} GB`, `${fmt(memPct * 100)}% of the heap`, memPct > 0.9 ? 'bad' : memPct > 0.75 ? 'warn' : null));
+
+  const queues = [
+    { view: 'reports', title: 'Player reports', count: reports.length, note: reports.length ? 'Waiting for a staff review' : 'The report queue is clear', tone: reports.length ? 'amber' : 'green' },
+    { view: 'alerts', title: 'Watchdog review', count: hot.length, note: 'Players above the alert threshold', tone: hot.length ? 'red' : 'green' },
+    { view: 'sanctions', title: 'Active sanctions', count: d.bans.length + d.desk.mutes.length + d.desk.freezes.length, note: 'Bans, mutes and freezes', tone: 'blue' },
+  ];
+  fill('#attention-grid', queues.map((queue) => h('button', { type: 'button', class: 'attention-card', 'data-tone': queue.tone, on: { click: () => go(queue.view) } },
+    h('img', { src: `/assets/nav-${sectionAsset(queue.view)}.svg`, alt: '', width: '24', height: '24' }),
+    h('span', { class: 'attention-copy' }, h('strong', null, queue.title), h('small', null, queue.note)),
+    h('span', { class: 'attention-count' }, fmt(queue.count)), h('span', { class: 'attention-arrow', 'aria-hidden': 'true' }, '↗'))));
 
   const live = [...wd.live].filter((p) => p.score > 0).sort((a, b) => b.score - a.score).slice(0, 6);
   fill('#ov-watch', live.length ? h('div', { class: 'feed' }, live.map((p) => feedRow({
@@ -398,17 +473,73 @@ function renderPlayers() {
       { label: 'Health', cls: 'nowrap', cell: (p) => healthCell(p.health, p.maxHealth) },
       { label: 'Ping', cls: 'num nowrap', cell: (p) => pingCell(p.ping) },
       { label: 'Watchdog', cell: (p) => scoreMeter(p.score) },
-      { label: 'Session', cls: 'num nowrap muted', cell: (p) => span(Date.now() - p.lastLogin) },
+      { label: 'Session', cls: 'num nowrap muted', sort: (p) => Date.now() - p.lastLogin, cell: (p) => span(Date.now() - p.lastLogin) },
     ], rows, { onRow: (p) => openDrawer(p.uuid, p.name), emptyText: q ? 'No online player matches that filter.' : 'No one is online right now.' }));
   } else {
     const rows = d.directory.filter((p) => (S.playersScope === 'all' || p.records || p.banned) && (!q || p.name.toLowerCase().includes(q)));
     fill('#players-table', table([
       { label: 'Player', cell: (p) => who(p.name, p.uuid, null, online.has(p.uuid)) },
       { label: 'Status', cell: (p) => h('div', { class: 'badges' }, online.has(p.uuid) ? badge('Online', 'green') : null, p.banned ? badge('Banned', 'red') : null, p.records ? badge('Has records', 'amber') : null) },
-      { label: 'Last seen', cls: 'nowrap muted', cell: (p) => online.has(p.uuid) ? 'Now' : ago(p.lastSeen) },
-      { label: 'First joined', cls: 'nowrap muted', cell: (p) => date(p.firstPlayed) },
+      { label: 'Last seen', cls: 'nowrap muted', sort: (p) => stamp(online.has(p.uuid) ? S.data.updated : p.lastSeen) || 0, cell: (p) => online.has(p.uuid) ? 'Now' : ago(p.lastSeen) },
+      { label: 'First joined', cls: 'nowrap muted', sort: (p) => stamp(p.firstPlayed) || 0, cell: (p) => date(p.firstPlayed) },
     ], rows, { onRow: (p) => openDrawer(p.uuid, p.name), emptyText: q ? 'No player matches that filter.' : 'No players in this list.' }));
   }
+}
+
+/* ---------- Chat ---------- */
+function renderChat() {
+  const current = S.data.chat;
+  const data = S.chatPaused ? S.chatFrozen : current;
+  $('#chat-controls').disabled = !current;
+  $('#chat-send').disabled = !current || S.chatSending;
+  $('#chat-pause').disabled = !current;
+  $('#chat-pause').textContent = S.chatPaused ? 'Resume updates' : 'Pause updates';
+  fill('#chat-policy-state', current ? h('div', { class: 'chat-policy' },
+    badge(current.paused ? 'Public chat paused' : 'Public chat open', current.paused ? 'red' : 'green'),
+    badge(current.slowSeconds ? `Slow mode · ${current.slowSeconds}s` : 'Slow mode off', current.slowSeconds ? 'amber' : '')) : h('p', { class: 'hint' }, 'Chat data is unavailable. Install the updated plugin to enable it.'));
+  $('#chat-retention').textContent = `Recent delivered messages · ${S.chatPaused ? 'Updates paused for review' : 'Refreshes every 5 seconds'}`;
+  const channel = $('#chat-channel').value, q = $('#chat-filter').value.trim().toLowerCase();
+  const rows = (data?.messages || []).filter(m => (!channel || m.channel === channel) && (!q || `${m.sender} ${m.message} ${m.world || ''} ${m.target || ''}`.toLowerCase().includes(q)));
+  $('#chat-feed-state').textContent = `${plural(rows.length, 'message')} shown · ${S.chatPaused ? 'Paused for review' : 'Latest ' + (data?.capacity || 300) + ' retained'}`;
+  const key = `${data?.started}|${S.chatPaused}|${channel}|${q}|${rows.map(m => m.id).join(',')}|${S.data.desk.mutes.map(m=>m.uuid).join(',')}|${S.data.players.map(p=>p.uuid).join(',')}`;
+  if (S.chatKey === key) return;
+  const feed = $('#chat-feed'), nearBottom = feed.scrollHeight - feed.clientHeight - feed.scrollTop < 60;
+  const oldTop = feed.scrollTop;
+  fill('#chat-feed', rows.length ? rows.map(m => {
+    const player = m.uuid ? { uuid: m.uuid, name: m.sender } : null;
+    const online = player && S.data.players.some(p => p.uuid === player.uuid);
+    const muted = player && S.data.desk.mutes.some(p => p.uuid === player.uuid);
+    return h('article', { class: `chat-line${m.panel ? ' from-panel' : ''}` },
+      avatar(m.sender, m.uuid || m.sender, player ? online : null),
+      h('div', { class: 'chat-line-content' },
+        h('div', { class: 'chat-line-meta' }, player ? playerLink(m.sender, m.uuid) : h('strong', null, m.sender),
+          badge(m.channel === 'direct' ? 'Panel reply' : pretty(m.channel), m.channel === 'staff' ? 'violet' : 'blue'),
+          m.world && m.channel === 'local' ? h('span', { class: 'hint' }, m.world) : null,
+          m.target ? h('span', { class: 'hint' }, `to ${m.target}`) : null,
+          h('time', { datetime: m.time, title: new Date(stamp(m.time)).toLocaleString() }, clock(m.time))),
+        h('p', { class: 'chat-message-text' }, m.message),
+        player ? h('div', { class: 'chat-line-actions' },
+          h('button', { type: 'button', class: 'link', on: { click: () => ask('warn', player) } }, 'Warn'),
+          h('button', { type: 'button', class: 'link', on: { click: () => ask(muted ? 'unmute' : 'mute', player) } }, muted ? 'Unmute' : 'Mute'),
+          h('button', { type: 'button', class: 'link', disabled: !online, on: { click: () => ask('message', player) } }, 'Reply')) : h('p', { class: 'hint' }, `${plural(m.recipients, 'recipient')} · Sent from panel`)));
+  }) : empty(current ? 'No messages match. Delivered messages appear here while the server is running.' : 'Chat data is unavailable from this plugin version.'));
+  S.chatKey = key;
+  feed.scrollTop = nearBottom ? feed.scrollHeight : oldTop;
+}
+
+async function sendChat(event) {
+  event.preventDefault();
+  if (S.chatSending || !S.data?.chat) return;
+  const message = $('#chat-message').value.trim();
+  if (!message || message.length > 256 || /[\u0000-\u001f\u007f-\u009f]/.test(message)) {
+    $('#chat-error').textContent = 'Write a message between 1 and 256 characters, on one line.'; return;
+  }
+  S.chatSending = true; $('#chat-send').disabled = true; $('#chat-error').textContent = '';
+  try {
+    const result = await act({ action: 'chat-send', channel: $('#chat-destination').value, message });
+    $('#chat-message').value = ''; toast(result.message); await refresh();
+  } catch (error) { $('#chat-error').textContent = error.message; }
+  finally { S.chatSending = false; $('#chat-send').disabled = !S.data?.chat; }
 }
 
 /* ---------- Locations ---------- */
@@ -509,7 +640,7 @@ function renderAlerts() {
   const rows = inRange.filter((e) => (!check || e.check === check) && (!outcome || e.action === outcome)
     && (!q || `${e.player} ${e.detail}`.toLowerCase().includes(q)));
   fill('#wd-table', table([
-    { label: 'When', cls: 'nowrap muted', cell: (e) => clock(e.time) },
+    { label: 'When', cls: 'nowrap muted', sort: (e) => stamp(e.time) || 0, cell: (e) => clock(e.time) },
     { label: 'Player', cell: (e) => who(e.player, e.uuid) },
     { label: 'Check', cell: (e) => badge(pretty(e.check), CHECK_TONE[e.check]) },
     { label: 'Evidence', cls: 'wrap', cell: (e) => e.detail },
@@ -552,7 +683,8 @@ function renderReports() {
     const n = button.dataset.value === 'OPEN' ? open.length : all.length - open.length;
     button.replaceChildren(button.dataset.value === 'OPEN' ? 'Open' : 'Resolved', h('span', { class: 'count' }, fmt(n)));
   }
-  const rows = all.filter((r) => r.status === S.reportsScope);
+  const q = $('#reports-filter').value.trim().toLowerCase();
+  const rows = all.filter((r) => r.status === S.reportsScope && (!q || `${r.target} ${r.reporter} ${r.shortId} ${r.reason} ${r.resolution || ''}`.toLowerCase().includes(q)));
   if (S.reportsScope === 'OPEN') rows.reverse();
   fill('#reports-list', rows.length ? rows.map((r) => h('article', { class: 'report' },
     h('div', { class: 'shrink' },
@@ -564,25 +696,36 @@ function renderReports() {
     r.status === 'OPEN' ? h('div', { class: 'report-actions' },
       h('button', { type: 'button', class: 'secondary small', on: { click: () => openDrawer(r.targetId, r.target) } }, 'Review player'),
       h('button', { type: 'button', class: 'primary small', on: { click: () => ask('resolve', { uuid: r.targetId, name: r.target }, { report: r.id }) } }, 'Resolve')) : null))
-    : [empty(S.reportsScope === 'OPEN' ? 'No open reports. Players file them with /report.' : 'No resolved reports yet.')]);
+    : [empty(q ? 'No reports match your search.' : S.reportsScope === 'OPEN' ? 'No open reports. Players file them with /report.' : 'No resolved reports yet.')]);
 }
 
 /* ---------- Sanctions ---------- */
 function renderSanctions() {
   const d = S.data;
+  const scope = S.sanctionsScope || 'bans';
+  const counts = { bans: d.bans.length, mutes: d.desk.mutes.length, freezes: d.desk.freezes.length };
+  const labels = { bans: 'Bans', mutes: 'Mutes', freezes: 'Frozen' };
+  for (const panel of $$('[data-sanction]')) panel.hidden = panel.dataset.sanction !== scope;
+  for (const button of $$('#sanctions-scope button')) {
+    button.setAttribute('aria-selected', String(button.dataset.value === scope));
+    button.replaceChildren(labels[button.dataset.value], h('span', { class: 'count' }, fmt(counts[button.dataset.value])));
+  }
   fill('#sx-bans', table([
-    { label: 'Player', cell: (b) => who(b.name, b.uuid, b.reason) },
-    { label: 'Ends', cls: 'nowrap muted', cell: (b) => b.expires ? until(b.expires) : 'Never' },
+    { label: 'Player', cell: (b) => who(b.name, b.uuid) },
+    { label: 'Reason', cls: 'wrap', cell: (b) => b.reason || 'No reason recorded' },
+    { label: 'Ends', cls: 'nowrap muted', sort: (b) => b.expires ? stamp(b.expires) : Infinity, cell: (b) => b.expires ? until(b.expires) : 'Never' },
     { label: '', cls: 'num', cell: (b) => b.uuid ? h('button', { type: 'button', class: 'secondary small', on: { click: (e) => { e.stopPropagation(); ask('unban', { uuid: b.uuid, name: b.name }); } } }, 'Unban') : '' },
   ], d.bans, { onRow: (b) => b.uuid && openDrawer(b.uuid, b.name), emptyText: 'No one is banned.' }));
   fill('#sx-mutes', table([
-    { label: 'Player', cell: (m) => who(m.name, m.uuid, m.reason) },
-    { label: 'Ends', cls: 'nowrap muted', cell: (m) => until(m.expires) },
+    { label: 'Player', cell: (m) => who(m.name, m.uuid) },
+    { label: 'Reason', cls: 'wrap', cell: (m) => m.reason || 'No reason recorded' },
+    { label: 'Ends', cls: 'nowrap muted', sort: (m) => stamp(m.expires) || 0, cell: (m) => until(m.expires) },
     { label: '', cls: 'num', cell: (m) => h('button', { type: 'button', class: 'secondary small', on: { click: (e) => { e.stopPropagation(); ask('unmute', { uuid: m.uuid, name: m.name }); } } }, 'Unmute') },
   ], d.desk.mutes, { onRow: (m) => openDrawer(m.uuid, m.name), emptyText: 'No active mutes.' }));
   fill('#sx-freezes', table([
-    { label: 'Player', cell: (f) => who(f.name, f.uuid, f.reason) },
-    { label: 'Since', cls: 'nowrap muted', cell: (f) => ago(f.time) },
+    { label: 'Player', cell: (f) => who(f.name, f.uuid) },
+    { label: 'Reason', cls: 'wrap', cell: (f) => f.reason || 'No reason recorded' },
+    { label: 'Since', cls: 'nowrap muted', sort: (f) => stamp(f.time) || 0, cell: (f) => ago(f.time) },
     { label: '', cls: 'num', cell: (f) => h('button', { type: 'button', class: 'secondary small', on: { click: (e) => { e.stopPropagation(); ask('unfreeze', { uuid: f.uuid, name: f.name }); } } }, 'Unfreeze') },
   ], d.desk.freezes, { onRow: (f) => openDrawer(f.uuid, f.name), emptyText: 'No one is frozen.' }));
 }
@@ -636,7 +779,7 @@ function renderAudit() {
   const q = $('#audit-filter').value.trim().toLowerCase();
   const filtered = rows.filter((r) => (!select.value || r.action === select.value) && (!q || `${r.actor} ${r.target} ${r.detail}`.toLowerCase().includes(q)));
   fill('#audit-table', table([
-    { label: 'When', cls: 'nowrap muted', cell: (r) => clock(r.time) },
+    { label: 'When', cls: 'nowrap muted', sort: (r) => stamp(r.time) || 0, cell: (r) => clock(r.time) },
     { label: 'Staff', cls: 'nowrap', cell: (r) => r.actor },
     { label: 'Action', cell: (r) => badge(pretty(r.action), ACTION_TONE[r.action]) },
     { label: 'Player', cell: (r) => playerLink(r.target, r.targetId) },
@@ -658,27 +801,32 @@ function renderStaff() {
     { label: 'Rules', cls: 'num', cell: (g) => fmt(g.permissions) },
   ], st.groups));
   fill('#staff-audit', table([
-    { label: 'When', cls: 'nowrap muted', cell: (a) => clock(a.time) },
+    { label: 'When', cls: 'nowrap muted', sort: (a) => stamp(a.time) || 0, cell: (a) => clock(a.time) },
     { label: 'By', cls: 'nowrap', cell: (a) => a.actor },
     { label: 'Change', cls: 'wrap', cell: (a) => a.change },
   ], st.audit, { emptyText: 'No access changes recorded.' }));
 }
 
 /* ---------- Player drawer ---------- */
+let drawerReturnFocus = null;
 function openDrawer(uuid, name) {
   if (!uuid) return;
+  if (!S.drawer.uuid) drawerReturnFocus = document.activeElement;
   const same = S.drawer.uuid === uuid;
   S.drawer = { uuid, name: name || knownName(uuid), tab: same ? S.drawer.tab : 'profile', detail: same ? S.drawer.detail : null, at: 0 };
   $('#drawer').hidden = false;
   $('#scrim').hidden = false;
+  $('.shell').inert = true;
   renderDrawer();
   loadDrawer();
-  $('#drawer').focus?.();
+  $('#drawer').focus?.({ preventScroll: true });
 }
 function closeDrawer() {
   S.drawer.uuid = null;
   $('#drawer').hidden = true;
   $('#scrim').hidden = true;
+  $('.shell').inert = false;
+  if (drawerReturnFocus?.isConnected) drawerReturnFocus.focus({ preventScroll: true });
 }
 async function loadDrawer(quiet) {
   const uuid = S.drawer.uuid;
@@ -782,8 +930,8 @@ function drawerConnection(p) {
         addressRows.length ? h('div', { class: 'panel flush space-above' }, table([
           { label: 'Address', cls: 'nowrap', cell: (a) => a.address },
           c.locatesAddresses ? { label: 'Location', cell: (a) => a.location?.label || h('span', { class: 'hint' }, 'Unknown') } : null,
-          { label: 'First seen', cls: 'nowrap muted', cell: (a) => ago(a.firstSeen) },
-          { label: 'Last seen', cls: 'nowrap muted', cell: (a) => ago(a.lastSeen) },
+          { label: 'First seen', cls: 'nowrap muted', sort: (a) => stamp(a.firstSeen) || 0, cell: (a) => ago(a.firstSeen) },
+          { label: 'Last seen', cls: 'nowrap muted', sort: (a) => stamp(a.lastSeen) || 0, cell: (a) => ago(a.lastSeen) },
           { label: 'Joins', cls: 'num', cell: (a) => fmt(a.joins) },
           { label: 'Also used by', cell: (a) => a.sharedWith.length ? h('div', { class: 'badges' }, a.sharedWith.map((alt) => playerLink(alt.name || alt.uuid.slice(0, 8), alt.uuid))) : h('span', { class: 'hint' }, 'No one else') },
         ].filter(Boolean), addressRows)) : null,
@@ -883,6 +1031,7 @@ const REASON = { min: 3, max: 180, rule: 'Add a clear reason between 3 and 180 c
 const MUTE_TIMES = [['10 minutes', '10'], ['30 minutes', '30'], ['1 hour', '60'], ['6 hours', '360'], ['1 day', '1440'], ['7 days', '10080']];
 const BAN_TIMES = [['1 day', '1440'], ['3 days', '4320'], ['7 days', '10080'], ['30 days', '43200'], ['Permanent', 'perm']];
 const ACTIONS = {
+  'chat-policy': { title: () => 'Manage public chat', text: 'Pause or slow Global, Local and Trade. Staff are exempt. These controls reset on server restart; private channels are unchanged.', reason: 'Reason', confirm: 'Apply chat controls' },
   warn: { title: (n) => `Warn ${n}`, text: 'They see this in chat, and it is saved to their history.', reason: 'Warning', confirm: 'Send warning' },
   note: { title: (n) => `Add a note for ${n}`, text: 'Notes are visible to staff only.', reason: 'Note', staffOnly: true, confirm: 'Save note' },
   mute: { title: (n) => `Mute ${n}`, text: 'They cannot use chat until the mute ends.', reason: 'Reason', times: MUTE_TIMES, defaultTime: '30', confirm: 'Mute' },
@@ -911,6 +1060,11 @@ function ask(action, target, extra = {}) {
   $('#dialog-text').textContent = extra.group ? `${spec.text} Group: ${extra.group}.` : extra.label ? `${spec.text} Label: ${extra.label}.` : spec.text;
   $('#dialog-error').textContent = '';
   const fields = [];
+  if (action === 'chat-policy') {
+    fields.push(h('label', { class: 'chat-policy-toggle' }, h('input', { id: 'dialog-chat-paused', type: 'checkbox', checked: !!S.data.chat?.paused }), 'Pause public chat'));
+    fields.push(h('label', { class: 'field' }, h('span', null, 'Seconds between public messages (0 turns slow mode off)'),
+      h('input', { id: 'dialog-chat-slow', type: 'number', min: '0', max: '120', step: '1', required: true, value: String(S.data.chat?.slowSeconds || 0) })));
+  }
   if (spec.times) {
     const presets = h('div', { class: 'presets', role: 'group', 'aria-label': 'Length' });
     for (const [label, value] of spec.times) {
@@ -953,6 +1107,11 @@ async function submitDialog(event) {
   if (spec.reason && (reason || !spec.optional) && (!reason || reason.length < REASON.min || reason.length > REASON.max)) { $('#dialog-error').textContent = REASON.rule; return; }
   if (spec.message && !message) { $('#dialog-error').textContent = 'Write a message first.'; return; }
   const payload = { action, ...extra };
+  if (action === 'chat-policy') {
+    payload.paused = $('#dialog-chat-paused').checked;
+    payload.slowSeconds = Number($('#dialog-chat-slow').value);
+    if (!Number.isInteger(payload.slowSeconds) || payload.slowSeconds < 0 || payload.slowSeconds > 120) { $('#dialog-error').textContent = 'Choose 0 to 120 whole seconds.'; return; }
+  }
   if (target?.uuid && action !== 'broadcast' && action !== 'train-model') payload.target = target.uuid;
   if (reason) payload.reason = reason;
   if (message) payload.message = message;
@@ -1020,8 +1179,9 @@ function pick(row) {
 
 /* ---------- Theme ---------- */
 function applyTheme(theme) {
-  if (theme) document.documentElement.dataset.theme = theme;
-  else delete document.documentElement.dataset.theme;
+  document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+  $('#theme').textContent = theme === 'light' ? '◐ Dark appearance' : '◑ Light appearance';
+  $('#theme').setAttribute('aria-label', theme === 'light' ? 'Switch to dark appearance' : 'Switch to light appearance');
 }
 function storedTheme() { try { return localStorage.getItem('watchdog-theme'); } catch { return null; } }
 
@@ -1031,23 +1191,46 @@ function segmented(selector, onChange) {
     const button = event.target.closest('button[data-value]');
     if (!button) return;
     for (const b of $$(`${selector} button`)) b.setAttribute('aria-selected', String(b === button));
+    resetTablePages();
     onChange(button.dataset.value);
   });
+}
+function resetTablePages() {
+  for (const [key, state] of tableStates) if (key.startsWith(S.view + '-')) state.page = 0;
 }
 function init() {
   applyTheme(storedTheme());
   buildNav();
+  $('#chat-compose').addEventListener('submit', sendChat);
+  $('#chat-controls').addEventListener('click', () => ask('chat-policy', null));
+  $('#chat-pause').addEventListener('click', () => {
+    S.chatPaused = !S.chatPaused;
+    S.chatFrozen = S.chatPaused ? S.data?.chat : null;
+    S.chatKey = null; renderChat();
+  });
+  $('#chat-latest').addEventListener('click', () => { S.chatPaused = false; S.chatFrozen = null; S.chatKey = null; renderChat(); $('#chat-feed').scrollTop = $('#chat-feed').scrollHeight; });
+  for (const id of ['#chat-channel', '#chat-filter']) $(id).addEventListener(id === '#chat-channel' ? 'change' : 'input', () => { S.chatKey = null; renderChat(); });
+  $('#nav-toggle').addEventListener('click', () => {
+    const open = $('#workspace-nav').classList.toggle('nav-open');
+    $('#nav-toggle').setAttribute('aria-expanded', String(open));
+  });
+  document.addEventListener('click', (event) => { if (!event.target.closest('#workspace-nav')) closeNav(); });
   segmented('#players-scope', (v) => { S.playersScope = v; renderView(); });
   segmented('#reports-scope', (v) => { S.reportsScope = v; renderView(); });
+  segmented('#sanctions-scope', (v) => { S.sanctionsScope = v; renderView(); });
   segmented('#geo-scope', (v) => { S.geoScope = v; renderView(); });
   segmented('#drawer-tabs', (v) => { S.drawer.tab = v; $('#drawer-body').scrollTop = 0; renderDrawer(); });
-  for (const id of ['#players-filter', '#geo-filter', '#wd-filter', '#audit-filter']) $(id).addEventListener('input', renderView);
-  for (const id of ['#wd-check', '#wd-range', '#wd-action', '#audit-action']) $(id).addEventListener('change', renderView);
+  for (const id of ['#players-filter', '#reports-filter', '#geo-filter', '#wd-filter', '#audit-filter']) $(id).addEventListener('input', () => {
+    resetTablePages();
+    renderView();
+  });
+  for (const id of ['#wd-check', '#wd-range', '#wd-action', '#audit-action']) $(id).addEventListener('change', () => { resetTablePages(); renderView(); });
   for (const link of $$('[data-goto]')) link.addEventListener('click', () => go(link.dataset.goto));
   $('#scrim').addEventListener('click', closeDrawer);
   $('#dialog-form').addEventListener('submit', submitDialog);
   $('#dialog-cancel').addEventListener('click', () => $('#dialog').close());
   $('#broadcast').addEventListener('click', () => ask('broadcast', null));
+  $('#refresh-now').addEventListener('click', refresh);
   $('#train-model').addEventListener('click', () => ask('train-model', null));
   $('#theme').addEventListener('click', () => {
     const dark = getComputedStyle(document.documentElement).colorScheme.includes('dark');
@@ -1073,7 +1256,13 @@ function init() {
   document.addEventListener('keydown', (event) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
     if (event.key === '/' && !typing && !$('#dialog').open) { event.preventDefault(); finder.focus(); }
+    if (event.key === 'Escape' && $('#workspace-nav').classList.contains('nav-open')) { closeNav(); $('#nav-toggle').focus(); }
     if (event.key === 'Escape' && !$('#dialog').open && S.drawer.uuid) closeDrawer();
+    if (event.key === 'Tab' && !$('#dialog').open && S.drawer.uuid) {
+      const controls = $$('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"],a[href]', $('#drawer')).filter((el) => el.getClientRects().length);
+      if (controls.length && event.shiftKey && (document.activeElement === controls[0] || document.activeElement === $('#drawer'))) { event.preventDefault(); controls.at(-1).focus(); }
+      else if (controls.length && !event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+    }
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   window.addEventListener('hashchange', () => go(location.hash.slice(1), false));

@@ -25,7 +25,7 @@ class AerbornePresentationTest {
     @Test void panelHasBrandingButNoNewAssetsOrBrokenResourceRoutes() throws Exception {
         Path panel=Path.of("src/main/resources/panel");String html=Files.readString(panel.resolve("index.html"));
         assertTrue(html.contains("<title>Aerborne | Staff Console</title>"));
-        assertTrue(html.contains("<span>Aerborne<small>Staff Console</small></span>"));
+        assertTrue(html.contains("<div class=\"brand-title\">Aerborne<small>Staff Console</small></div>"));
         for(String asset:new String[]{"/favicon.svg","/panel.css","/panel.js"}) assertTrue(html.contains('"'+asset+'"'));
         String svg=Files.readString(panel.resolve("favicon.svg"));
         assertTrue(svg.contains(BrandPalette.SKY)&&svg.contains(BrandPalette.BREEZE)&&svg.contains(BrandPalette.MIDNIGHT));
