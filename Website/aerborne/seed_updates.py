@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 10
+LATEST = 22
 C = "static:img/companions/"
 
 
@@ -35,10 +35,212 @@ def apply(conn):
         _rev9(conn)
     if current < 10:
         _rev10(conn)
+    if current < 11:
+        _rev11(conn)
+    if current < 12:
+        _rev12(conn)
+    if current < 13:
+        _rev13(conn)
+    if current < 14:
+        _rev14(conn)
+    if current < 15:
+        _rev15(conn)
+    if current < 16:
+        _rev16(conn)
+    if current < 17:
+        _rev17(conn)
+    if current < 18:
+        _rev18(conn)
+    if current < 19:
+        conn.execute("UPDATE ranks SET frame='owner' WHERE slug='owner' AND frame='admin'")
+        from .policies import PAGES
+        for slug in ('privacy', 'store-terms'):
+            conn.execute("UPDATE pages SET body=?,updated_at=? WHERE slug=? AND updated_by='starter content'",
+                         (PAGES[slug][2].strip(), now_str(), slug))
+    if current < 20:
+        _rev20(conn)
+    if current < 21:
+        from .policies import PAGES
+        for slug in ('privacy', 'store-terms'):
+            conn.execute("UPDATE pages SET body=?,updated_at=? WHERE slug=? AND updated_by='starter content'",
+                         (PAGES[slug][2].strip(), now_str(), slug))
+    if current < 22:
+        _rev22(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
     return True
+
+
+LILYPIP = dict(
+    name="Lilypip", slug="lilypip", species="Lily frog",
+    summary="A cheerful pond frog who wears a lily pad for a hat and a clover necklace. "
+            "Lilypip hops after you and leaves little water drops wherever it lands.",
+    temperament="Cheerful and a little splashy",
+    acquisition="From the store once it opens. Summon it with /companion lilypip.", access="purchased",
+    image="static:img/companions/lilypip-720.webp",
+    image_alt="Lilypip, a green block-built frog with big shiny eyes, a lily-pad hat and a clover necklace",
+    concept_art=1, availability="upcoming", sort_order=6)
+LILYPIP_PRODUCT = dict(
+    name="Lilypip companion", slug="lilypip-companion", category="companions",
+    summary="A cheerful lily frog that hops along beside you.",
+    includes="Lilypip, who follows you around\nSummon it from /cosmetics or /companion",
+    entitlement="permanent", platforms="Java Edition", image="static:img/companions/lilypip-360.webp",
+    image_alt="Lilypip the lily frog", concept_art=1, availability="upcoming",
+    game_product="cosmetic.companion.lilypip", sort_order=26)
+
+
+# Bodies shipped before party expeditions and the season campaign (revision 20). A guide or region
+# is refreshed only while it still holds exactly this text and nobody on staff has edited it.
+PRE_EXPEDITION_BODIES = {
+    'beyond-your-island': 'd9d851dee5415192a8bfec957025e1612bfaece768570b95d2cd147c2f884ca4',
+    'world-overview': 'ae6a2349ab3f62818895095e139119d255f0c5154d9af22405b020f6d0121048',
+    'parties': 'a9b5cc6514c6a866ec7df388013672129cd6ee6f11a5eb51ef6543bdd0d913d6',
+    'commands': '98afc40e0a823dbb483113f8b633d87984568d0ca55fe218bbf1f7cffb703d1b',
+}
+PRE_EXPEDITION_REGION = '7300c627ef7a7e1da8b6b0df09e48d8df5dfe90ad99223a561573d4f3604bf9a'
+EXPEDITION_GUIDES = ('expeditions', 'season-campaign')
+
+
+def _rev20(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED, REGIONS
+
+    def fingerprint(text):
+        return hashlib.sha256((text or '').encode('utf-8')).hexdigest()
+
+    for guide in REVIEWED:
+        if guide['slug'] in EXPEDITION_GUIDES:
+            _insert(conn, 'guides', dict(guide, sort_order=90))
+            continue
+        old = PRE_EXPEDITION_BODIES.get(guide['slug'])
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (guide['slug'],)).fetchone() if old else None
+        if row and row['updated_by'] == 'starter content' and fingerprint(row['body']) == old:
+            conn.execute('UPDATE guides SET body = ?, related = ?, updated_at = ? WHERE id = ?',
+                         (guide['body'], guide['related'], now_str(), row['id']))
+    row = conn.execute("SELECT * FROM regions WHERE slug = 'expeditions'").fetchone()
+    if row and row['updated_by'] == 'starter content' and fingerprint(row['body']) == PRE_EXPEDITION_REGION:
+        changes = dict(REGIONS['expeditions'], updated_at=now_str())
+        cols = list(changes)
+        conn.execute('UPDATE regions SET ' + ', '.join(column + ' = ?' for column in cols) + ' WHERE id = ?',
+                     [changes[column] for column in cols] + [row['id']])
+
+
+# The parties guide as revision 20 shipped it, before the party menu, open parties and the finder.
+REV20_PARTIES = ('ad5e0421e9a5bc858d2ec4b70f73de452341b550cfb05521a4ba96431f7db1d0',
+                 'Group up without sharing your island or storage permissions.')
+
+
+def _rev22(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED
+    guide = next(g for g in REVIEWED if g['slug'] == 'parties')
+    row = conn.execute("SELECT * FROM guides WHERE slug = 'parties'").fetchone()
+    if (row and row['updated_by'] == 'starter content'
+            and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == REV20_PARTIES[0]):
+        summary = guide['summary'] if row['summary'] == REV20_PARTIES[1] else row['summary']
+        conn.execute('UPDATE guides SET body = ?, summary = ?, updated_at = ? WHERE id = ?',
+                     (guide['body'], summary, now_str(), row['id']))
+
+
+def _rev18(conn):
+    from .policies import PAGES, save_terms_version
+    # Preserve the previous public Terms before refreshing unedited starter policies.
+    old_terms = conn.execute("SELECT * FROM pages WHERE slug='terms'").fetchone()
+    if old_terms:
+        save_terms_version(conn, old_terms)
+    for slug, (title, summary, body) in PAGES.items():
+        row = conn.execute('SELECT * FROM pages WHERE slug=?', (slug,)).fetchone()
+        if not row:
+            _insert(conn, 'pages', dict(slug=slug, title=title, summary=summary, body=body.strip(),
+                    section='legal' if slug in ('terms', 'privacy', 'store-terms') else 'support'))
+        elif row['updated_by'] == 'starter content':
+            conn.execute('UPDATE pages SET title=?,summary=?,body=?,updated_at=? WHERE id=?',
+                         (title, summary, body.strip(), now_str(), row['id']))
+
+
+def _rev17(conn):
+    # Count historical invitations, including revoked awards, before enforcing the allowance.
+    conn.execute("UPDATE badges SET award_policy='firstlight-sigil', creator_only=1 WHERE slug='firstlight-sigil' OR icon='badge-firstlight-sigil'")
+    names = {'Firstlight Sigil'} | {r['name'] for r in conn.execute("SELECT name FROM badges WHERE award_policy='firstlight-sigil'")}
+    admins = {r['username'].lower(): r['id'] for r in conn.execute('SELECT id,username FROM users')}
+    for row in conn.execute("SELECT * FROM audit_log WHERE action='award' AND entity='members'").fetchall():
+        if any(row['summary'].startswith('Awarded the ' + name + suffix)
+               for name in names for suffix in (' to ', ' badge to ')):
+            admin_id = row['user_id'] or admins.get(row['username'].lower())
+            if admin_id:
+                conn.execute('INSERT OR IGNORE INTO firstlight_awards (source_key,admin_user_id,member_id,awarded_at) VALUES (?,?,?,?)',
+                             ('audit:%d' % row['id'], admin_id, row['entity_id'], row['created_at']))
+    for row in conn.execute("SELECT mb.* FROM member_badges mb JOIN badges b ON b.id=mb.badge_id WHERE b.award_policy='firstlight-sigil'").fetchall():
+        admin_id = admins.get(row['awarded_by'].lower())
+        if admin_id and not conn.execute('SELECT 1 FROM firstlight_awards WHERE admin_user_id=? AND member_id=? AND awarded_at=?',
+                                         (admin_id, row['member_id'], row['awarded_at'])).fetchone():
+            conn.execute('INSERT OR IGNORE INTO firstlight_awards (source_key,admin_user_id,member_id,awarded_at) VALUES (?,?,?,?)',
+                         ('legacy:%d:%d' % (row['badge_id'], row['member_id']), admin_id, row['member_id'], row['awarded_at']))
+    row = conn.execute("SELECT id,body FROM pages WHERE slug='privacy' AND updated_by='starter content'").fetchone()
+    if row and '## Team applications' not in row['body']:
+        body = row['body'] + '\n\n## Team applications\n\nIf you apply to join the team, we store your contact details, role interest, availability, answers and optional work links for administrator review. Applications are private and are used to assess your application and contact you about it. Contact [support@aerborne.net](mailto:support@aerborne.net) to request a copy or removal.\n'
+        conn.execute('UPDATE pages SET body=?, updated_at=? WHERE id=?', (body, now_str(), row['id']))
+
+
+def _rev16(conn):
+    from .badges import FIRSTLIGHT
+    # Register the award, never recipients; preserve any existing badge and award history.
+    fields = list(FIRSTLIGHT)
+    conn.execute('INSERT OR IGNORE INTO badges (' + ','.join(fields) + ',created_at) VALUES (' +
+                 ','.join('?' for _ in fields) + ',?)', [FIRSTLIGHT[key] for key in fields] + [now_str()])
+
+
+def _rev15(conn):
+    changes = {
+        'privacy': (
+            '**Tebex** will handle payments when the store opens. Its privacy policy applies when you visit checkout. This website does not collect card details.',
+            '**Tebex** provides store checkout. When you start checkout, we send your Minecraft username, selected packages and IP address to Tebex to prepare your order. Its privacy policy applies at checkout. You enter payment details on Tebex; this website does not collect card details.'),
+        'store-terms': (
+            'When sales open, checkout will take place on **Tebex**.',
+            'Checkout takes place on **Tebex** for available items. Choose the Minecraft account in your cart before continuing to payment.'),
+    }
+    for slug, (before, after) in changes.items():
+        row = conn.execute('SELECT id, body FROM pages WHERE slug=?', (slug,)).fetchone()
+        if row and before in row['body']:
+            conn.execute('UPDATE pages SET body=?, updated_at=? WHERE id=?',
+                         (row['body'].replace(before, after), now_str(), row['id']))
+
+
+def _rev14(conn):
+    # Lilypip, the frog companion added to the server's wardrobe. Inserted only when the slug is free.
+    _insert(conn, "companions", LILYPIP)
+    _insert(conn, "products", LILYPIP_PRODUCT)
+
+
+def _rev13(conn):
+    # Replace the original store tiles only; keep staff artwork and all product settings.
+    for rank in ('skyfarer', 'cloudkeeper', 'starweaver'):
+        conn.execute("UPDATE products SET image = ?, concept_art = 0, "
+                     "image_alt = CASE WHEN image_alt = ? THEN ? ELSE image_alt END "
+                     "WHERE slug = ? AND image = ?",
+                     ('static:img/store/ranks/%s-256.webp' % rank, 'Concept art for ' + rank.title(),
+                      rank.title() + ' rank emblem', rank,
+                      'static:img/kit/ranks/%s-320.webp' % rank))
+
+
+def _rev12(conn):
+    import hashlib
+    from .guide_revision import ORIGINAL_BODIES
+    from .reference_content import GUIDES as REVIEWED
+    for guide in REVIEWED:
+        fingerprint = ORIGINAL_BODIES.get(guide['slug'])
+        if not fingerprint:
+            continue
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (guide['slug'],)).fetchone()
+        if not row or row['updated_by'] != 'starter content':
+            continue
+        if any((row[key] or '') != (guide.get(key) or '')
+               for key in ('title', 'summary', 'category', 'related', 'availability')):
+            continue
+        if hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == fingerprint:
+            conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?',
+                         (guide['body'], now_str(), row['id']))
 
 
 def _rev7(conn):
@@ -87,6 +289,42 @@ def _rev8(conn):
     for slug, name, description, icon, tone in STAFF_BADGES:
         conn.execute("INSERT OR IGNORE INTO badges (slug, name, description, icon, tone, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                      (slug, name, description, icon, tone, now_str()))
+
+
+PACK_STAFF_BADGES = [
+    ('verified-helper', 'Verified helper', 'Recognised by staff for reliable help and answers.', 'sky'),
+    ('event-winner', 'Event winner', 'Won an official Aerborne event.', 'gold'),
+    ('bug-hunter', 'Bug hunter', 'Found and reported a bug that got fixed.', 'mint'),
+    ('guide-writer', 'Guide writer', 'Wrote a helpful guide for the Aerborne community.', 'lavender'),
+    ('community-helper', 'Community helper', 'Went out of their way to help other players.', 'peach'),
+    ('lore-seeker', 'Lore seeker', 'Recognised by staff for exploring Aerborne lore and discoveries.', 'lavender'),
+    ('master-trader', 'Master trader', 'Recognised by staff for fair and helpful community trading.', 'gold'),
+    ('island-builder', 'Island builder', 'Built something the whole server talked about.', 'sky'),
+    ('sky-explorer', 'Sky explorer', 'Recognised by staff for exploration above the clouds.', 'mint'),
+]
+
+
+def _rev11(conn):
+    from .badges import LEGACY_ARTWORK
+    # Change artwork in place. IDs and member_badges rows (including award notes) stay intact.
+    for old, artwork in LEGACY_ARTWORK.items():
+        conn.execute('UPDATE badges SET icon = ? WHERE icon = ?', ('badge-' + artwork, old))
+    aliases = {'community-helper': ('helping-hand', 'Helping hand'),
+               'island-builder': ('master-builder', 'Master builder')}
+    for slug, name, description, tone in PACK_STAFF_BADGES:
+        existing = conn.execute('SELECT id FROM badges WHERE slug = ?', (slug,)).fetchone()
+        if existing is None and slug in aliases:
+            old_slug, old_name = aliases[slug]
+            legacy = conn.execute('SELECT id, name FROM badges WHERE slug = ?', (old_slug,)).fetchone()
+            if legacy:
+                conn.execute('UPDATE badges SET slug = ?, name = ? WHERE id = ?',
+                             (slug, name if legacy['name'] == old_name else legacy['name'], legacy['id']))
+                existing = legacy
+        if existing:
+            conn.execute('UPDATE badges SET icon = ? WHERE id = ?', ('badge-' + slug, existing['id']))
+        else:
+            conn.execute('INSERT INTO badges (slug, name, description, icon, tone, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+                         (slug, name, description, 'badge-' + slug, tone, now_str()))
 
 
 # Revision 10: the server now has companions, trails and supporter perks (nerdsmp-paper cosmetic package).

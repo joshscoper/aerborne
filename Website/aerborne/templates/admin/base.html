@@ -50,6 +50,8 @@
         {% if current_user.role == 'admin' %}
         <li><a href="{{ url_for('admin.settings') }}"{% if request.endpoint == 'admin.settings' %} aria-current="page"{% endif %}>Settings</a></li>
         <li><a href="{{ url_for('admin.users') }}"{% if request.endpoint == 'admin.users' %} aria-current="page"{% endif %}>Staff accounts</a></li>
+        <li><a href="{{ url_for('admin.team_applications') }}"{% if request.endpoint in ('admin.team_applications', 'admin.team_application') %} aria-current="page"{% endif %}>Team applications</a></li>
+        <li><a href="{{ url_for('admin.creator_applications') }}"{% if (request.endpoint or '').startswith('admin.creator') %} aria-current="page"{% endif %}>Creator program</a></li>
         {% endif %}
         <li><a href="{{ url_for('admin.account') }}"{% if request.endpoint == 'admin.account' %} aria-current="page"{% endif %}>Your account</a></li>
         {% if current_user.role == 'admin' and site.PANEL_URL %}<li><a href="{{ site.PANEL_URL }}" target="_blank" rel="noopener">Watchdog panel ↗</a></li>{% endif %}

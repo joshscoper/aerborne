@@ -5,7 +5,7 @@ import hashlib
 from flask import (Blueprint, Response, abort, current_app, g, redirect, render_template, request,
                    send_from_directory, url_for, jsonify)
 
-from . import content
+from . import content, gameapi, tebex
 from .content import lines, published, published_one, related_links
 from .content_types import ASPECTS, GUIDE_CATEGORIES, NEWS_CATEGORIES, STORE_CATEGORIES, get_type
 from .db import get_db, now_str, parse_time, utcnow
@@ -33,6 +33,14 @@ STORE_INFO = {
                          "img/kit/store/cosmetic-bundles"),
     "island-decor": ("Island decor", "Decorative touches for your home in the sky.",
                      "img/kit/store/island-decor"),
+}
+
+STORE_ILLUSTRATIONS = {
+    'supporter-ranks': 'category-ranks',
+    'companions': 'category-companions',
+    'trails': 'category-trails',
+    'cosmetic-bundles': 'category-bundles',
+    'island-decor': 'category-island-decor',
 }
 
 ASPECT_NAMES = dict(ASPECTS)
@@ -112,6 +120,51 @@ def render_region(item, preview=False):
                            others=published("regions", "id != ?", (item["id"],), limit=3))
 
 
+# --- Expeditions and the season campaign -------------------------------------------------------
+
+def _names(values):
+    return [str(v) for v in (values or []) if gameapi.NAME_RE.match(str(v))][:5]
+
+
+@bp.route("/expeditions")
+def expeditions():
+    data, problem = gameapi.expeditions()
+    entries = []
+    for raw in (data or {}).get("expeditions") or []:
+        if not isinstance(raw, dict) or not raw.get("id"):
+            continue
+        tiers = [dict(t, bestParty=_names(t.get("bestParty"))) for t in raw.get("tiers") or [] if isinstance(t, dict)]
+        entries.append(dict(raw, tiers=tiers))
+    return render_template("expeditions.html", expeditions=entries, problem=problem,
+                           info=data or {}, guide=published_one("guides", "expeditions"))
+
+
+@bp.route("/expeditions/<slug>")
+def expedition(slug):
+    data, problem = gameapi.expeditions()
+    if problem:
+        return render_template("expedition.html", e=None, problem=problem, slug=slug)
+    for raw in (data or {}).get("expeditions") or []:
+        if isinstance(raw, dict) and raw.get("id") == slug:
+            tiers = [dict(t, bestParty=_names(t.get("bestParty"))) for t in raw.get("tiers") or [] if isinstance(t, dict)]
+            bestiary = [m for m in raw.get("bestiary") or [] if isinstance(m, dict)]
+            return render_template("expedition.html", e=dict(raw, tiers=tiers, bestiary=bestiary), problem=None, slug=slug)
+    abort(404)
+
+
+@bp.route("/campaign")
+def campaign():
+    data, problem = gameapi.campaign()
+    season = data or {}
+    goals = {g.get("id"): g for g in season.get("goals") or [] if isinstance(g, dict)}
+    for goal in goals.values():
+        goal["top"] = [r for r in goal.get("top") or [] if isinstance(r, dict) and gameapi.NAME_RE.match(str(r.get("name", "")))]
+    top = [r for r in season.get("topContributors") or [] if isinstance(r, dict) and gameapi.NAME_RE.match(str(r.get("name", "")))]
+    return render_template("campaign.html", season=season, goals=list(goals.values()), goal_titles={k: v.get("title", k) for k, v in goals.items()},
+                           milestones=[m for m in season.get("milestones") or [] if isinstance(m, dict)],
+                           buffs=[b for b in season.get("buffs") or [] if isinstance(b, dict)], top=top, problem=problem)
+
+
 # --- Game guide and codex --------------------------------------------------------------------
 
 def _guide_sections():
@@ -151,12 +204,14 @@ def guide_article(slug):
 
 
 def render_guide(item, preview=False):
+    from .guide_reader import sections as guide_sections
     g.edit_target = ("guides", item["id"])
     siblings = published("guides", "category = ?", (item["category"],))
     position = next((i for i, g in enumerate(siblings) if g["id"] == item["id"]), None)
     prev_item = siblings[position - 1] if position else None
     next_item = siblings[position + 1] if position is not None and position + 1 < len(siblings) else None
     return render_template("guide_article.html", item=item, preview=preview,
+                           reader_sections=guide_sections(item['body']),
                            reading_minutes=max(1, (len((item['body'] or '').split()) + 179) // 180),
                            section=dict(GUIDE_CATEGORIES).get(item["category"], ""),
                            related=related_links(item["related"]), siblings=siblings,
@@ -283,16 +338,17 @@ def _store_categories():
     cats = []
     for key, _label in STORE_CATEGORIES:
         title, blurb, image = STORE_INFO[key]
-        items = published("products", "category = ?", (key,))
+        items = [tebex.decorate(row) for row in published("products", "category = ?", (key,))]
         cats.append({"key": key, "title": title, "blurb": blurb, "image": image, "products": items,
-                     "on_sale": [i for i in items if i["availability"] == "released" and i["price"]]})
+                     "illustration": STORE_ILLUSTRATIONS.get(key),
+                     "on_sale": [i for i in items if i['purchasable']]})
     return cats
 
 
 @bp.route("/store")
 def store():
     ranks = get_db().execute(
-        "SELECT r.*, p.name AS product_name FROM ranks r JOIN products p ON p.slug = r.product_slug "
+        "SELECT r.*, p.name AS product_name, p.image, p.image_alt FROM ranks r JOIN products p ON p.slug = r.product_slug "
         "WHERE " + content.LIVE.replace("status", "p.status").replace("publish_at", "p.publish_at") +
         " ORDER BY r.priority", (now_str(),)).fetchall()
     return render_template("store.html", categories=_store_categories(), supporter_ranks=ranks)
@@ -302,8 +358,11 @@ def store():
 def store_category(category):
     if category not in STORE_INFO:
         abort(404)
-    cat = next(c for c in _store_categories() if c["key"] == category)
-    return render_template("store_category.html", cat=cat)
+    categories = _store_categories()
+    cat = next(c for c in categories if c["key"] == category)
+    from .store_compare import comparison
+    return render_template("store_category.html", cat=cat, categories=categories,
+                           comparison=comparison(cat['products']) if category == 'supporter-ranks' else [])
 
 
 @bp.route("/store/item/<slug>")
@@ -313,9 +372,11 @@ def store_item(slug):
 
 
 def render_product(item, preview=False):
+    item = tebex.decorate(item)
     g.edit_target = ("products", item["id"])
     title, _blurb, _image = STORE_INFO.get(item["category"], ("Store", "", ""))
     return render_template("store_item.html", item=item, preview=preview, category_title=title,
+                           categories=_store_categories(),
                            includes=lines(item["includes"]))
 
 
@@ -368,7 +429,14 @@ def page(slug):
 
 def render_page(item, preview=False):
     g.edit_target = ("pages", item["id"])
-    return render_template("page.html", item=item, preview=preview)
+    from .guide_reader import sections
+    parts = sections(item['body'])
+    for part in parts:
+        part['id'] = part['id'].replace('guide-', 'policy-', 1)
+    order = ['rules', 'terms', 'privacy', 'store-terms', 'account-help', 'appeals', 'bug-reports', 'purchase-help']
+    pages = sorted(published('pages'), key=lambda p: (order.index(p['slug']) if p['slug'] in order else 99, p['title']))
+    return render_template('page.html', item=item, preview=preview, policy_sections=parts, policy_pages=pages,
+                           reading_minutes=max(1, (len(item['body'].split()) + 199) // 200))
 
 
 # --- Files, redirects and crawlers -----------------------------------------------------------
@@ -382,13 +450,18 @@ def media(filename):
 
 @bp.route("/discord")
 def discord():
-    """A stable link for every Discord button: the invite once it's set, a holding page until then."""
+    """The community landing page, with an optional official Discord server widget."""
     from .db import get_setting
-    invite = get_setting("discord_invite") or current_app.config.get("DISCORD_URL")
-    if invite:
-        return redirect(invite, 302)
-    return render_template("community/closed.html", title="Discord is coming soon",
-                           body="Our Discord server opens soon. Check back here for the invite.")
+    from .discord import invite_url, server_id, widget_available
+    from .security import CSP
+    invite = invite_url(get_setting('discord_invite')) or invite_url(current_app.config.get('DISCORD_URL'))
+    widget_id = server_id(get_setting('discord_server_id')) or server_id(current_app.config.get('DISCORD_SERVER_ID'))
+    widget_ready = widget_available(widget_id)
+    response = current_app.make_response(render_template('discord.html', invite=invite, widget_id=widget_id,
+                                                         widget_ready=widget_ready))
+    if widget_ready:
+        response.headers['Content-Security-Policy'] = CSP + '; frame-src https://discord.com'
+    return response
 
 
 @bp.route("/rules")
@@ -417,8 +490,11 @@ def robots():
 def sitemap():
     base = current_app.config["SITE_URL"] or request.url_root.rstrip("/")
     paths = [url_for("public." + name) for name in (
-        "index", "play", "status_page", "explore", "guide", "codex", "companions", "news", "store",
+        "index", "play", "status_page", "explore", "expeditions", "campaign", "guide", "codex", "companions", "news", "store",
         "community", "streamers", "support")]
+    data, _problem = gameapi.expeditions()
+    paths += [url_for("public.expedition", slug=raw["id"]) for raw in (data or {}).get("expeditions") or []
+              if isinstance(raw, dict) and isinstance(raw.get("id"), str)]
     for key, endpoint in (("regions", "region"), ("guides", "guide_article"), ("companions", "companion"),
                           ("news", "news_article"), ("products", "store_item"), ("pages", "page")):
         paths += [url_for("public." + endpoint, slug=row["slug"]) for row in published(key)]

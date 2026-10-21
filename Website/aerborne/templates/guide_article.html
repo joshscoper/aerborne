@@ -3,9 +3,32 @@
 {% import "partials/reference_macros.html" as ref with context %}
 {% block title %}{{ item.title }}{% endblock %}
 {% block description %}{{ item.summary }}{% endblock %}
-{% block body_class %}reading-page reference-page reference-article{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><script src="{{ url_for('static', filename='js/reference.js') }}" defer></script>{% endblock %}
+{% block body_class %}reading-page reference-page reference-article guide-reader-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/guide-reader.css') }}"><script src="{{ url_for('static', filename='js/reference.js') }}" defer></script>{% endblock %}
 {% block content %}
-<article class="article"><header class="article-head reference-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a> / <a href="{{ url_for('public.guide_section', category=item.category) }}">{{ section }}</a></p><p class="eyebrow">{{ section }}{% if item.category == 'getting-started' and step %} · Step {{ step }} of {{ siblings | length }}{% endif %}</p><h1>{{ item.title }}</h1><p class="lede">{{ item.summary }}</p><div class="reference-meta"><span>{{ reading_minutes }} min read</span>{% if item.availability != 'released' %}{{ ref.status(item.availability) }}{% endif %}</div>{% if item.availability != 'released' %}<p class="reference-preview-note">This guide includes preview features. Check each feature’s label and the in-game menu before planning an upgrade.</p>{% endif %}</div></header>
-<div class="wrap reference-layout">{{ ref.sidebar() }}<div class="reference-main article-body">{% if item.image %}<figure class="article-figure">{{ m.picture(item.image, item.image_alt, lazy=False) }}</figure>{% endif %}<div class="prose guide-prose" data-guide-prose>{{ item.body | markdown }}</div>{{ m.related_list(related) }}{% if prev_item or next_item %}<nav class="pager" aria-label="{{ section }}">{% if prev_item %}<a class="pager-prev" href="{{ url_for('public.guide_article', slug=prev_item.slug) }}"><span>Previous guide</span>{{ prev_item.title }}</a>{% endif %}{% if next_item %}<a class="pager-next" href="{{ url_for('public.guide_article', slug=next_item.slug) }}"><span>Next guide</span>{{ next_item.title }}</a>{% endif %}</nav>{% endif %}<p class="updated">Updated {{ item.updated_at | date }} · <a href="{{ url_for('community.category', category_slug='help') }}">Ask a question</a></p></div></div></article>
+<article class="guide-reader" data-guide-reader>
+  <header class="guide-heading" id="guide-top"><div class="wrap">
+    <p class="crumbs"><a href="{{ url_for('public.guide') }}">Game Guide</a><span aria-hidden="true"> / </span><a href="{{ url_for('public.guide_section', category=item.category) }}">{{ section }}</a></p>
+    <div class="guide-heading-row"><div><p class="eyebrow">{{ section }}{% if step %} · Guide {{ step }} of {{ siblings | length }}{% endif %}</p><h1>{{ item.title }}</h1><p class="lede">{{ item.summary }}</p></div><a class="guide-chapter-link" href="{{ url_for('public.guide_section', category=item.category) }}"><span>Browse this chapter</span><strong>{{ section }} <span aria-hidden="true">↗</span></strong></a></div>
+    <div class="guide-heading-meta"><span>{{ reading_minutes }} min read</span><span>{{ reader_sections | length }} sections</span>{% if item.availability != 'released' %}{{ ref.status(item.availability) }}{% endif %}<a href="#guide-contents">Jump to contents ↓</a></div>
+    {% if item.availability != 'released' %}<p class="guide-preview-note">Some features in this guide are previews. Check the feature labels and your in-game menu before planning an upgrade.</p>{% endif %}
+  </div></header>
+  <div class="wrap guide-reader-layout">
+    <aside class="guide-reader-aside" id="guide-contents">
+      <details class="guide-contents" data-guide-contents open><summary>In this guide <span>{{ reader_sections | length }} sections</span></summary><nav aria-label="Guide sections"><ol>{% for part in reader_sections %}<li><a href="#{{ part.id }}" data-section-link><span aria-hidden="true">{{ '%02d' % loop.index }}</span>{{ part.title }}</a></li>{% endfor %}</ol></nav></details>
+      <details class="guide-chapter"><summary>More in {{ section }}</summary><nav aria-label="Other guides in this chapter"><ul>{% for entry in siblings %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}"{% if entry.id == item.id %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>{% endfor %}</ul></nav></details>
+      <a class="guide-help-link" href="{{ url_for('community.category', category_slug='help') }}">Need a hand? Ask the community ↗</a>
+    </aside>
+    <div class="guide-reader-main">
+      <div class="guide-reader-tools" data-reader-tools hidden><div class="guide-view-switch" role="group" aria-label="Reading view"><button type="button" data-reader-mode="all" aria-pressed="true">Read guide</button><button type="button" data-reader-mode="steps" aria-pressed="false">Step by step</button></div><span data-reader-position aria-live="polite" aria-atomic="true"></span><a class="guide-mobile-contents" href="#guide-contents" data-open-contents>Contents ↑</a><progress data-reader-progress value="1" max="{{ reader_sections | length }}" aria-label="Position in this guide"></progress></div>
+      {% if item.image %}<figure class="article-figure">{{ m.picture(item.image, item.image_alt, lazy=False) }}</figure>{% endif %}
+      <div data-guide-prose>{% for part in reader_sections %}<section class="guide-step" id="{{ part.id }}" aria-labelledby="{{ part.id }}-title" data-guide-step><header class="guide-step-heading"><span class="guide-step-number" aria-hidden="true">{{ '%02d' % loop.index }}</span><h2 id="{{ part.id }}-title" tabindex="-1">{{ part.title }}</h2></header><div class="prose guide-prose">{{ part.html }}</div></section>{% endfor %}</div>
+      <nav class="guide-step-controls" data-step-controls aria-label="Move between sections" hidden><button class="btn btn-quiet" type="button" data-step-back>← Previous section</button><button class="btn btn-primary" type="button" data-step-next>Next section →</button><span data-guide-finished hidden>You’ve reached the end of this guide.</span></nav>
+      <p class="sr-only" data-guide-announcement role="status" aria-live="polite"></p>
+      {{ m.related_list(related) }}
+      {% if prev_item or next_item %}<nav class="pager guide-next-guides" aria-label="Other guides in {{ section }}">{% if prev_item %}<a class="pager-prev" href="{{ url_for('public.guide_article', slug=prev_item.slug) }}"><span>Previous guide</span>{{ prev_item.title }}</a>{% endif %}{% if next_item %}<a class="pager-next" href="{{ url_for('public.guide_article', slug=next_item.slug) }}"><span>Next guide</span>{{ next_item.title }}</a>{% endif %}</nav>{% endif %}
+      <p class="updated">Updated {{ item.updated_at | date }} · <a href="#guide-top">Back to top ↑</a></p>
+    </div>
+  </div>
+</article>
 {% endblock %}

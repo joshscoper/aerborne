@@ -1,0 +1,52 @@
+/* Expedition board and season campaign pages. Builds on reference.css. */
+.season-sampled { margin-bottom: 1.5rem; }
+.season-section { margin-top: 2.5rem; }
+
+.expedition-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr)); gap: 1.25rem; }
+.expedition-card { padding: 1.5rem; border: 1px solid #b0c7e22b; border-radius: 14px; background: #20314b; min-width: 0; }
+.expedition-card.is-nether { background: linear-gradient(160deg, #3a1f27, #20314b 70%); }
+.expedition-card.is-end { background: linear-gradient(160deg, #2c2346, #20314b 70%); }
+.expedition-card header { display: grid; gap: .35rem; margin-bottom: .75rem; }
+.expedition-card h2 { font-size: 1.45rem; margin: 0; }
+.expedition-card header .reference-status { justify-self: start; }
+.expedition-card > p { color: #c4d3e6; font-size: .92rem; }
+.expedition-facts { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding: 0; margin: 1rem 0; list-style: none; color: #afc2db; font-size: .85rem; }
+.expedition-facts strong { color: #f4f9ff; }
+.expedition-tiers { width: 100%; border-collapse: collapse; font-size: .85rem; margin-bottom: 1rem; }
+.expedition-tiers th, .expedition-tiers td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid #b0c7e21f; vertical-align: top; }
+.expedition-tiers thead th { color: #8fa4bf; font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+.expedition-mods, .expedition-party { display: block; color: #cfb1f8; font-size: .75rem; font-weight: 600; }
+.expedition-party { color: #8fa4bf; }
+.expedition-mods abbr { text-decoration: none; border-bottom: 1px dotted currentColor; cursor: help; }
+
+.season-goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.season-goal { padding: 1.25rem; border: 1px solid #b0c7e22b; border-radius: 14px; background: #20314b; min-width: 0; }
+.season-goal h3 { font-size: 1.1rem; margin: 0 0 .35rem; }
+.season-goal > p { color: #afc2db; font-size: .85rem; }
+.season-count { margin: .5rem 0 0; color: #afc2db; font-size: .85rem; }
+.season-count strong { color: #f4f9ff; font-size: 1.1rem; }
+.season-bar { height: 8px; border-radius: 4px; background: #0f1a2c; overflow: hidden; margin-top: .6rem; }
+.season-bar > span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--sky), #8ce0cd); }
+.season-buffs { margin-top: 1.5rem; }
+.season-milestones { display: grid; gap: 1rem; padding: 0; margin: 0; list-style: none; }
+.season-milestone { padding: 1.25rem 1.5rem; border: 1px solid #b0c7e22b; border-radius: 14px; background: #1b2a41; }
+.season-milestone.is-reached { border-color: #70dbc355; background: #1d3438; }
+.season-milestone-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.season-milestone h3 { margin: 0; font-size: 1.15rem; }
+.season-milestone > p { color: #afc2db; font-size: .88rem; margin: .4rem 0 0; }
+.season-needs, .season-rewards { padding: 0; margin: .9rem 0 0; list-style: none; display: grid; gap: .6rem; font-size: .85rem; color: #c4d3e6; }
+.season-rewards li::before { content: '✦ '; color: var(--gold); }
+.season-top { display: grid; gap: .4rem; max-width: 28rem; padding-left: 1.25rem; }
+.season-top span { color: #8fa4bf; margin-left: .5rem; }
+@media (max-width: 40rem) {
+  .expedition-tiers th:nth-child(2), .expedition-tiers td:nth-child(2) { display: none; }
+}
+
+.expedition-rating { margin: 0; color: var(--gold); font-weight: 700; font-size: .85rem; }
+.expedition-rating span { letter-spacing: .08em; margin-right: .3rem; }
+.expedition-rating-large { font-size: 1rem; margin: .25rem 0 .75rem; }
+.expedition-card h2 a, .expedition-card h3 { color: inherit; text-decoration: none; }
+.expedition-card h3 { font-size: 1.2rem; margin: 0; }
+.expedition-card.is-boss { border-color: #f4c76b55; background: linear-gradient(160deg, #3b2a1c, #20314b 70%); }
+.expedition-tips { display: grid; gap: .6rem; padding-left: 1.2rem; max-width: 46rem; color: #c4d3e6; }
+.expedition-boss { margin-top: 2rem; }

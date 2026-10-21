@@ -4,7 +4,9 @@ Only published content is returned, and hidden codex recipes stay hidden here to
 """
 from flask import Blueprint, current_app, jsonify, url_for
 
-from . import status
+import time
+
+from . import gameapi, status
 from .config import status_target, status_uses_srv
 from .content import image_url, published
 from .db import get_setting
@@ -18,10 +20,29 @@ def _cors(response):
     return response
 
 
+def _api_status():
+    """Server status from the game API over HTTPS, in the same shape as a status ping.
+
+    Many web hosts block outgoing connections to the Minecraft port, but HTTPS to the game API gets through,
+    so the API is asked first. Returns None when the API isn't configured or can't be reached.
+    """
+    if not current_app.config.get("API_URL"):
+        return None
+    data, _problem = gameapi.status()
+    if not data or not data.get("ready"):
+        return None
+    now = int(time.time())
+    return {"state": "online", "online": True, "configured": True, "source": "api",
+            "players": int(data.get("onlinePlayers") or 0), "max": int(data.get("maxPlayers") or 0),
+            "version": str(data.get("serverVersion") or "")[:40], "latency_ms": None, "favicon": None,
+            "checked_at": now, "last_online_at": now}
+
+
 def current_status():
     cfg = current_app.config
-    result = status.get_status(status_target(cfg), timeout=cfg["STATUS_TIMEOUT"],
-                               cache_seconds=cfg["STATUS_CACHE_SECONDS"], use_srv=status_uses_srv(cfg))
+    # Ask the game API first; ping the Minecraft port directly only if the API can't be reached.
+    result = _api_status() or status.get_status(status_target(cfg), timeout=cfg["STATUS_TIMEOUT"],
+                                                cache_seconds=cfg["STATUS_CACHE_SECONDS"], use_srv=status_uses_srv(cfg))
     if get_setting("maintenance") == "1":
         result["state"] = "maintenance"
         result["message"] = get_setting("maintenance_message")

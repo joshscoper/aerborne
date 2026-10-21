@@ -3,6 +3,7 @@
     python manage.py create-admin <username>   add an admin (asks for a password)
     python manage.py set-password <username>   reset a staff password
     python manage.py run                        run the site locally on http://127.0.0.1:5000
+    python manage.py tebex-sync                 link existing products to verified Tebex packages
 """
 import getpass
 import os
@@ -34,7 +35,15 @@ def main(argv):
         return
     app = create_app()
     conn = connect(app.config["DATABASE"])
-    if command == "create-admin" and len(argv) == 3:
+    if command == 'tebex-sync':
+        from aerborne import tebex
+        with app.app_context():
+            try:
+                linked, skipped = tebex.sync_products(conn)
+            except tebex.TebexError as exc:
+                sys.exit(str(exc))
+        print('Linked %d products. Unmatched: %s' % (len(linked), ', '.join(skipped) or 'none'))
+    elif command == "create-admin" and len(argv) == 3:
         username = argv[2]
         if conn.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone():
             sys.exit("That username already exists. Use set-password instead.")

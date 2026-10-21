@@ -2,6 +2,7 @@
 import datetime
 import email.utils
 import logging
+import mimetypes
 import os
 
 from flask import Flask, g, render_template, request, session, url_for
@@ -19,7 +20,11 @@ from .seed import ensure_default_settings, seed_default_admin, seed_forum, seed_
 
 # Top navigation. A group opens a small menu; the first link in a group is its overview page.
 NAV = [
-    {"label": "Explore", "endpoint": "public.explore"},
+    {"label": "Explore", "id": "explore", "links": [
+        ("public.explore", "Explore the skies", "Your island, the hub and beyond"),
+        ("public.expeditions", "Expeditions", "Party adventures open right now"),
+        ("public.campaign", "Season campaign", "Server-wide goals and rewards"),
+    ]},
     {"label": "Game Guide", "id": "guide", "links": [
         ("public.guide", "Adventurer's Handbook", "Guides from your first island onwards"),
         ("public.codex", "Arcane Codex", "Every public enchantment and Aspect"),
@@ -39,6 +44,8 @@ NAV = [
 
 
 def create_app(overrides=None):
+    # Older host MIME databases (including Windows) may not recognise WebP assets.
+    mimetypes.add_type('image/webp', '.webp')
     app = Flask(__name__)
     app.config.from_mapping(load_config())
     if overrides:
@@ -71,6 +78,9 @@ def create_app(overrides=None):
     from . import members  # noqa: F401  (adds the members directory and data export)
     from .public import bp as public_bp
     from .social_sync import bp as social_sync_bp
+    from .shop import bp as shop_bp
+    from . import applications  # noqa: F401 (adds public application and private admin review routes)
+    from . import creators  # noqa: F401 (creator program and authenticated payment events)
 
     app.register_blueprint(public_bp)
     app.register_blueprint(community_bp)
@@ -78,6 +88,7 @@ def create_app(overrides=None):
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(social_sync_bp)
+    app.register_blueprint(shop_bp)
 
     app.teardown_appcontext(db.close_db)
     app.after_request(apply_headers)
@@ -87,10 +98,10 @@ def create_app(overrides=None):
         g.user = None
         g.member = None
         g.staff_view = False
-        if request.blueprint in ("admin", "public", "community", "arcade"):
+        if request.blueprint in ("admin", "public", "community", "arcade", "shop"):
             load_user()
             db.purge_security_records(db.get_db(), force=False)
-        if request.blueprint in ("public", "community", "arcade"):
+        if request.blueprint in ("public", "community", "arcade", "shop"):
             load_member()
             # Staff see the site with tools ("admin view") unless they switch to the player view.
             g.staff_view = bool(g.user) and session.get("view_as", "admin") == "admin"
@@ -98,6 +109,8 @@ def create_app(overrides=None):
 
     @app.context_processor
     def _inject():
+        from . import tebex
+        from .creators import can_dashboard
         settings = {}
         try:
             settings = db.get_settings()
@@ -105,6 +118,8 @@ def create_app(overrides=None):
             app.logger.exception("Could not read settings")
         return {
             "site": app.config,
+            "store_connection": tebex.catalog() if request.path.startswith('/store') else {},
+            "store_cart_count": len(session.get('store_cart', [])),
             "server_address": display_address(app.config),
             "bedrock": display_bedrock(app.config),
             "nav": [item for item in NAV if item.get("endpoint") != "arcade.index" or settings.get("arcade_enabled", "1") == "1"],
@@ -118,6 +133,7 @@ def create_app(overrides=None):
             "staff_view": g.get("staff_view", False),
             "edit_link": _edit_link(),
             "discord_url": (settings.get("discord_invite") or app.config.get("DISCORD_URL") or ""),
+            "can_creator_dashboard": can_dashboard(),
         }
 
     app.jinja_env.filters["markdown"] = render

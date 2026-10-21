@@ -1,0 +1,30 @@
+{% import "partials/macros.html" as m with context %}
+
+{% macro product_art(item, class_name='', sizes='(max-width: 600px) 80vw, 260px', lazy=True) -%}
+{% set ns = namespace(rank='') %}
+{% for rank in ('skyfarer', 'cloudkeeper', 'starweaver') %}{% if item.image == 'static:img/store/ranks/' ~ rank ~ '-256.webp' %}{% set ns.rank = rank %}{% endif %}{% endfor %}
+{% if ns.rank %}<img class="{{ class_name }} store-rank-art" src="{{ url_for('static', filename='img/store/ranks/' ~ ns.rank ~ '-256.webp') }}" srcset="{% for size in (128, 256, 512) %}{{ url_for('static', filename='img/store/ranks/' ~ ns.rank ~ '-' ~ size ~ '.webp') }} {{ size }}w{% if not loop.last %}, {% endif %}{% endfor %}" sizes="{{ sizes }}" alt="{{ item.image_alt or '' }}" width="512" height="512"{% if lazy %} loading="lazy" decoding="async"{% endif %}>{% else %}{{ m.picture(item.image, item.image_alt, class_name, 320, 320, lazy=lazy) }}{% endif %}
+{%- endmacro %}
+
+{% macro artwork(cat, class_name='', lazy=True) -%}
+{% if cat.illustration %}<img class="{{ class_name }}" src="{{ url_for('static', filename='img/store/' ~ cat.illustration ~ '-256.webp') }}" srcset="{{ url_for('static', filename='img/store/' ~ cat.illustration ~ '-256.webp') }} 256w, {{ url_for('static', filename='img/store/' ~ cat.illustration ~ '-512.webp') }} 512w" sizes="(max-width: 600px) 45vw, 240px" alt="" width="512" height="512"{% if lazy %} loading="lazy" decoding="async"{% endif %}>{% else %}<img class="{{ class_name }} is-landscape" src="{{ url_for('static', filename=cat.image ~ '-560.webp') }}" alt="" width="560" height="235"{% if lazy %} loading="lazy" decoding="async"{% endif %}>{% endif %}
+{%- endmacro %}
+
+{% macro browse(categories, active='') -%}
+<nav class="store-browse" aria-label="Store collections"><a href="{{ url_for('public.store') }}"{% if not active %} aria-current="page"{% endif %}>All collections</a>{% for entry in categories %}<a href="{{ url_for('public.store_category', category=entry.key) }}"{% if active == entry.key %} aria-current="page"{% endif %}>{{ entry.title }}</a>{% endfor %}{% if store_connection.configured %}<a class="store-cart-link" href="{{ url_for('shop.cart') }}">Cart ({{ store_cart_count }})</a>{% endif %}</nav>
+{%- endmacro %}
+
+{% macro connection_notice() -%}
+{% if store_connection.configured and not store_connection.ready %}<p class="notice notice-info" role="status">We can’t load live prices from Tebex right now. Your cart is saved. Please try again shortly.</p>{% endif %}
+{%- endmacro %}
+
+{% macro help(compact=False) -%}
+<section class="store-concierge{% if compact %} is-compact{% endif %}" aria-label="Store help">
+  <img src="{{ url_for('static', filename='img/store/shopkeeper-mascot-256.webp') }}" srcset="{{ url_for('static', filename='img/store/shopkeeper-mascot-256.webp') }} 1x, {{ url_for('static', filename='img/store/shopkeeper-mascot-512.webp') }} 2x" alt="" width="256" height="256" loading="lazy" decoding="async">
+  <div><p class="eyebrow">A little help from the shopkeeper</p><h2>Questions before you choose?</h2><p>Check what’s included, read the store terms or find help with a purchase.</p><div class="store-help-links"><a href="{{ url_for('public.page', slug='purchase-help') }}">Purchase help ↗</a><a href="{{ url_for('public.page', slug='store-terms') }}">Store terms →</a></div></div>
+</section>
+{%- endmacro %}
+
+{% macro empty(cat) -%}
+<section class="store-empty" aria-labelledby="empty-collection-title"><img src="{{ url_for('static', filename='img/store/empty-cart-illustration-256.webp') }}" srcset="{{ url_for('static', filename='img/store/empty-cart-illustration-256.webp') }} 1x, {{ url_for('static', filename='img/store/empty-cart-illustration-512.webp') }} 2x" alt="" width="256" height="256"><div><p class="eyebrow">A little room for something new</p><h2 id="empty-collection-title">This collection is still taking shape.</h2><p>This collection doesn’t have any items yet. Explore the other collections, or check News for new arrivals.</p><div class="store-help-links"><a class="btn btn-primary" href="{{ url_for('public.store') }}#store-collection">Explore the collections</a><a href="{{ url_for('public.news') }}">Read the latest news →</a></div></div></section>
+{%- endmacro %}

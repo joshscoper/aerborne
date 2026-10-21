@@ -77,8 +77,29 @@ def _cached(key, path, ttl):
     return data, problem
 
 
+def status():
+    """Players online, max players and server version from the game API. Cached like a status ping."""
+    return _cached("status", "/api/v1/status", current_app.config.get("STATUS_CACHE_SECONDS", 30))
+
+
 def leaderboards():
     data, problem = _cached("leaderboards", "/api/v1/leaderboards", 60)
+    if data is not None and not data.get("ready"):
+        return None, "unavailable"
+    return data, problem
+
+
+def expeditions():
+    """Published expeditions with tiers, seals and records. Public and cached briefly."""
+    data, problem = _cached("expeditions", "/api/v1/expeditions", 30)
+    if data is not None and not data.get("ready"):
+        return None, "unavailable"
+    return data, problem
+
+
+def campaign():
+    """The running season: goals, milestones, buffs and top contributors."""
+    data, problem = _cached("campaign", "/api/v1/campaign", 30)
     if data is not None and not data.get("ready"):
         return None, "unavailable"
     return data, problem

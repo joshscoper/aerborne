@@ -245,7 +245,8 @@ TYPES = [
             ("permanent", "Permanent"), ("timed", "Timed"), ("one-time", "One-time use")]),
         Field("entitlement_note", "Entitlement details", help="For timed items, how long it lasts."),
         Field("platforms", "Platforms", default="Java Edition"),
-        Field("tebex_url", "Tebex package link", "url", help="Checkout happens on Tebex, never on this site."),
+        Field("tebex_url", "Tebex package link", "url", help="Optional legacy checkout link. API-connected products use their package ID."),
+        Field('tebex_package_id', 'Tebex package ID', help='Numeric package ID or package ident from Tebex. Live prices and cart checkout use this package.'),
         Field("game_product", "Game product id",
               help="What the server grants, e.g. cosmetic.companion.pufflet. In Tebex, set the package command to "
                    "nerdadmin entitlement grant {username} <this id> {transaction}. /nerdadmin entitlement products lists them all."),

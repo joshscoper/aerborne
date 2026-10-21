@@ -1,33 +1,44 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
+{% import "partials/store_macros.html" as shop with context %}
 {% block title %}{{ item.name }}{% endblock %}
 {% block description %}{{ item.summary }}{% endblock %}
+{% block body_class %}store-page store-product-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}">{% endblock %}
 {% block content %}
 <div class="wrap product-layout">
   <p class="crumbs"><a href="{{ url_for('public.store') }}">Store</a> / <a href="{{ url_for('public.store_category', category=item.category) }}">{{ category_title }}</a></p>
+  {{ shop.browse(categories, item.category) }}
+  {{ shop.connection_notice() }}
   <article class="product">
     <figure class="product-figure">
-      {{ m.picture(item.image, item.image_alt, 'product-big', 320, 320, lazy=False) }}
+      {{ shop.product_art(item, 'product-big', sizes='(max-width: 800px) 80vw, 320px', lazy=False) }}
       {% if item.concept_art %}<figcaption>Concept art. The in-game look may differ.</figcaption>{% endif %}
     </figure>
     <div class="product-text">
+      <p class="eyebrow">{{ category_title }}</p>
       <h1>{{ item.name }}</h1>
       <p class="lede">{{ item.summary }}</p>
-      <dl class="facts">
-        <dt>Price</dt><dd>{% if item.availability == 'released' and item.price %}<strong>{{ item.price }}</strong>{% else %}Not on sale yet{% endif %}</dd>
-        {% if item.entitlement %}<dt>Entitlement</dt><dd>{{ option_label('products', 'entitlement', item.entitlement) }}{% if item.entitlement_note %}: {{ item.entitlement_note }}{% endif %}</dd>{% endif %}
-        <dt>Platforms</dt><dd>{{ item.platforms or 'Java Edition' }}</dd>
-        <dt>Gameplay effect</dt><dd>None. Cosmetic only.</dd>
+      <dl class="product-meta">
+        {% if item.entitlement %}<div><dt>Duration</dt><dd>{{ option_label('products', 'entitlement', item.entitlement) }}{% if item.entitlement_note %}: {{ item.entitlement_note }}{% endif %}</dd></div>{% endif %}
+        <div><dt>Edition</dt><dd>{{ item.platforms or 'Java Edition' }}</dd></div>
+        <div><dt>Benefits</dt><dd>Cosmetic only</dd></div>
       </dl>
-      <h2>What you receive</h2>
+      <section class="product-includes" aria-labelledby="product-includes-title">
+      <h2 id="product-includes-title">What you receive</h2>
       <ul class="ticks">{% for line in includes %}<li>{{ line }}</li>{% endfor %}</ul>
-      {% if item.availability == 'released' and item.price and item.tebex_url %}
+      </section>
+      <div class="product-purchase"><div class="product-purchase-row"><p class="product-current-price"><span>Price</span><strong>{{ item.display_price or item.store_message }}</strong></p>
+      {% if item.purchasable and item.tebex_package and not preview %}
+      <form method="post" action="{{ url_for('shop.add', slug=item.slug) }}" class="store-add-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="btn btn-primary btn-large">Add to cart</button></form>
+      {% elif item.purchasable and not item.tebex_connected %}
       <p><a class="btn btn-primary btn-large" href="{{ item.tebex_url }}" rel="noopener">Buy on Tebex for {{ item.price }}</a></p>
-      <p class="fine">You'll check out on Tebex. Read the <a href="{{ url_for('public.page', slug='store-terms') }}">store terms</a> before you buy.</p>
       {% else %}
-      <p class="notice notice-info">This item isn't on sale yet.</p>
+      <p class="notice notice-info">{% if preview and item.tebex_package %}Checkout is available on the published page.{% elif item.store_message == 'Not on sale yet' %}This item isn't on sale yet.{% else %}{{ item.store_message }}. Please try again shortly.{% endif %}</p>
       {% endif %}
+      </div>{% if item.purchasable %}<p class="fine">{% if item.tebex_package %}Choose your Minecraft account in the cart. {% endif %}Secure checkout with Tebex. Final taxes, discounts and eligibility are calculated at checkout.</p><a class="product-terms-link" href="{{ url_for('public.page', slug='store-terms') }}">Store terms →</a>{% endif %}</div>
     </div>
   </article>
+  {{ shop.help(compact=True) }}
 </div>
 {% endblock %}

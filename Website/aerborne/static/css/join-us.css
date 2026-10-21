@@ -1,0 +1,53 @@
+.join-page { background: #17243b; }
+.join-page .play-dock { display: none; }
+.join-hero { padding: 3rem 0; background: linear-gradient(90deg,#111b2ef2,#17243be8 48%,#17243b75), url('../img/brand/sky-kingdom-1280.webp') center/cover; border-bottom: 1px solid #8da9ce40; }
+.join-hero-inner { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 2rem; align-items: center; }
+.join-hero-copy { min-width: 0; }
+.join-hero-mascot { display: block; width: 100%; max-width: 440px; height: auto; justify-self: end; filter: drop-shadow(0 16px 24px #07132665); }
+.join-hero h1 { font-size: clamp(2.8rem,5vw,4.2rem); max-width: 18ch; }
+.join-hero .lede { max-width: 34rem; color: #d0def0; margin-block: 1.4rem 1.75rem; }
+.join-hero .eyebrow { font-size: .8rem; }
+.join-layout { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0,1.5fr); gap: clamp(2rem,5vw,4.5rem); padding-block: 3.5rem 4.5rem; align-items: start; }
+.join-intro { color: #c0d0e6; font-size: .95rem; line-height: 1.85; }
+.join-intro h2 { font-size: 2rem; margin-bottom: 1.25rem; }
+.join-intro .eyebrow { font-size: .7rem; }
+.join-intro ul { padding-left: 1.1rem; }
+.join-intro li { margin-bottom: .6rem; }
+.join-intro details { padding-block: 1rem; border-block: 1px solid #8da9ce40; margin-top: 1.5rem; }
+.join-intro summary { color: #9bd9fc; cursor: pointer; font-weight: 800; }
+.join-role-list { margin-bottom: 0; }
+.join-role-list > div { margin-top: 1rem; }
+.join-role-list dt { font-weight: 800; color: #e5efff; }
+.join-role-list dd { margin: .25rem 0 0; font-size: .85rem; }
+.join-note { margin-top: 2rem; padding: 1.25rem; border: 1px solid #bc9a6050; border-radius: 12px; background: #20314b; overflow-wrap: anywhere; }
+.join-note p { font-size: .85rem; }
+.join-note p:last-child { margin: 0; }
+.join-form { padding: clamp(1.25rem,3vw,2.5rem); background: #20314b; border: 1px solid #8da9ce45; border-radius: 18px; scroll-margin-top: 6rem; }
+.join-form > .eyebrow { font-size: .75rem; }
+.join-form > h2 { font-size: 2.2rem; margin-bottom: 1rem; }
+.join-form .fine { font-size: .85rem; color: #bdcfe5; line-height: 1.8; }
+.join-form fieldset { border: 0; padding: 1.6rem 0 .5rem; margin: 1.5rem 0 0; border-top: 1px solid #8da9ce40; min-width: 0; }
+.join-form legend { padding: 0 .5rem 0 0; color: #edf5ff; font-size: 1.1rem; font-weight: 800; }
+.join-form legend span { margin-right: .55rem; color: #f1cf8a; font-size: .8rem; }
+.join-form label { display: block; margin-bottom: 1.25rem; font-size: .9rem; font-weight: 800; color: #e5efff; }
+.join-form input:not([type=checkbox]):not([type=hidden]), .join-form select, .join-form textarea { display: block; width: 100%; padding: .75rem .85rem; margin-top: .5rem; color: #edf5ff; background: #17243b; border: 1px solid #8da9ce80; border-radius: 8px; font: inherit; font-weight: 400; min-width: 0; }
+.join-form textarea { resize: vertical; line-height: 1.75; }
+.join-form input::placeholder, .join-form textarea::placeholder { color: #aebfd6; opacity: 1; }
+.join-form [aria-invalid=true] { border-color: #ffaaa7 !important; }
+.join-field-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 1rem; }
+.join-optional { margin-left: .3rem; color: #b8cbe2; font-size: .75rem; font-weight: 400; }
+.join-help { display: block; margin-top: .5rem; color: #bdcfe5; font-weight: 400; font-size: .8rem; line-height: 1.75; }
+.join-role-hint { padding: .9rem 1rem; margin-bottom: 1.75rem; background: #17243b; border-left: 3px solid #77c8f5; color: #c8d8ec; font-size: .88rem; line-height: 1.8; }
+.join-submit { border-top: 1px solid #8da9ce40; padding-top: 1.5rem; margin-top: .5rem; }
+.join-form .join-confirm { display: flex; gap: .75rem; align-items: start; font-size: .83rem; font-weight: 600; line-height: 1.8; }
+.join-confirm input { width: 18px; height: 18px; flex-shrink: 0; margin-top: .3rem; }
+.join-submit > .fine:last-child { margin: 1rem 0 0; }
+.join-errors { padding: 1rem; background: #4a2935; border: 1px solid #e9a49e; border-radius: 8px; margin-block: 1rem; font-size: .9rem; }
+.join-errors p, .join-errors ul { margin: .5rem 0 0; }
+.join-error { display: block; margin-top: .4rem; color: #ffbbb5; font-size: .8rem; font-weight: 700; }
+.join-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.join-thanks { padding-block: 4rem 5rem; }
+.join-thanks h1 { margin-bottom: 1.5rem; }
+@media (max-width: 850px) { .join-layout { grid-template-columns: minmax(0,1fr); gap: 2rem; padding-block: 2rem 3rem; } .join-intro { max-width: 44rem; } .join-hero { padding-block: 2.5rem; } }
+@media (max-width: 760px) { .join-hero-inner { grid-template-columns: minmax(0,1fr); gap: 1.75rem; } .join-hero-mascot { width: 260px; max-width: 100%; justify-self: center; } }
+@media (max-width: 500px) { .join-field-grid { grid-template-columns: minmax(0,1fr); } .join-form { padding: 1.25rem; } .join-hero h1 { font-size: 2.8rem; } .join-submit .btn { width: 100%; } }

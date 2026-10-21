@@ -29,11 +29,11 @@ Use `/island home` to return and `/menu` for the main game menus. Falling into t
     _guide('island-basics', 'Grow your island',
            'Understand resources, shared progress and co-op access.', """
 ## Three ways your island develops
-| Menu | Purpose |
-|---|---|
-| `/island journal` | Certify trained skills to unlock resources and territory. |
-| `/island talents` | Spend shared island talent points. The owner chooses upgrades. |
-| `/island machines` | Browse processing machines, spawners and their recipes. |
+- **Unlock resources and land:** open `/island journal` and share your trained skill progress.
+- **Choose island bonuses:** open `/island talents`. Shared points belong to the island; the owner chooses upgrades.
+- **Build automation:** open `/island machines` for processing stations, spawners and their recipes.
+
+These menus serve different purposes. A talent purchase does not replace a journal skill requirement.
 
 Skill activity on the island contributes to island XP, subject to activity and daily limits. Machine output and valuable blocks placed on the ground do not replace that work.
 
@@ -82,14 +82,15 @@ Research discovers enchantments; Chosen Imbuement applies a discovery at a chose
 | Timed auctions | `/ah` |
 | Player stores | `/store` |
 | A confirmed item exchange | `/trade <player>` |
-| Public travel destinations | `/expedition` |
+| Party adventures, the Nether and the End | `/expedition` |
+| Public warps | `/warps` |
 
 Shopping and player commerce work remotely; you do not need to leave your island just to browse. Review fees, prices and delivery information before confirming.
 
-## Prepare before travelling
-Keep some inventory space, take suitable equipment and learn [grave recovery](/guide/graves). Make a [party](/guide/parties) to keep expedition chat separate from your island co-op.
+## Prepare before an expedition
+[Expeditions](/guide/expeditions) are private adventures for you and up to four friends. Dying inside one never costs your gear, but each death spends one of the party's shared lives. Make a [party](/guide/parties) first, or queue on your own and the finder groups you with other players.
 
-The [Explore page](/explore) distinguishes available island features from city and expedition previews. Use the in-game destination list for the routes currently open.
+The [expedition board](/expeditions) lists what is open right now, and the [campaign page](/campaign) shows which expeditions the server is still working to unlock.
 """, 'getting-started', 'Explore the skies | /explore\nChoose how to trade | /guide/trading-safely'),
     _guide('milestone-planning', 'Plan your next milestone',
            'Choose one unlock, share the work and put it to use.', """
@@ -158,10 +159,18 @@ Open `/island machines` → **Spawner recipes**. Recipes use iron blocks in the 
 
 | Spawner | Side ingredient | Stage |
 |---|---|---|
-| Zombie / Skeleton / Spider / Blaze | Rotten flesh / Bone / String / Blaze rod | Settler |
-| Creeper / Drowned / Husk | Gunpowder / Copper ingot / Sand | Homestead |
-| Stray / Cave Spider | Ice / Fermented spider eye | Workshop |
-| Enderman / Zombified Piglin / Witch | Ender pearl / Gold nugget / Glowstone dust | Sanctuary |
+| Zombie | Rotten flesh | Settler |
+| Skeleton | Bone | Settler |
+| Spider | String | Settler |
+| Blaze | Blaze rod | Settler |
+| Creeper | Gunpowder | Homestead |
+| Drowned | Copper ingot | Homestead |
+| Husk | Sand | Homestead |
+| Stray | Ice | Workshop |
+| Cave Spider | Fermented spider eye | Workshop |
+| Enderman | Ender pearl | Sanctuary |
+| Zombified Piglin | Gold nugget | Sanctuary |
+| Witch | Glowstone dust | Sanctuary |
 | Breeze | Breeze rod | Foundry |
 
 ## Stack matching spawners
@@ -192,6 +201,7 @@ The owner uses `/island visitors on` or `off`. Public islands appear in `/island
 """, 'island', 'Resource milestones | /guide/island-resources'),
     _guide('trading-safely', 'Choose how to trade',
            'Use merchants, auctions, stores or a confirmed exchange.', """
+## Pick the kind of trade
 | What you need | Best starting point |
 |---|---|
 | Ordinary materials or a place to sell surplus | `/shops <item>` |
@@ -368,6 +378,7 @@ Ordinary food and prepared named meals are not interchangeable ingredients. Keep
 """, 'skills', 'Farming | /guide/farming\nSkills and talents | /guide/skills-and-talents'),
     _guide('daily-goals', 'Daily goals and achievements',
            'Pick a contract, track a milestone or compare your progress.', """
+## Find a goal
 | Command | What to check |
 |---|---|
 | `/daily` | Rotating contracts, requirements and current progress. |
@@ -399,24 +410,35 @@ Merge matching gems up to tier IV, or recover installed gems for Arcane Dust. Le
 """, 'equipment', 'Gem merging and recovery | /guide/gem-merging\nArcane Capacity | /guide/capacity-and-corruption'),
     _guide('gem-merging', 'Gem merging and recovery',
            'Combine matching gems or remove one without destroying it.', """
-## Merge two gems
-At an anvil's **Forge & Sockets**, put gems of the **same type and tier** into the two inputs. One gem from each input makes one gem of the next tier, up to **IV**. Review and confirm the result.
+## Merge two matching gems
+1. Right-click an **anvil** to open **Forge & Sockets**.
+2. Put a gem in each input. Both must have the **same gem type and the same tier**.
+3. Review the result, then choose **Confirm Change**.
+
+One gem from each input is consumed to make **one gem of the next tier**. For example, two matching tier-I gems become one tier-II gem. **Tier IV is the maximum**; two tier-IV gems cannot make a tier V.
 
 ## Recover an installed gem
-Put the equipment on the left and **Arcane Dust** on the right, then select the filled socket you want to empty.
+Recovering means **taking one gem back out of your equipment**. It does not upgrade that gem or replace it with Dust.
 
-| Installed tier | Recovery cost |
-|---|---:|
+1. Put **identified equipment in the left input** and **Arcane Dust in the right input**.
+2. Select the **filled socket** you want to empty.
+3. Review the selected gem and Dust cost, then confirm.
+
+The cost depends on the tier of **that one installed gem**, not the rarity or level of the equipment:
+
+| Installed gem tier | Dust needed for one gem |
+|---|---|
 | I | 8 Arcane Dust |
 | II | 12 Arcane Dust |
 | III | 16 Arcane Dust |
 | IV | 20 Arcane Dust |
 
-Recovered gems keep their type and tier. Other installed gems remain. A review expires after 15 seconds or an input change, so check it again before confirming.
+You get the selected gem back with its **original type and tier**. Your other installed gems stay in place. Each recovery is a separate change. A review expires after **15 seconds**, an input change or choosing another socket; review again before confirming.
 
-Recovery and merging require inventory room for the result; a full inventory spends nothing. Closing the forge is different: returned inputs that do not fit can drop at your feet. Work somewhere safe.
+## Prepare Dust and inventory space
+Craft **4 Arcane Dust** from **1 lapis lazuli + 1 amethyst shard**. The amounts above are Dust items, not recipe batches.
 
-**Dust recipe:** 1 lapis lazuli + 1 amethyst shard → 4 Arcane Dust.
+Recovery and merging require room for the result. A full inventory spends nothing. **Closing the forge is different:** returned inputs that do not fit can drop at your feet. Leave space and work somewhere safe.
 """, 'equipment', 'Gear and sockets | /guide/gear-and-sockets'),
     _guide('arcane-forge', 'Arcane Forge: enchanting and discovery',
            'Choose between random offers, research and exact imbuement.', """
@@ -446,13 +468,13 @@ Socket gems carry one of nine Aspects. Research uses **one to three gems with di
 
 Run `/arcane research` beside an enchanting table in Survival. The default minimum effective Arcane levels are **5** for Fundamental and **10** for Specialized research. Effective Arcane level is the higher of Enchanting and Smithing.
 
-| Exact recipe | Tier | Base experiments to discover |
+| Different Aspects | Research tier | Base experiments for a matching recipe |
 |---|---|---:|
 | 1 Aspect | Fundamental | 1 |
 | 2 Aspects | Specialized | 2 |
 | 3 Aspects | Arcane Signature preview | 4 |
 
-Those counts use tier-I reagents and default tuning. Higher-tier gems, talents and a Prismatic catalyst can accelerate progress. Signature research also needs its feature unlocks; it is not made available merely by collecting three gems.
+These are recipe sizes, not the hidden Aspect combinations. The counts assume a matching recipe, tier-I reagents and default tuning. Higher-tier gems, talents and a Prismatic catalyst can accelerate progress. Signature research also needs its feature unlocks; it is not made available merely by collecting three gems.
 
 ## Review before spending
 An experiment consumes its selected gems, optional catalyst and Dust. Default Dust cost is **4 per reagent**. Partial combinations can build clues toward a larger recipe, but partial progress alone cannot finish that recipe.
@@ -478,6 +500,7 @@ Effective Arcane level uses the higher of Enchanting and Smithing. An enabled fe
 """, 'arcane', 'Arcane Forge | /guide/arcane-forge\nEnchantment tiers | /guide/enchantment-tiers'),
     _guide('enchantment-tiers', 'Enchantment tiers and Signatures',
            'Compare ordinary enchantments with features still in preview.', """
+## Compare the three tiers
 | Tier | Aspects | Role |
 |---|---:|---|
 | Fundamental | 1 | Broad equipment and gathering bonuses. |
@@ -501,12 +524,13 @@ When enabled, Signatures use three-Aspect research, mastery requirements, compat
 `/spawn` takes you to the configured hub. The Arcane City artwork is an illustration of the intended capital, not proof that every district or service is finished. Use `/shops` for remote merchant access.
 
 ## Destinations beyond home
-`/expedition` lists staff-published public routes. `/warp <name>` travels to a known public warp. Destinations and encounters depend on what staff have opened; a planned region on the website is not automatically a playable map.
+`/warps` lists public warps and `/warp <name>` travels to one. Some travel uses a warmup. Stay still and avoid damage until it finishes.
 
-Some travel uses a warmup. Stay still and avoid damage until it finishes. A [party](/guide/parties) helps you coordinate without sharing island membership.
+## Expeditions, the Nether and the End
+`/expedition` opens the expedition board: short adventures for a party of up to five, each in its own private copy of the map. The Nether and the End are reached this way. Vanilla portals stay sealed, and Nether and End expeditions run in real Nether and End dimensions. Some expeditions open only once the [season campaign](/guide/season-campaign) reaches a milestone. Read the [expedition guide](/guide/expeditions) before your first run.
 
 Check [Explore](/explore) for available features and previews, and read [grave recovery](/guide/graves) before risking valuable equipment.
-""", 'world', 'Explore | /explore\nGraves | /guide/graves\nParties | /guide/parties'),
+""", 'world', 'Expeditions | /guide/expeditions\nGraves | /guide/graves\nParties | /guide/parties'),
     _guide('graves', 'Graves and item recovery',
            'Know the recovery fee, storage limit and reasons to return promptly.', """
 ## Read the death message
@@ -529,22 +553,114 @@ A server restart can prevent older graves from appearing in locate/remote recove
 Falling into the island void is different: island rescue returns you with your items instead of creating a grave.
 """, 'world', 'World travel | /guide/world-overview'),
     _guide('parties', 'Parties and expedition chat',
-           'Group up without sharing your island or storage permissions.', """
+           'Group up, find a party and run expeditions together, without sharing your island.', """
+## Start a party
+A party is a group for playing together: expeditions, party chat and shared kill rewards. It does **not** add anyone to your island co-op.
+
+Type `/party` to open the party menu. It shows everyone in your party with their health and where they are, and has buttons to invite, chat and start an expedition.
+
 | Command | Purpose |
 |---|---|
-| `/party invite <player>` | Start a party or invite another player. |
-| `/party accept` | Accept a pending invitation. |
-| `/party info` | See the current roster. |
-| `/partychat <message>` | Send a message only to the party. |
-| `/party leave` | Leave the group. |
-| `/party kick <player>` | Leader removes a member. |
-| `/party promote <player>` | Leader hands over leadership. |
-| `/party disband` | Leader closes the party. |
+| `/party invite <player>` | Invite a player. Leave out the name to pick from who's online. |
+| `/party accept` | Join the party that invited you. Or click **[Accept]** on the invite in chat. |
+| `/party deny` | Decline an invite. |
+| `/party list` | Find an open party to join. |
+| `/party join <player>` | Join the open party that player is in. |
+| `/pc <message>` | Talk to your party only. |
+| `/party leave` | Leave the party. |
 
-Party membership is separate from island co-op access. Joining a party does not grant building, storage or visitor access to another player's island. Use it to coordinate travel and encounters with people from different co-ops.
+Invites last a minute. You can hold invites from up to three parties at once and choose one. Joining a party withdraws the rest.
 
-Check `/expedition` for routes currently open, and agree where to meet before travelling.
-""", 'world', 'World travel | /guide/world-overview\nCo-op permissions | /guide/island-coop'),
+## Lead the group
+The leader has a few more tools, in the menu or as commands:
+
+| Command | Purpose |
+|---|---|
+| `/party kick <player>` | Remove a member. In the menu, right-click their head. |
+| `/party promote <player>` | Hand leadership to a member. In the menu, left-click their head. |
+| `/party open` | List the party in the finder so anyone can join. `/party close` makes it invite-only again. |
+| `/party note <text>` | Add a short note, like *Barrow run at 8, bring food*. |
+| `/party invites members` | Let every member invite players. `/party invites leader` changes it back. |
+| `/party disband` | Close the party. |
+
+If the leader leaves, the party passes to the member who has been there longest.
+
+## When someone goes offline
+Your party stays together when people log out, and through server restarts. If the leader is offline for a minute, the next online member takes over. A member who is offline for 15 minutes leaves the party. When you log back in, you're told which party you're in and about any invites waiting for you.
+
+## Run expeditions together
+A party holds up to **five** players, which is also the largest expedition group. The leader starts a run with `/expedition start <expedition>` or from the `/expedition` menu. Everyone online gets a ready check. Click **[Ready]** or type `/expedition ready`, and the run starts once everyone has accepted. Offline members stay behind.
+
+Short of players? The leader can use `/expedition queue <expedition>` instead, and the finder fills the empty places with other queued players. See the [expedition guide](/guide/expeditions).
+
+Party membership does not grant building, storage or visitor access to another player's island. For a shared home, use the separate [co-op system](/guide/island-coop).
+""", 'world', 'Expeditions | /guide/expeditions\nCo-op permissions | /guide/island-coop'),
+    _guide('expeditions', 'Expeditions: party adventures',
+           'Form a party of up to five, clear the rooms, beat the boss and leave with loot.', """
+## What an expedition is
+An expedition is a short adventure for **one to five players** in a private instance: your party gets its own copy of the map, so nobody else's fight gets in your way. Each run is a chain of rooms. Enter a room to start it. Clear its waves, survive its timer or defeat its boss to open the way forward. Beat the final boss, collect your loot and walk into the exit light.
+
+The Nether and the End are reached through expeditions. Vanilla portals are sealed. Nether and End expeditions run in real Nether and End dimensions, with the same sky, fog and creatures.
+
+## Start a run
+| How | Use it when |
+|---|---|
+| `/expedition` | Browse the board and choose a difficulty. Left-click starts with your party; right-click queues. |
+| `/expedition start <expedition> [tier]` | Your party is ready. The leader runs it and everyone gets a ready check. |
+| `/expedition queue <expedition> [tier]` | You are short of players. The finder groups queued players and parties, oldest first. |
+| `/expedition leave` | Leave the queue, or step out of a run. |
+
+A full group starts straight away. A smaller group that meets the expedition's minimum starts after a short wait. When every instance is busy, you keep your place in line. If someone declines a ready check, everyone else goes back to the queue at their old place.
+
+## Short of players?
+Smaller groups meet fewer, softer enemies, so a pair can clear an expedition built for five. If you have waited a while in the finder, you'll be offered **hired allies**. Click **[Start with allies]** or type `/expedition allies` to fill the empty places with labelled NPCs: a Bulwark that soaks up hits, a Blade, a Hedge-witch who heals the most hurt player nearby, and an Archer. Allies never cost the party a life and come back shortly after falling.
+
+A run with hired allies still pays loot and Marks, but it doesn't count toward the [season campaign](/guide/season-campaign), the expedition records or unlocking the next difficulty.
+
+## Lives, deaths and disconnects
+- **Your gear is safe.** Dying in an expedition never drops items or creates a grave.
+- **Lives are shared.** Every death spends one of the party's lives. When they run out, the run fails.
+- **Wipes reset the room.** If the whole party is down at once, the current room resets and you regroup at the last checkpoint.
+- **Checkpoints.** Clearing a room can move the party's respawn point forward.
+- **Disconnects.** Rejoin within a few minutes and you're put back into the run.
+
+There is also a time limit, shown on the bar at the top of the screen with the current room and lives left.
+
+## Difficulty
+| Tier | What changes |
+|---|---|
+| **Normal** | The expedition's base level, 10 lives, one loot roll. |
+| **Heroic** | Stronger enemies, 6 lives, two loot rolls. Clear Normal first. |
+| **Mythic** | Much stronger enemies, 3 lives, three loot rolls and extra modifiers. Clear Heroic first. |
+
+Modifiers add twists: **Fortified** (tougher regular enemies), **Tyrannical** (tougher bosses), **Bolstering** (enemies grow stronger when allies fall), **Volatile** (enemies burst after dying) and **Timed** (finish under par for an extra loot roll). The board shows which apply before you start.
+
+## Rewards
+Every player gets their own loot when the final boss falls. Items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
+""", 'world', 'Expedition board | /expeditions\nParties | /guide/parties\nSeason campaign | /guide/season-campaign'),
+    _guide('season-campaign', 'The season campaign',
+           'Work towards server-wide goals together and unlock rewards for everyone.', """
+## One goal, the whole server
+Each season brings a themed campaign with a handful of **goals** that every player feeds: ore mined, metal smelted, hostile creatures defeated, harvests and catches, and expeditions cleared. Progress is shared. Each player's contribution to a goal is capped per day, so everyone's effort counts.
+
+## Milestones and rewards
+When the server reaches a **milestone**, everyone benefits:
+
+- **Server buffs:** a potion effect or a skill XP or job Marks boost for everyone online, and for anyone who joins while it's running.
+- **Rewards to claim:** items and Marks every account can collect once with `/campaign claim`, whether or not you were online when the milestone fell.
+- **Unlocks:** some expeditions stay sealed until a milestone opens them for good.
+
+## Commands
+| Command | What it does |
+|---|---|
+| `/campaign` | Goals, your contribution, milestones, running buffs and your rewards to claim. |
+| `/campaign progress` | The same summary in chat. |
+| `/campaign claim` | Collect every reward you haven't claimed yet. Make inventory space first. |
+| `/campaign contribute [goal] [amount]` | Hand in the stack you are holding to a goal that collects it. |
+| `/campaign top [goal]` | The season's top contributors. |
+
+Follow the season on the [campaign page](/campaign).
+""", 'world', 'Campaign page | /campaign\nExpeditions | /guide/expeditions'),
     _guide('website-and-arcade', 'Website profiles and Arcade rewards',
            'Link Minecraft, personalise your profile and understand queued Marks.', """
 ## Link your Minecraft account
@@ -580,43 +696,81 @@ If the server is online and the problem continues, ask in [Discord](/discord) or
     _guide('commands', 'Commands quick reference',
            'The everyday menus, travel routes and recovery commands.', """
 ## Character and progress
-| Command | Purpose |
+Commands with `<placeholders>` need your own value in place of the brackets. `[Optional parts]` may be omitted. Copying a command from this guide does not run it.
+
+| Command | What it does |
 |---|---|
-| `/menu` / `/quickstart` | Main menus / first-session goals. |
-| `/skills` / `/adventurer` | Skills and talents / overall level. |
-| `/daily` / `/achievements` | Contracts / milestone journal. |
-| `/cooking` / `/fishing` / `/excavation` | Activity journals. |
-| `/arcane` | Personal discoveries, research and imbuement menus. |
+| `/menu` | Open the main game menus. |
+| `/quickstart` | Show first-session goals. |
+| `/skills` | Open personal skills and talents. |
+| `/adventurer` | Show overall character progress. |
+| `/daily` | Open rotating contracts. |
+| `/achievements` | Open the milestone journal. |
+| `/cooking` | Open the cookbook. |
+| `/fishing` | Open the Angler's Journal. |
+| `/excavation` | Open the excavation menu. |
+| `/arcane` | Read personal discoveries, clues and mastery. Research and imbuement have separate station requirements. |
 
 ## Island and travel
-| Command | Purpose |
+| Command | What it does |
 |---|---|
-| `/island create` / `/island home` | Create once / return home. |
-| `/island journal` / `/island talents` | Shared unlocks / island talent tree. |
-| `/island machines` | Machine and spawner recipes. |
-| `/island homes` / `/island directory` | Joined co-ops / public visiting. |
-| `/spawn` / `/expedition` | Hub / published public destinations. |
+| `/island create` | Create an island, or return to your existing island. |
+| `/island home` | Return to your own island. |
+| `/island journal` | Review resource requirements and share skill progress. |
+| `/island talents` | Review the shared island talent tree. |
+| `/island machines` | Browse machine and spawner recipes. |
+| `/island homes` | List your own and joined co-ops. |
+| `/island directory` | Browse islands open to visitors. |
+| `/spawn` | Travel to the configured hub. |
+| `/warps` | List public warps. |
 
-## Trading and help
-| Command | Purpose |
+For invitations and visitor permissions, use the [co-op guide](/guide/island-coop).
+
+## Trading and recovery
+| Command | What it does |
 |---|---|
-| `/marks` / `/bank` | Currency balance / item bank. |
-| `/shops` / `/ah` / `/store` | Merchants / auctions / player stores. |
-| `/trade <player>` / `/pay <player> <amount>` | Item exchange / online-player payment. |
-| `/grave locate` / `/grave recover` | Latest grave / paid remote recovery. |
-| `/weblink` | Private, one-use website linking code. |
-| `/report <player> <reason>` | Private report to staff. |
-| `/settings` | Message, social and travel preferences. |
+| `/marks` | Show your spendable currency balance. |
+| `/bank` | Open item storage, not a Marks deposit account. |
+| `/shops` | Browse merchant supplies and buyback. |
+| `/ah` | Browse auctions and their delivery inbox. |
+| `/store` | Browse in-game player stores, separate from the website cosmetic store. |
+| `/trade <player>` | Request a confirmed item exchange. |
+| `/pay <player> <amount>` | Start a payment of whole Marks to an online player. Check the name and amount first. |
+| `/grave locate` | Show the latest indexed active grave's location. |
+| `/grave recover` | Start paid remote recovery. Default fee: **250 Marks**; make inventory space first. |
+
+Read the [trade guide](/guide/trading-safely) and [grave limits](/guide/graves) before moving valuables.
+
+## Expeditions and the campaign
+| Command | What it does |
+|---|---|
+| `/expedition` | Open the expedition board and choose a difficulty. |
+| `/expedition start <expedition> [tier]` | Party leaders: start a run with a ready check. |
+| `/expedition queue <expedition> [tier]` | Join the finder, alone or with your party. |
+| `/expedition ready` / `decline` | Answer a ready check. |
+| `/expedition leave` | Leave the queue or the run you are in. |
+| `/campaign` | See the season's goals, milestones and server buffs. |
+| `/campaign claim` | Collect milestone rewards for your account. |
+| `/campaign contribute [goal]` | Hand in the held stack to a goal that collects it. |
+
+## Account and help
+| Command | What it does |
+|---|---|
+| `/weblink` | Generate a private, one-use website linking code. Never post the code publicly. |
+| `/report <player> <reason>` | Send a private report to staff. |
+| `/settings` | Manage message, social and travel preferences. |
 
 ## Wardrobe
-| Command | Purpose |
+| Command | What it does |
 |---|---|
-| `/cosmetics` | Wardrobe: companions, trails, name colour, presets and keepsake. |
-| `/companion [name]` / `/companion dismiss` | Summon one of your companions / send it home. |
-| `/trail [name]` / `/trail off` | Wear one of your particle trails / take it off. |
-| `/emote <name>` | Cloudkeeper and Starweaver emotes for players nearby. |
+| `/cosmetics` | Open companions, trails, name colour, presets and keepsake. |
+| `/companion [name]` | Open or summon a companion you own. |
+| `/companion dismiss` | Send your companion home. |
+| `/trail [name]` | Open or wear a particle trail you own. |
+| `/trail off` | Take off your trail. |
+| `/emote <name>` | Use an available Cloudkeeper or Starweaver emote for nearby players. |
 
-Read confirmation screens and costs before committing. Research and imbuement need a station unless separate remote access is available; `/arcane` itself can be read anywhere.
+Commands do not grant ownership or unlock disabled features. Review the in-game menu for your available cosmetics and permissions.
 """, 'troubleshooting', 'Connection help | /guide/connection-help\nWebsite account | /guide/website-and-arcade'),
 ]
 
@@ -646,17 +800,19 @@ Use `/spawn` for the server's configured hub. Staff can change its build and ava
 
 ## About this preview
 The artwork illustrates the intended Arcane City. It is not an in-game screenshot or a promise that every pictured route, district or NPC is available. Use `/expedition` for currently published travel destinations.'''),
-    'expeditions': dict(summary='Shared adventure areas published by staff, with their own encounters and resources. This overview is a preview.',
-        requirements='Use /expedition to see the destinations currently published in game.',
-        activities='Browse enabled destinations\nCoordinate with a party\nPrepare gear and recovery supplies', points_of_interest='',
-        body='''## Check the destination list
-`/expedition` shows staff-published public travel routes. If a route is not listed or is locked, this preview does not make it accessible. Individual zones can have their own entry requirements.
+    'expeditions': dict(name='Expeditions', theme='Party adventures', availability='released',
+        summary='Short adventures for a party of up to five in a private instance: rooms, bosses, loot, and the way into the Nether and the End.',
+        requirements='Open /expedition in game. Some expeditions open only when the season campaign reaches a milestone.',
+        activities='Clear rooms of waves and survive timed holds\nDefeat a boss and claim your own loot\nTry Heroic and Mythic for bigger rewards\nQueue alone and let the finder fill your group',
+        points_of_interest='The Hollow Barrow, a crypt beneath the old hills\nCinder Keep, a fortress in the Nether',
+        body='''## Your party, your instance
+Every run is a private copy of the map, built for your group alone. Gather a [party](/guide/parties) of up to five, start from `/expedition`, and answer the ready check. Or queue alone and the finder fills the empty places.
 
-## Prepare before leaving
-Take suitable equipment, leave inventory space and understand [grave recovery](/guide/graves). A [party](/guide/parties) lets you coordinate with players outside your co-op.
+## Into the Nether and the End
+Vanilla portals are sealed. The Nether and the End are reached through themed expeditions that run in those dimensions. The campaign may seal one until the server reaches a milestone; the [expedition board](/expeditions) shows what is open now.
 
-## Maps and encounters
-Staff author the zones, spawn points and encounter populations. No specific finished region, loot table or opening date is promised by this overview. New public areas can receive their own Explore entries as they open.'''),
+## Safe to try
+Dying inside an expedition never drops your items, but it spends one of the party's shared lives. The [expedition guide](/guide/expeditions) covers difficulty tiers, modifiers and rewards.'''),
 }
 
 CODEX_NOTES = {

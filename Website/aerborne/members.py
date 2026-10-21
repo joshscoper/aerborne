@@ -140,6 +140,21 @@ def export_zip(conn, member):
                                    "ORDER BY id", (mid,)),
         },
     }
+    if member['terms_version']:
+        agreed = conn.execute('SELECT title,body,published_at FROM registration_terms_versions WHERE version=?',
+                              (member['terms_version'],)).fetchone()
+        files['registration_agreement.json'] = {'accepted_at': member['terms_accepted_at'],
+                'age_confirmed_at': member['age_confirmed_at'], 'terms_version': member['terms_version'],
+                'terms': dict(agreed) if agreed else None}
+    creator = conn.execute('SELECT * FROM creator_applications WHERE member_id=?', (mid,)).fetchone()
+    if creator:
+        files['creator_program.json'] = {
+            'application': dict(creator),
+            'codes': _rows(conn, 'SELECT code,wallet_ref,status,created_at,reviewed_at FROM creator_codes WHERE application_id=?', (creator['id'],)),
+            'metrics': _rows(conn, 'SELECT c.code,p.currency,p.amount,p.status,p.event_at FROM creator_payments p JOIN creator_codes c ON c.id=p.code_id WHERE c.application_id=?', (creator['id'],)),
+            'tickets': _rows(conn, 'SELECT * FROM creator_tickets WHERE application_id=?', (creator['id'],)),
+            'ticket_messages': _rows(conn, 'SELECT x.* FROM creator_ticket_messages x JOIN creator_tickets t ON t.id=x.ticket_id WHERE t.application_id=?', (creator['id'],)),
+        }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("README.txt", "Everything the Aerborne website holds about %s, exported %s UTC.\n"
@@ -167,6 +182,11 @@ def my_data():
 def erase(conn, member, remove_posts=False):
     """Deletes a member's account. Returns a summary for the audit log."""
     mid = member["id"]
+    creator = conn.execute('SELECT id FROM creator_applications WHERE member_id=?', (mid,)).fetchone()
+    if creator:
+        conn.execute('DELETE FROM creator_tickets WHERE application_id=?', (creator['id'],))
+        conn.execute("UPDATE creator_codes SET status='disabled',wallet_ref='' WHERE application_id=?", (creator['id'],))
+        conn.execute("UPDATE creator_applications SET status='suspended',channels='',pitch='',contact='',previous_rank_id=NULL WHERE id=?", (creator['id'],))
     liked = conn.execute("SELECT post_id FROM post_likes WHERE member_id = ?", (mid,)).fetchall()
     for row in liked:
         conn.execute("UPDATE forum_posts SET like_count = MAX(0, like_count - 1) WHERE id = ?", (row["post_id"],))
@@ -195,7 +215,8 @@ def erase(conn, member, remove_posts=False):
         "session_version = session_version + 1, bio = '', mc_uuid = NULL, mc_name = NULL, mc_account_id = NULL, linked_at = NULL, "
         "rank_id = NULL, custom_title = '', avatar = '', banner = '', headline = '', signature = '', favorite_skill = '', "
         "island_name = '', discord_handle = '', youtube_url = '', twitch_url = '', show_stats = 0, last_seen_at = NULL, "
-        "last_login_at = NULL, dm_policy = 'nobody', friend_requests_open = 0 WHERE id = ?",
+        "last_login_at = NULL, terms_accepted_at = NULL, terms_version = '', age_confirmed_at = NULL, "
+        "dm_policy = 'nobody', friend_requests_open = 0 WHERE id = ?",
         ("Deleted member %d" % mid, "!deleted", mid))
     return "Deleted member %s (%d post%s %s)" % (member["username"], posts, "" if posts == 1 else "s",
                                                  "removed" if remove_posts else "kept as 'Deleted member'")

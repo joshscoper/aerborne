@@ -1,55 +1,37 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
 {% import "community/_macros.html" as c with context %}
+{% import "partials/store_macros.html" as shop with context %}
 {% block title %}Store{% endblock %}
 {% block description %}Cosmetics that support {{ site.SITE_NAME }}. Nothing in the store affects gameplay.{% endblock %}
+{% block body_class %}store-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head page-head-gold">
-  <div class="wrap">
-    <p class="eyebrow">Made for the skies</p>
-    <h1>Store</h1>
-    <p class="lede">A little more you. Support Aerborne with a name colour, companion or trail.</p>
-    <p class="fine">Browse the collection. Purchases open when our Tebex store is ready.</p>
+<header class="store-hero">
+  <img class="store-hero-art" src="{{ url_for('static', filename='img/store/market-hero-1536.webp') }}" srcset="{{ url_for('static', filename='img/store/market-hero-640.webp') }} 640w, {{ url_for('static', filename='img/store/market-hero-960.webp') }} 960w, {{ url_for('static', filename='img/store/market-hero-1536.webp') }} 1536w, {{ url_for('static', filename='img/store/market-hero-2048.webp') }} 2048w" sizes="100vw" alt="" width="2048" height="768" fetchpriority="high">
+  <div class="wrap store-hero-inner">
+    <div class="store-hero-copy">
+      <p class="eyebrow">Aerborne store</p>
+      <h1>Make the skies<br> yours.</h1>
+      <p class="lede">A little more you. Support Aerborne with a name colour, companion or trail.</p>
+      <div class="store-hero-actions"><a class="btn btn-primary" href="#store-collection">Explore the collection ↓</a><a class="store-hero-ranks" href="{{ url_for('public.store_category', category='supporter-ranks') }}">Compare ranks →</a>{% if store_connection.configured %}<a class="store-hero-ranks" href="{{ url_for('shop.cart') }}">Cart ({{ store_cart_count }})</a>{% endif %}</div>
+      <p class="store-hero-note">{% if store_connection.configured %}Cosmetics for your adventure. Secure checkout with Tebex.{% else %}Browse the collection. Purchases open when our Tebex store is ready.{% endif %}</p>
+    </div>
   </div>
 </header>
-<div class="wrap">
+<div class="wrap store-main">
+  {{ shop.connection_notice() }}
+  <section class="store-collections" id="store-collection" aria-labelledby="collection-title">
+    <div class="store-section-heading"><div><p class="eyebrow">The collection</p><h2 id="collection-title">Find your finishing touch.</h2></div><p>Pick a little piece of the skies to call your own.</p></div>
+    <ul class="store-illustrated-categories">{% for cat in categories if cat.illustration %}<li><a class="store-collection-card" href="{{ url_for('public.store_category', category=cat.key) }}"><div class="store-collection-art">{{ shop.artwork(cat) }}</div><div class="store-collection-copy"><h3>{{ cat.title }}</h3><p>{{ cat.blurb }}</p><span class="store-collection-bottom"><span>{% if cat.on_sale %}{{ cat.on_sale | length }} on sale{% elif cat.products %}{{ cat.products | length }} to explore{% else %}Collection preview{% endif %}</span><span class="store-collection-arrow" aria-hidden="true">↗</span></span></div></a></li>{% endfor %}</ul>
+    {% for cat in categories if not cat.illustration %}<a class="store-extra-collection" href="{{ url_for('public.store_category', category=cat.key) }}">{{ shop.artwork(cat) }}<span><strong>{{ cat.title }}</strong><span>{{ cat.blurb }}</span></span><span aria-hidden="true">→</span></a>{% endfor %}
+  </section>
   {% if supporter_ranks %}
   <section class="rank-collection" aria-labelledby="ranks-title">
-    <div class="section-head section-head-row"><div><p class="eyebrow">Wear your colours</p><h2 id="ranks-title">Supporter ranks</h2></div><a href="{{ url_for('public.store_category', category='supporter-ranks') }}">Compare ranks &rarr;</a></div>
-    <div class="rank-preview-grid">
-      {% for rank in supporter_ranks %}
-      <a class="rank-preview rank-{{ rank.slug }}" href="{{ url_for('public.store_item', slug=rank.product_slug) }}">
-        {{ c.framed('crest', rank.frame, 160) }}
-        <span>{{ c.rank_tag(rank.slug, rank.name) }}</span>
-        <h3>{{ rank.product_name }}</h3><p>{{ rank.description }}</p><span class="text-link">See what's included &rarr;</span>
-      </a>
-      {% endfor %}
-    </div>
+    <div class="store-section-heading"><div><p class="eyebrow">Wear your colours</p><h2 id="ranks-title">Your place among the stars.</h2></div><a href="{{ url_for('public.store_category', category='supporter-ranks') }}">Compare supporter ranks →</a></div>
+    <div class="rank-preview-grid">{% for rank in supporter_ranks %}<a class="rank-preview rank-{{ rank.slug }}" href="{{ url_for('public.store_item', slug=rank.product_slug) }}">{{ shop.product_art(rank, 'rank-preview-art') }}<span>{{ c.rank_tag(rank.slug, rank.name) }}</span><h3>{{ rank.product_name }}</h3><p>{{ rank.description }}</p><span class="text-link">See what’s included →</span></a>{% endfor %}</div>
   </section>
   {% endif %}
-  <div class="section-head"><p class="eyebrow">The collection</p><h2>Find your finishing touch</h2></div>
-  <ul class="store-cats">
-    {% for cat in categories %}
-    <li>
-      <a class="store-cat" href="{{ url_for('public.store_category', category=cat.key) }}">
-        <img src="{{ url_for('static', filename=cat.image ~ '-560.webp') }}" srcset="{{ url_for('static', filename=cat.image ~ '-560.webp') }} 560w, {{ url_for('static', filename=cat.image ~ '-1000.webp') }} 1000w" sizes="(max-width: 700px) 100vw, 33vw" alt="" width="560" height="235" loading="lazy">
-        <span class="store-cat-body">
-          <span class="store-cat-title">{{ cat.title }}</span>
-          <span class="store-cat-blurb">{{ cat.blurb }}</span>
-          {% if cat.on_sale %}<span class="badge badge-released">{{ cat.on_sale | length }} on sale</span>{% else %}<span class="badge badge-upcoming">Not on sale yet</span>{% endif %}
-        </span>
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-
-  <section class="store-promises" aria-labelledby="promises-title">
-    <h2 id="promises-title">Before you buy</h2>
-    <ul class="ticks">
-      <li>Everything is cosmetic. Nothing gives a gameplay advantage.</li>
-      <li>When purchases open, checkout will take place on Tebex.</li>
-      <li>Read the <a href="{{ url_for('public.page', slug='store-terms') }}">store terms</a> and <a href="{{ url_for('public.page', slug='purchase-help') }}">purchase help</a>.</li>
-    </ul>
-  </section>
+  {{ shop.help() }}
 </div>
 {% endblock %}

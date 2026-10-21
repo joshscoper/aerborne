@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v='avatar-clip-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
   <link rel="stylesheet" href="{{ url_for('community.ranks_css') }}">
   <script src="{{ url_for('static', filename='js/site.js') }}" defer></script>
@@ -81,6 +81,7 @@
               <li><a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}><span class="nav-link-label">{{ label }}</span><span class="nav-link-hint">{{ hint }}</span></a></li>
               {% endfor %}
               {% if item.id == 'community' %}<li><a href="{{ url_for('public.discord') }}" rel="noopener"><span class="nav-link-label">Discord</span><span class="nav-link-hint">Chat with the community</span></a></li>{% endif %}
+              {% if item.id == 'community' and can_creator_dashboard %}<li><a href="{{ url_for('public.creator_dashboard') }}"><span class="nav-link-label">Creator dashboard</span><span class="nav-link-hint">Codes, metrics and priority support</span></a></li>{% endif %}
             </ul>
           </li>
           {% else %}
@@ -132,6 +133,8 @@
           <li><a href="{{ url_for('community.forum') }}">Forum</a></li>
           <li><a href="{{ url_for('community.leaderboards') }}">Leaderboards</a></li>
           <li><a href="{{ url_for('public.streamers') }}">Featured streamers</a></li>
+          <li><a href="{{ url_for('public.join_us') }}">Join us</a></li>
+          <li><a href="{{ url_for('public.creator_program') }}">Creator program</a></li>
           {% if settings.arcade_enabled != '0' %}<li><a href="{{ url_for('arcade.index') }}">Arcade</a></li>{% endif %}
           <li><a href="{{ url_for('public.news') }}">News</a> · <a href="{{ url_for('public.news_subscribe') }}">RSS</a></li>
         </ul>

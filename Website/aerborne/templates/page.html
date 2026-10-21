@@ -1,28 +1,20 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block title %}{{ item.title }}{% endblock %}
 {% block description %}{{ item.summary or item.title }}{% endblock %}
-{% block body_class %}reading-page{% endblock %}
+{% block body_class %}policy-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static',filename='css/policy.css') }}"><script src="{{ url_for('static',filename='js/policy.js') }}" defer></script>{% endblock %}
 {% block content %}
-<article class="article">
-  <header class="article-head">
-    <div class="wrap-narrow">
-      <p class="crumbs"><a href="{{ url_for('public.support') }}">Support</a></p>
-      <h1>{{ item.title }}</h1>
-      {% if item.summary %}<p class="lede">{{ item.summary }}</p>{% endif %}
-    </div>
-  </header>
-  <div class="wrap-narrow">
-    <div class="prose">{{ item.body | markdown }}</div>
-    {% if item.section == 'support' %}
-    <aside class="related">
-      <h2>Contact</h2>
-      <ul>
-        <li><a href="{{ url_for('public.discord') }}" rel="noopener">Discord</a></li>
-        {% if site.CONTACT_EMAIL %}<li><a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a></li>{% endif %}
-      </ul>
+<article data-policy-reader>
+  <header class="policy-hero" id="policy-top"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.support') }}">Support &amp; policies</a><span aria-hidden="true"> / </span>{{ item.title }}</p><p class="eyebrow">{{ 'Your rights and responsibilities' if item.section == 'legal' else 'A little clarity goes a long way' }}</p><h1>{{ item.title }}</h1>{% if item.summary %}<p class="lede">{{ item.summary }}</p>{% endif %}<div class="policy-meta"><span>Updated {{ item.updated_at | date }}</span><span>{{ reading_minutes }} min read</span><a href="#policy-contents">Jump to a section ↓</a><button class="policy-print" type="button" data-policy-print hidden>Print or save a copy ↗</button></div></div></header>
+  <div class="wrap policy-layout">
+    <aside class="policy-aside"><details class="policy-contents" id="policy-contents" open><summary>On this page <span>{{ policy_sections | length }} sections</span></summary><nav aria-label="Page sections"><ol>{% for part in policy_sections %}<li><a href="#{{ part.id }}" data-policy-section-link>{% if item.slug != 'rules' %}<span aria-hidden="true">{{ '%02d' % loop.index }}</span>{% endif %}{{ part.title }}</a></li>{% endfor %}</ol></nav></details>
+      <details class="policy-other"><summary>Rules, policies &amp; help</summary><nav aria-label="Other policies"><ul>{% for page in policy_pages %}<li><a href="{{ url_for('public.page',slug=page.slug) }}"{% if page.id == item.id %} aria-current="page"{% endif %}>{{ page.title }}</a></li>{% endfor %}</ul></nav></details>
+      <div class="policy-contact"><strong>Need a clearer answer?</strong><p>Ask the Aerborne team privately.</p><a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a></div>
     </aside>
-    {% endif %}
-    <p class="updated">Last updated {{ item.updated_at | date }}</p>
+    <div class="policy-paper"><div class="policy-reading-tools" data-policy-tools hidden><span data-policy-position>Reading {{ item.title }}</span><progress data-policy-progress value="0" max="100" aria-label="Reading progress"></progress></div>
+      {% for part in policy_sections %}<section class="policy-section{% if loop.first and part.title == 'At a glance' %} policy-glance{% endif %}" id="{{ part.id }}" aria-labelledby="{{ part.id }}-title" data-policy-section><header>{% if item.slug != 'rules' %}<span class="policy-number" aria-hidden="true">{{ '%02d' % loop.index }}</span>{% endif %}<h2 id="{{ part.id }}-title">{{ part.title }}</h2></header><div class="prose">{{ part.html }}</div></section>{% endfor %}
+      <div class="policy-end"><p>Questions about this page? <a href="mailto:{{ site.CONTACT_EMAIL }}">Contact support</a>.</p><a href="#policy-top">Back to top ↑</a></div>
+    </div>
   </div>
 </article>
 {% endblock %}

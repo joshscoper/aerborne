@@ -155,8 +155,10 @@ def forum_member(member_id):
                            (mid,)).fetchall()
     awarded = conn.execute("SELECT b.*, mb.awarded_at, mb.awarded_by, mb.note FROM member_badges mb JOIN badges b ON b.id = mb.badge_id "
                            "WHERE mb.member_id = ? ORDER BY mb.awarded_at DESC", (mid,)).fetchall()
-    all_badges = conn.execute("SELECT * FROM badges ORDER BY name").fetchall()
-    return render_template("admin/forum_member.html", m=member, stats=stats, history=history, awarded=awarded, all_badges=all_badges)
+    all_badges = conn.execute("SELECT * FROM badges WHERE (creator_only=0 AND slug!='firstlight-sigil') OR ?='admin' ORDER BY name", (g.user['role'],)).fetchall()
+    from .badges import firstlight_quota
+    return render_template("admin/forum_member.html", m=member, stats=stats, history=history, awarded=awarded,
+                           all_badges=all_badges, firstlight_quota=firstlight_quota(conn, g.user['id']))
 
 
 @bp.route("/forum/members/<int:member_id>/export")
@@ -229,8 +231,16 @@ def forum_badges():
             flash("Badge deleted and taken back from everyone who had it.")
             return redirect(url_for("admin.forum_badges"))
         data = {"name": request.form.get("name", "").strip()[:40], "slug": request.form.get("slug", "").strip()[:40],
-                "description": request.form.get("description", "").strip()[:160],
+                "description": request.form.get("description", "").strip()[:600],
+                'rarity': request.form.get('rarity', '').strip()[:80],
+                'acquisition': request.form.get('acquisition', '').strip()[:600],
+                'creator_only': int(request.form.get('creator_only') == '1' or request.form.get('slug') == 'firstlight-sigil'),
                 "icon": request.form.get("icon", ""), "tone": request.form.get("tone", "")}
+        existing_badge = conn.execute('SELECT * FROM badges WHERE id=?', (badge_id,)).fetchone() if badge_id else None
+        data['award_policy'] = existing_badge['award_policy'] if existing_badge else ''
+        if data['slug'] == 'firstlight-sigil' or data['icon'] == 'badge-firstlight-sigil' or data['award_policy'] == 'firstlight-sigil':
+            data['award_policy'] = 'firstlight-sigil'
+            data['creator_only'] = 1
         if not data["name"] or not SLUG_RE.match(data["slug"]):
             flash("Give the badge a name and a slug like bug-hunter.", "error")
         elif data["icon"] not in badges.ICON_PATHS or data["tone"] not in dict(badges.TONES):
@@ -254,6 +264,7 @@ def forum_badges():
     rows = conn.execute("SELECT b.*, (SELECT COUNT(*) FROM member_badges mb WHERE mb.badge_id = b.id) AS holders FROM badges b "
                         "ORDER BY b.name").fetchall()
     return render_template("admin/forum_badges.html", rows=rows, icons=badges.ICONS, tones=badges.TONES,
+                           firstlight_quota=badges.firstlight_quota(conn, g.user['id']),
                            icon_paths=badges.ICON_PATHS, automatic=badges.AUTOMATIC)
 
 
@@ -263,12 +274,29 @@ def forum_member_badges(member_id):
     from .members import get_member_or_404
     conn = get_db()
     member = get_member_or_404(conn, member_id)
+    from .badges import is_firstlight, firstlight_quota
+    # Serialise the quota check and grant so concurrent requests cannot claim a sixth invitation.
+    conn.execute('BEGIN IMMEDIATE')
     badge = conn.execute("SELECT * FROM badges WHERE id = ?", (request.form.get("badge_id", type=int),)).fetchone() or abort(400)
+    limited = is_firstlight(badge)
+    if (badge['creator_only'] or limited) and g.user['role'] != 'admin':
+        abort(403, 'This badge is reserved for awards by Aerborne’s creators. An administrator must manage it.')
     if request.form.get("action") == "revoke":
         conn.execute("DELETE FROM member_badges WHERE member_id = ? AND badge_id = ?", (member_id, badge["id"]))
         audit(conn, g.user, "revoke", "members", member_id, "Took the %s badge from %s" % (badge["name"], member["username"]))
         flash("Took %s from %s." % (badge["name"], member["username"]))
     else:
+        if limited:
+            if conn.execute("SELECT 1 FROM member_badges mb JOIN badges b ON b.id=mb.badge_id WHERE mb.member_id=? AND (b.award_policy='firstlight-sigil' OR b.slug='firstlight-sigil' OR b.icon='badge-firstlight-sigil')", (member_id,)).fetchone():
+                conn.rollback()
+                flash('This member already has Firstlight Sigil. No invitation was used.')
+                return redirect(url_for('admin.forum_member', member_id=member_id))
+            if firstlight_quota(conn, g.user['id'])['remaining'] == 0:
+                conn.rollback()
+                flash('You have used all five Firstlight Sigil invitations. Revoking an award does not restore an invitation.', 'error')
+                return redirect(url_for('admin.forum_member', member_id=member_id))
+            invitation_id = conn.execute('INSERT INTO firstlight_awards (admin_user_id,member_id,awarded_at) VALUES (?,?,?)',
+                         (g.user['id'], member_id, now_str())).lastrowid
         note = request.form.get("note", "").strip()[:120]
         conn.execute("INSERT OR REPLACE INTO member_badges (member_id, badge_id, awarded_at, awarded_by, note) VALUES (?, ?, ?, ?, ?)",
                      (member_id, badge["id"], now_str(), g.user["username"], note))
@@ -276,6 +304,9 @@ def forum_member_badges(member_id):
         notify(conn, member_id, "badge", None, url_for("community.member_profile", username=member["username"], _anchor="badges"),
                badge["name"])
         audit(conn, g.user, "award", "members", member_id, "Awarded the %s badge to %s" % (badge["name"], member["username"]))
+        if limited:
+            audit_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+            conn.execute('UPDATE firstlight_awards SET source_key=? WHERE id=?', ('audit:%d' % audit_id, invitation_id))
         flash("Awarded %s to %s." % (badge["name"], member["username"]))
     conn.commit()
     return redirect(url_for("admin.forum_member", member_id=member_id))

@@ -2,7 +2,7 @@
 
 The official site for Aerborne: home page with live server status, Play, Explore, the
 Adventurer's Handbook, the Arcane Codex, the Companion encyclopedia, News with RSS, a cosmetic
-Store catalog ready for Tebex links, community forums, member profiles, ranks, six Arcade games and Support. Staff edit everything from a built-in
+Store catalog with Tebex Headless checkout, community forums, member profiles, ranks, six Arcade games and Support. Staff edit everything from a built-in
 admin at `/admin`. Built for **Python 3.6.15** on cPanel, with SQLite, so there's no database
 server to set up.
 
@@ -49,6 +49,11 @@ Website/
    the default never stays in use. Add more staff under **Staff accounts**.
 6. Click **Restart** and open the site.
 
+**If the site shows a 500 error right after creating the app:** cPanel replaces `passenger_wsgi.py` with its own starter file
+when you click Create, and that file loads itself in a loop. Upload or extract the project's `passenger_wsgi.py` again
+(or extract `Website.zip` again), then restart. Don't recreate the app for updates; extract the new zip over the old
+files and restart instead.
+
 After uploading new files or changing variables, click **Restart** (or touch `tmp/restart.txt`).
 When you upload a new version, **don't overwrite the `instance/` folder**: it holds your
 database, uploads and secret key. Back it up from time to time.
@@ -66,7 +71,9 @@ database, uploads and secret key. Back it up from time to time.
 | `AERBORNE_PANEL_SYNC_TOKEN` | *(blank)* | Lets the Watchdog panel fetch website admins. Copy it from `plugins/NerdSMP/security/watchdog-website-token.txt`. Blank turns sync off. |
 | `AERBORNE_PANEL_URL` | `https://panel.aerborne.net` | Linked from the admin sidebar for admins. |
 | `AERBORNE_SITE_URL` | *(request host)* | Full `https://` address of the site, used in RSS and the sitemap. |
-| `AERBORNE_DISCORD_URL`, `AERBORNE_CONTACT_EMAIL` | *(blank)* | Shown in navigation, Support and the final call to action. |
+| `AERBORNE_DISCORD_URL` | `https://discord.gg/AUvpKyemCj` | Discord invite destination. Admin Settings overrides it. |
+| `AERBORNE_DISCORD_SERVER_ID` | `1562150950045491370` | Numeric Discord server ID for the official server widget. Enable Server Widget in Discord first. Admin Settings overrides it. |
+| `AERBORNE_CONTACT_EMAIL` | `support@aerborne.net` | Support contact shown in the footer, Support and Join Us. |
 | `AERBORNE_REWARDS_TOKEN` | *(blank)* | Private token for the game server to collect Arcade payouts. Blank leaves rewards queued and shows a delivery notice. |
 | `AERBORNE_SOCIAL_TOKEN` | *(blank)* | Private token for the game server to sync friends, blocks and messages. Blank keeps them website-only. |
 | `AERBORNE_STATUS_HOST`, `AERBORNE_STATUS_PORT` | the address above | Where the site pings for live status, if different. |
@@ -115,8 +122,8 @@ status and when the panel last fetched the list. Server-side setup is in
 
 ## Player accounts and the forum
 
-- **Accounts.** Players sign up at `/account/register` with a username and password. No email is
-  collected. Sign-ups are rate limited per connection and have a hidden field that traps bots.
+- **Accounts.** `/account/register` first checks a freely entered birth date, before displaying username/password fields. The date is processed and discarded; the session holds only an eligibility result and timestamp for up to 24 hours. An under-13 result blocks registration in that session, including direct POST and back-button attempts. Eligible players then create a username/password account with two required, initially unchecked confirmations: age 13+ and agreement to the Terms and rules. No email is required. Sign-ups are rate limited per connection and have a hidden field that traps bots.
+- **Agreement records.** Registration validates both confirmations on the server, requires the current published Terms, and rejects a form if that Terms text changed. It records `terms_accepted_at`, `terms_version` and `age_confirmed_at` on the member. `registration_terms_versions` preserves the exact agreed title/text by SHA-256 version. Existing members are not backfilled with invented agreement dates. The record appears privately in Admin → Forum → Members and the member’s own data export; account erasure clears it.
 - **Linking Minecraft.** In game, `/weblink` gives the player a private 8-character code valid
   for 10 minutes. They enter it at `/account/link`; the site asks the game API who owns the code
   and links that Minecraft account. Each code works once and each Minecraft account links to one
@@ -141,6 +148,8 @@ plugin jar adds these endpoints:
 |---|---|---|
 | `GET /api/v1/leaderboards` | public | Top 25 on each of the six boards, refreshed once a minute |
 | `GET /api/v1/players/<name>` | public | Adventurer level and rank, skill levels, board standings |
+| `GET /api/v1/expeditions` | public | Published expeditions with tiers, campaign seals, clear counts and best parties (`/expeditions`) |
+| `GET /api/v1/campaign` | public | The running season's goals, milestones, rewards, buffs and top contributors (`/campaign`) |
 | `GET /api/v1/links/<code>` | bearer token | Which player asked for a `/weblink` code (expires after 10 minutes) |
 
 Profiles only include what players already see in `/leaderboard` in game.
@@ -162,7 +171,7 @@ Until then the site works normally and says plainly that leaderboards and profil
 Written from the plugin docs in `../docs`, so it matches the game today:
 
 - **Published:** the five-step Getting Started path and other Handbook guides, all 15 Arcane
-  enchantments and 3 Signatures, the nine Aspects, three regions, six companions and eight trails
+  enchantments and 3 Signatures, the nine Aspects, three regions, seven companions and eight trails
   (all labelled as concept art / upcoming), FAQs, rules and support pages, one welcome post.
 - **Marked Preview:** Arcane Signatures, Bloodletter, Veinseeker and Chain Harvest. They're off by
   default in production (`arcane-forge` config). Switch them to Released in the admin once enabled.
@@ -170,11 +179,13 @@ Written from the plugin docs in `../docs`, so it matches the game today:
   publicly* on any entry you're happy to reveal.
 - **Public catalog:** supporter ranks, bundles, companions and trails. Checkout stays unavailable until a price and Tebex link are added and availability is Released.
 - **Published policies:** terms, privacy and store terms. Staff can edit them under Pages. Updates preserve staff edits. Have them checked by someone qualified before you rely on them, especially once Tebex sales start.
+- **Policy reader:** rules, Terms, privacy, store terms, appeals, account help, bug reports and purchase help have plain-language summaries, section links, reading position and print/save controls. Content revision 18 refreshes untouched starter pages, preserves staff-authored copy and keeps the previous Terms text as a historical snapshot. The privacy disclosure covers Discord embeds, external fonts, applications, social features, account export/deletion and registration records.
+- **Children’s privacy:** the applicable US law is COPPA. FTC guidance explicitly says a bare “13 or older” checkbox is not a neutral age screen. The date check and declarations implement Aerborne’s requested account policy; they are not identity verification, verifiable parental consent, or a certification of COPPA compliance. A qualified reviewer should assess whether the game, mascots, incentives and intended/actual audience make the service child-directed or mixed-audience, and review collection before screening (including public embeds/fonts), operator contact information, hosting logs/backups and procedures for known under-13 data. No under-13 account or parental-consent flow is implemented. References: [FTC age-screening FAQs](https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions), [current COPPA Rule resources](https://www.ftc.gov/business-guidance/privacy-security/childrens-privacy). Do not advertise this checkbox or age gate as “COPPA compliant.”
 - **Expanded handbook:** island milestones, machines, spawners, co-ops, fishing, farming, excavation, cooking, daily goals, trading, banking, gems, graves and parties, plus session planning and website help. Search `/guide` by topic or command.
 
 ## Community, Discord and Tebex setup
 
-**Discord:** Admin → Settings → Discord invite link. Until it is filled in, every Discord button opens a holding page. `AERBORNE_DISCORD_URL` is a fallback.
+**Discord:** Every Discord button opens `/discord`, the community landing page. Set **Admin → Settings → Discord invite link** for its Join button; `AERBORNE_DISCORD_URL` is a fallback. To show Discord’s official live server widget, enable **Server Widget** in the Discord server settings, then save the numeric **Discord server ID (widget)** in Admin → Settings (or set `AERBORNE_DISCORD_SERVER_ID`). No bot token is required. The official widget shows online members and public voice channels; visitors open Discord to read/send messages. The server checks widget availability with a 3-second timeout and a 60-second cache, so enabling it takes effect on a subsequent page load within about a minute. If the widget is blocked or disabled, the invite remains available. If neither a valid invite nor a widget ID is configured, the page keeps its forum, guide, news and rules links without fake activity or a broken embed. Only `/discord` allows the Discord frame origin in its content security policy.
 
 **Profiles:** members edit avatars, banners, headlines, bios, island names, favourite skills, social links, signatures and game-stat visibility at `/account`. Social details are public. Assign ranks and custom titles in Admin → Forum → Members; manage rank colours, frames and permissions under Ranks. The seven supplied avatar frames are included in `static/img/frames/` (256 and 512 px WebP, plus a mask of each frame's opening). Each rank picks its frame in the rank editor: Owner and Admin use Admin, the other staff ranks use Staff, supporter ranks use their own frame, and the Media rank (for content creators) uses Media. Members without a rank get the Member frame. Character avatars are cropped to their artwork so they fill the opening; other avatars fill it as they are.
 
@@ -188,7 +199,15 @@ The profile editor groups appearance, personal details and links into keyboard-a
 
 **Forum appearance:** forum pages share `templates/community/forum_base.html`, `static/css/forum.css` and `static/js/forum.js`. The transparent category illustrations are in `static/img/forum/`, mapped to existing category slugs in `community_data.FORUM_ICONS`. The original ten icons have 128 and 256 px WebP versions; the Events icon uses the supplied original PNG. Custom categories fall back to their admin-selected icon. The directory finder filters category names and descriptions locally; it does not search private threads. No example discussions are added to the release.
 
-**Tebex:** create a webstore and packages in Tebex, configure delivery with its Minecraft plugin, then paste each package URL into the matching website product. Add its exact price, set availability to Released and publish. The website links to hosted checkout; no card handling or Tebex secret belongs in browser code. Website rank assignments are manual until a separate verified purchase sync is implemented. See [Tebex integration methods](https://docs.tebex.io/developers/integration-methods).
+**Tebex:** Aerborne remains the storefront; the Headless API supplies current package prices and builds the payment basket. Set `AERBORNE_TEBEX_PUBLIC_TOKEN` and `AERBORNE_TEBEX_PRIVATE_KEY` on the server, then run `python manage.py tebex-sync` to link existing products by unique category/name. The command preserves artwork, descriptions and publication status, links package IDs, saves a reference price and sets matched products to Released. New products can be linked by their Tebex package ID in Admin → Store items. A legacy price/package URL still works when the API is not configured. Website rank assignments remain manual; game delivery uses Tebex package commands.
+
+Local development may instead read `public_token` and `private_key` from `instance/tebex.json`. That file is ignored by Git and excluded from `Website.zip`; provide fresh environment values on the production host. Rotate the supplied key after setup and replace the server value. Set `AERBORNE_SITE_URL` to the canonical HTTPS website URL before production checkout.
+
+The account's checkout currently displays **Test Payments Active**. Enable live payments in Tebex after completing its account setup; a working API connection does not itself switch payment mode. A browser smoke check reached the actual Tebex payment form with Skyfarer and the correct 4.99 USD price; no payment was submitted.
+
+The guest cart stores product slugs in the signed session, accepts a confirmed Java Edition username, rechecks products and live prices on checkout, and creates a basket with the customer's IP. Payment details are entered on Tebex. Cart changes and checkout require CSRF tokens; checkout attempts are limited. API failures preserve the cart and disable checkout. Redirects are restricted to Tebex payment hosts. The return page checks the session's basket with Tebex; it never grants ranks, Marks or entitlements. No payment is inferred from query parameters or a redirect. Discounts, taxes, package limits and ownership eligibility are calculated by Tebex. The catalog caches for 60 seconds and refreshes before checkout. See the official [Headless API checkout guide](https://docs.tebex.io/developers/headless-api/guides/checkout).
+
+Before the first real sale, verify the delivery commands in Tebex for every package. The public Headless catalog does not expose those commands. All three bundles include **Skyfarer Rank** in addition to a companion and trail. The updated game plugin expands each bundle entitlement to all three cosmetics and upgrades the former default bundle lists on load, preserving custom configurations. Deploy the updated plugin before selling these bundles. Use the single bundle entitlement grant/revoke command so refunds remove the bundle's rank source without removing separately owned ranks. Do not rely on a website checkout return to grant purchases.
 
 **Delivering purchases in game:** every store item has a *Game product id* (Admin → Store items), for example `cosmetic.companion.pufflet`, `cosmetic.trail.comet-tail`, `cosmetic.rank.starweaver` or `cosmetic.bundle.cloudberry`. In each Tebex package, add the command `nerdadmin entitlement grant {username} <game product id> {transaction}`, and for refunds and chargebacks `nerdadmin entitlement revoke {transaction} Refunded`. The server refuses unknown ids, never grants the same transaction twice, and lists every id with `/nerdadmin entitlement products`. Players use what they bought with `/cosmetics`, `/companion`, `/trail` and `/emote`. What each item does in game is described in `docs/COSMETICS.md` in the plugin repository.
 
@@ -300,9 +319,53 @@ doesn't touch the player's game data or in-game friends.
 
 ## Not built yet
 
-A richer player dashboard (equipment, achievements, island details), the interactive Sky Atlas and
-Tebex webhooks. The site doesn't advertise any of them. Store purchases keep being fulfilled in game by the Tebex
-plugin, so the website never handles payments.
+A richer player dashboard (equipment, achievements, island details) and the interactive Sky Atlas.
+Store purchases keep being fulfilled in game by the Tebex plugin. The website receives signed
+payment notifications for creator metrics; it never accepts payment details or grants purchases.
+
+## Creator program and payment metrics
+
+The application at `/creator-program` is linked only from the footer. Sign in with an active
+website account to apply. Administrators review applications under Admin → Creator program.
+Accepting grants the website Media display rank (existing staff keep their staff rank) and
+the Community → Creator dashboard entry. This does not grant staff access or an in-game rank;
+assign the game Media rank through the server's existing administration tools.
+
+Accepted creators can request a code and supply their **Tebex Wallet reference**. Wallet
+references, contact details and priority tickets stay private to the creator and administrators.
+Review the request, then provision the exact code in Tebex Control Panel with **25% revenue
+share**, **10% customer discount**, and that wallet reference. Verify the settings and tick
+the confirmation on the local code review form before marking it Active. Local approval does
+not create or edit the code in Tebex. Only active, accepted members' codes can enter checkout.
+The cart sends the code to the Headless API and reads the basket back to confirm attribution.
+Tebex remains authoritative for discount eligibility, fees and actual wallet allocations.
+
+Set **`AERBORNE_TEBEX_WEBHOOK_SECRET`** to the secret shown in Tebex → Developers → Webhooks
+(separate from the Headless private key). Add the HTTPS production endpoint
+`https://YOUR-SITE/integrations/tebex/webhook`, validate it in Tebex, and subscribe to
+`payment.completed`, `payment.refunded`, `payment.dispute.opened`, `payment.dispute.won`,
+`payment.dispute.lost`, and `payment.dispute.closed`. Preserve the raw request body and
+`X-Signature` through the reverse proxy. The endpoint checks Tebex's SHA256/HMAC signature,
+deduplicates event IDs and ignores older payment updates. Unknown codes are not attributed.
+It stores no customer names, addresses or emails from notifications.
+
+Metrics begin when notifications are received; there is no historical sales import. Refunds
+and disputes remove the entire affected transaction from totals, including partial-refund
+notifications. Each currency is displayed separately. The dashboard's 25% estimate uses reported
+sales before fee and tax adjustments; it is not an allocation ledger, settlement balance or
+payout tool. Actual earnings and withdrawals are in Tebex Wallet. Code share/discount on
+subscriptions applies only to the initial payment under Tebex's creator-code rules.
+
+When suspending a creator, deleting their website account, or disabling/replacing a code,
+**disable the code in Tebex too**. The site blocks new checkouts, but cannot revoke checkout
+links already issued or codes entered directly on Tebex. Account erasure clears the application,
+wallet reference and tickets; minimal code and transaction records remain for reconciliation.
+Keep the production database and backups private. No real payouts or purchases are made by
+the local tests.
+
+Reference: [Creator codes](https://docs.tebex.io/creators/tebex-control-panel/engagement/creator-codes),
+[Headless endpoints](https://docs.tebex.io/developers/headless-api/endpoints),
+[signed webhooks](https://docs.tebex.io/developers/webhooks/overview).
 
 ## Live status
 
@@ -397,3 +460,70 @@ site. Quotas vary by project; check the Google Cloud console if the same project
 There is no polling when nobody uses the page, and no external checks for unconfigured providers.
 API errors and missing credentials show **status unavailable**, never a stale live badge or a false
 offline claim. Staff see which platform connections still need setup on the streamer page.
+
+## Profile badge artwork
+
+Profiles and **Admin → Forum → Badges** use the 12 medallions from the supplied
+`Aerborne_Badge_Pack_v1.zip`. Transparent 96px and 192px WebP versions are in
+`aerborne/static/img/badges/`; the original artwork is fitted to a square without a circular crop
+or an extra CSS border. Re-import with `python tools/import_badges.py path/to/Aerborne_Badge_Pack_v1.zip`
+using a current Pillow installation.
+
+Aerborne Team, Founding Member and High Scorer use the existing automatic rules. The remaining
+pack badges are available for staff to award. Existing automatic achievements keep their names
+and eligibility, with matching artwork from the new pack. Verified Adventurer still means a linked
+Minecraft account; the separate Verified Helper badge is awarded by staff.
+
+The content update replaces artwork in place, adds the missing badge types, and brings the original
+Helping Hand and Master Builder entries under Community Helper and Island Builder. Existing badge
+IDs, recipients, dates, award notes and custom descriptions stay intact. Old custom artwork keys
+continue to resolve to the new medallions.
+
+## Firstlight Sigil
+
+Firstlight Sigil is a manually awarded profile badge using the separately supplied transparent
+artwork (`static/img/badges/firstlight-sigil-{96,192}.webp`). Its rarity is **Mythic · Invitation Only**.
+It is never sold or granted through activity. Creators award it through an administrator account:
+**Admin → Forum → Members → member details → Badges**. Moderators cannot award or revoke it.
+Badge descriptions, rarity and acquisition details appear when a player selects the medal on a
+profile. Content revision 16 registers the badge without assigning recipients or changing existing awards.
+
+Each administrator has **five lifetime Firstlight invitations**. The allowance is tracked by staff account
+ID and survives revoking awards or deleting/recreating the badge. Duplicate awards use no extra slot;
+historical grants are counted during revision 17. Member management and Badges show the administrator’s
+remaining allowance. Ordinary badges are unaffected.
+
+## Team applications
+
+`/join-us` is linked only in the public footer. Visitors can apply without a website account for Helper,
+Moderator, Forum Moderator, Builder, Developer, Artist, Writer, Events Organiser or another contribution.
+Role selection supplies a relevant prompt. Answers and contact details are saved privately in SQLite;
+submissions require CSRF protection, a form token and privacy acknowledgement, with spam throttling and
+duplicate protection. No application email is sent automatically and no SMTP variables are needed.
+
+Administrators review submissions at **Admin → Site → Team applications**, filter their status, keep
+private notes and remove applications when requested or no longer needed. Other staff roles cannot
+access the applications. Status labels never create staff accounts or grant permissions. Use
+`support@aerborne.net` for applicant questions and removal requests; the privacy page documents collection.
+
+## Illustrated store artwork
+
+The store uses the six transparent illustrations from `Aerborne_Store_Illustrated_Assets.zip`.
+The separately supplied Island Decor illustration completes the five collection cards and also
+appears in the Island Decor page header, exported as `category-island-decor-{256,512}.webp`.
+Category artwork appears on collection cards and headers, the shopkeeper links to purchase help,
+and the empty basket is used for collections without listed products. Individual product artwork,
+prices, descriptions and availability remain editable in the existing product editor.
+
+Assets are exported as transparent 256px and 512px WebP images under `aerborne/static/img/store/`.
+Re-import with `python tools/import_store_art.py path/to/Aerborne_Store_Illustrated_Assets.zip`
+using a current Pillow installation. The shared layout is in `static/css/store.css` and
+`templates/partials/store_macros.html`. Only released products with both a price and a checkout
+link count as on sale; these illustrated UI changes do not configure payment credentials.
+
+Supporter rank emblems come from `Aerborne_Supporter_Rank_Icons.zip` and appear on the store,
+rank collection, comparison table and product pages. The original 128px, 256px and 512px WebP
+exports are preserved under `static/img/store/ranks/`. Re-import with
+`python tools/import_store_ranks.py path/to/Aerborne_Supporter_Rank_Icons.zip` using Pillow.
+Content revision 13 replaces the original rank product tiles and clears their concept-art label,
+preserving custom product artwork and other product settings. Profile frames and badges are separate.

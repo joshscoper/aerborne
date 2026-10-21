@@ -1,6 +1,6 @@
 # Explore and Game Guide review
 
-Reviewed October 19, 2026 against the repository's Java implementation, bundled configuration and gameplay documentation. Scope: 33 Handbook guides, three Explore entries, 18 public Codex entries, nine Aspects, six companion designs and eight trail designs.
+Reviewed October 19, 2026 against the repository's Java implementation, bundled configuration and gameplay documentation. Scope: 35 Handbook guides, three Explore entries, 18 public Codex entries, nine Aspects, six companion designs and eight trail designs.
 
 The website's local database contained starter-authored content for these entries. Revision 6 refreshes matching original guide and region copy, adds preview usage notes, and labels supplied companion art as illustrations. It compares original text as well as authorship so staff edits, including direct database edits, are preserved. Existing records and URLs remain in place.
 
@@ -28,7 +28,10 @@ Paths below are relative to the repository root. This is an editorial record, no
 | Arcane Forge, research and mastery | `forge/arcane/ArcaneForge.java`, `ArcaneResearch.java`, `ImbueRules.java`, `ResearchProfile.java`, `ArcaneSettings.java`; `resources/config.yml` |
 | Capacity, corruption, attunement and tiers | `forge/arcane/ArcaneCapacity.java`, `ArcaneCorruption.java`, `ArcaneSettings.java`; bundled `arcane-forge` configuration |
 | All 18 Codex entries and nine Aspects | `forge/ArcaneEnchantment.java`, `forge/arcane/ArcaneRegistry.java`, `ArcaneSignature.java`, `ArcaneAspect.java`. Names, equipment, maximum levels and effect summaries match these definitions. Private Aspect combinations remain private in HTML, filters and JSON. |
-| World travel and Explore entries | `travel/TravelManager.java`, public `/expedition` and `/warp` registration; `docs/SKYBLOCK.md`, `docs/RPG_ZONES.md`. City artwork is not evidence of a completed map. |
+| World travel and Explore entries | `travel/TravelManager.java`, public `/warps` and `/warp` registration; `docs/SKYBLOCK.md`, `docs/RPG_ZONES.md`. City artwork is not evidence of a completed map. |
+| Expeditions guide, Expeditions region, parties, commands | `expedition/ExpeditionService.java`, `ExpeditionRun.java`, `expedition/content/Tier.java`, `Modifier.java`, `expedition/run/RunProgress.java`, `Matchmaker.java`; `resources/expeditions/*.yml`, `resources/config.yml` (`expeditions`); `docs/EXPEDITIONS.md`. Revision 20, October 20, 2026. |
+| Parties guide | `party/PartyRoster.java`, `PartyManager.java`, `PartyMenu.java`; `resources/config.yml` (`parties`); `docs/PARTIES.md`. Revision 22, October 20, 2026; it replaces the revision 20 text only while that text is untouched. |
+| Season campaign guide | `campaign/SeasonCampaignService.java`, `campaign/season/SeasonLedger.java`; `resources/campaign/season.yml`; `docs/CAMPAIGN.md`. Live numbers come from `/api/v1/campaign`, never from this copy. |
 | Graves | `grave/GraveManager.java`, `command/CommandRouter.java`, `resources/config.yml`; `docs/GRAVE_REVIEW.md` |
 | Parties and commands | `resources/plugin.yml`, command handlers; island membership remains distinct from parties |
 | Website linking and Arcade | `webapi/WebLinkCodes.java`; website `community.py`, `arcade.py`; `webapi/WebsiteRewards.java` |
@@ -44,7 +47,7 @@ Except where a full path is specified, Java paths are under `nerdsmp-paper/src/m
 - Auction bids reserve Marks immediately. Listing fees, sales tax, inbox collection and accepted-bid restrictions matter; closing a menu is not a refund guarantee.
 - Farming separates ripe field crops, berries, specialty seeds, fruit and stalks. Not every listed crop supports right-click replanting.
 - The cooking catalog count is no longer hard-coded. The in-game cookbook shows current recipes and requirements.
-- Explore separates the usable island system, the city preview and planned expedition overview. Public routes come from `/expedition`; no finished map or opening date is invented.
+- Explore separates the usable island system and the city preview from expeditions, which are now released. The `/expeditions` and `/campaign` pages show live game API data and say so when it is unreachable; the copy names no expedition as open beyond the two shipped samples.
 - Companion illustrations do not represent finished in-game models. No invented animations, colour variants, unlock methods or release dates were added.
 
 ## Limits of the review
@@ -52,3 +55,11 @@ Except where a full path is specified, Java paths are under `nerdsmp-paper/src/m
 This checks the supplied source and configuration. It does not establish which jar, private configuration overrides, NPC placements or destination definitions the remote public server is running. The public status ping confirms reachability, version and player count, not gameplay flags or world contents. Variable prices, XP rates and feature gates are therefore tied to in-game menus and labelled default tuning where numerical examples are useful. No server gameplay settings or worlds were changed.
 
 Further updates should compare content with the new implementation/configuration and review staff-authored overrides before changing them. Run the website reference-page and hidden-recipe checks after updating copy or filters.
+
+## Handbook reader update — October 20, 2026
+
+All 33 guide articles now share numbered sections, stable section links, a contents panel and an optional step-by-step view. Chapter pages show an ordered guide list; the index has chapter shortcuts. Copy controls copy command text only. Placeholders still need a player-supplied value. The plain HTML retains every section and reference table when JavaScript is unavailable.
+
+Revision 12 clarifies nine untouched guides. Gem recovery is explicitly priced per selected installed gem and preserves its type and tier. Costs 8/12/16/20 Dust match `item/SocketRules.java` (`4 + tier * 4`); input, review expiry and inventory behaviour match `forge/ArcaneForgeService.java` and `gui/MenuManager.java`. Spawner ingredients now have one mob per row, command entries have one command per explanation, and research recipe sizes no longer look like disclosed Aspect recipes. Existing staff copy and direct edits are protected by matching fields and previous body fingerprints.
+
+Interactive selectors read their options and displayed facts directly from the published table. They do not query the game server or calculate personal unlocks. Authors can edit the table in the existing guide editor without keeping a separate UI data file in sync. Full comparisons remain available under “Compare all options”.

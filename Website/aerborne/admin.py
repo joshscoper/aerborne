@@ -5,9 +5,10 @@ import os
 from flask import (Blueprint, abort, current_app, flash, g, redirect, render_template, request,
                    url_for)
 
-from . import auth
+from . import auth, tebex
 from .content_types import SLUG_RE, STATUSES, TYPES, get_type
 from .db import audit, get_db, get_settings, now_str, parse_time, set_setting
+from .discord import invite_url, server_id
 from .media import UploadError, delete_files, save_upload
 from .security import check_csrf, clear_failed_logins, login_blocked, record_failed_login
 
@@ -24,7 +25,9 @@ SETTINGS_FIELDS = [
      "Marks the server as under maintenance on the status card and Play page."),
     ("maintenance_message", "Maintenance message", "text", "For example: Back by 18:00 UTC."),
     ("discord_invite", "Discord invite link", "text",
-     "Paste an invite like https://discord.gg/abc123. Every Discord button on the site uses it; blank shows \"coming soon\"."),
+     "Paste an invite like https://discord.gg/abc123. The Discord page uses it for its Join button. A blank value uses AERBORNE_DISCORD_URL, if set."),
+    ("discord_server_id", "Discord server ID (widget)", "text",
+     "Enable Server Widget in Discord’s server settings, then paste the numeric server ID here. This shows Discord’s official live server preview. No bot token is needed. Blank uses AERBORNE_DISCORD_SERVER_ID, if set."),
     ("community_intro", "Community page intro", "textarea", "A short paragraph above the builds."),
     ("arcade_enabled", "Arcade is open", "bool", "Untick to close the Arcade."),
     ("arcade_daily_cap", "Arcade Marks per player per day", "text", "Default 1000. Set 0 to keep the games but pay nothing."),
@@ -318,9 +321,12 @@ def _publish_checks(ctype, values):
     if ctype.key == "showcases" and not values.get("creator_permission"):
         errors["creator_permission"] = "Confirm the builder's permission before publishing."
     if ctype.key == "products" and values.get("availability") == "released":
-        if not values.get("price"):
+        headless = bool(tebex.configured() and values.get('tebex_package_id'))
+        if headless and str(values['tebex_package_id']) not in tebex.catalog()['packages']:
+            errors['tebex_package_id'] = 'This package could not be verified in the connected Tebex store.'
+        if not headless and not values.get("price"):
             errors["price"] = "A released store item needs its exact price."
-        if not values.get("tebex_url"):
+        if not headless and not values.get("tebex_url"):
             errors["tebex_url"] = "A released store item needs its Tebex link."
         terms = get_db().execute("SELECT status FROM pages WHERE slug = 'store-terms'").fetchone()
         if not terms or terms["status"] != "published":
@@ -495,8 +501,11 @@ def settings():
         for key, _label, kind, _help in SETTINGS_FIELDS:
             value = ("1" if request.form.get(key) else "0") if kind == "bool" else \
                 request.form.get(key, "").replace("\r\n", "\n").strip()[:2000]
-            if key == "discord_invite" and value and not (value.startswith("https://discord.gg/") or value.startswith("https://discord.com/invite/")):
+            if key == "discord_invite" and value and not invite_url(value):
                 flash("Use a Discord invite link that starts with https://discord.gg/ or https://discord.com/invite/.", "error")
+                return redirect(url_for("admin.settings"))
+            if key == "discord_server_id" and value and not server_id(value):
+                flash("Use the numeric Discord server ID (17 to 20 digits), not an invite or embed code.", "error")
                 return redirect(url_for("admin.settings"))
             if key == "arcade_daily_cap" and value and not (value.isdigit() and int(value) <= 5000):
                 flash("The Arcade daily limit must be a whole number up to 5000.", "error")

@@ -1,45 +1,25 @@
 {% extends "base.html" %}
 {% import "community/_macros.html" as c with context %}
-{% block title %}{{ data.name if data else name }}{% endblock %}
-{% block description %}{{ data.name if data else name }}'s Aerborne profile: Adventurer level, skills and leaderboard standings.{% endblock %}
+{% block title %}{{ data.name if data else name }} · Player{% endblock %}
+{% block description %}{{ data.name if data else name }}'s Aerborne progress, skills and leaderboard standings.{% endblock %}
+{% block body_class %}player-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/player.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head page-head-mint">
-  <div class="wrap profile-head">
-    <p class="crumbs"><a href="{{ url_for('community.leaderboards') }}">Leaderboards</a></p>
-    <h1>{{ data.name if data else name }}</h1>
-    {% if data %}
-    <p class="lede"><span class="rank-chip">{{ data.adventurer.rank }}</span> Adventurer level <strong>{{ data.adventurer.level }}</strong></p>
-    {% endif %}
-    {% if member %}<p><span class="badge badge-released">Verified</span> On the forum as <a href="{{ url_for('community.member_profile', username=member.username) }}">{{ member.username }}</a></p>{% endif %}
+<header class="player-hero"><div class="wrap">
+  <p class="crumbs"><a href="{{ url_for('community.leaderboards') }}">← Leaderboards</a></p>
+  <div class="player-identity">
+    {% if member %}{{ c.framed(member.avatar, member.rank_frame, 160) }}{% else %}<img class="player-crest" src="{{ url_for('static',filename='img/brand/skycrest-192.webp') }}" width="112" height="112" alt="">{% endif %}
+    <div><p class="eyebrow">Adventurer of Aerborne</p><h1>{{ data.name if data else name }}</h1>
+    {% if data %}<p class="player-rank"><span class="rank-chip">{{ data.adventurer.rank }}</span><span>Adventurer level <strong>{{ data.adventurer.level }}</strong></span></p>{% endif %}
+    {% if member %}<a class="player-forum" href="{{ url_for('community.member_profile', username=member.username) }}"><span aria-hidden="true">✓</span> Verified Minecraft account · {{ member.username }} ↗</a>{% endif %}</div>
   </div>
-</header>
-<div class="wrap profile-layout">
-  {% if problem %}
-  <div class="notice notice-warn" role="status"><strong>Player profiles are offline right now.</strong> The game server's API can't be reached. Try again in a minute.</div>
-  {% else %}
-  <section aria-labelledby="skills-title">
-    <h2 id="skills-title">Skills</h2>
-    <ul class="skill-bars">
-      {% for skill, level in skills %}
-      <li class="skill-bar skill-{{ skill }}">
-        <span class="skill-bar-name">{{ skill | capitalize }}</span>
-        <span class="skill-bar-level">{{ level }}</span>
-        <meter min="0" max="{{ max_level }}" value="{{ level }}">{{ level }} of {{ max_level }}</meter>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
-  <aside aria-labelledby="standing-title" class="panel">
-    <h2 id="standing-title">Leaderboard standing</h2>
-    <dl class="facts standing">
-      {% for key, label, long in boards %}
-      {% set row = (data.boards or {}).get(key) %}
-      <dt><a href="{{ url_for('community.leaderboards', board=key) }}">{{ long }}</a></dt>
-      <dd>{% if row %}#{{ row.rank | number }} · {{ row.score | number }}{% else %}–{% endif %}</dd>
-      {% endfor %}
-    </dl>
-    {% if data.updatedAt %}<p class="fine">Updated <time datetime="{{ data.updatedAt }}" data-ago="{{ data.updatedAt }}">{{ data.updatedAt[:16].replace('T', ' ') }} UTC</time></p>{% endif %}
-  </aside>
-  {% endif %}
-</div>
+  {% if data and not problem %}<dl class="player-overview"><div><dt>Adventurer level</dt><dd>{{ data.adventurer.level }}</dd></div><div><dt>Total skill levels</dt><dd>{{ skills | map(attribute=1) | sum | number }}</dd></div><div><dt>Skills tracked</dt><dd>{{ skills | length }}</dd></div></dl>{% endif %}
+</div></header>
+<div class="wrap player-content">
+{% if problem %}<div class="notice notice-warn" role="status"><strong>Player progress is temporarily unavailable.</strong> We cannot reach the game server. Please try again shortly.</div>
+{% else %}
+  <section aria-labelledby="skills-title"><div class="player-section-heading"><div><p class="eyebrow">Your journey, skill by skill</p><h2 id="skills-title">Skills</h2></div><span>Level cap {{ max_level }}</span></div>
+  <ul class="player-skills">{% for skill, level in skills %}<li><div class="player-skill-heading"><h3>{{ skill | capitalize }}</h3><span><strong>{{ level }}</strong> / {{ max_level }}</span></div><meter aria-label="{{ skill | capitalize }} level" min="0" max="{{ max_level }}" value="{{ level }}">{{ level }} of {{ max_level }}</meter><span class="player-skill-note">{% if level >= max_level %}Mastered{% elif level == 0 %}Your journey starts here{% else %}{{ ((level / max_level) * 100) | round | int }}% of level cap{% endif %}</span></li>{% endfor %}</ul></section>
+  <aside class="player-standings" aria-labelledby="standing-title"><p class="eyebrow">Among the adventurers</p><h2 id="standing-title">Leaderboard standing</h2><ul>{% for key,label,long in boards %}{% set row=(data.boards or {}).get(key) %}<li><a href="{{ url_for('community.leaderboards',board=key) }}"><span class="standing-label">{{ long }} <span aria-hidden="true">↗</span></span><span class="standing-values">{% if row %}<strong>#{{ row.rank | number }}</strong><span>{{ row.score | number }} <small>{{ 'levels' if key == 'skills' else 'points' if key == 'achievements' else 'Marks' if key == 'marks' else 'XP' }}</small></span>{% else %}<span>Not ranked yet</span>{% endif %}</span></a></li>{% endfor %}</ul>{% if data.updatedAt %}<p class="fine">Synced <time datetime="{{ data.updatedAt }}" data-ago="{{ data.updatedAt }}">{{ data.updatedAt[:16].replace('T',' ') }} UTC</time></p>{% endif %}</aside>
+{% endif %}</div>
 {% endblock %}

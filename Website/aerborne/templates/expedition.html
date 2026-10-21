@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ e.title if e else 'Expedition guide' }}{% endblock %}
+{% block body_class %}reference-page expedition-page{% endblock %}
+{% block description %}{% if e %}{{ e.description }} Route, boss tips, every enemy and what it can drop.{% else %}Expedition guide.{% endif %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/season.css') }}">{% endblock %}
+{% macro pct(chance) -%}{% set v = (chance or 0) * 100 %}{% if v >= 99.95 %}100%{% elif v >= 10 %}{{ v | round | int }}%{% elif v >= 1 %}{{ '%.1f' | format(v) }}%{% else %}{{ '%.2f' | format(v) }}%{% endif %}{%- endmacro %}
+{% macro qty(d) -%}{% if d.min == d.max %}{% if d.min > 1 %}×{{ d.min }}{% endif %}{% else %}{{ d.min }}–{{ d.max }}{% endif %}{%- endmacro %}
+{% block content %}
+<header class="page-head reference-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.expeditions') }}">Expeditions</a> / {{ e.title if e else slug }}</p>
+{% if e %}<p class="eyebrow">{{ {'nether':'The Nether','end':'The End'}.get(e.dimension, 'Overworld') }} · level {{ e.level }} · {% if e.minParty == e.maxParty %}{{ e.maxParty }}{% else %}{{ e.minParty }}–{{ e.maxParty }}{% endif %} players</p>
+<h1>{{ e.title }}</h1>
+{% if e.difficulty %}<p class="expedition-rating expedition-rating-large" title="Difficulty {{ e.difficulty.rating }} of 5"><span aria-hidden="true">{{ '★' * e.difficulty.rating }}{{ '☆' * (5 - e.difficulty.rating) }}</span> {{ e.difficulty.label }}</p>{% endif %}
+<p class="lede">{{ (e.guide.overview if e.guide and e.guide.overview) or e.description }}</p>
+{% if e.sealedBy %}<span class="reference-status is-upcoming">Sealed until {{ e.sealedBy }}</span>{% endif %}
+{% else %}<h1>Expedition guide</h1>{% endif %}</div></header>
+{% set group = 'explore' %}{% include "partials/subnav.html" %}
+<div class="wrap reference-content">
+{% if problem %}
+<div class="notice notice-warn" role="status"><strong>This guide is offline right now.</strong> The game server's API can't be reached. Use <code>/expedition guide {{ slug }}</code> in game.</div>
+{% else %}
+{% if e.guide and e.guide.tips %}<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Before you go</p><h2>Tips.</h2></div></div>
+<ul class="expedition-tips">{% for tip in e.guide.tips %}<li>{{ tip }}</li>{% endfor %}</ul></section>{% endif %}
+
+{% if e.guide and e.guide.rooms %}<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">{{ e.rooms }} rooms · {{ e.timeLimitMinutes }} minute limit</p><h2>The route.</h2></div></div>
+<ol class="season-milestones expedition-route">{% for room in e.guide.rooms %}<li class="season-milestone">
+  <div class="season-milestone-head"><h3>{{ room.title }}</h3><span class="reference-status">{% if room.type == 'waves' %}{{ room.waves }} waves{% elif room.type == 'survive' %}Survive {{ room.seconds }}s{% elif room.type == 'boss' %}Boss{% else %}Passage{% endif %}</span></div>
+  {% if room.tip %}<p>{{ room.tip }}</p>{% endif %}</li>{% endfor %}</ol></section>{% endif %}
+
+{% if e.guide and e.guide.boss %}<div class="reference-callout expedition-boss"><div><h2>The boss</h2><p>{{ e.guide.boss }}</p></div></div>{% endif %}
+
+{% if e.bestiary %}<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Bestiary</p><h2>What you'll face, and what it drops.</h2></div></div>
+<p class="fine">Health and damage are base values. Level, difficulty tier and party size change them in a run. Drop chances are per kill by a player.</p>
+<div class="expedition-grid">{% for mob in e.bestiary %}<article class="expedition-card{% if mob.role == 'Boss' %} is-boss{% endif %}">
+  <header><p class="eyebrow">{{ mob.role }} · {{ mob.rooms | join(', ') }}</p><h3>{{ mob.name }}</h3></header>
+  {% if mob.health or mob.damage %}<ul class="expedition-facts">{% if mob.health %}<li><strong>{{ mob.health }}</strong> health</li>{% endif %}{% if mob.damage %}<li><strong>{{ mob.damage }}</strong> damage</li>{% endif %}</ul>{% endif %}
+  {% if mob.ability %}<p>{{ mob.ability }}</p>{% endif %}
+  {% if mob.drops %}<table class="expedition-tiers"><thead><tr><th scope="col">Possible drop</th><th scope="col">Amount</th><th scope="col">Chance</th></tr></thead><tbody>
+  {% for d in mob.drops %}<tr><th scope="row">{{ d.item }}</th><td>{{ qty(d) or '1' }}</td><td>{{ pct(d.chance) }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+</article>{% endfor %}</div></section>{% endif %}
+
+<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Rewards and records</p><h2>When the boss falls.</h2></div></div>
+{% if e.rewards %}<p>Every player gets their own loot{% if e.rewards.marks %}: <strong>{{ e.rewards.marks }} Marks</strong> on Normal, more on harder tiers{% endif %}{% if e.rewards['items'] %}, plus {% for item in e.rewards['items'] %}{{ item.amount }} × {{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% if e.rewards.profileRolls %}, and extra loot rolls on harder tiers{% endif %}.</p>{% endif %}
+<table class="expedition-tiers"><thead><tr><th scope="col">Tier</th><th scope="col">Level</th><th scope="col">Lives</th><th scope="col">Loot rolls</th><th scope="col">Clears</th></tr></thead><tbody>
+{% for t in e.tiers %}<tr><th scope="row">{{ t.title }}{% if t.modifiers %}<span class="expedition-mods">{% for m in t.modifiers %}<abbr title="{{ m.description }}">{{ m.title }}</abbr>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</th><td>{{ t.level }}</td><td>{{ t.lives }}</td><td>{{ t.lootRolls }}</td><td>{{ t.clears | number }}</td></tr>{% endfor %}
+</tbody></table>
+<p class="fine">In game: <code>/expedition guide {{ e.id }}</code> opens this guide as a book.</p></section>
+{% endif %}
+</div>
+{% endblock %}

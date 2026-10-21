@@ -4,6 +4,7 @@ On cPanel, set them under Setup Python App > your app > Environment variables, t
 Content (news, guides, companions, store items) is edited in the staff admin, not here.
 """
 import os
+import json
 import secrets
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +54,14 @@ def _secret_key(data_dir):
 
 def load_config():
     data_dir = _env("AERBORNE_DATA_DIR", os.path.join(BASE_DIR, "instance"))
+    tebex_config = {}
+    try:
+        with open(os.path.join(data_dir, 'tebex.json'), encoding='utf-8-sig') as source:
+            tebex_config = json.load(source)
+        if not isinstance(tebex_config, dict):
+            tebex_config = {}
+    except (OSError, ValueError):
+        pass
     return {
         # Storage. Keep the data folder outside public_html.
         "DATA_DIR": data_dir,
@@ -61,6 +70,11 @@ def load_config():
         "SECRET_KEY": _secret_key(data_dir),
         "MAX_CONTENT_LENGTH": 10 * 1024 * 1024,
         "UPLOAD_MAX_BYTES": 8 * 1024 * 1024,
+        # Private server configuration; instance/ is excluded from source control and upload ZIPs.
+        "TEBEX_PUBLIC_TOKEN": _env('AERBORNE_TEBEX_PUBLIC_TOKEN', tebex_config.get('public_token', '')),
+        "TEBEX_PRIVATE_KEY": _env('AERBORNE_TEBEX_PRIVATE_KEY', tebex_config.get('private_key', '')),
+        "TEBEX_TIMEOUT": 8,
+        "TEBEX_WEBHOOK_SECRET": _env('AERBORNE_TEBEX_WEBHOOK_SECRET', ''),
 
         # Sessions are used by staff in the admin and by signed-in forum members.
         "SESSION_COOKIE_NAME": "aerborne_session",
@@ -118,10 +132,11 @@ def load_config():
         "STATUS_TIMEOUT": _env_int("AERBORNE_STATUS_TIMEOUT", 3),
         "STATUS_CACHE_SECONDS": _env_int("AERBORNE_STATUS_CACHE_SECONDS", 30),
 
-        # Links. Blank hides them.
-        "DISCORD_URL": _env("AERBORNE_DISCORD_URL"),
+        # Public community destinations. Admin settings override these defaults.
+        "DISCORD_URL": _env("AERBORNE_DISCORD_URL", 'https://discord.gg/AUvpKyemCj'),
+        "DISCORD_SERVER_ID": _env("AERBORNE_DISCORD_SERVER_ID", '1562150950045491370'),
         "STORE_URL": _env("AERBORNE_STORE_URL"),
-        "CONTACT_EMAIL": _env("AERBORNE_CONTACT_EMAIL"),
+        "CONTACT_EMAIL": _env("AERBORNE_CONTACT_EMAIL", 'support@aerborne.net') or 'support@aerborne.net',
     }
 
 

@@ -12,16 +12,18 @@
 <p class="fine">Change rank, title, role, ban or Minecraft link from the <a href="{{ url_for('admin.forum_members', q=m.username) }}">members list</a>.</p>
 
 <h2>Activity</h2>
+<div class="notice"><strong>Registration agreement</strong>{% if m.terms_accepted_at %}<p>Terms accepted {{ m.terms_accepted_at | date(true) }} · version {{ m.terms_version[:12] }}. Age 13+ confirmed {{ m.age_confirmed_at | date(true) }}.</p>{% else %}<p>No registration agreement is recorded for this account. Existing accounts are not retroactively marked as having agreed.</p>{% endif %}</div>
 <dl class="stat-grid">
   {% for label, value in stats %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
 </dl>
 
 <h2>Badges</h2>
+{% if g.user.role == 'admin' %}<p class="fine">Firstlight Sigil: <strong>{{ firstlight_quota.remaining }} of {{ firstlight_quota.limit }} invitations remaining</strong>. This is your lifetime allowance; revoking a badge does not restore a slot.</p>{% endif %}
 {% if awarded %}
 <ul class="badge-admin-list">
   {% for b in awarded %}
   <li><strong>{{ b.name }}</strong> <span class="fine">awarded {{ b.awarded_at | date }} by {{ b.awarded_by }}{% if b.note %} · {{ b.note }}{% endif %}</span>
-    <form class="inline-form" method="post" action="{{ url_for('admin.forum_member_badges', member_id=m.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="badge_id" value="{{ b.id }}"><button class="linkish" name="action" value="revoke">Take back</button></form></li>
+    {% if (not b.creator_only and b.slug != 'firstlight-sigil') or g.user.role == 'admin' %}<form class="inline-form" method="post" action="{{ url_for('admin.forum_member_badges', member_id=m.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="badge_id" value="{{ b.id }}"><button class="linkish" name="action" value="revoke">Take back</button></form>{% else %}<span class="fine">Managed by Aerborne’s creators</span>{% endif %}</li>
   {% endfor %}
 </ul>
 {% else %}<p class="fine">No staff-awarded badges. Automatic badges show on their profile on their own.</p>{% endif %}

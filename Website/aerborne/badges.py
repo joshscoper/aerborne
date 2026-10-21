@@ -6,29 +6,62 @@ Admin → Forum → Badges.
 """
 from .db import utcnow, parse_time
 
-# Pictures a badge can use, all from art already on the site.
-ICONS = [("gem-" + g, g.capitalize() + " gem", "img/aspects/%s-96.webp" % g)
-         for g in ("might", "precision", "aegis", "ward", "celerity", "vitality", "resolve", "affinity", "fortune")] + [
-    ("forum-" + f, label, "img/forum/%s-128.webp" % f) for f, label in (
-        ("general-chat", "Chat bubble"), ("help-questions", "Question"), ("island-showcase", "Island"),
-        ("trading-post", "Trading post"), ("suggestions", "Lightbulb"), ("bug-reports", "Bug"),
-        ("player-guides", "Book"), ("off-topic", "Campfire"))] + [
-    ("pet-" + p, p.capitalize(), "img/companions/%s-avatar.webp" % p)
-    for p in ("pufflet", "mossbun", "cindlet", "moonmoth", "starwhisk", "kitekit")] + [
-    ("arcade-" + a, a.replace("-", " ").title(), "img/arcade/%s-256.webp" % a)
-    for a in ("sky-hop", "gem-rush", "cloud-catch", "codex-memory", "forge-strike", "rune-breaker")]
+# The supplied badge pack. Legacy keys still resolve, so saved and custom awards keep working.
+ARTWORK = [
+    ('aerborne-team', 'Aerborne Team'), ('founding-member', 'Founding Member'),
+    ('high-scorer', 'High Scorer'), ('verified-helper', 'Verified Helper'),
+    ('event-winner', 'Event Winner'), ('bug-hunter', 'Bug Hunter'),
+    ('guide-writer', 'Guide Writer'), ('community-helper', 'Community Helper'),
+    ('lore-seeker', 'Lore Seeker'), ('master-trader', 'Master Trader'),
+    ('island-builder', 'Island Builder'), ('sky-explorer', 'Sky Explorer'),
+    ('firstlight-sigil', 'Firstlight Sigil'),
+]
+FIRSTLIGHT = {
+    'slug': 'firstlight-sigil', 'name': 'Firstlight Sigil',
+    'rarity': 'Mythic · Invitation Only',
+    'description': "Before the skies opened to the world, a chosen few carried the first light. This sigil honors those whose presence helped shape Aerborne's story.",
+    'acquisition': "Personally awarded by Aerborne's creators. Never purchasable or obtainable through ordinary progression.",
+    'icon': 'badge-firstlight-sigil', 'tone': 'gold', 'creator_only': 1,
+    'award_policy': 'firstlight-sigil',
+}
+FIRSTLIGHT_LIMIT = 5
+
+
+def is_firstlight(badge):
+    return (badge['award_policy'] == 'firstlight-sigil' or badge['slug'] == 'firstlight-sigil'
+            or badge['icon'] == 'badge-firstlight-sigil')
+
+
+def firstlight_quota(conn, admin_id):
+    used = conn.execute('SELECT COUNT(*) FROM firstlight_awards WHERE admin_user_id=?', (admin_id,)).fetchone()[0]
+    return {'used': used, 'remaining': max(0, FIRSTLIGHT_LIMIT - used), 'limit': FIRSTLIGHT_LIMIT}
+ICONS = [('badge-' + slug, label, 'img/badges/%s-96.webp' % slug) for slug, label in ARTWORK]
+LEGACY_ARTWORK = {
+    'gem-might': 'aerborne-team', 'gem-precision': 'guide-writer', 'gem-aegis': 'island-builder',
+    'gem-ward': 'verified-helper', 'gem-celerity': 'sky-explorer', 'gem-vitality': 'community-helper',
+    'gem-resolve': 'island-builder', 'gem-affinity': 'lore-seeker', 'gem-fortune': 'master-trader',
+    'forum-general-chat': 'community-helper', 'forum-help-questions': 'verified-helper',
+    'forum-island-showcase': 'island-builder', 'forum-trading-post': 'master-trader',
+    'forum-suggestions': 'guide-writer', 'forum-bug-reports': 'bug-hunter',
+    'forum-player-guides': 'guide-writer', 'forum-off-topic': 'sky-explorer',
+    'pet-pufflet': 'founding-member', 'pet-mossbun': 'community-helper', 'pet-cindlet': 'aerborne-team',
+    'pet-moonmoth': 'lore-seeker', 'pet-starwhisk': 'lore-seeker', 'pet-kitekit': 'sky-explorer',
+}
+LEGACY_ARTWORK.update({'arcade-' + game: 'high-scorer' for game in
+                      ('sky-hop', 'gem-rush', 'cloud-catch', 'codex-memory', 'forge-strike', 'rune-breaker')})
 ICON_PATHS = {key: path for key, _label, path in ICONS}
+ICON_PATHS.update({key: 'img/badges/%s-96.webp' % slug for key, slug in LEGACY_ARTWORK.items()})
 TONES = [("sky", "Sky blue"), ("gold", "Gold"), ("mint", "Mint"), ("lavender", "Lavender"), ("peach", "Peach"), ("ruby", "Ruby")]
 FOUNDERS = 100  # The first hundred accounts are founding members.
 
 # key, name, description, icon, tone, test(facts)
 AUTOMATIC = [
-    ("team", "Aerborne team", "Part of the team that runs Aerborne.", "gem-might", "ruby", lambda f: f["staff"]),
+    ("team", "Aerborne team", "Part of the team that runs Aerborne.", "badge-aerborne-team", "ruby", lambda f: f["staff"]),
     ("supporter", "Supporter", "Helps keep the skies open with a supporter rank.", "gem-fortune", "gold", lambda f: f["supporter"]),
     ("creator", "Content creator", "Makes videos or streams about Aerborne.", "gem-precision", "lavender", lambda f: f["creator"]),
-    ("founder", "Founding member", "One of the first %d adventurers to join the website." % FOUNDERS, "gem-fortune", "gold",
+    ("founder", "Founding member", "One of the first %d adventurers to join the website." % FOUNDERS, "badge-founding-member", "gold",
      lambda f: f["id"] <= FOUNDERS),
-    ("verified", "Verified adventurer", "Linked their Minecraft account.", "gem-aegis", "sky", lambda f: f["linked"]),
+    ("verified", "Verified adventurer", "Linked their Minecraft account.", "badge-verified-helper", "sky", lambda f: f["linked"]),
     ("year", "A year in the skies", "Has been part of the community for a year.", "gem-celerity", "mint", lambda f: f["days"] >= 365),
     ("first-words", "First words", "Wrote their first forum post.", "forum-general-chat", "sky", lambda f: f["posts"] >= 1),
     ("regular", "Forum regular", "Wrote 50 forum posts.", "forum-player-guides", "mint", lambda f: f["posts"] >= 50),
@@ -37,7 +70,7 @@ AUTOMATIC = [
     ("favourite", "Community favourite", "Received 250 likes on their posts.", "gem-affinity", "gold", lambda f: f["likes"] >= 250),
     ("social", "Social butterfly", "Has 10 friends.", "pet-kitekit", "sky", lambda f: f["friends"] >= 10),
     ("arcade", "Arcade player", "Earned Marks in the Arcade.", "arcade-sky-hop", "mint", lambda f: f["marks"] > 0),
-    ("high-score", "High scorer", "Holds the best score in an Arcade game.", "arcade-rune-breaker", "gold", lambda f: f["top_scores"] > 0),
+    ("high-score", "High scorer", "Holds the best score in an Arcade game.", "badge-high-scorer", "gold", lambda f: f["top_scores"] > 0),
 ]
 
 
@@ -71,10 +104,13 @@ def facts(conn, member):
 def for_member(conn, member):
     """Every badge a member has: staff-awarded first (newest first), then automatic ones."""
     out = [{"name": r["name"], "description": r["description"], "icon": icon_path(r["icon"]), "tone": r["tone"],
+            'rarity': r['rarity'], 'acquisition': r['acquisition'], 'creator_only': r['creator_only'],
             "awarded": True, "awarded_at": r["awarded_at"], "note": r["note"]}
            for r in conn.execute("SELECT b.*, mb.awarded_at, mb.note FROM member_badges mb JOIN badges b ON b.id = mb.badge_id "
                                  "WHERE mb.member_id = ? ORDER BY mb.awarded_at DESC", (member["id"],))]
     f = facts(conn, member)
     out += [{"name": name, "description": description, "icon": icon_path(icon), "tone": tone, "awarded": False}
             for _key, name, description, icon, tone, test in AUTOMATIC if test(f)]
+    for badge in out:
+        badge['icon_2x'] = badge['icon'].replace('-96.webp', '-192.webp')
     return out

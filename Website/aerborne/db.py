@@ -251,6 +251,94 @@ CREATE TABLE IF NOT EXISTS member_badges (
     note TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (member_id, badge_id)
 );
+CREATE TABLE IF NOT EXISTS firstlight_awards (
+    id INTEGER PRIMARY KEY,
+    source_key TEXT UNIQUE,
+    admin_user_id INTEGER NOT NULL,
+    member_id INTEGER,
+    awarded_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS firstlight_awards_admin ON firstlight_awards(admin_user_id);
+CREATE TABLE IF NOT EXISTS team_applications (
+    id INTEGER PRIMARY KEY,
+    reference TEXT NOT NULL UNIQUE,
+    submission_key TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    discord TEXT NOT NULL DEFAULT '',
+    minecraft_name TEXT NOT NULL DEFAULT '',
+    role TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    availability TEXT NOT NULL,
+    experience TEXT NOT NULL,
+    motivation TEXT NOT NULL,
+    approach TEXT NOT NULL,
+    portfolio TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'new',
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    reviewed_at TEXT,
+    reviewed_by TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS team_applications_status ON team_applications(status, created_at);
+CREATE TABLE IF NOT EXISTS creator_applications (
+    id INTEGER PRIMARY KEY,
+    member_id INTEGER NOT NULL UNIQUE REFERENCES members(id),
+    channels TEXT NOT NULL,
+    pitch TEXT NOT NULL,
+    contact TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    previous_rank_id INTEGER,
+    created_at TEXT NOT NULL,
+    reviewed_at TEXT,
+    reviewed_by TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS creator_codes (
+    id INTEGER PRIMARY KEY,
+    application_id INTEGER NOT NULL REFERENCES creator_applications(id),
+    code TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    wallet_ref TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'requested',
+    created_at TEXT NOT NULL,
+    reviewed_at TEXT,
+    reviewed_by TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS creator_codes_application ON creator_codes(application_id);
+CREATE TABLE IF NOT EXISTS creator_tickets (
+    id INTEGER PRIMARY KEY,
+    application_id INTEGER NOT NULL REFERENCES creator_applications(id),
+    title TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS creator_ticket_messages (
+    id INTEGER PRIMARY KEY,
+    ticket_id INTEGER NOT NULL REFERENCES creator_tickets(id) ON DELETE CASCADE,
+    author TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS creator_payments (
+    transaction_id TEXT PRIMARY KEY,
+    code_id INTEGER NOT NULL REFERENCES creator_codes(id),
+    currency TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    status TEXT NOT NULL,
+    event_at TEXT NOT NULL,
+    received_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tebex_webhook_events (
+    id TEXT PRIMARY KEY,
+    received_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS registration_terms_versions (
+    version TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    published_at TEXT NOT NULL,
+    captured_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS social_outbox (
     id INTEGER PRIMARY KEY,
     kind TEXT NOT NULL,
@@ -264,6 +352,13 @@ CREATE TABLE IF NOT EXISTS social_outbox (
 
 # Columns added to system tables after their first release.
 SYSTEM_COLUMNS = [
+    ('members', 'terms_accepted_at', 'TEXT'),
+    ('members', 'terms_version', "TEXT NOT NULL DEFAULT ''"),
+    ('members', 'age_confirmed_at', 'TEXT'),
+    ('badges', 'rarity', "TEXT NOT NULL DEFAULT ''"),
+    ('badges', 'acquisition', "TEXT NOT NULL DEFAULT ''"),
+    ('badges', 'creator_only', 'INTEGER NOT NULL DEFAULT 0'),
+    ('badges', 'award_policy', "TEXT NOT NULL DEFAULT ''"),
     ("users", "must_change_password", "INTEGER NOT NULL DEFAULT 0"),
     # Profiles and display ranks.
     ("members", "rank_id", "INTEGER"),

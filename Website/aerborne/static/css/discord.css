@@ -1,0 +1,49 @@
+.discord-page { background: #17243b; }
+.discord-page .play-dock { display: none; }
+.discord-hero { padding-block: 3rem; background: linear-gradient(90deg,#111b2ef5,#17243be8 46%,#17243b70), url('../img/brand/sky-kingdom-1280.webp') center/cover; border-bottom: 1px solid #8da9ce40; }
+.discord-hero-inner { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 2rem; align-items: center; }
+.discord-hero-copy { min-width: 0; }
+.discord-hero-mascot { display: block; width: 100%; max-width: 440px; height: auto; justify-self: end; filter: drop-shadow(0 16px 24px #07132665); }
+.discord-hero h1 { max-width: 19ch; font-size: clamp(2.8rem,5vw,4.4rem); line-height: 1.08; }
+.discord-hero .lede { max-width: 34rem; margin-block: 1.5rem 2rem; color: #d0def0; }
+.discord-hero .eyebrow, .discord-story > .eyebrow { font-size: .75rem; }
+.discord-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1.25rem 1.5rem; }
+.discord-text-link { color: #c1d4ee; font-size: .88rem; text-underline-offset: .25em; }
+.discord-invite-note { max-width: 34rem; margin-top: 1.2rem; color: #c0d0e6; font-size: .85rem; }
+.discord-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(320px,400px); gap: clamp(2rem,6vw,5rem); padding-block: 4rem; align-items: start; }
+.discord-story h2 { font-size: clamp(2rem,3vw,2.6rem); max-width: 22ch; }
+.discord-reasons { margin-top: 2rem; }
+.discord-reasons section { display: flex; gap: 1.2rem; border-top: 1px solid #8da9ce40; padding-block: 1.4rem; }
+.discord-reasons section > span { padding-top: .15rem; color: #f1cf8a; font-size: .75rem; font-weight: 800; }
+.discord-reasons h3 { font-family: inherit; font-size: 1.05rem; margin: 0 0 .5rem; }
+.discord-reasons p { font-size: .94rem; line-height: 1.85; color: #c0d0e6; margin: 0; overflow-wrap: anywhere; }
+.discord-first-visit { padding: 1.2rem 1.4rem; background: #20314b; border: 1px solid #8da9ce40; border-radius: 12px; margin-top: 1rem; color: #c0d0e6; font-size: .9rem; }
+.discord-first-visit summary { cursor: pointer; color: #e5efff; font-weight: 800; }
+.discord-first-visit li { padding-block: .4rem; }
+.discord-first-visit ol { padding-left: 1.4rem; }
+.discord-first-visit p { font-size: .82rem; margin-bottom: 0; }
+.discord-preview { background: #20314b; border: 1px solid #8da9ce40; border-radius: 18px; overflow: hidden; }
+.discord-preview-heading { display: flex; gap: 1rem; align-items: center; padding: 1.5rem; border-bottom: 1px solid #8da9ce40; }
+.discord-preview-heading .eyebrow { font-size: .6rem; margin-bottom: .45rem; }
+.discord-preview-heading h2 { font-size: 1.6rem; margin: 0; }
+.discord-mark { display: flex; padding: .8rem; border-radius: 12px; background: #4c57d6; color: white; }
+.discord-mark .icon { width: 25px; height: 25px; }
+.discord-widget { display: block; width: 100%; height: 500px; border: 0; background: #1e1f22; }
+.discord-preview-note { padding: 1.2rem 1.5rem; margin: 0; font-size: .8rem; line-height: 1.8; color: #c0d0e6; }
+.discord-preview-note a { display: block; margin-top: .5rem; }
+.discord-widget-empty { display: flex; min-height: 350px; padding: 2.5rem 1.8rem; align-items: center; justify-content: center; flex-direction: column; text-align: center; background: radial-gradient(ellipse at top,#343f73,#19263f 75%); }
+.discord-empty-logo { display: flex; margin-bottom: 1.5rem; color: #b4bbff; }
+.discord-empty-logo .icon { width: 72px; height: 72px; }
+.discord-widget-empty h3 { font-size: 1.8rem; margin-bottom: .7rem; }
+.discord-widget-empty p { color: #c0d0e6; font-size: .9rem; margin-bottom: 1.5rem; }
+.discord-widget-empty > a { font-size: .85rem; }
+.discord-more { padding-block: 2.5rem 3.5rem; background: #122037; border-top: 1px solid #8da9ce30; }
+.discord-more h2 { font-size: 1.7rem; margin-bottom: 1.5rem; }
+.discord-more-links { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
+.discord-more-links a { display: flex; flex-direction: column; gap: .65rem; text-decoration: none; border-left: 2px solid #8da9ce50; padding: .5rem 1.2rem; }
+.discord-more-links a:hover { border-color: #88d5fc; }
+.discord-more-links span { font-size: .8rem; color: #b8cbe2; }
+.discord-more-links strong { color: #9bd9fc; font-size: 1rem; }
+@media (max-width: 800px) { .discord-layout { grid-template-columns: minmax(0,1fr); padding-block: 2.5rem; } .discord-preview { width: 100%; max-width: 480px; } .discord-story h2 { max-width: none; } }
+@media (max-width: 760px) { .discord-hero { padding-block: 2.5rem; } .discord-hero-inner { grid-template-columns: minmax(0,1fr); gap: 1.75rem; } .discord-hero-mascot { width: 260px; max-width: 100%; justify-self: center; } }
+@media (max-width: 500px) { .discord-hero h1 { font-size: 2.8rem; } .discord-actions { align-items: flex-start; flex-direction: column; } .discord-actions .btn { font-size: .88rem; } .discord-more-links { grid-template-columns: minmax(0,1fr); gap: 1.2rem; } .discord-preview-heading { padding: 1.25rem; } }

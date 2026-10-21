@@ -21,8 +21,14 @@
       <input name="confirm" type="password" autocomplete="new-password" required minlength="{{ min_password }}">
     </label>
     <label class="hp" aria-hidden="true">Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label>
+    <input type="hidden" name="terms_version" value="{{ terms_version }}">
+    <fieldset class="registration-agreements"><legend>Before you join</legend>
+      <label class="registration-check"><input type="checkbox" name="age_confirm" value="1" required{% if form.age_confirm %} checked{% endif %}><span>I confirm that I am <strong>13 years or older</strong>.</span></label>
+      <label class="registration-check"><input type="checkbox" name="accept_terms" value="1" required{% if form.accept_terms %} checked{% endif %}><span>I have read and agree to the <a href="{{ url_for('public.page',slug='terms') }}" target="_blank" rel="noopener">Terms of service ↗</a> and <a href="{{ url_for('public.page',slug='rules') }}" target="_blank" rel="noopener">server rules ↗</a>.</span></label>
+      <p class="fine">Read the <a href="{{ url_for('public.page',slug='privacy') }}" target="_blank" rel="noopener">privacy policy ↗</a> to understand how we use your information. If you are not legally an adult, review the Terms with a parent or guardian.</p>
+    </fieldset>
     <button class="btn btn-primary btn-large" type="submit">Create account</button>
-    <p class="fine">Already have one? <a href="{{ url_for('community.login') }}">Sign in</a>. By joining you agree to the <a href="{{ url_for('public.page', slug='rules') }}">server rules</a>.</p>
+    <p class="fine">Already have one? <a href="{{ url_for('community.login') }}">Sign in</a>.</p>
   </form>
 </div>
 {% endblock %}

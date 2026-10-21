@@ -9,6 +9,8 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import gameapi
+from .content import published_one
+from .policies import save_terms_version, terms_version
 from .community_data import (AUTHOR_COLUMNS, AVATAR_PATHS, AVATARS, BANNER_PATHS, BANNERS, DEFAULT_AVATAR, LEGACY_AVATARS, FAVOURITE_SKILLS, FORUM_ICONS, PREFIXES,
                              SECTIONS, frame_key, prefixes_for)
 from .db import audit, get_db, get_setting, now_str, parse_time, utcnow
@@ -16,6 +18,14 @@ from .security import (allow, check_csrf, clear_failed_logins, client_ip, login_
                        record_failed_login)
 
 bp = Blueprint("community", __name__)
+
+
+@bp.after_request
+def _registration_headers(response):
+    if request.endpoint == 'community.register':
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_-]{3,20}$")
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -162,10 +172,13 @@ def is_online(last_seen):
 def ranks_css():
     """Rank colours as classes, so the strict CSP never needs inline styles."""
     from flask import Response
+    from .rank_colors import rank_palette
     lines = []
     for r in get_db().execute("SELECT slug, color, text_color FROM ranks"):
         if re.match(r"^[a-z0-9-]{1,40}$", r["slug"]) and HEX.match(r["color"]) and HEX.match(r["text_color"]):
-            lines.append(".rank-%s{--rank:%s;--rank-ink:%s}" % (r["slug"], r["color"], r["text_color"]))
+            palette = rank_palette(r["color"], r["text_color"])
+            lines.append(".rank-%s{--rank:%s;--rank-ink:%s;--rank-name:%s;--rank-name-light:%s}" %
+                         (r["slug"], r["color"], palette["ink"], palette["name"], palette["name_light"]))
     response = Response("\n".join(lines) + "\n", mimetype="text/css")
     response.headers["Cache-Control"] = "public, max-age=300"
     return response
@@ -198,16 +211,51 @@ def register():
     if not _settings_flag("registrations_open"):
         return render_template("community/closed.html", title="Sign-ups are closed",
                                body="New accounts are paused for now. Check back soon.")
+    # Age is checked before accepting account details. Only the result goes in the session.
+    checked = session.get('registration_age', {})
+    age_checked_at = parse_time(checked.get('checked_at'))
+    age_current = age_checked_at and 0 <= (utcnow() - age_checked_at).total_seconds() < 86400
+    if age_current and checked.get('eligible') is False:
+        return render_template('community/registration_age.html', restricted=True), 403
+    if not (age_current and checked.get('eligible') is True):
+        age_error = None
+        if request.method == 'POST':
+            try:
+                birth = datetime.datetime.strptime(request.form.get('birth_date', ''), '%Y-%m-%d').date()
+                today = utcnow().date()
+                if birth > today or birth.year < 1900:
+                    raise ValueError()
+                years = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+                session['registration_age'] = {'eligible': years >= 13, 'checked_at': now_str()}
+                return redirect(url_for('community.register'), 303)
+            except ValueError:
+                age_error = 'Enter a valid birth date.'
+        return render_template('community/registration_age.html', error=age_error, restricted=False,
+                               today=utcnow().date().isoformat()), (400 if age_error else 200)
+    terms = published_one('pages', 'terms')
+    if not terms:
+        return render_template('community/closed.html', title='Registration is temporarily unavailable',
+                               body='The Terms of service are not available to review. Please try again later or contact support@aerborne.net.'), 503
+    version = terms_version(terms)
     error = None
-    form = {"username": ""}
+    form = {'username': '', 'age_confirm': False, 'accept_terms': False}
     if request.method == "POST":
         conn = get_db()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         form["username"] = username
+        form['age_confirm'] = request.form.get('age_confirm') == '1'
+        form['accept_terms'] = request.form.get('accept_terms') == '1'
         if request.form.get("website"):  # honeypot: people never see this field
             abort(400)
-        if not USERNAME_RE.match(username):
+        if not form['age_confirm']:
+            error = 'Confirm that you are 13 years or older before creating an account.'
+        elif not form['accept_terms']:
+            error = 'Read and agree to the Terms of service and server rules before creating an account.'
+        elif request.form.get('terms_version') != version:
+            form['accept_terms'] = False
+            error = 'The Terms changed while you were signing up. Review them again and confirm your agreement.'
+        elif not USERNAME_RE.match(username):
             error = "Use 3 to 20 letters, numbers, dashes or underscores for your username."
         elif len(password) < MIN_PASSWORD:
             error = "Use at least %d characters for your password." % MIN_PASSWORD
@@ -220,14 +268,20 @@ def register():
             conn.commit()
             error = "Too many accounts were made from this connection. Try again in an hour."
         else:
-            cur = conn.execute("INSERT INTO members (username, password_hash, created_at, last_login_at) VALUES (?, ?, ?, ?)",
-                               (username, _hash(password), now_str(), now_str()))
+            accepted_at = now_str()
+            save_terms_version(conn, terms)
+            cur = conn.execute('INSERT INTO members (username,password_hash,created_at,last_login_at,'
+                               'terms_accepted_at,terms_version,age_confirmed_at) VALUES (?,?,?,?,?,?,?)',
+                               (username, _hash(password), accepted_at, accepted_at, accepted_at, version, accepted_at))
             conn.commit()
             member = conn.execute("SELECT * FROM members WHERE id = ?", (cur.lastrowid,)).fetchone()
             _start_member_session(member)
             flash("Welcome to Aerborne, %s. Link your Minecraft account to start posting." % username)
             return redirect(url_for("community.link"))
-    return render_template("community/register.html", error=error, form=form, min_password=MIN_PASSWORD)
+    response = current_app.make_response(render_template('community/register.html', error=error, form=form,
+                                           min_password=MIN_PASSWORD, terms_version=version))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @bp.route("/account/login", methods=["GET", "POST"])
@@ -496,7 +550,7 @@ def player_profile(name):
     data, problem = gameapi.player(name)
     if problem == "not_found":
         return render_template("community/player_missing.html", name=name), 404
-    member = get_db().execute("SELECT username FROM members WHERE mc_name = ? COLLATE NOCASE AND status = 'active'",
+    member = get_db().execute("SELECT m.username,m.avatar,r.frame AS rank_frame FROM members m LEFT JOIN ranks r ON r.id=m.rank_id WHERE m.mc_name = ? COLLATE NOCASE AND m.status = 'active'",
                               (name,)).fetchone()
     skills = []
     if data:

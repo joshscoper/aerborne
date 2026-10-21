@@ -14,9 +14,9 @@
 .reference-actions .btn { font-size: .85rem; }
 .reference-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .reference-section-heading h2, .reference-more > h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin-bottom: 0; }
-.reference-section-heading .eyebrow { font-size: .63rem; }
+.reference-section-heading .eyebrow { font-size: .75rem; }
 .reference-section-heading > a { font-size: .8rem; margin-bottom: .25rem; }
-.reference-status { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .6rem; border-radius: 5px; font: 800 .65rem/1.4 var(--body); background: #a3b7d122; color: #becee3; }
+.reference-status { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .6rem; border-radius: 5px; font: 800 .75rem/1.4 var(--body); background: #a3b7d122; color: #becee3; }
 .reference-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .reference-status.is-released { background: #70dbc31a; color: #8ce0cd; }
 .reference-status.is-preview { background: #c59afa1a; color: #cfb1f8; }
@@ -34,7 +34,7 @@
 .reference-guide-list > li > a:hover { border-color: #77c8f588; background: #253a56; }
 .reference-guide-list h2, .reference-guide-list h3 { font-size: 1.35rem; margin: .2rem 0 .65rem; }
 .reference-guide-list p { color: #aebfd5; font-size: .85rem; line-height: 1.8; margin-bottom: .5rem; }
-.reference-guide-list .eyebrow { font-size: .58rem; }
+.reference-guide-list .eyebrow { font-size: .75rem; }
 .reference-read-link { color: var(--sky); font-size: .75rem; font-weight: 800; margin-top: 1rem; }
 .handbook-start { padding-bottom: 3rem; }
 .handbook-first-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; gap: .8rem; }
@@ -50,7 +50,7 @@
 .handbook-chapter h3 a { color: #e5f0ff; text-decoration: none; }
 .handbook-chapter h3 a:hover { text-decoration: underline; }
 .handbook-chapter > p:not(.eyebrow) { font-size: .85rem; color: #aebfd5; }
-.handbook-chapter .eyebrow { font-size: .58rem; }
+.handbook-chapter .eyebrow { font-size: .75rem; }
 .handbook-chapter ul { list-style: none; padding: 0; margin-block: 1.25rem; }
 .handbook-chapter li { border-top: 1px solid #afc4df1a; }
 .handbook-chapter li a { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; padding-block: .7rem; font-size: .85rem; text-decoration: none; color: #cbdcf1; }
@@ -69,7 +69,7 @@
 .reference-sidebar .guide-nav ul { padding-left: .65rem; }
 .reference-sidebar .guide-nav li { margin: .6rem 0; }
 .reference-toc { border-left: 2px solid #f4c76b99; padding: .5rem 1rem; margin-bottom: 1.5rem; }
-.reference-toc .eyebrow { font-size: .58rem; }
+.reference-toc .eyebrow { font-size: .75rem; }
 .reference-toc ol { list-style: none; padding: 0; margin: 0; }
 .reference-toc li { margin-block: .65rem; font-size: .8rem; }
 .reference-toc a { text-decoration: none; }
@@ -108,7 +108,7 @@
 .explore-card-img { display: block; height: 100%; width: 100%; object-fit: cover; }
 .explore-card-img[src$='.svg'] { object-fit: contain; padding: 1.5rem; }
 .explore-card-blank { min-height: 17rem; background: url('../img/forum/hero.png') 25% center / cover; filter: saturate(.5); opacity: .65; }
-.explore-card-art > span { position: absolute; bottom: .85rem; left: .85rem; color: #d2dff1; background: #101e33bb; padding: .25rem .5rem; border-radius: 4px; font-size: .58rem; }
+.explore-card-art > span { position: absolute; bottom: .85rem; left: .85rem; color: #d2dff1; background: #101e33bb; padding: .25rem .5rem; border-radius: 4px; font-size: .75rem; }
 .explore-card-copy { padding: clamp(1.5rem, 3vw, 2.5rem); align-self: center; }
 .explore-card-copy h3 { font-size: 2rem; margin-block: .85rem .75rem; }
 .explore-card-copy h3 a { color: #edf5ff; text-decoration: none; }
@@ -151,7 +151,7 @@
 .reference-codex-list .codex-entry { padding: 1.4rem; border-radius: 12px; }
 .reference-codex-list .codex-head { gap: .75rem; flex-wrap: wrap; }
 .reference-codex-list .codex-head h3 { font-size: 1.5rem; }
-.reference-codex-list .tier-label { font-size: .62rem; }
+.reference-codex-list .tier-label { font-size: .75rem; }
 .reference-codex-list .codex-effect { color: #c6d5e9; font-size: .85rem; line-height: 1.8; }
 .reference-codex-list .codex-meta { font-size: .73rem; }
 .reference-codex-list .aspect-chips { margin-top: .85rem; }
@@ -166,16 +166,16 @@
 .reference-companion-art { background: radial-gradient(ellipse at 50% 80%, #51618177, #192a43 75%); }
 .reference-companion-art img { width: 100%; aspect-ratio: 1.1; object-fit: contain; padding: 1rem; display: block; }
 .reference-companion-copy { padding: 1.4rem; display: flex; flex: 1; flex-direction: column; }
-.reference-companion-copy .eyebrow { font-size: .58rem; }
+.reference-companion-copy .eyebrow { font-size: .75rem; }
 .reference-companion-copy h2 { font-size: 1.8rem; margin-bottom: .6rem; }
 .reference-companion-copy > p:not(.eyebrow) { font-size: .82rem; color: #adbfda; line-height: 1.8; }
 .reference-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin-top: auto; padding-top: .75rem; }
-.reference-card-footer > span:last-child { font-size: .68rem; color: #a9cdec; }
-.reference-art-label { display: block; font-size: .58rem; color: #94a9c4; margin-top: .65rem; }
+.reference-card-footer > span:last-child { font-size: .75rem; color: #a9cdec; }
+.reference-art-label { display: block; font-size: .75rem; color: #94a9c4; margin-top: .65rem; }
 .reference-companion-profile { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3rem; align-items: center; padding-block: 1.5rem; }
 .reference-companion-figure { margin: 0; }
 .reference-companion-figure img { width: 100%; display: block; background: radial-gradient(ellipse at center, #3d527477, #192a43); border-radius: 16px; }
-.reference-companion-figure figcaption { color: #a4b9d2; font-size: .68rem; margin-top: .85rem; }
+.reference-companion-figure figcaption { color: #a4b9d2; font-size: .75rem; margin-top: .85rem; }
 .reference-companion-profile h1 { font-size: 3.5rem; margin-bottom: 1rem; }
 .reference-companion-profile .eyebrow { margin-top: 1.25rem; }
 .reference-companion-profile .lede { color: #b9cbe2; font-size: 1rem; }
@@ -206,7 +206,7 @@
   .reference-page .subnav-inner { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 0; overflow: visible; }
   .reference-page .subnav a { justify-content: center; text-align: center; min-height: 48px; padding: .5rem .25rem; font-size: .7rem; line-height: 1.35; }
   .reference-head { padding-block: 2rem; }
-  .reference-head .eyebrow { font-size: .58rem; }
+  .reference-head .eyebrow { font-size: .75rem; }
   .reference-head .lede { font-size: .95rem; }
   .reference-content { padding-block: 1.75rem 3rem; }
   .reference-guide-list, .handbook-chapter-grid, .reference-codex-list { grid-template-columns: minmax(0, 1fr); }
@@ -244,3 +244,8 @@
   .reference-companion-row a { padding: .75rem .25rem; font-size: .7rem; }
   .reference-companion-row img { width: 75px; height: 75px; }
 }
+
+.handbook-chapter-jumps { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2.5rem; }
+.handbook-chapter-jumps a { padding: .5rem .8rem; border: 1px solid #88a4c155; border-radius: 7px; color: #c4d9ef; font: 700 .8rem var(--body); text-decoration: none; }
+.handbook-chapter-jumps a:hover { background: #77c8f512; border-color: var(--sky); }
+.handbook-chapter, .handbook-start { scroll-margin-top: 6rem; }

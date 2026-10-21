@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Discord community{% endblock %}
+{% block description %}Find your people in Aerborne’s Discord community. Talk islands, share your builds and get help finding your next adventure.{% endblock %}
+{% block body_class %}discord-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/discord.css') }}">{% endblock %}
+{% block content %}
+<header class="discord-hero"><div class="wrap discord-hero-inner">
+  <div class="discord-hero-copy"><p class="eyebrow">The conversation continues</p><h1>Your people.<br>Your patch of sky.</h1><p class="lede">Trade ideas, share your latest build or find someone to explore with. There’s a place for you in the Aerborne community.</p><div class="discord-actions">{% if invite %}<a class="btn btn-discord btn-large" href="{{ invite }}" target="_blank" rel="noopener noreferrer">{% include 'partials/discord_icon.svg' %} Join Aerborne on Discord ↗</a>{% else %}<a class="btn btn-primary" href="{{ url_for('community.forum') }}">Visit the forums →</a>{% endif %}<a class="discord-text-link" href="{{ url_for('public.page', slug='rules') }}">Read the community rules</a></div>{% if not invite %}<p class="discord-invite-note">The Discord invite isn’t available here yet. Our forums are open in the meantime.</p>{% endif %}</div>
+  <img class="discord-hero-mascot" src="{{ url_for('static', filename='img/brand/discord-mascot-960.webp') }}" srcset="{{ url_for('static', filename='img/brand/discord-mascot-480.webp') }} 480w, {{ url_for('static', filename='img/brand/discord-mascot-960.webp') }} 960w" sizes="(max-width: 760px) 260px, (max-width: 1100px) 40vw, 440px" width="960" height="960" alt="Aerborne’s cloud mascot waving beside a speech bubble" decoding="async" fetchpriority="high">
+</div></header>
+<div class="wrap discord-layout">
+  <div class="discord-story">
+    <p class="eyebrow">Good company, above the clouds</p><h2>A home between adventures.</h2>
+    <div class="discord-reasons">
+      <section><span aria-hidden="true">01</span><div><h3>Find your next adventure</h3><p>Meet fellow islanders, swap ideas and make plans for your next session.</p></div></section>
+      <section><span aria-hidden="true">02</span><div><h3>Show what you’re making</h3><p>Share builds, screenshots and discoveries. See what other players are creating in their corner of the sky.</p></div></section>
+      <section><span aria-hidden="true">03</span><div><h3>Work things out together</h3><p>Ask a gameplay question or compare notes. For account issues and private support, contact <a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a>.</p></div></section>
+    </div>
+    <details class="discord-first-visit"><summary>First time joining?</summary><ol><li>Open the invite and sign in to Discord.</li><li>Read the server’s rules and follow any welcome steps shown there.</li><li>Introduce yourself, ask a question or share what you’re working on.</li></ol><p>Keep passwords, payment details and other personal information out of public chat.</p></details>
+  </div>
+  <aside class="discord-preview" aria-labelledby="discord-preview-title"><div class="discord-preview-heading"><span class="discord-mark" aria-hidden="true">{% include 'partials/discord_icon.svg' %}</span><div><p class="eyebrow">Aerborne on Discord</p><h2 id="discord-preview-title">Around the server</h2></div></div>
+    {% if widget_ready %}
+    <iframe class="discord-widget" src="https://discord.com/widget?id={{ widget_id }}&amp;theme=dark" title="Aerborne Discord server: online members and public voice channels" width="350" height="500" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+    <p class="discord-preview-note">Discord’s live server preview. Open Discord to read and send messages. {% if invite %}<a href="{{ invite }}" target="_blank" rel="noopener noreferrer">Preview not loading? Open the invite ↗</a>{% else %}If the preview is unavailable, try again later.{% endif %}</p>
+    {% else %}
+    <div class="discord-widget-empty"><span class="discord-empty-logo" aria-hidden="true">{% include 'partials/discord_icon.svg' %}</span><h3>See you in the skies.</h3><p>{% if widget_id %}The live preview is currently unavailable. You can still join us directly on Discord.{% else %}The live server preview isn’t available yet.{% endif %}</p>{% if invite %}<a class="btn btn-discord" href="{{ invite }}" target="_blank" rel="noopener noreferrer">Open Discord ↗</a>{% else %}<a href="{{ url_for('community.forum') }}">Start a conversation on the forums →</a>{% endif %}</div>
+    {% endif %}
+  </aside>
+</div>
+<section class="discord-more"><div class="wrap"><h2>Keep exploring Aerborne</h2><div class="discord-more-links"><a href="{{ url_for('public.guide') }}"><span>Find your next step</span><strong>Game Guide →</strong></a><a href="{{ url_for('community.forum') }}"><span>Give your ideas a home</span><strong>Community forums →</strong></a><a href="{{ url_for('public.news') }}"><span>Catch up on the latest</span><strong>Aerborne news →</strong></a></div></div></section>
+{% endblock %}

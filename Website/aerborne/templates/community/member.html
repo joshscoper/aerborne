@@ -46,15 +46,15 @@
       {% for b in extras.badges %}
       <li>
         <button class="badge badge-tone-{{ b.tone }}{% if b.awarded %} badge-awarded{% endif %}{% if loop.first %} is-active{% endif %}" type="button" title="{{ b.name }}: {{ b.description }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
-          <span class="badge-medal"><img src="{{ url_for('static', filename=b.icon) }}" alt="" width="56" height="56" loading="lazy"></span>
+          <span class="badge-medal"><img src="{{ url_for('static', filename=b.icon) }}" srcset="{{ url_for('static', filename=b.icon) }} 1x, {{ url_for('static', filename=b.icon_2x) }} 2x" alt="" width="80" height="80" loading="lazy" decoding="async"></span>
           <span class="badge-name">{{ b.name }}</span>
-          <span class="badge-info" hidden><strong>{{ b.name }}</strong> {{ b.description }}{% if b.awarded %}<em>Awarded by staff {{ b.awarded_at | date }}{% if b.note %} · {{ b.note }}{% endif %}</em>{% endif %}</span>
+          <span class="badge-info" hidden>{{ c.badge_details(b) }}</span>
         </button>
       </li>
       {% endfor %}
     </ul>
     {% set first = extras.badges[0] %}
-    <p class="badge-caption" data-badge-caption aria-live="polite"><strong>{{ first.name }}</strong> {{ first.description }}{% if first.awarded %}<em>Awarded by staff {{ first.awarded_at | date }}{% if first.note %} · {{ first.note }}{% endif %}</em>{% endif %}</p>
+    <p class="badge-caption" data-badge-caption aria-live="polite">{{ c.badge_details(first) }}</p>
     {% else %}<p class="fine">No badges yet. They come from posting, making friends, playing the Arcade and linking Minecraft.</p>{% endif %}
     </section>
     {% set own = g.member and g.member.id == member.id %}
@@ -108,7 +108,13 @@
     </ul>
     {% else %}<p class="fine">No friends yet.</p>{% endif %}
     </section>
-    <section class="member-panel member-details"><p class="eyebrow">The adventurer</p><h2>In the skies</h2>{% if member.mc_name %}<p class="connection-state">✓ Minecraft verified</p><p><a href="{{ url_for('community.player_profile', name=member.mc_name) }}">{{ member.mc_name }} ↗</a></p>{% endif %}<dl>{% if member.island_name %}<div><dt>Island</dt><dd>{{ member.island_name }}</dd></div>{% endif %}{% if member.favorite_skill %}<div><dt>Favourite skill</dt><dd>{{ skill_label.get(member.favorite_skill, member.favorite_skill) }}</dd></div>{% endif %}<div><dt>Member since</dt><dd>{{ member.created_at | date }}</dd></div><div><dt>Last seen</dt><dd>{{ member.last_seen_at | date if member.last_seen_at else 'Not yet' }}</dd></div></dl>{% if member.rank_description %}<p class="fine">{{ member.rank_description }}</p>{% endif %}</section>
+    <section class="member-panel member-details" id="adventurer" aria-labelledby="adventurer-title">
+      <p class="eyebrow">The adventurer</p><h2 id="adventurer-title">Player details</h2>
+      {% if member.mc_name %}<a class="member-minecraft-card" href="{{ url_for('community.player_profile', name=member.mc_name) }}"><span class="member-minecraft-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="m12 3 9 5v9l-9 5-9-5V8l9-5Z M3 8l9 5 9-5 M12 13v9 M7.5 5.5l9 5"/></svg></span><span class="member-minecraft-name"><span class="member-detail-label">Minecraft account</span><strong>{{ member.mc_name }}</strong><span class="connection-state">✓ Minecraft verified</span></span><span class="member-account-arrow" aria-hidden="true">↗</span></a>{% endif %}
+      {% if member.island_name or member.favorite_skill %}<dl class="member-detail-highlights">{% if member.island_name %}<div><dt>Island</dt><dd>{{ member.island_name }}</dd></div>{% endif %}{% if member.favorite_skill %}<div><dt>Favourite skill</dt><dd>{{ skill_label.get(member.favorite_skill, member.favorite_skill) }}</dd></div>{% endif %}</dl>{% endif %}
+      <dl class="member-detail-dates"><div><dt>Member since</dt><dd><time datetime="{{ member.created_at | isodate }}">{{ member.created_at | date }}</time></dd></div><div><dt>Last seen</dt><dd>{% if member.last_seen_at %}<time datetime="{{ member.last_seen_at | isodate }}">{{ member.last_seen_at | date }}</time>{% else %}Not yet{% endif %}</dd></div></dl>
+      {% if member.rank_description %}<div class="member-rank-context"><span class="member-detail-label">{{ member.rank_name or 'Community rank' }}</span><p>{{ member.rank_description }}</p></div>{% endif %}
+    </section>
     {% if member.discord_handle or member.youtube_url or member.twitch_url %}<section class="member-panel"><h2>Find me elsewhere</h2><ul class="member-socials">{% if member.discord_handle %}<li><span>Discord</span><strong>@{{ member.discord_handle }}</strong></li>{% endif %}{% if member.youtube_url %}<li><a href="{{ member.youtube_url }}" rel="nofollow ugc noopener">YouTube channel ↗</a></li>{% endif %}{% if member.twitch_url %}<li><a href="{{ member.twitch_url }}" rel="nofollow ugc noopener">Twitch channel ↗</a></li>{% endif %}</ul></section>{% endif %}
     {% if extras.arcade %}<section class="member-panel member-arcade"><div class="member-panel-heading"><div><p class="eyebrow">Arcade</p><h2>Best scores</h2></div><a href="{{ url_for('arcade.index') }}">Play ↗</a></div><ul class="arcade-bests">{% for a in extras.arcade %}<li><img src="{{ url_for('static', filename=a.icon) }}" alt="" width="40" height="40" loading="lazy"><span>{{ a.name }}<small>{{ a.runs }} game{{ '' if a.runs == 1 else 's' }}</small></span><strong>{{ a.best | number }}</strong></li>{% endfor %}</ul></section>{% endif %}
   </aside>

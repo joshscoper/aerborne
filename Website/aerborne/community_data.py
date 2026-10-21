@@ -54,6 +54,7 @@ LEGACY_AVATARS = [
     ("companion:cindlet", "Cindlet", "img/companions/cindlet-avatar.webp"),
     ("companion:moonmoth", "Moonmoth", "img/companions/moonmoth-avatar.webp"),
     ("companion:starwhisk", "Starwhisk", "img/companions/starwhisk-avatar.webp"),
+    ("companion:lilypip", "Lilypip", "img/companions/lilypip-avatar.webp"),
 ] + [("gem:" + a, a.capitalize(), "img/aspects/%s-192.webp" % a) for a in
      ("might", "precision", "aegis", "ward", "celerity", "vitality", "resolve", "affinity", "fortune")]
 DEFAULT_AVATAR = "sprite:sky-sentinel"
@@ -98,6 +99,7 @@ FRAMES = [
     ("starweaver", "Starweaver"),
     ("staff", "Staff"),
     ("admin", "Admin"),
+    ("owner", "Owner"),
     ("media", "Media"),
 ]
 FRAME_KEYS = {key for key, _label in FRAMES}

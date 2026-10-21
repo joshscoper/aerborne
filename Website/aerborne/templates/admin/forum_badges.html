@@ -2,19 +2,24 @@
 {% block title %}Badges{% endblock %}
 {% block content %}
 <h1>Badges</h1>
+<p class="notice">Your Firstlight Sigil allowance: <strong>{{ firstlight_quota.remaining }} of {{ firstlight_quota.limit }} invitations remaining</strong>. Each administrator has five lifetime invitations. Revoking or deleting an award does not reset the allowance.</p>
 <p class="fine">Badges show on member profiles. Staff hand out the ones below from a member's page under Forum → Members, and the member gets a notification. The automatic ones at the bottom are earned through activity and can't be edited here.</p>
 {% for b in rows %}
 <form class="card cat-form badge-form" method="post">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   <input type="hidden" name="id" value="{{ b.id }}">
-  <p class="badge-admin-head"><img src="{{ url_for('static', filename=icon_paths.get(b.icon, icon_paths['gem-ward'])) }}" alt="" width="40" height="40"> <strong>{{ b.name }}</strong> <span class="fine">{{ b.holders }} member{{ '' if b.holders == 1 else 's' }}</span></p>
+  <p class="badge-admin-head"><img src="{{ url_for('static', filename=icon_paths.get(b.icon, icon_paths['gem-ward'])) }}" alt="" width="64" height="64"> <strong>{{ b.name }}</strong> <span class="fine">{{ b.holders }} member{{ '' if b.holders == 1 else 's' }}</span></p>
   <div class="cat-grid">
     <label>Name <input name="name" value="{{ b.name }}" required maxlength="40"></label>
     <label>Slug <input name="slug" value="{{ b.slug }}" required maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*"></label>
-    <label>Picture <select name="icon">{% for key, label, path in icons %}<option value="{{ key }}"{% if b.icon == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label>Picture <select name="icon">{% if b.icon not in icons | map('first') | list %}<option value="{{ b.icon }}" selected>Current badge artwork</option>{% endif %}{% for key, label, path in icons %}<option value="{{ key }}"{% if b.icon == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
     <label>Colour <select name="tone">{% for key, label in tones %}<option value="{{ key }}"{% if b.tone == key %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
   </div>
-  <label>Description <input name="description" value="{{ b.description }}" maxlength="160"></label>
+  <label>Description <textarea name="description" maxlength="600" rows="3">{{ b.description }}</textarea></label>
+  <label>Rarity <input name="rarity" value="{{ b.rarity }}" maxlength="80" placeholder="Mythic · Invitation Only"></label>
+  <label>Acquisition <textarea name="acquisition" maxlength="600" rows="2">{{ b.acquisition }}</textarea></label>
+  <label class="check"><input type="checkbox" name="creator_only" value="1"{% if b.creator_only %} checked{% endif %}> Creator award — only administrators can award or revoke it</label>
+  {% if b.slug == 'firstlight-sigil' %}<p class="fine">Firstlight Sigil is invitation only. Award it personally on behalf of Aerborne’s creators; its creator restriction always applies.</p>{% endif %}
   <p class="inline-form">
     <button class="btn btn-quiet" type="submit">Save</button>
     <button class="linkish danger-text" type="submit" name="action" value="delete" formnovalidate data-confirm="Delete {{ b.name }}? Everyone who has it loses it.">Delete badge</button>
@@ -31,7 +36,10 @@
     <label>Picture <select name="icon">{% for key, label, path in icons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
     <label>Colour <select name="tone">{% for key, label in tones %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
   </div>
-  <label>Description <input name="description" maxlength="160" placeholder="Shown when someone hovers over the badge"></label>
+  <label>Description <textarea name="description" maxlength="600" rows="3" placeholder="Shown when someone selects the badge"></textarea></label>
+  <label>Rarity <input name="rarity" maxlength="80"></label>
+  <label>Acquisition <textarea name="acquisition" maxlength="600" rows="2"></textarea></label>
+  <label class="check"><input type="checkbox" name="creator_only" value="1"> Creator award — only administrators can award or revoke it</label>
   <button class="btn" type="submit">Add badge</button>
 </form>
 
@@ -40,7 +48,7 @@
   <thead><tr><th></th><th>Badge</th><th>How it's earned</th></tr></thead>
   <tbody>
     {% for key, name, description, icon, tone, test in automatic %}
-    <tr><td><img src="{{ url_for('static', filename=icon_paths[icon]) }}" alt="" width="32" height="32"></td><td>{{ name }}</td><td>{{ description }}</td></tr>
+    <tr><td><img src="{{ url_for('static', filename=icon_paths[icon]) }}" alt="" width="48" height="48" loading="lazy"></td><td>{{ name }}</td><td>{{ description }}</td></tr>
     {% endfor %}
   </tbody>
 </table>

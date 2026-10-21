@@ -1,54 +1,49 @@
 {% extends "base.html" %}
 {% import "partials/macros.html" as m with context %}
+{% import "partials/store_macros.html" as shop with context %}
 {% block title %}{{ cat.title }}{% endblock %}
+{% block body_class %}store-page store-category-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/store.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head page-head-gold">
-  <div class="wrap">
-    <p class="crumbs"><a href="{{ url_for('public.store') }}">Store</a></p>
-    <h1>{{ cat.title }}</h1>
-    <p class="lede">{{ cat.blurb }}</p>
-  </div>
-</header>
-<div class="wrap">
-  {% if cat.key == 'supporter-ranks' %}
-  <p class="notice notice-info">Supporter ranks are cosmetic only. They never give gameplay advantages, Marks or island progress.</p>
-  {% endif %}
-
+<header class="store-category-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.store') }}">Store</a> / {{ cat.title }}</p><div class="store-category-heading"><div><p class="eyebrow">Find your finishing touch</p><h1>{{ cat.title }}</h1><p class="lede">{{ cat.blurb }}</p><p class="store-category-count">{% if cat.products %}{{ cat.products | length }} cosmetic{{ '' if cat.products | length == 1 else 's' }} to explore{% else %}A new collection in the making{% endif %}</p></div>{{ shop.artwork(cat, 'store-category-hero-art', lazy=False) }}</div></div></header>
+<div class="wrap store-catalog">
+  {{ shop.browse(categories, cat.key) }}
+  {{ shop.connection_notice() }}
+  {% if cat.key == 'supporter-ranks' %}<p class="store-catalog-note">Supporter ranks are cosmetic only. Compare what’s included below.</p>{% endif %}
   {% if cat.products %}
-  <ul class="product-grid">
+  <ul class="product-grid{% if cat.key == 'supporter-ranks' %} rank-product-grid{% endif %}">
     {% for p in cat.products %}
     <li>
       <a class="product-card" href="{{ url_for('public.store_item', slug=p.slug) }}">
-        {% if p.image %}{{ m.picture(p.image, p.image_alt, 'product-img', 200, 200) }}{% endif %}
-        <span class="product-name">{{ p.name }}</span>
-        <span class="product-price">{% if p.availability == 'released' and p.price %}{{ p.price }}{% else %}Not on sale yet{% endif %}</span>
-        <span>{{ m.concept(p.concept_art) }}</span>
+        {{ shop.product_art(p, 'product-img') }}
+        <span class="product-name">{{ p.name }}</span><span class="store-product-summary">{{ p.summary }}</span>
+        <span class="product-price">{{ p.display_price or p.store_message }}</span>
+        <span>{{ m.concept(p.concept_art) }}</span><span class="store-product-link">View details <span aria-hidden="true">↗</span></span>
       </a>
     </li>
     {% endfor %}
   </ul>
 
   {% if cat.key == 'supporter-ranks' and cat.products | length > 1 %}
-  {% set ns = namespace(rows=[]) %}
-  {% for p in cat.products %}{% for line in p.includes.splitlines() if line.strip() and line.strip() not in ns.rows %}{% set ns.rows = ns.rows + [line.strip()] %}{% endfor %}{% endfor %}
-  <section class="compare" aria-labelledby="compare-title">
-    <h2 id="compare-title">Compare ranks</h2>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th scope="col">Includes</th>{% for p in cat.products %}<th scope="col">{{ p.name }}</th>{% endfor %}</tr></thead>
+  <section class="compare rank-comparison" aria-labelledby="compare-title">
+    <div class="store-section-heading"><div><p class="eyebrow">Find your fit</p><h2 id="compare-title">Compare ranks</h2></div><p>Every rank is cosmetic. All players share the same gameplay.</p></div>
+    <div class="table-scroll rank-comparison-desktop" role="region" aria-label="Supporter rank comparison" tabindex="0">
+      <table class="rank-comparison-table">
+        <thead><tr><th scope="col">What’s included</th>{% for p in cat.products %}<th scope="col">{{ shop.product_art(p, 'rank-compare-art', sizes='64px') }}<a href="{{ url_for('public.store_item', slug=p.slug) }}">{{ p.name }}</a><span class="rank-compare-price">{{ p.display_price or p.store_message }}</span></th>{% endfor %}</tr></thead>
         <tbody>
-          {% for row in ns.rows %}
-          <tr><th scope="row">{{ row }}</th>{% for p in cat.products %}{% set has = row in p.includes.splitlines() | map('trim') | list %}<td>{% if has %}<span class="yes" aria-label="Included">✓</span>{% else %}<span class="no" aria-label="Not included">–</span>{% endif %}</td>{% endfor %}</tr>
+          {% for row in comparison %}
+          <tr><th scope="row">{{ row.label }}</th>{% for value in row['values'] %}<td{% if value == 'Not included' %} class="rank-not-included"{% endif %}>{{ value }}</td>{% endfor %}</tr>
           {% endfor %}
-          <tr><th scope="row">Gameplay advantage</th>{% for p in cat.products %}<td>None</td>{% endfor %}</tr>
-          <tr><th scope="row">Price</th>{% for p in cat.products %}<td>{% if p.availability == 'released' and p.price %}{{ p.price }}{% else %}Not on sale yet{% endif %}</td>{% endfor %}</tr>
         </tbody>
       </table>
     </div>
+    <div class="rank-comparison-mobile">{% for p in cat.products %}{% set index = loop.index0 %}<details name="compare-ranks"{% if loop.first %} open{% endif %}><summary>{{ shop.product_art(p, 'rank-compare-art', sizes='64px') }}<span><strong>{{ p.name }}</strong><span>{{ p.display_price or p.store_message }}</span></span><span class="rank-compare-toggle" aria-hidden="true">+</span></summary><dl>{% for row in comparison %}<div><dt>{{ row.label }}</dt><dd>{{ row['values'][index] }}</dd></div>{% endfor %}</dl><a class="text-link" href="{{ url_for('public.store_item', slug=p.slug) }}">View {{ p.name }} →</a></details>{% endfor %}</div>
+    <p class="rank-comparison-note">Rank badges appear in chat, the tab list and above your character. Open a rank for its full details.</p>
   </section>
   {% endif %}
   {% else %}
-  <p class="empty">Nothing in {{ cat.title | lower }} is on sale yet. Watch <a href="{{ url_for('public.news') }}">News</a> for the store opening.</p>
+  {{ shop.empty(cat) }}
   {% endif %}
+  {{ shop.help() }}
 </div>
 {% endblock %}

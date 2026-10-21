@@ -1,11 +1,14 @@
 {% extends "base.html" %}
-{% import "partials/reference_macros.html" as ref with context %}
 {% block title %}{{ label }}{% endblock %}
-{% block body_class %}reference-page{% endblock %}
+{% block body_class %}reading-page reference-page guide-reader-page guide-chapter-page{% endblock %}
 {% block description %}{{ blurb }}. Practical {{ site.SITE_NAME }} guides and commands.{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><script src="{{ url_for('static', filename='js/reference.js') }}" defer></script>{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/guide-reader.css') }}">{% endblock %}
 {% block content %}
-<header class="page-head reference-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.guide') }}">Handbook</a> / {{ label }}</p><p class="eyebrow">{{ guides | length }} field guides</p><h1>{{ label }}</h1><p class="lede">{{ blurb }}.</p></div></header>
-{% set group = 'guide' %}{% include "partials/subnav.html" %}
-<div class="wrap reference-layout">{{ ref.sidebar() }}<div class="reference-main">{% if guides %}<ol class="reference-guide-list chapter-guide-list">{% for entry in guides %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}">{% if category == 'getting-started' %}<span class="handbook-step-number">{{ '%02d' % loop.index }}</span>{% endif %}<h2>{{ entry.title }}</h2><p>{{ entry.summary }}</p>{% if entry.availability != 'released' %}{{ ref.status(entry.availability) }}{% endif %}<span class="reference-read-link">Read guide ↗</span></a></li>{% endfor %}</ol>{% else %}<p>Guides for this chapter are on the way.</p>{% endif %}</div></div>
+<header class="guide-heading"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.guide') }}">Game Guide</a> / {{ label }}</p><p class="eyebrow">{{ guides | length }} guides · One chapter at a time</p><h1>{{ label }}</h1><p class="lede">{{ blurb }}.</p></div></header>
+<div class="wrap guide-reader-layout">
+  <aside class="guide-reader-aside"><details class="guide-chapter" open><summary>Choose a chapter</summary><nav aria-label="Handbook chapters"><ul>{% for group in sections if group.guides %}<li><a href="{{ url_for('public.guide_section', category=group.key) }}"{% if category == group.key %} aria-current="page"{% endif %}>{{ group.label }} <span>({{ group.guides | length }})</span></a></li>{% endfor %}</ul></nav></details><a class="guide-help-link" href="{{ url_for('public.guide') }}">Search all guides ↗</a></aside>
+  <div class="guide-reader-main">{% if category == 'getting-started' %}<p class="chapter-intro">New to Aerborne? Follow these in order. Each guide has a step-by-step view you can keep open while playing.</p>{% else %}<p class="chapter-intro">Pick the topic you need. You can jump between sections inside every guide.</p>{% endif %}
+    {% if guides %}<ol class="chapter-entry-list">{% for entry in guides %}<li><a href="{{ url_for('public.guide_article', slug=entry.slug) }}"><span class="chapter-entry-number" aria-hidden="true">{{ '%02d' % loop.index }}</span><div><h2>{{ entry.title }}</h2><p>{{ entry.summary }}</p>{% if entry.availability != 'released' %}<span class="chapter-preview">Includes preview features</span>{% endif %}</div><span class="chapter-entry-open">Read guide <span aria-hidden="true">→</span></span></a></li>{% endfor %}</ol>{% else %}<p>Guides for this chapter are on the way.</p>{% endif %}
+  </div>
+</div>
 {% endblock %}

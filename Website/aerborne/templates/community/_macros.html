@@ -4,6 +4,10 @@
 {% endwith %}
 {%- endmacro %}
 
+{% macro badge_details(b) -%}
+<strong>{{ b.name }}</strong>{% if b.rarity %}<span class="badge-rarity">{{ b.rarity }}</span>{% endif %} {{ b.description }}{% if b.acquisition %}<span class="badge-acquisition">{{ b.acquisition }}</span>{% endif %}{% if b.awarded %}<em>{% if b.creator_only %}Awarded by Aerborne’s creators{% else %}Awarded by staff{% endif %} {{ b.awarded_at | date }}{% if b.note %} · {{ b.note }}{% endif %}</em>{% endif %}
+{%- endmacro %}
+
 {% macro role_badge(role) -%}
   {%- if role == 'staff' -%}<span class="badge badge-staff">Aerborne team</span>
   {%- elif role == 'moderator' -%}<span class="badge badge-mod">Moderator</span>

@@ -30,8 +30,7 @@
     if (data.state === "maintenance") return "Under maintenance. " + (data.message || "Check back soon.");
     if (data.state === "offline") return "The server isn't answering right now. It may be restarting; check back in a few minutes.";
     if (data.state !== "online") return "Live status couldn't load. Try refreshing in a moment.";
-    var who = data.players === 1 ? "1 player" : data.players + " players";
-    return "Online with " + who + (data.version ? " on " + data.version : "") + ". Checked " + ago(data.checked_at) + ".";
+    return "";
   }
 
   function render(card, data) {
@@ -42,17 +41,21 @@
     var states = { online: "Online", offline: "Offline", maintenance: "Maintenance", unconfigured: "Coming soon", unknown: "Status unavailable" };
     card.setAttribute("data-state", data.state);
     card.querySelector('[data-status-state]').textContent = states[data.state] || states.unknown;
-    card.querySelector('[data-status-latency]').textContent = available ? data.latency_ms + ' ms' : '';
+    var latency = typeof data.latency_ms === "number";
+    card.querySelector('[data-status-latency]').textContent = available && latency ? data.latency_ms + ' ms' : '';
     if (available) {
-      card.setAttribute("data-bars", String(bars(data.latency_ms)));
-      players.textContent = data.players + "/" + data.max;
+      card.setAttribute("data-bars", String(latency ? bars(data.latency_ms) : 5));
+      players.textContent = data.players + " / " + data.max;
+      players.setAttribute('aria-label', data.players + ' of ' + data.max + ' players online');
       icon.src = data.favicon || icon.getAttribute("data-default-icon");
     } else {
       card.removeAttribute("data-bars");
       players.textContent = "";
+      players.removeAttribute('aria-label');
       icon.src = icon.getAttribute("data-default-icon");
     }
     text.textContent = describe(data);
+    text.hidden = !text.textContent;
     fillFacts(data);
   }
 
@@ -67,7 +70,7 @@
     set("state", states[data.state] || "Unknown");
     set("players", available ? data.players + " of " + data.max : "–");
     set("version", available && data.version ? data.version : "–");
-    set("latency", available ? data.latency_ms + " ms" : "–");
+    set("latency", available && typeof data.latency_ms === "number" ? data.latency_ms + " ms" : "–");
     set("checked", data.checked_at ? ago(data.checked_at) : "–");
     set("last-online", data.last_online_at ? ago(data.last_online_at) : (data.online ? "Now" : "Not since this check started"));
   }

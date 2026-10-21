@@ -11,7 +11,7 @@
 .subnav a { font-size: .9rem; }
 .panel { box-shadow: none; }
 .panel h2 { font-size: 1.5rem; }
-.fine, .node-main p, .node-stats { color: #adbcd1; }
+.fine, .node-main p, .node-stats { color: var(--stone); }
 .reading-page .fine { color: var(--ink-soft); }
 .with-sidebar-main, .forum-sections, .profile-grid > *, .account-grid > *, .arcade-layout > * { min-width: 0; }
 .with-sidebar { gap: clamp(1.5rem, 4vw, 3rem); }
@@ -64,7 +64,7 @@
 .rank-preview:hover { border-color: var(--rank); color: var(--cloud); }
 .rank-preview h3 { margin-top: 1rem; }
 .rank-preview p { font-size: .9rem; }
-.rank-preview .text-link { margin-top: auto; font-size: .85rem; color: var(--rank); }
+.rank-preview .text-link { margin-top: auto; font-size: .85rem; color: var(--rank-name, var(--sky)); }
 .store-cats { margin-top: 0; }
 .store-cat-title { font-size: 1.4rem; }
 .arcade-card { transition: border-color .15s; }

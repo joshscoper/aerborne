@@ -33,7 +33,8 @@ class SiteTest(unittest.TestCase):
         self.data = tempfile.mkdtemp()
         os.environ["AERBORNE_DATA_DIR"] = self.data
         self.app = create_app({"TESTING": True, "SESSION_COOKIE_SECURE": False, "SETUP_TOKEN": "letmein-token",
-                               "SERVER_ADDRESS": "", "API_URL": "", "API_TOKEN": ""})
+                               "SERVER_ADDRESS": "", "API_URL": "", "API_TOKEN": "",
+                               "DISCORD_URL": "", "DISCORD_SERVER_ID": ""})
         self.client = self.app.test_client()
         status.clear_cache()
 
@@ -161,7 +162,7 @@ Aerborne is still in private testing. We'll post here when that changes.
     def test_reviewed_copy_and_private_preview_filters(self):
         from aerborne.reference_content import GUIDES
         conn = self.db()
-        self.assertEqual(len(GUIDES), 33)
+        self.assertEqual(len(GUIDES), 35)  # Includes the expedition and season campaign guides.
         for guide in GUIDES:
             row = conn.execute('SELECT body FROM guides WHERE slug = ?', (guide['slug'],)).fetchone()
             self.assertEqual(row['body'], guide['body'], guide['slug'])
@@ -482,9 +483,13 @@ class CommunityHelpers(SiteTest):
         gameapi.clear_cache()
 
     def register(self, username="Skyfarer", password="cloud-castle-9"):
+        token = self.csrf('/account/register')
+        self.client.post('/account/register', data={'_csrf': token, 'birth_date': '2000-01-01'})
         token = self.csrf("/account/register")
+        page = self.client.get('/account/register').get_data(as_text=True)
+        version = re.search(r'name="terms_version" value="([^"]+)"', page).group(1)
         return self.client.post("/account/register", data={"_csrf": token, "username": username,
-                                                           "password": password, "confirm": password})
+                "password": password, "confirm": password, 'age_confirm': '1', 'accept_terms': '1', 'terms_version': version})
 
     def link(self, code="ABCD2345", player="11111111-2222-3333-4444-555555555555", name="Amy"):
         links = {code: {"apiVersion": 1, "accountId": "acct", "playerId": player, "name": name}}
@@ -754,6 +759,8 @@ class ForumUpgradeTest(CommunityHelpers):
         self.assertIn("frame-admin", page)
         css = self.client.get("/ranks.css").get_data(as_text=True)
         self.assertIn(".rank-admin{--rank:#F07A7A", css)
+        self.assertIn("--rank-name:", css)
+        self.assertIn("--rank-name-light:", css)
 
     def test_unranked_members_get_the_member_frame(self):
         self.register("Plain")
@@ -1256,6 +1263,66 @@ class MemberManagementTest(SocialHelpers):
 
 
 class ProfileTest(SocialHelpers):
+    def test_badge_pack_art_and_new_staff_awards(self):
+        from aerborne import badges
+        from aerborne.seed_updates import PACK_STAFF_BADGES
+        self.member('Ava')
+        conn = self.db()
+        member = conn.execute("SELECT * FROM members WHERE username = 'Ava'").fetchone()
+        for slug, _name, _description, _tone in PACK_STAFF_BADGES:
+            row = conn.execute('SELECT * FROM badges WHERE slug = ?', (slug,)).fetchone()
+            self.assertEqual(row['icon'], 'badge-' + slug)
+        automatic = badges.for_member(conn, member)
+        self.assertIn('Verified adventurer', [badge['name'] for badge in automatic])
+        self.assertNotIn('Verified helper', [badge['name'] for badge in automatic])
+        for badge in automatic:
+            self.assertTrue(badge['icon'].startswith('img/badges/'))
+            self.assertTrue(badge['icon_2x'].endswith('-192.webp'))
+        conn.close()
+        self.assertEqual(len(badges.ICONS), 13)
+        for _key, _label, image in badges.ICONS:
+            for path in (image, image.replace('-96.webp', '-192.webp')):
+                response = self.client.get('/static/' + path)
+                self.assertEqual(response.status_code, 200, path)
+                self.assertEqual(response.mimetype, 'image/webp')
+        page = self.client.get('/members/Ava').get_data(as_text=True)
+        self.assertIn('badges/founding-member-96.webp', page)
+        self.assertIn('badges/verified-helper-192.webp 2x', page)
+
+    def test_badge_pack_upgrade_preserves_awards_and_custom_copy(self):
+        from aerborne import badges, seed_updates
+        self.member('Ava')
+        conn = self.db()
+        member_id = conn.execute("SELECT id FROM members WHERE username = 'Ava'").fetchone()[0]
+        old_id = conn.execute("SELECT id FROM badges WHERE slug = 'island-builder'").fetchone()[0]
+        conn.execute("UPDATE badges SET slug = 'master-builder', name = 'Owner award', description = 'Owner description', "
+                     "icon = 'forum-island-showcase' WHERE id = ?", (old_id,))
+        helper_id = conn.execute("SELECT id FROM badges WHERE slug = 'community-helper'").fetchone()[0]
+        conn.execute("UPDATE badges SET slug = 'helping-hand', name = 'Helping hand', icon = 'gem-vitality' WHERE id = ?", (helper_id,))
+        conn.execute("INSERT INTO member_badges (member_id, badge_id, awarded_at, awarded_by, note) VALUES (?, ?, ?, ?, ?)",
+                     (member_id, old_id, '2026-01-01 12:00:00', 'Josh', 'Original award note'))
+        conn.execute("UPDATE settings SET value = '10' WHERE key = 'seed_rev'")
+        conn.commit()
+        self.assertTrue(seed_updates.apply(conn))
+        updated = conn.execute('SELECT * FROM badges WHERE id = ?', (old_id,)).fetchone()
+        self.assertEqual(updated['slug'], 'island-builder')
+        self.assertEqual(updated['name'], 'Owner award')
+        self.assertEqual(updated['description'], 'Owner description')
+        self.assertEqual(updated['icon'], 'badge-island-builder')
+        helper = conn.execute('SELECT * FROM badges WHERE id = ?', (helper_id,)).fetchone()
+        self.assertEqual(helper['name'], 'Community helper')
+        self.assertEqual(helper['slug'], 'community-helper')
+        award = conn.execute('SELECT * FROM member_badges WHERE member_id = ?', (member_id,)).fetchone()
+        self.assertEqual(award['badge_id'], old_id)
+        self.assertEqual(award['note'], 'Original award note')
+        self.assertEqual(award['awarded_at'], '2026-01-01 12:00:00')
+        self.assertEqual(award['awarded_by'], 'Josh')
+        self.assertEqual(conn.execute('SELECT COUNT(*) FROM member_badges').fetchone()[0], 1)
+        self.assertFalse(seed_updates.apply(conn))
+        self.assertEqual(badges.icon_path('forum-island-showcase'), 'img/badges/island-builder-96.webp')
+        self.assertEqual(badges.icon_path('unknown-old-key'), 'img/badges/verified-helper-96.webp')
+        conn.close()
+
     def test_nav_name_opens_the_public_profile(self):
         self.member("Ava")
         page = self.client.get("/forum").get_data(as_text=True)
@@ -1354,6 +1421,20 @@ class CosmeticsContentTest(SiteTest):
         self.assertIn("goes on sale when the store opens", page)
         self.assertEqual(page.count("/companion moonmoth"), 1)
 
+    def test_lilypip_the_frog_is_in_the_collection_and_store(self):
+        conn = self.db()
+        companion = conn.execute("SELECT name, access, image FROM companions WHERE slug = 'lilypip'").fetchone()
+        product = conn.execute("SELECT game_product, includes FROM products WHERE slug = 'lilypip-companion'").fetchone()
+        conn.close()
+        self.assertEqual(companion[0], "Lilypip")
+        self.assertEqual(companion[1], "purchased")
+        self.assertEqual(product[0], "cosmetic.companion.lilypip")
+        self.assertIn(chr(10), product[1], "Each item the player receives is on its own line")
+        page = self.client.get("/companions/lilypip").get_data(as_text=True)
+        self.assertIn("lilypip-720.webp", page)
+        self.assertIn("/companion lilypip", page)
+        self.assertEqual(self.client.get("/static/img/companions/lilypip-avatar.webp").status_code, 200)
+
     def test_staff_edits_to_store_items_survive_the_update(self):
         from aerborne import seed_updates
         conn = self.db()
@@ -1366,6 +1447,28 @@ class CosmeticsContentTest(SiteTest):
                          "Pufflet companion\nCompanion menu entry")
         self.assertEqual(conn.execute("SELECT acquisition FROM companions WHERE slug = 'pufflet'").fetchone()[0], "Not announced yet")
         conn.close()
+
+
+class ApiStatusTest(SiteTest):
+    STATUS = {"apiVersion": 1, "ready": True, "onlinePlayers": 3, "maxPlayers": 20, "serverVersion": "Paper 26.2"}
+
+    def test_status_comes_from_the_game_api_when_it_answers(self):
+        self.app.config["API_URL"] = "https://api.example.test"
+        gameapi.clear_cache()
+        with mock.patch.object(gameapi, "_request", return_value=(self.STATUS, None)) as request,                 mock.patch.object(status, "ping", side_effect=AssertionError("no Minecraft ping needed")):
+            data = self.client.get("/api/v1/status").get_json()
+        self.assertEqual((data["state"], data["players"], data["max"], data["version"]), ("online", 3, 20, "Paper 26.2"))
+        self.assertIsNone(data["latency_ms"])
+        request.assert_called_with("/api/v1/status")
+
+    def test_falls_back_to_a_ping_when_the_api_is_unreachable(self):
+        self.app.config["API_URL"] = "https://api.example.test"
+        self.app.config["SERVER_ADDRESS"] = "play.example.test"
+        gameapi.clear_cache()
+        with mock.patch.object(gameapi, "_request", return_value=(None, "unavailable")),                 mock.patch.object(status, "ping", side_effect=OSError("blocked")) as ping:
+            data = self.client.get("/api/v1/status").get_json()
+        self.assertEqual(data["state"], "offline")
+        self.assertTrue(ping.called)
 
 
 class FakeServer(threading.Thread):
