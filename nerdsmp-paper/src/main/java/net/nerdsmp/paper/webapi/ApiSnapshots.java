@@ -60,6 +60,7 @@ final class ApiSnapshots implements AutoCloseable {
         status.addProperty("description", brand.description());
         status.addProperty("onlinePlayers", Bukkit.getOnlinePlayers().size());
         status.addProperty("maxPlayers", Bukkit.getMaxPlayers());
+        status.addProperty("serverVersion", Bukkit.getName() + " " + Bukkit.getMinecraftVersion());
 
         JsonObject telemetry = new JsonObject();
         telemetry.addProperty("sampledAt", sampled);
