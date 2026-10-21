@@ -47,6 +47,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static net.nerdsmp.paper.resource.HarvestClaims.Channel.CAMPAIGN;
 import static net.nerdsmp.paper.resource.HarvestClaims.Channel.EXCAVATION;
 import static net.nerdsmp.paper.resource.HarvestClaims.Channel.QUESTS;
 import static net.nerdsmp.paper.resource.HarvestClaims.Channel.SKILLS;
@@ -78,6 +79,8 @@ final class ResourceProvenanceServiceTest {
         var excavation = fixture.service.claim(event, EXCAVATION).orElseThrow();
         var quests = fixture.service.claim(event, QUESTS).orElseThrow();
         var signatures = fixture.service.claim(event, SIGNATURES).orElseThrow();
+        var campaign = fixture.service.claim(event, CAMPAIGN).orElseThrow();
+        assertSame(skill, campaign);
         assertSame(skill, excavation);
         assertSame(skill, quests);
         assertSame(skill, signatures);

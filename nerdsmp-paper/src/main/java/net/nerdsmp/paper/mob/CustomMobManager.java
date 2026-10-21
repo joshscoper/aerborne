@@ -282,7 +282,37 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     public LivingEntity spawnZone(String id, Location location, int level, java.util.function.Consumer<LivingEntity> beforeSpawn) {
         if (level<1 || level>100) throw new IllegalArgumentException("Zone mob level must be 1–100");
-        EntityType type=zoneType(id);
+        return spawnLeveled(id, zoneType(id), location, level, beforeSpawn);
+    }
+
+    /** Resolve any living mob or authored boss for an instanced expedition encounter, which owns its own lifecycle. */
+    public EntityType encounterType(String id) {
+        EntityType type;
+        if (id.startsWith("vanilla:")) {
+            try { type=EntityType.valueOf(id.substring(8).toUpperCase(Locale.ROOT)); }
+            catch (IllegalArgumentException error) { throw new IllegalArgumentException("Unknown mob: "+id); }
+        } else if (id.startsWith("custom:")) {
+            MobDefinition definition=definitions.get(id.substring(7));
+            if (definition==null) throw new IllegalArgumentException("Unknown mob: "+id);
+            type=definition.type;
+        } else throw new IllegalArgumentException("Use vanilla:<type> or custom:<id>.");
+        if (type==EntityType.PLAYER || type.getEntityClass()==null || !LivingEntity.class.isAssignableFrom(type.getEntityClass()) || !type.isSpawnable())
+            throw new IllegalArgumentException("That is not a spawnable mob: "+id);
+        return type;
+    }
+
+    public boolean encounterBoss(String id) {
+        if (id.startsWith("custom:")) { MobDefinition definition=definitions.get(id.substring(7)); return definition!=null && definition.boss; }
+        try { return id.startsWith("vanilla:") && isVanillaBoss(EntityType.valueOf(id.substring(8).toUpperCase(Locale.ROOT))); }
+        catch (IllegalArgumentException error) { return false; }
+    }
+
+    public LivingEntity spawnEncounter(String id, Location location, int level, java.util.function.Consumer<LivingEntity> beforeSpawn) {
+        if (level<1 || level>100) throw new IllegalArgumentException("Encounter mob level must be 1–100");
+        return spawnLeveled(id, encounterType(id), location, level, beforeSpawn);
+    }
+
+    private LivingEntity spawnLeveled(String id, EntityType type, Location location, int level, java.util.function.Consumer<LivingEntity> beforeSpawn) {
         Class<? extends LivingEntity> entityClass=type.getEntityClass().asSubclass(LivingEntity.class);
         MobDefinition definition=id.startsWith("custom:") ? definitions.get(id.substring(7)) : null;
         return location.getWorld().spawn(location,entityClass,CreatureSpawnEvent.SpawnReason.CUSTOM,false,entity-> {
@@ -304,13 +334,19 @@ public final class CustomMobManager implements Listener, AutoCloseable {
                     equipment.setItemInMainHandDropChance(0.0F);
                 }
             }
-            if (definition==null) applyVanilla(entity,MobTier.STANDARD); else apply(entity,definition);
+            if (definition==null) applyVanilla(entity,isVanillaBoss(type) ? MobTier.BOSS : MobTier.STANDARD); else apply(entity,definition);
             beforeSpawn.accept(entity);
         });
     }
 
     public boolean isCustomMob(LivingEntity entity) {
         return definition(entity) != null;
+    }
+
+    /** {@code custom:<id>} for authored mobs, otherwise {@code vanilla:<type>}; the same syntax zones and expeditions use. */
+    public String encounterId(LivingEntity entity) {
+        MobDefinition definition = definition(entity);
+        return definition != null ? "custom:" + definition.id() : "vanilla:" + entity.getType().name().toLowerCase(Locale.ROOT);
     }
 
     public boolean isBoss(LivingEntity entity) {

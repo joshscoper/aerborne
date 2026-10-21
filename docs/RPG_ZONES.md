@@ -2,6 +2,8 @@
 
 Your islands and shared map have different roles. Ordinary compatible mobs on islands may stack; authored encounters on the shared map remain individual enemies. Build your hub, forests, mines and dungeons yourself, then use staff tools to define where each encounter belongs. These commands never build terrain, move existing NPCs or set warps.
 
+Zones are open-world encounters on the shared map. For private, instanced party dungeons with rooms, bosses and a finish, see [Expeditions](EXPEDITIONS.md). Expeditions reuse the same mob ids (`custom:<id>`, `vanilla:<type>`) and `/mobloot` profiles.
+
 Staff need `nerdsmp.zone.admin` for zone setup and `nerdsmp.loot.admin` for loot editing. Both default to operators. Normal players cannot inspect the staff catalogs or edit these settings.
 
 ## Place an encounter

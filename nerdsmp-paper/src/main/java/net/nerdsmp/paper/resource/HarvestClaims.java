@@ -8,7 +8,7 @@ import java.util.function.BooleanSupplier;
 
 /** One eligibility decision and operation ID per event; each reward path consumes it once. */
 public final class HarvestClaims<E> {
-    public enum Channel { SKILLS, EXCAVATION, QUESTS, SIGNATURES }
+    public enum Channel { SKILLS, EXCAVATION, QUESTS, SIGNATURES, CAMPAIGN }
     public record Harvest(String operationId) { }
     private final WeakHashMap<E, Decision> decisions = new WeakHashMap<>();
 

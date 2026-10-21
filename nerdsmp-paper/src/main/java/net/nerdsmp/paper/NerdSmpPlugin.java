@@ -47,7 +47,6 @@ import net.nerdsmp.paper.presentation.DamageDisplayService;
 import net.nerdsmp.paper.presentation.MobHealthBarService;
 import net.nerdsmp.paper.presentation.PlayerPresentationService;
 import net.nerdsmp.paper.service.InMemoryAccountService;
-import net.nerdsmp.paper.service.InMemoryCampaignService;
 import net.nerdsmp.paper.service.InMemoryClaimService;
 import net.nerdsmp.paper.service.InMemoryEconomyService;
 import net.nerdsmp.paper.service.InMemoryEntitlementService;
@@ -192,8 +191,17 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private AchievementService achievements;
     private net.nerdsmp.paper.skyblock.SkyblockController skyblock;
     private boolean skyblockEnabled;
-    private net.nerdsmp.paper.expedition.ExpeditionController expeditions;
-    public net.nerdsmp.paper.expedition.ExpeditionController expeditions() { return expeditions; }
+    private net.nerdsmp.paper.expedition.ExpeditionController expeditionRoutes;
+    /** The older open-world expedition routes; only built in skyblock mode. */
+    public net.nerdsmp.paper.expedition.ExpeditionController expeditionRoutes() { return expeditionRoutes; }
+    private net.nerdsmp.paper.expedition.ExpeditionService expeditions;
+    private net.nerdsmp.paper.expedition.ExpeditionSetup expeditionSetup;
+    private net.nerdsmp.paper.expedition.ExpeditionMenu expeditionMenu;
+    /** Instanced party expeditions. */
+    public net.nerdsmp.paper.expedition.ExpeditionService expeditions() { return expeditions; }
+    private net.nerdsmp.paper.campaign.SeasonCampaignService campaign;
+    /** The season campaign: goals, milestones, server-wide buffs and claims. */
+    public net.nerdsmp.paper.campaign.SeasonCampaignService campaign() { return campaign; }
     private net.nerdsmp.paper.zone.ZoneStore zones;
     private net.nerdsmp.paper.zone.ZoneCommand zoneCommands;
     private net.nerdsmp.paper.zone.ZoneSpawner zoneSpawner;
@@ -267,15 +275,15 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (zoneSpawner != null) zoneSpawner.close();
         if (mobs != null) mobs.close();
         if (skyblock != null) skyblock.close();
+        if (expeditionSetup != null) expeditionSetup.close();
         if (expeditions != null) expeditions.close();
+        if (expeditionRoutes != null) expeditionRoutes.close();
         if (marketController != null) marketController.close();
         if (auctionController != null) auctionController.close();
         if (alchemy != null) {
             alchemy.close();
         }
-        if (serverProgression != null) {
-            serverProgression.close();
-        }
+        if (campaign != null) campaign.close();
         if (arcaneEffects != null) arcaneEffects.close();
         if (enchanting != null) {
             enchanting.close();
@@ -400,28 +408,9 @@ public final class NerdSmpPlugin extends JavaPlugin {
         market = new DurableMarketService(new java.io.File(getDataFolder(), "market/" + marketSeason + ".yml"), economy);
         auctions = new DurableAuctionService(new java.io.File(getDataFolder(), "auctions/" + marketSeason + ".yml"), market, economy,
             getConfig().getInt("economy.market-sales-tax-percent", 5));
-        Set<String> categories = new HashSet<>(getConfig().getStringList("campaign.categories"));
-        Map<String, Long> milestones = new HashMap<>();
-        var milestoneSection = net.nerdsmp.paper.storage.ConfigurationDefaults.section(getConfig(), "campaign.milestones");
-        if (milestoneSection != null) {
-            for (String key : milestoneSection.getKeys(false)) {
-                milestones.put(key, milestoneSection.getLong(key));
-            }
-        }
-        Instant startsAt = Instant.now().minus(Duration.ofMinutes(1));
-        Instant endsAt = startsAt.plus(Duration.ofDays(getConfig().getLong("campaign.duration-days", 14L)));
-        String campaignId = getConfig().getString("campaign.id", "veil-awakening");
-        campaigns = new InMemoryCampaignService(
-            campaignId,
-            getConfig().getString("campaign.title", "The Veil Awakens"),
-            startsAt,
-            endsAt,
-            getConfig().getLong("campaign.daily-contribution-cap", 2500L),
-            categories,
-            milestones,
-            new java.io.File(getDataFolder(), "campaign-state.yml"), marketSeason
-        );
-        serverProgression = new ServerProgressionService(this, campaigns);
+        campaign = new net.nerdsmp.paper.campaign.SeasonCampaignService(this);
+        campaigns = campaign;
+        serverProgression = new ServerProgressionService(this);
         items = new PaperItemService(this);
         itemEngine = new net.nerdsmp.paper.engine.ItemEngine(this,items);
         gearSets = new GearSetService(this, items, player -> presentation == null
@@ -495,7 +484,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         chat = new ChannelChatManager(this, settings, social, presentation, sessions);
         trade = new TradeManager(this, settings, social);
         if (skyblockEnabled) skyblock = new net.nerdsmp.paper.skyblock.SkyblockController(this);
-        if (skyblockEnabled) expeditions = new net.nerdsmp.paper.expedition.ExpeditionController(this);
+        if (skyblockEnabled) expeditionRoutes = new net.nerdsmp.paper.expedition.ExpeditionController(this);
         // Restore managed and legacy worlds before resolving saved travel destinations.
         travel = new TravelManager(this, settings, social);
         zones = new net.nerdsmp.paper.zone.ZoneStore(new java.io.File(getDataFolder(),"zones.yml"));
@@ -535,6 +524,11 @@ public final class NerdSmpPlugin extends JavaPlugin {
         studioUi.setHome(developerStudio::open);
         watchdog = new WatchdogService(this);
         connections = new net.nerdsmp.paper.anticheat.ConnectionLog(this);
+        expeditions = new net.nerdsmp.paper.expedition.ExpeditionService(this);
+        expeditionSetup = new net.nerdsmp.paper.expedition.ExpeditionSetup(this, expeditions);
+        expeditionMenu = new net.nerdsmp.paper.expedition.ExpeditionMenu(this, expeditions);
+        expeditions.attach(expeditionSetup, expeditionMenu);
+        campaign.reload(); // Re-check expedition, mob and item names now that those catalogs exist.
 
     }
 
@@ -604,13 +598,13 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(rewardDrops, this);
         plugins.registerEvents(expansionLoot, this);
         plugins.registerEvents(merchantTrades, this);
-        plugins.registerEvents(serverProgression, this);
+        plugins.registerEvents(campaign, this);
         plugins.registerEvents(watchdog, this);
         plugins.registerEvents(connections, this);
         plugins.registerEvents(staffPermissions, this);
         plugins.registerEvents(new ClaimProtectionListener(claims, sessions, graves,
             event -> digSites != null && digSites.mayHarvest(event)
-                || expeditions != null && expeditions.mayHarvest(event),
+                || expeditionRoutes != null && expeditionRoutes.mayHarvest(event),
             event -> zoneSpawner != null && zoneSpawner.zoneId(event.getEntity()).isPresent()
                 && event.getDamageSource().getCausingEntity() instanceof org.bukkit.entity.Player attacker
                 && zoneSpawner.canFight(attacker,event.getEntity())), this);
@@ -620,7 +614,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(oreSmelting, this);
         plugins.registerEvents(autoSmelt, this);
         plugins.registerEvents(forestry, this);
-        if (expeditions != null) plugins.registerEvents(expeditions, this);
+        if (expeditionRoutes != null) plugins.registerEvents(expeditionRoutes, this);
+        plugins.registerEvents(expeditions, this);
+        plugins.registerEvents(expeditionSetup, this);
+        plugins.registerEvents(expeditionMenu, this);
         presentation.start();
         damageDisplays.start();
         mobHealthBars.start();
@@ -633,7 +630,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         engagement.start();
         npcs.start();
         guide.start();
-        serverProgression.start();
+        campaign.start();
         marketController.start();
         staffPermissions.start();
         connections.start();

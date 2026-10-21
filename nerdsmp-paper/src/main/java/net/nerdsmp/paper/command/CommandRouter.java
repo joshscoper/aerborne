@@ -59,13 +59,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "worldstudio" -> plugin.worldStudio().command(sender,args);
             case "npcstudio" -> plugin.npcStudio().command(sender,args);
             case "recipestudio" -> plugin.recipeStudio().command(sender,args);
-            case "expedition" -> {
-                if (plugin.expeditions() == null) {
-                    Chat.notice(sender, "Expeditions aren't part of this server. Travel with " + Chat.command("warps") + ".");
-                    yield true;
-                }
-                yield plugin.expeditions().command(sender, args);
-            }
+            case "expedition" -> plugin.expeditions().command(sender, args);
             case "island" -> {
                 if (plugin.skyblock() == null) {
                     Chat.notice(sender, "Islands aren't part of this server. Manage your land with " + Chat.command("claim") + ".");
@@ -579,52 +573,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     }
 
     private boolean campaign(CommandSender sender, String[] args) {
-        Player player = player(sender);
-        if (player == null) {
-            return true;
-        }
-        AccountId account = account(player);
-        if (account == null) {
-            return true;
-        }
-        if (args.length == 0) {
-            plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.CAMPAIGN);
-            return true;
-        }
-        if (args.length == 3 && args[0].equalsIgnoreCase("contribute")) {
-            Long amount = positiveLong(args[2]);
-            ItemStack held = player.getInventory().getItemInMainHand();
-            if (amount == null || amount > held.getAmount() || held.getType().isAir()) {
-                Chat.error(player, "Hold at least that many items in your main hand.");
-                Chat.usage(player, "/campaign contribute <category> <amount>");
-                return true;
-            }
-            ItemStack contributed = held.clone();
-            contributed.setAmount(amount.intValue());
-            held.setAmount(held.getAmount() - amount.intValue());
-            plugin.campaigns().contribute(account, args[1].toLowerCase(Locale.ROOT), amount,
-                "campaign:" + UUID.randomUUID()).thenAccept(result -> sync(() -> {
-                if (result == net.nerdsmp.api.service.CampaignService.ContributionResult.APPLIED) {
-                    player.sendRichMessage("<green>Contributed " + amount + " campaign points.</green>");
-                    plugin.serverProgression().refresh();
-                } else {
-                    player.getInventory().addItem(contributed).values()
-                        .forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
-                    player.sendRichMessage("<red>" + switch (result) {
-                        case NO_ACTIVE_CAMPAIGN -> "No campaign is running right now.";
-                        case INVALID_CATEGORY -> "That isn't a campaign category. Choose one of: "
-                            + String.join(", ", plugin.getConfig().getStringList("campaign.categories")) + ".";
-                        case DAILY_CAP_REACHED -> "You've reached today's contribution limit.";
-                        case INVALID_POINTS -> "That amount can't be contributed.";
-                        case DUPLICATE -> "That contribution was already counted.";
-                        case APPLIED -> "The contribution changed while it was saved.";
-                    } + " Your items were returned.</red>");
-                }
-            }));
-            return true;
-        }
-        Chat.usage(player, "/campaign [contribute <category> <amount>]");
-        return true;
+        return plugin.campaign().command(sender, args);
     }
 
     private boolean grave(CommandSender sender, String[] args) {
@@ -1120,7 +1069,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     public void hideInactiveCommands(PlayerCommandSendEvent event) {
         List<String> hidden = plugin.skyblockEnabled()
             ? List.of("claim", "homestead", "territory")
-            : List.of("island", "is", "skyblock", "expedition", "expeditions");
+            : List.of("island", "is", "skyblock");
         event.getCommands().removeIf(name -> hidden.contains(name.startsWith("nerdsmp:") ? name.substring("nerdsmp:".length()) : name));
     }
 
@@ -1128,7 +1077,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> choices = switch (command.getName().toLowerCase(Locale.ROOT)) {
             case "permissions" -> plugin.staffPermissions().complete(sender, args);
-            case "expedition" -> args.length == 1 && plugin.expeditions() != null ? plugin.expeditions().names() : List.of();
+            case "expedition" -> plugin.expeditions().complete(sender, args);
             case "zone" -> plugin.zoneCommands().tabComplete(sender,args);
             case "digsite" -> plugin.digSiteCommands().complete(sender,args);
             case "mobloot" -> plugin.mobLootCommands().complete(sender,args);
@@ -1162,8 +1111,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 ? List.of("info", "invite", "accept", "deny", "leave", "kick", "promote", "disband")
                 : args.length == 2 && (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("kick")
                     || args[0].equalsIgnoreCase("promote")) ? partyTargets(sender, args[0]) : List.of();
-            case "campaign" -> args.length == 1 ? List.of("contribute")
-                : args.length == 2 ? plugin.getConfig().getStringList("campaign.categories") : List.of();
+            case "campaign" -> plugin.campaign().complete(sender, args);
             case "grave" -> args.length == 1 ? List.of("locate", "recover") : List.of();
             case "companion" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
                 java.util.stream.Stream.of("list", "dismiss"), plugin.cosmetics().ownership(player).companions().stream()).toList() : List.of();

@@ -5,6 +5,23 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Party expeditions and the season campaign (October 20)
+- [Expeditions](EXPEDITIONS.md) are now instanced party adventures for one to five players. Each
+  run is a private copy of a template world with rooms (waves, survive, boss), gates, checkpoints,
+  shared lives, a time limit and per-player loot. Parties start with a ready check, and the finder
+  groups solo players and partial parties.
+- Normal, Heroic and Mythic tiers and five modifiers. Optional encounter scripts. Clears and best
+  times are recorded.
+- The Nether and the End are reached only through expeditions: vanilla portals are sealed.
+  Samples: **The Hollow Barrow** (overworld) and **Cinder Keep** (Nether), built from code.
+- Staff build expeditions in game with the Expedition Wand and `/expedition create`, `room add`,
+  `wave`, `boss`, `gate`, `check`, `test` and `publish`. Validation names every missing step.
+- The [season campaign](CAMPAIGN.md) replaces the single points campaign. Goals, sources and
+  milestone rewards (server buffs, skill XP and job Marks boosts, claim-once items and Marks,
+  expedition and feature unlocks) live in `campaign/season.yml`. Sample season: **The Ember Accord**.
+- `/expedition` no longer lists warps; use `/warps`. The World menu has Expeditions and Warps.
+- Game API: public `/api/v1/expeditions` and `/api/v1/campaign`; the website has matching pages.
+
 ### Arcane Forge 2.0 (October 18)
 - [Arcane Forge 2.0](ARCANE_FORGE.md): the Arcane Codex (`/arcane`), Arcane Research with socket
   gems, deterministic Chosen Imbuement, Arcane Capacity, overcharge and three Arcane Signatures.

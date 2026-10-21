@@ -1,0 +1,97 @@
+# The season campaign: goals the whole server works toward together. Edit this file and run
+# /campaign admin reload; /campaign admin check lists anything the server doesn't recognise.
+# Full reference: docs/CAMPAIGN.md.
+#
+# Progress is stored per season id in campaign/state-<id>.yml. A new id starts a fresh season;
+# changing anything else keeps the progress made so far, and reached milestones stay reached.
+id: ember-accord
+title: The Ember Accord
+description: The sky-forges have gone cold. Stoke them, hold the frontier and delve the deep places together to rekindle the Accord.
+# Leave starts-at out to start the season the first time this file loads, or set an ISO time:
+# starts-at: 2026-11-01T00:00:00Z
+duration-days: 42
+# Most points one player can add to each goal per day (UTC). A goal can set its own daily-cap.
+player-daily-cap: 2500
+
+goals:
+  forge-fires:
+    title: Stoke the Forges
+    description: Ore, fuel and smelted metal to relight the sky-forges.
+    icon: blast_furnace
+    target: 50000
+    sources:
+      - {type: mine, points: 2, materials: [coal_ore, deepslate_coal_ore, iron_ore, deepslate_iron_ore, copper_ore, deepslate_copper_ore, gold_ore, deepslate_gold_ore]}
+      - {type: smelt, points: 1}
+      - {type: contribute, points: 2, materials: [coal, charcoal, iron_ingot, copper_ingot, gold_ingot]}
+  delvers:
+    title: Delve Together
+    description: Clear expeditions as a party. Harder tiers count for more.
+    icon: recovery_compass
+    target: 400
+    daily-cap: 40
+    sources:
+      - {type: expedition, points: 1, tiers: {heroic: 2, mythic: 4}}
+      - {type: boss, points: 1}
+  wardens:
+    title: Hold the Frontier
+    description: Push back the hostile creatures gathering at the island edges.
+    icon: iron_sword
+    target: 25000
+    sources:
+      - {type: kill, points: 1, mobs: [hostile]}
+  harvest:
+    title: Bountiful Isles
+    description: Feed the forge-crews with harvests and catches.
+    icon: hay_block
+    target: 30000
+    sources:
+      - {type: mine, points: 1, materials: [wheat, carrots, potatoes, beetroots, melon, pumpkin, nether_wart, cocoa]}
+      - {type: fish, points: 3}
+
+# Milestones are reached once every goal they require hits its threshold. Rewards:
+#   buff     potion effect for everyone online (and anyone who joins) for the duration
+#   boost    +percent skill-xp or job-marks for the duration
+#   item     every account can claim it once with /campaign claim
+#   marks    every account can claim them once with /campaign claim
+#   unlock   opens an expedition (sealed until then) or a feature (world-events)
+#   broadcast / command   a message, or a console command run once
+milestones:
+  first-spark:
+    title: First Spark
+    description: The first forge catches. Rifts begin to stir at the frontier.
+    icon: flint_and_steel
+    requires: {forge-fires: 8000}
+    rewards:
+      - {type: buff, effect: haste, amplifier: 0, hours: 6}
+      - {type: unlock, feature: world-events}
+  hunters-moon:
+    title: Hunter's Moon
+    requires: {wardens: 10000}
+    rewards:
+      - {type: buff, effect: speed, amplifier: 0, hours: 4}
+      - {type: boost, kind: skill-xp, percent: 25, hours: 12}
+  ember-gate:
+    title: The Ember Gate
+    description: The forges burn hot enough to open the way to Cinder Keep in the Nether.
+    icon: crying_obsidian
+    requires: {forge-fires: 20000, delvers: 40}
+    rewards:
+      - {type: unlock, expedition: cinder_keep}
+      - {type: item, item: golden_apple, amount: 2}
+      - {type: marks, amount: 250}
+  bountiful:
+    title: A Bountiful Feast
+    requires: {harvest: 15000}
+    rewards:
+      - {type: boost, kind: job-marks, percent: 20, hours: 24}
+      - {type: item, item: golden_carrot, amount: 16}
+  accord-rekindled:
+    title: The Accord Rekindled
+    description: Every forge burns. The season's finale.
+    icon: nether_star
+    requires: {forge-fires: 50000, delvers: 400, wardens: 25000, harvest: 30000}
+    rewards:
+      - {type: buff, effect: luck, amplifier: 0, days: 3}
+      - {type: item, item: totem_of_undying, amount: 1}
+      - {type: marks, amount: 1000}
+      - {type: broadcast, message: "<gold><bold>The Ember Accord is rekindled!</bold></gold> <gray>Thank you, everyone.</gray>"}

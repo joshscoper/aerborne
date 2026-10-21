@@ -7,14 +7,14 @@
 # Sections, in order:
 #   1. Game mode and setup     gameplay, skyblock, storage, compliance, resource-pack
 #   2. Economy                 economy, jobs, identification, bank, repairs
-#   3. Progression             season, progression, campaign, engagement
+#   3. Progression             season, progression, campaign, expeditions, engagement
 #   4. Combat and mobs         combat, mobs, forge, arcane-forge
 #   5. Players and social      starter-kit, parties, social, chat, trading, travel, graves
 #   6. Player guidance         tips
 #   7. NPCs                    npcs
 #   8. Staff and moderation    moderation, anti-cheat
 #   9. Display                 presentation
-#  10. Legacy SMP mode only    claims, expeditions
+#  10. Legacy SMP mode only    claims
 #
 # Naming: prices end in -marks and durations end in their unit (-seconds, -minutes, -days).
 # A few older keys predate this and keep their names so existing configs still work.
@@ -60,7 +60,7 @@ skyblock:
     - '<gray>Trade from anywhere with <white>/trade \<player></white>. Check both offers before confirming.</gray>'
     - '<gray><white>/settings</white> controls private messages and invitations. <white>/ignore \<player></white> also stops their requests.</gray>'
     - '<gray>Your home is one command away: <white>/island home</white>.</gray>'
-    - '<gray><white>/expedition</white> leads to renewable veins, timber, excavation finds and fishing.</gray>'
+    - '<gray><white>/expedition</white> takes up to five friends on a private adventure with a boss and loot. It''s also the way into the Nether and the End.</gray>'
     - '<gray>Train skills together on your island to level it up. Every two island levels earns a talent point.</gray>'
     - '<gray>Right-click ripe crops with a hoe to harvest and replant. Keep plain seeds handy if the harvest doesn''t supply one.</gray>'
     - '<gray><white>/island talents</white> upgrades generators, crops and automation. Your owner confirms each choice.</gray>'
@@ -77,7 +77,7 @@ skyblock:
     - '<gray><white>/island visitors on</white> allows sightseeing, not building or storage access.</gray>'
     - '<gray>Only invite trusted players to your co-op. Members share building and storage access.</gray>'
     - '<gray>Joining a co-op keeps your own island. Find all your homes with <white>/island homes</white>.</gray>'
-    - '<gray>Island void falls return you safely. Your city and expedition journeys have their own risks.</gray>'
+    - '<gray>Island void falls return you safely. Expedition deaths never drop your gear, but they spend a shared party life.</gray>'
     - '<gray>Visit city stations for forging, enchanting and alchemy. Check <white>/daily</white> for contracts.</gray>'
     - '<gray>Generated ores and regrown trees earn skill XP; placing an ore and breaking it does not.</gray>'
     - '<gray>Excavation needs fresh soil or marked dig-site nodes. Find renewable digging with <white>/digsite list</white>; ordinary placed soil gives no XP.</gray>'
@@ -210,25 +210,33 @@ progression:
     building-detail: 5
     building-landmark: 8
 
-# The server-wide campaign. Everyone's contributions add up; each milestone unlocks content for the
-# whole server.
-campaign:
-  id: veil-awakening
-  title: The Veil Awakens
-  duration-days: 14
-  # Most points one player can add per day.
-  daily-contribution-cap: 2500
-  categories: [gathering, crafting, hunting, exploration]
-  # Total points needed for each milestone.
-  milestones:
-    first-ripple: 10000
-    broken-seal: 30000
-    rift-opened: 60000
-  # Which milestone unlocks world events, the Nether and the End.
-  progression:
-    world-events: first-ripple
-    nether: broken-seal
-    end: rift-opened
+# The season campaign: goals, milestones and rewards live in plugins/NerdSMP/campaign/season.yml
+# (see docs/CAMPAIGN.md). Edit that file and run /campaign admin reload; no restart is needed.
+
+# Instanced party expeditions. Each expedition is a file in plugins/NerdSMP/expeditions/; build them
+# in game with /expedition guide. See docs/EXPEDITIONS.md.
+expeditions:
+  # Runs that may be live at once. Each run is its own small world.
+  max-instances: 6
+  # Seconds a ready check waits for everyone.
+  ready-check-seconds: 30
+  # The finder starts a group below full size once its first player has waited this long.
+  queue-fill-seconds: 90
+  # How long a disconnected player can rejoin their run.
+  rejoin-minutes: 5
+  # How long the party can linger to loot and leave after the final boss.
+  linger-after-finish-seconds: 180
+  # false seals Nether and End portals so those realms are reached through expeditions.
+  vanilla-portals: false
+  # Difficulty tiers every expedition offers unless its file disables one. requires: a tier the
+  # player must have cleared on that expedition first. Modifiers: fortified, tyrannical,
+  # bolstering, volatile, timed.
+  tiers:
+    normal: {title: Normal, level-bonus: 0, health-multiplier: 1.0, damage-multiplier: 1.0, lives: 10, loot-rolls: 1, marks-multiplier: 1.0}
+    heroic: {title: Heroic, level-bonus: 8, health-multiplier: 1.6, damage-multiplier: 1.3, lives: 6, loot-rolls: 2, marks-multiplier: 1.5, requires: normal}
+    mythic: {title: Mythic, level-bonus: 16, health-multiplier: 2.4, damage-multiplier: 1.6, lives: 3, loot-rolls: 3, marks-multiplier: 2.5, requires: heroic, modifiers: [fortified, timed]}
+  # Kept only for reviewing the old generated expedition-world prototypes.
+  generated-worlds: false
 
 # Daily quests and playtime rewards.
 engagement:
@@ -629,10 +637,6 @@ claims:
   # Each entry: world, min-chunk-x, min-chunk-z, max-chunk-x, max-chunk-z, buffer-chunks
   reserved-regions: []
 
-# Manual builds and /setspawn /setwarp destinations are the default.
-# This opt-in is retained only for reviewing the old generated expedition prototypes.
-expeditions:
-  generated-worlds: false
 
 # Companions, trails and supporter perks (/cosmetics, /companion, /trail, /emote).
 # Store purchases grant them through /nerdadmin entitlement grant <player> <product> <transaction>;

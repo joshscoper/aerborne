@@ -1,0 +1,72 @@
+# Cinder Keep: the sample Nether expedition. Runs in a real Nether dimension, so the sky, fog,
+# ambience and Nether rules all apply. Full reference: docs/EXPEDITIONS.md.
+#
+# The season campaign seals it until a milestone unlocks it (see campaign/season.yml).
+title: Cinder Keep
+description: A fortress of slag and flame where the Keeper of Embers guards the last forge.
+icon: blackstone
+dimension: nether
+biome: basalt_deltas
+sample: cinder_keep
+published: true
+level: 20
+party: {min: 2, max: 5}
+time-limit-minutes: 30
+spawn: [0, 64, 4, 0]
+exit: [0, 64, 83]
+rooms:
+  gatehouse:
+    title: The Gatehouse
+    region: [-7, 64, 12, 7, 70, 30]
+    checkpoint: [0, 64, 28, 0]
+    gate: [-1, 64, 31, 1, 66, 31]
+    points: [[-4, 64, 17], [4, 64, 17], [-4, 64, 25], [4, 64, 25]]
+    encounter:
+      type: waves
+      waves:
+        - {"vanilla:wither_skeleton": 3}
+        - {mobs: {"custom:oathbreaker": 1, "vanilla:wither_skeleton": 2}, delay-seconds: 4}
+      scripts:
+        wave-2: ["message <red>An Oathbreaker shoulders through the smoke!</red>"]
+  blaze_forge:
+    title: The Blaze Forge
+    region: [-9, 64, 32, 9, 75, 54]
+    checkpoint: [0, 64, 52, 0]
+    gate: [-1, 64, 55, 1, 66, 55]
+    points: [[-6, 64, 35], [6, 64, 35], [-6, 64, 44], [6, 64, 44], [0, 64, 50]]
+    encounter:
+      type: survive
+      survive-seconds: 60
+      waves:
+        - {"custom:cinder_wraith": 2}
+        - {mobs: {"vanilla:magma_cube": 2, "vanilla:blaze": 1}, delay-seconds: 15}
+      scripts:
+        start:
+          - "title <gold>The forge roars|<gray>Hold out until the fires bank</gray>"
+          - "effect fire_resistance 20"
+        timer-40: ["message <yellow>The bellows sputter. Twenty more seconds!</yellow>"]
+  throne_of_embers:
+    title: Throne of Embers
+    region: [-11, 64, 56, 11, 74, 84]
+    points: [[0, 65, 76], [-8, 64, 62], [8, 64, 62], [-8, 64, 70], [8, 64, 70]]
+    encounter:
+      type: boss
+      boss: custom:keeper_of_embers
+      boss-level-bonus: 4
+      adds-at-health: [75, 40]
+      waves:
+        - {"custom:sulfur_spawn": 2}
+        - {"custom:cinder_wraith": 2}
+      scripts:
+        start: ["message <gold>The Keeper of Embers rises from the gilded throne.</gold>", "sound entity.ravager.roar 0.7"]
+        health-50:
+          - "title <red>The Keeper burns hotter|<gold>Stay off the magma</gold>"
+          - "wait 2"
+          - "spawn vanilla:blaze 2"
+        clear: ["message <green>The last forge goes cold. Step onto the crying obsidian to leave.</green>"]
+loot:
+  marks: 250
+  items: {blaze_rod: 4, gold_ingot: 6, quartz: 12, experience_bottle: 5}
+# Mythic is off for this sample; heroic needs a normal clear first (set in config.yml).
+tiers:
+  mythic: {enabled: false}

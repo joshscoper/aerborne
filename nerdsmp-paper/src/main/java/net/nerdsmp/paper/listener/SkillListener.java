@@ -273,7 +273,7 @@ public final class SkillListener implements Listener {
         ActivityBonuses bonuses=ActivityBonuses.resolve(skill,profile.stats(),snapshot,
             bonusIsland==null?0:skyblock.development().progress(bonusIsland).skillBonus(skill),rhythm.bonusPercent());
         long adjustedExperience = adjustedExperience(accountId, skill, experience, bonuses.experiencePercent());
-        double marksBonus = bonuses.marksPercent();
+        double marksBonus = bonuses.marksPercent() + seasonBoost(net.nerdsmp.paper.campaign.season.SeasonDefinition.BoostKind.JOB_MARKS);
         if (recordJobWork) {
             jobs.recordWork(accountId, skill, jobUnits(skill), fingerprint, marksBonus);
         }
@@ -613,6 +613,11 @@ public final class SkillListener implements Listener {
         };
     }
 
+    /** A running season boost (from a campaign milestone), as a percentage. */
+    private double seasonBoost(net.nerdsmp.paper.campaign.season.SeasonDefinition.BoostKind kind) {
+        return plugin instanceof net.nerdsmp.paper.NerdSmpPlugin server && server.campaign() != null ? server.campaign().boostPercent(kind) : 0;
+    }
+
     private synchronized long adjustedExperience(
         AccountId accountId,
         Skill skill,
@@ -620,6 +625,7 @@ public final class SkillListener implements Listener {
         double bonusPercent
     ) {
         String key = accountId + ":" + skill;
+        bonusPercent += seasonBoost(net.nerdsmp.paper.campaign.season.SeasonDefinition.BoostKind.SKILL_XP);
         double exact = baseExperience * (1.0D + Math.max(0.0D, bonusPercent) / 100.0D)
             + experienceCarry.getOrDefault(key, 0.0D);
         long awarded = Math.max(1L, (long) Math.floor(exact + 1.0E-9D));

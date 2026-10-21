@@ -67,9 +67,9 @@ commands:
     usage: /zone help
     permission: nerdsmp.zone.admin
   expedition:
-    description: Browse staff-set public travel destinations.
-    usage: /expedition [warp]
-    aliases: [expeditions]
+    description: Party expeditions, the queue and ready checks; staff build them with /expedition guide.
+    usage: /expedition [start|queue|leave|ready|decline|list|info|status] [expedition] [tier]
+    aliases: [expeditions, exp, dungeon]
   island:
     description: Create and manage your RPG Skyblock island and co-op.
     aliases: [is, skyblock]
@@ -123,8 +123,8 @@ commands:
     description: Inspect or administer relic items.
     usage: /relics [inspect|sets]
   campaign:
-    description: View and contribute to the active campaign.
-    usage: /campaign [contribute <category> <amount>]
+    description: The season campaign's goals, milestones, buffs and rewards.
+    usage: /campaign [progress|claim|contribute [goal] [amount]|top [goal]]
   grave:
     description: Locate or remotely recover your latest grave.
     usage: /grave <locate|recover>
@@ -365,6 +365,7 @@ permissions:
       nerdsmp.zone.admin: true
       nerdsmp.npc.admin: true
       nerdsmp.travel.admin: true
+      nerdsmp.expedition.admin: true
   nerdsmp.studio.designer:
     description: Content-design bundle with direct publishing; does not grant player moderation.
     default: false
@@ -408,6 +409,8 @@ permissions:
       nerdsmp.travel.admin: true
       nerdsmp.travel.bypass: true
       nerdsmp.progression.bypass: true
+      nerdsmp.expedition.admin: true
+      nerdsmp.campaign.admin: true
       nerdsmp.claim.bypass: true
       nerdsmp.market.review: true
       nerdsmp.staff.anticheat: true
@@ -448,7 +451,13 @@ permissions:
     description: Bypass travel warmups and cooldowns.
     default: op
   nerdsmp.progression.bypass:
-    description: Bypass campaign-gated realm access while testing or administering the server.
+    description: Enter campaign-sealed expeditions and skip tier requirements while testing or administering the server.
+    default: op
+  nerdsmp.expedition.admin:
+    description: Build, test, publish and stop expeditions; enter template and run worlds.
+    default: op
+  nerdsmp.campaign.admin:
+    description: Reload, check and adjust the season campaign.
     default: op
   nerdsmp.claim.bypass:
     description: Bypass physical claim protection for trusted administrators; does not grant ownership.

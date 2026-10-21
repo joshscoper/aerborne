@@ -106,6 +106,11 @@ public final class RewardDropService implements Listener {
 
     public LootProfileStore profiles() { return profiles; }
 
+    /** Rolls a staff-authored profile once, for rewards that are not mob drops (expedition finishes). */
+    public List<ItemStack> rollProfile(String profileId) {
+        return profiles.find(profileId).map(this::rollProfile).orElse(List.of());
+    }
+
     public void refreshItemCatalog() {
         Set<ItemId> known=Set.copyOf(items.itemIds());
         Set<ItemId> gear=known.stream().filter(id->items.isSocketEquipment(items.create(id)))

@@ -49,7 +49,7 @@ public final class PlayerGuideService implements AutoCloseable {
             Chat.command("island journal") + " shows your next material unlock. " + Chat.command("island machines") + " lists processing recipes.",
             Chat.command("daily") + " and " + Chat.command("jobs") + " earn Marks. " + Chat.command("shops") + " buys and sells from anywhere.",
             "Trade with players through " + Chat.command("store") + ", " + Chat.command("ah") + " or " + Chat.command("trade") + ".",
-            Chat.command("expedition") + " opens shared gathering areas. " + Chat.command("spawn") + " returns to the city.",
+            Chat.command("expedition") + " starts party adventures with bosses and loot. " + Chat.command("spawn") + " returns to the city.",
             "Invite trusted friends with " + Chat.syntax("/island invite <player>") + ". " + Chat.command("settings") + " controls who can reach you."
         ) : List.of(
             "Open " + Chat.command("skills") + " and train by doing the work.",
@@ -188,7 +188,7 @@ public final class PlayerGuideService implements AutoCloseable {
             "<gray>Trade from anywhere with <white>/trade \\<player></white>. Check both offers before confirming.</gray>",
             "<gray><white>/settings</white> controls private messages and invitations. <white>/ignore \\<player></white> also stops their requests.</gray>",
             "<gray>Your home is one command away: <white>/island home</white>.</gray>",
-            "<gray><white>/expedition</white> leads to renewable veins, timber, excavation finds and fishing.</gray>",
+            "<gray><white>/expedition</white> takes up to five friends on a private adventure with a boss and loot. It's also the way into the Nether and the End.</gray>",
             "<gray>Train skills together on your island to level it up. Every two island levels earns a talent point.</gray>",
             "<gray>Right-click ripe crops with a hoe to harvest and replant. Keep plain seeds handy if the harvest doesn't supply one.</gray>",
             "<gray><white>/island talents</white> upgrades generators, crops and automation. Your owner confirms each choice.</gray>",
@@ -205,7 +205,7 @@ public final class PlayerGuideService implements AutoCloseable {
             "<gray><white>/island visitors on</white> allows sightseeing, not building or storage access.</gray>",
             "<gray>Only invite trusted players to your co-op. Members share building and storage access.</gray>",
             "<gray>Joining a co-op keeps your own island. Find all your homes with <white>/island homes</white>.</gray>",
-            "<gray>Island void falls return you safely. Your city and expedition journeys have their own risks.</gray>",
+            "<gray>Island void falls return you safely. Expedition deaths never drop your gear, but they spend a shared party life.</gray>",
             "<gray>Visit city stations for forging, enchanting and alchemy. Check <white>/daily</white> for contracts.</gray>",
             "<gray>Generated ores and regrown trees earn skill XP; placing an ore and breaking it does not.</gray>",
             "<gray>Excavation needs fresh soil or marked dig-site nodes. Find renewable digging with <white>/digsite list</white>; ordinary placed soil gives no XP.</gray>");
@@ -214,7 +214,11 @@ public final class PlayerGuideService implements AutoCloseable {
     /** Correct only known obsolete stock wording; saved operator tip lists are not overwritten. */
     public static String publicTip(String message) {
         return message.replace("Every five island levels earns a talent point.", "Every two island levels earns a talent point.")
-            .replace("and open-water fishing.", "and fishing.");
+            .replace("and open-water fishing.", "and fishing.")
+            .replace("<white>/expedition</white> leads to renewable veins, timber, excavation finds and fishing.",
+                "<white>/expedition</white> takes up to five friends on a private adventure with a boss and loot. It's also the way into the Nether and the End.")
+            .replace("Your city and expedition journeys have their own risks.",
+                "Expedition deaths never drop your gear, but they spend a shared party life.");
     }
 
     public static long guidanceTicks(long seconds, long minimumSeconds) {

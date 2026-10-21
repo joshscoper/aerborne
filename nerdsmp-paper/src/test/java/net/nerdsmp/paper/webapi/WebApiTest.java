@@ -179,6 +179,19 @@ class WebApiTest {
         }
     }
 
+    @Test void expeditionsAndCampaignArePublicWithASafeDefaultBeforeTheFirstSample() throws Exception {
+        var published = new ApiSnapshot(System.currentTimeMillis(), "{}", "{}", "{}", ApiSnapshot.NO_LEADERBOARDS, java.util.Map.of(),
+            "{\"ready\":true,\"expeditions\":[{\"id\":\"hollow_barrow\"}]}", "{\"ready\":true,\"title\":\"The Ember Accord\"}");
+        try (var listener = new ApiHttpListener(settings(Set.of()), ApiToken.of(TOKEN), () -> published)) {
+            assertTrue(get(listener, "/api/v1/expeditions", null).body().contains("hollow_barrow"));
+            assertTrue(get(listener, "/api/v1/campaign", null).body().contains("Ember Accord"));
+        }
+        try (var listener = new ApiHttpListener(settings(Set.of()), ApiToken.of(TOKEN), this::snapshot)) {
+            assertEquals(ApiSnapshot.NO_EXPEDITIONS, get(listener, "/api/v1/expeditions", null).body());
+            assertEquals(ApiSnapshot.NO_CAMPAIGN, get(listener, "/api/v1/campaign", null).body());
+        }
+    }
+
     @Test void noMutationQueryEncodedPathOrCredentialQueryRouteExists() throws Exception {
         try (var listener = new ApiHttpListener(settings(Set.of()), ApiToken.of(TOKEN), this::snapshot)) {
             for (String path : List.of("/api/v1/status?token=" + TOKEN, "/api/v1/%73tatus")) {

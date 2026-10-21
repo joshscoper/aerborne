@@ -181,9 +181,11 @@ public final class MenuManager implements Listener, AutoCloseable {
             List.of("<gray>Collect purchases, wins and returned listings.</gray>"), "market inbox");
         commandButton(menu, 29, Material.FILLED_MAP, "<aqua>Faction Standing</aqua>",
             List.of("<gray>Reputation ranks, access, and shop rates.</gray>"), "reputation");
-        commandButton(menu, 31, Material.ENDER_EYE, plugin.skyblockEnabled() ? "<light_purple>Expeditions</light_purple>" : "<light_purple>Warps</light_purple>",
-            List.of("<gray>Browse the places you can travel.</gray>"), plugin.skyblockEnabled() ? "expedition" : "warps");
-        commandButton(menu, 33, Material.RECOVERY_COMPASS, "<aqua>Return to Spawn</aqua>",
+        commandButton(menu, 31, Material.ENDER_EYE, "<light_purple>Expeditions</light_purple>",
+            List.of("<gray>Party adventures with bosses and loot,</gray>", "<gray>including the Nether and the End.</gray>"), "expedition");
+        commandButton(menu, 33, Material.COMPASS, "<aqua>Warps</aqua>",
+            List.of("<gray>Browse the places you can travel.</gray>"), "warps");
+        commandButton(menu, 41, Material.RECOVERY_COMPASS, "<aqua>Return to Spawn</aqua>",
             List.of("<gray>Begin safe travel back to the city.</gray>"), "spawn");
         open(player, menu.inventory());
     }
@@ -709,53 +711,7 @@ public final class MenuManager implements Listener, AutoCloseable {
     }
 
     private void openCampaign(Player player) {
-        plugin.campaigns().activeCampaign().thenAccept(active -> sync(() -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            MenuInventory menu = detailMenu(View.CAMPAIGN, 45, "<gradient:#C59AFA:#8CE8ED><bold>Campaign</bold></gradient>");
-            if (active.isEmpty()) {
-                button(menu, 22, Material.ENDER_EYE, "<gray>No Active Campaign</gray>",
-                    List.of("<dark_gray>The next campaign has not started.</dark_gray>"), ignored -> { });
-            } else {
-                CampaignService.CampaignSnapshot campaign = active.get();
-                long finalTarget = campaign.milestones().values().stream().mapToLong(Long::longValue).max().orElse(1L);
-            button(menu, 13, Material.BEACON, "<gradient:#C59AFA:#8CE8ED>" + escape(campaign.title()) + "</gradient>", List.of(
-                    VisualFormat.progressBar(campaign.totalPoints(), finalTarget, 14)
-                        + " <white>" + VisualFormat.compact(campaign.totalPoints()) + "/" + VisualFormat.compact(finalTarget) + "</white>",
-                    "<gray>Ends</gray> <white>" + java.time.format.DateTimeFormatter.ofPattern("MMM d, HH:mm 'UTC'")
-                        .withZone(java.time.ZoneOffset.UTC).format(campaign.endsAt()) + "</white>"
-                ), ignored -> { });
-                int slot = 20;
-                for (Map.Entry<String, Long> category : campaign.categoryPoints().entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
-                    button(menu, slot++, Material.ENDER_EYE, "<aqua>" + VisualFormat.titleCase(category.getKey()) + "</aqua>", List.of(
-                        "<gray>Contributed</gray> <white>" + VisualFormat.compact(category.getValue()) + " points</white>",
-                        "",
-                        "<yellow>Hold items and use</yellow>",
-                        "<white>/campaign contribute " + category.getKey() + " [amount]</white>"
-                    ), target -> {
-                        target.closeInventory();
-                        target.sendRichMessage("<yellow>Hold contribution items and run <white>/campaign contribute "
-                            + category.getKey() + " [amount]</white>.</yellow>");
-                    });
-                }
-                int milestoneSlot = 29;
-                for (var milestone : plugin.serverProgression().views(campaign)) {
-                    long shownTarget = milestone.requiredPoints() == Long.MAX_VALUE ? 0L : milestone.requiredPoints();
-                    button(menu, milestoneSlot++, milestone.unlock().material(),
-                        milestone.unlocked() ? "<green>✓ " + milestone.unlock().displayName() + "</green>"
-                            : "<gray>Locked: " + milestone.unlock().displayName() + "</gray>", List.of(
-                            "<gray>" + milestone.unlock().description() + "</gray>",
-                            milestone.unlocked() ? "<green>Unlocked server-wide</green>"
-                                : VisualFormat.progressBar(campaign.totalPoints(), shownTarget, 10)
-                                    + " <white>" + VisualFormat.compact(campaign.totalPoints()) + "/"
-                                    + VisualFormat.compact(shownTarget) + "</white>",
-                            "<dark_gray>Milestone: " + milestone.milestoneId() + "</dark_gray>"
-                        ), ignored -> { });
-                }
-            }
-            open(player, menu.inventory());
-        }));
+        plugin.campaign().command(player, new String[0]);
     }
 
     private void openMarket(Player player) {

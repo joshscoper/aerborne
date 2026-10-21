@@ -1,0 +1,214 @@
+package net.nerdsmp.paper.webapi;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.campaign.season.SeasonDefinition;
+import net.nerdsmp.paper.campaign.season.SeasonDefinition.Reward;
+import net.nerdsmp.paper.campaign.season.SeasonLedger;
+import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.expedition.content.Modifier;
+import net.nerdsmp.paper.expedition.content.Tier;
+
+import java.time.Instant;
+import java.util.Locale;
+
+/**
+ * Public, read-only expedition and season documents for the website. Only published expeditions,
+ * server-wide totals and top contributors' in-game names appear; no accounts or UUIDs.
+ */
+final class PublicGameJson {
+    private static final int TOP = 5;
+
+    private PublicGameJson() { }
+
+    static String expeditions(NerdSmpPlugin plugin, String sampled) {
+        var service = plugin.expeditions();
+        JsonObject root = new JsonObject();
+        root.addProperty("apiVersion", 1);
+        root.addProperty("ready", true);
+        root.addProperty("sampledAt", sampled);
+        root.addProperty("activeRuns", service.activeRuns());
+        root.addProperty("maxInstances", service.maxInstances());
+        root.addProperty("vanillaPortals", service.vanillaPortals());
+        JsonArray list = new JsonArray();
+        for (ExpeditionDefinition definition : service.definitions()) {
+            if (!service.playable(definition)) continue;
+            JsonObject entry = new JsonObject();
+            entry.addProperty("id", definition.id());
+            entry.addProperty("title", definition.title());
+            entry.addProperty("description", definition.description());
+            entry.addProperty("dimension", definition.dimension().key());
+            entry.addProperty("level", definition.level());
+            entry.addProperty("minParty", definition.minParty());
+            entry.addProperty("maxParty", definition.maxParty());
+            entry.addProperty("rooms", definition.rooms().size());
+            entry.addProperty("bosses", definition.rooms().values().stream()
+                .filter(room -> room.encounter().type() == ExpeditionDefinition.EncounterType.BOSS).count());
+            entry.addProperty("timeLimitMinutes", definition.timeLimitMinutes());
+            entry.addProperty("activeRuns", service.activeRuns(definition.id()));
+            String seal = plugin.campaign() == null ? null : plugin.campaign().expeditionLock(definition.id()).orElse(null);
+            if (seal == null) entry.add("sealedBy", com.google.gson.JsonNull.INSTANCE);
+            else entry.addProperty("sealedBy", seal);
+            var totals = service.totals(definition.id());
+            JsonArray tiers = new JsonArray();
+            for (Tier tier : service.tiersFor(definition)) {
+                JsonObject row = new JsonObject();
+                row.addProperty("id", tier.id());
+                row.addProperty("title", tier.title());
+                row.addProperty("level", definition.level() + tier.levelBonus());
+                row.addProperty("lives", tier.lives());
+                row.addProperty("lootRolls", tier.lootRolls());
+                if (tier.requires() != null) row.addProperty("requires", tier.requires());
+                JsonArray modifiers = new JsonArray();
+                for (Modifier modifier : service.modifiers(definition, tier)) {
+                    JsonObject value = new JsonObject();
+                    value.addProperty("id", modifier.key());
+                    value.addProperty("title", modifier.title());
+                    value.addProperty("description", modifier.description());
+                    modifiers.add(value);
+                }
+                row.add("modifiers", modifiers);
+                var total = totals.get(tier.id());
+                row.addProperty("clears", total == null ? 0 : total.clears());
+                row.addProperty("bestSeconds", total == null ? 0 : total.bestSeconds());
+                JsonArray party = new JsonArray();
+                if (total != null) total.bestParty().stream().filter(name -> name.matches("[A-Za-z0-9_]{3,16}")).forEach(party::add);
+                row.add("bestParty", party);
+                tiers.add(row);
+            }
+            entry.add("tiers", tiers);
+            list.add(entry);
+        }
+        root.add("expeditions", list);
+        return root.toString();
+    }
+
+    static String campaign(NerdSmpPlugin plugin, String sampled) {
+        var campaign = plugin.campaign();
+        JsonObject root = new JsonObject();
+        root.addProperty("apiVersion", 1);
+        root.addProperty("sampledAt", sampled);
+        SeasonDefinition season = campaign.season().orElse(null);
+        if (season == null) {
+            root.addProperty("ready", false);
+            return root.toString();
+        }
+        Instant now = Instant.now();
+        SeasonLedger ledger = campaign.ledger();
+        root.addProperty("ready", true);
+        root.addProperty("id", season.id());
+        root.addProperty("title", season.title());
+        root.addProperty("description", season.description());
+        root.addProperty("startsAt", season.startsAt().toString());
+        root.addProperty("endsAt", season.endsAt().toString());
+        root.addProperty("active", season.active(now));
+        root.addProperty("playerDailyCap", season.playerDailyCap());
+        JsonArray goals = new JsonArray();
+        for (var goal : season.goals().values()) {
+            JsonObject row = new JsonObject();
+            row.addProperty("id", goal.id());
+            row.addProperty("title", goal.title());
+            row.addProperty("description", goal.description());
+            row.addProperty("points", ledger.points(goal.id()));
+            row.addProperty("target", goal.target());
+            JsonArray sources = new JsonArray();
+            for (var source : goal.sources()) {
+                JsonObject value = new JsonObject();
+                value.addProperty("type", source.type().key());
+                value.addProperty("points", source.points());
+                JsonArray filters = new JsonArray();
+                source.filters().stream().sorted().limit(12).forEach(filters::add);
+                value.add("filters", filters);
+                sources.add(value);
+            }
+            row.add("sources", sources);
+            row.add("top", top(ledger, goal.id()));
+            goals.add(row);
+        }
+        root.add("goals", goals);
+        JsonArray milestones = new JsonArray();
+        var reached = ledger.reachedMilestones();
+        for (var milestone : season.milestones().values()) {
+            JsonObject row = new JsonObject();
+            row.addProperty("id", milestone.id());
+            row.addProperty("title", milestone.title());
+            row.addProperty("description", milestone.description());
+            row.addProperty("reached", reached.containsKey(milestone.id()));
+            if (reached.containsKey(milestone.id())) row.addProperty("reachedAt", reached.get(milestone.id()).toString());
+            JsonArray requires = new JsonArray();
+            milestone.requires().forEach((goal, amount) -> {
+                JsonObject value = new JsonObject();
+                value.addProperty("goal", goal);
+                value.addProperty("amount", amount);
+                value.addProperty("points", Math.min(amount, ledger.points(goal)));
+                requires.add(value);
+            });
+            row.add("requires", requires);
+            JsonArray rewards = new JsonArray();
+            for (Reward reward : milestone.rewards()) {
+                String text = rewardText(plugin, reward);
+                if (text == null) continue;
+                JsonObject value = new JsonObject();
+                value.addProperty("type", reward.getClass().getSimpleName().toLowerCase(Locale.ROOT));
+                value.addProperty("text", text);
+                rewards.add(value);
+            }
+            row.add("rewards", rewards);
+            milestones.add(row);
+        }
+        root.add("milestones", milestones);
+        JsonArray buffs = new JsonArray();
+        for (SeasonLedger.ActiveBuff buff : ledger.activeBuffs(now)) {
+            JsonObject value = new JsonObject();
+            value.addProperty("name", campaign.plainBuffName(buff));
+            value.addProperty("from", buff.label());
+            value.addProperty("endsAt", buff.endsAt().toString());
+            buffs.add(value);
+        }
+        root.add("buffs", buffs);
+        root.add("topContributors", top(ledger, null));
+        return root.toString();
+    }
+
+    private static JsonArray top(SeasonLedger ledger, String goal) {
+        JsonArray rows = new JsonArray();
+        for (var entry : ledger.top(goal, TOP)) {
+            String name = ledger.name(entry.getKey()).orElse(null);
+            if (name == null || !name.matches("[A-Za-z0-9_]{3,16}")) continue;
+            JsonObject row = new JsonObject();
+            row.addProperty("name", name);
+            row.addProperty("points", entry.getValue());
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /** Plain-text reward lines for the website; console commands and broadcasts stay private. */
+    static String rewardText(NerdSmpPlugin plugin, Reward reward) {
+        return switch (reward) {
+            case Reward.Buff buff -> words(buff.effect()) + (buff.amplifier() > 0 ? " " + (buff.amplifier() + 1) : "") + " for everyone, " + hours(buff.duration());
+            case Reward.Boost boost -> "+" + boost.percent() + "% " + boost.kind().label() + " for everyone, " + hours(boost.duration());
+            case Reward.Item item -> item.amount() + " × " + words(item.item()) + " for every player to claim";
+            case Reward.Marks marks -> marks.amount() + " Marks for every player to claim";
+            case Reward.Unlock unlock -> unlock.expedition() != null
+                ? "Opens the " + (plugin.expeditions() == null ? words(unlock.expedition())
+                    : plugin.expeditions().definition(unlock.expedition()).map(ExpeditionDefinition::title).orElse(words(unlock.expedition()))) + " expedition"
+                : "Unlocks " + words(unlock.feature());
+            case Reward.Broadcast broadcast -> null;
+            case Reward.Command command -> null;
+        };
+    }
+
+    private static String hours(java.time.Duration duration) {
+        long hours = duration.toHours();
+        if (hours >= 48 && hours % 24 == 0) return hours / 24 + " days";
+        if (hours >= 1) return hours + (hours == 1 ? " hour" : " hours");
+        return duration.toMinutes() + " minutes";
+    }
+
+    private static String words(String id) {
+        String text = id.replace("custom:", "").replace("vanilla:", "").replace('_', ' ').replace('-', ' ');
+        return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
+}

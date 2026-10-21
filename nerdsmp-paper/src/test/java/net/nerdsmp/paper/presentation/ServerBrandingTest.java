@@ -57,16 +57,16 @@ class ServerBrandingTest {
         assertEquals(plain.serialize(ServerBranding.read(new YamlConfiguration(),"Hearthsky",true).motd()),
             plain.serialize(Chat.render(motd.substring(1,motd.length()-1).replace("\\n","\n"))));
     }
-    @Test void compactCandidateReceivesCampaignDefaultsWithoutMergingExplicitMilestones() throws Exception {
+    @Test void compactCandidateReceivesTierDefaultsWithoutMergingExplicitTiers() throws Exception {
         var config=new YamlConfiguration();config.load(Path.of("../deploy/release/config.yml").toFile());
         var defaults=new YamlConfiguration();defaults.load(Path.of("src/main/resources/config.yml").toFile());config.setDefaults(defaults);
         String before=config.saveToString();
-        var milestones=net.nerdsmp.paper.storage.ConfigurationDefaults.section(config,"campaign.milestones");
-        assertEquals(3,milestones.getKeys(false).size());assertEquals(60_000,milestones.getLong("rift-opened"));
+        var tiers=net.nerdsmp.paper.storage.ConfigurationDefaults.section(config,"expeditions.tiers");
+        assertEquals(3,tiers.getKeys(false).size());assertEquals(16,tiers.getConfigurationSection("mythic").getInt("level-bonus"));
         assertEquals(before,config.saveToString());
-        config.set("campaign.milestones.first-ripple",50L);
-        var edited=net.nerdsmp.paper.storage.ConfigurationDefaults.section(config,"campaign.milestones");
-        assertEquals(java.util.Set.of("first-ripple"),edited.getKeys(false));assertEquals(50,edited.getLong("first-ripple"));
+        config.set("expeditions.tiers.normal.lives",4);
+        var edited=net.nerdsmp.paper.storage.ConfigurationDefaults.section(config,"expeditions.tiers");
+        assertEquals(java.util.Set.of("normal"),edited.getKeys(false));assertEquals(4,edited.getConfigurationSection("normal").getInt("lives"));
     }
     @Test void exactLegacyStockVariantsAdaptWithoutSavingOrReplacingCustomCopy() {
         var yaml=new YamlConfiguration();

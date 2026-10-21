@@ -1,0 +1,179 @@
+package net.nerdsmp.paper.expedition.content;
+
+import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.EncounterType;
+import net.nerdsmp.paper.expedition.content.ExpeditionValidator.Issue;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
+
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class ExpeditionContentTest {
+    /** Accepts everything except names containing "unknown", so tests can trip each lookup. */
+    static final ExpeditionValidator.Catalog CATALOG = new ExpeditionValidator.Catalog() {
+        @Override public boolean mob(String id) { return id.matches("(custom|vanilla):[a-z_]+") && !id.contains("unknown"); }
+        @Override public boolean boss(String id) { return id.startsWith("custom:") && !id.contains("unknown"); }
+        @Override public boolean lootProfile(String id) { return !id.contains("unknown"); }
+        @Override public boolean item(String id) { return !id.contains("unknown"); }
+        @Override public boolean effect(String key) { return !key.contains("unknown"); }
+        @Override public boolean sound(String key) { return !key.contains("unknown"); }
+        @Override public boolean material(String key) { return !key.contains("unknown"); }
+        @Override public boolean biome(String key) { return !key.contains("unknown"); }
+    };
+
+    static YamlConfiguration resource(String path) {
+        try (var reader = new InputStreamReader(Objects.requireNonNull(ExpeditionContentTest.class.getResourceAsStream(path), path), StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(reader);
+        } catch (java.io.IOException failure) {
+            throw new AssertionError(failure);
+        }
+    }
+
+    static ExpeditionDefinition sample(String id) {
+        return ExpeditionLoader.parse(id, resource("/expeditions/" + id + ".yml"));
+    }
+
+    private static List<String> errors(ExpeditionDefinition definition) {
+        return ExpeditionValidator.validate(definition, Tier.DEFAULTS, CATALOG).stream().filter(Issue::error).map(Issue::message).toList();
+    }
+
+    @Test void shippedSamplesLoadAndAreReadyToPublish() {
+        for (String id : List.of("hollow_barrow", "cinder_keep")) {
+            ExpeditionDefinition definition = sample(id);
+            assertTrue(definition.published(), id);
+            assertEquals(id, definition.sample());
+            assertEquals(List.of(), errors(definition), id);
+            assertEquals(EncounterType.BOSS, definition.roomList().get(definition.rooms().size() - 1).encounter().type(), id);
+        }
+    }
+
+    @Test void barrowRoomsWavesScriptsAndLootParse() {
+        ExpeditionDefinition barrow = sample("hollow_barrow");
+        assertEquals(List.of("crypt_gallery", "ossuary", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
+        var gallery = barrow.rooms().get("crypt_gallery");
+        assertEquals(Map.of("vanilla:zombie", 3, "custom:thorn_sentinel", 1), gallery.encounter().waves().get(0).mobs());
+        assertEquals(3, gallery.encounter().waves().get(1).delaySeconds());
+        assertEquals(ExpeditionDefinition.Box.of(-1, 64, 35, 1, 66, 35), gallery.gate());
+        assertEquals(ScriptAction.Verb.MESSAGE, gallery.encounter().script("start").get(0).verb());
+        var ossuary = barrow.rooms().get("ossuary");
+        assertEquals(EncounterType.SURVIVE, ossuary.encounter().type());
+        assertEquals(45, ossuary.encounter().surviveSeconds());
+        var boss = barrow.rooms().get("kings_rest").encounter();
+        assertEquals("custom:the_hollow_huntsman", boss.boss());
+        assertEquals(List.of(66, 33), boss.addsAtHealth());
+        assertEquals(2, boss.script("health-50").size());
+        assertEquals(120, barrow.loot().marks());
+        assertEquals(4, barrow.loot().items().get("iron_ingot"));
+        assertEquals(new ExpeditionDefinition.Point(0, 64, 4, 0), barrow.spawn());
+    }
+
+    @Test void cinderKeepIsANetherExpeditionWithoutMythic() {
+        ExpeditionDefinition keep = sample("cinder_keep");
+        assertEquals(ExpeditionDefinition.Dimension.NETHER, keep.dimension());
+        assertEquals("basalt_deltas", keep.biome());
+        assertEquals(2, keep.minParty());
+        assertNull(Tier.DEFAULTS.get("mythic").apply(keep.tiers().get("mythic"), keep.lives()));
+        var health50 = keep.rooms().get("throne_of_embers").encounter().script("health-50");
+        assertEquals(List.of(ScriptAction.Verb.TITLE, ScriptAction.Verb.WAIT, ScriptAction.Verb.SPAWN), health50.stream().map(ScriptAction::verb).toList());
+    }
+
+    @Test void blankFileFromCreateLoadsAndListsTheMissingSteps() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("dimension", "end");
+        ExpeditionDefinition fresh = ExpeditionLoader.parse("star_vault", yaml);
+        assertEquals("Star Vault", fresh.title());
+        assertEquals("nerdsmp_exp_tpl_star_vault", fresh.templateWorld());
+        assertEquals(5, fresh.maxParty());
+        List<String> errors = errors(fresh);
+        assertTrue(errors.stream().anyMatch(message -> message.contains("spawn")), errors.toString());
+        assertTrue(errors.stream().anyMatch(message -> message.contains("exit")), errors.toString());
+        assertTrue(errors.stream().anyMatch(message -> message.contains("No rooms")), errors.toString());
+        assertTrue(ExpeditionValidator.validate(fresh, Tier.DEFAULTS, CATALOG).stream().allMatch(issue -> !issue.fix().isBlank()));
+    }
+
+    @Test void structuralMistakesNameThePathToFix() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("rooms.hall.region", List.of(1, 2, 3, 4, 5));
+        var failure = assertThrows(IllegalArgumentException.class, () -> ExpeditionLoader.parse("broken", yaml));
+        assertTrue(failure.getMessage().contains("rooms.hall.region"), failure.getMessage());
+        YamlConfiguration script = new YamlConfiguration();
+        script.set("rooms.hall.encounter.scripts.start", List.of("explode everything"));
+        failure = assertThrows(IllegalArgumentException.class, () -> ExpeditionLoader.parse("broken", script));
+        assertTrue(failure.getMessage().contains("scripts.start[1]"), failure.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> ExpeditionLoader.parse("Bad Id", new YamlConfiguration()));
+    }
+
+    @Test void validatorCatchesBrokenRoomsGatesAndReferences() {
+        YamlConfiguration yaml = resource("/expeditions/hollow_barrow.yml");
+        yaml.set("rooms.crypt_gallery.points", List.of(List.of(40, 64, 20)));
+        yaml.set("rooms.ossuary.gate", List.of(-1, 64, 3, 1, 66, 5));
+        yaml.set("rooms.ossuary.encounter.scripts.clear", List.of("open nowhere"));
+        yaml.set("rooms.kings_rest.encounter.boss", "custom:unknown_king");
+        yaml.set("loot.profile", "unknown_profile");
+        yaml.set("party.min", 6);
+        List<String> errors = errors(ExpeditionLoader.parse("hollow_barrow", yaml));
+        for (String expected : List.of("outside the room", "covers the party spawn", "unknown room 'nowhere'", "not a known mob",
+            "Loot profile", "Party size"))
+            assertTrue(errors.stream().anyMatch(message -> message.contains(expected)), expected + " in " + errors);
+    }
+
+    @Test void overlappingRoomsAndEncountersWithoutPointsAreErrors() {
+        YamlConfiguration yaml = resource("/expeditions/hollow_barrow.yml");
+        yaml.set("rooms.ossuary.region", List.of(-7, 64, 30, 7, 69, 40));
+        yaml.set("rooms.kings_rest.points", List.of());
+        List<String> errors = errors(ExpeditionLoader.parse("hollow_barrow", yaml));
+        assertTrue(errors.stream().anyMatch(message -> message.contains("overlaps")), errors.toString());
+        assertTrue(errors.stream().anyMatch(message -> message.contains("no mob spawn points")), errors.toString());
+    }
+
+    @Test void scriptActionsParseAndRejectBadArguments() {
+        assertEquals(List.of("custom:cinder_wraith", "2", "3"), ScriptAction.parse("spawn custom:cinder_wraith 2 3").args());
+        assertEquals(List.of("<red>Hello there</red>"), ScriptAction.parse("message <red>Hello there</red>").args());
+        assertEquals(ScriptAction.Verb.CHECKPOINT, ScriptAction.parse("checkpoint").verb());
+        assertThrows(IllegalArgumentException.class, () -> ScriptAction.parse("wait forever"));
+        assertThrows(IllegalArgumentException.class, () -> ScriptAction.parse("spawn custom:x 99"));
+        assertThrows(IllegalArgumentException.class, () -> ScriptAction.parse("effect speed"));
+        assertThrows(IllegalArgumentException.class, () -> ScriptAction.parse("teleport home"));
+        assertTrue(ScriptAction.TRIGGER.matcher("health-50").matches());
+        assertTrue(ScriptAction.TRIGGER.matcher("timer-120").matches());
+        assertFalse(ScriptAction.TRIGGER.matcher("health-150").matches());
+    }
+
+    @Test void tiersLoadFromConfigAndApplyExpeditionOverrides() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("tiers.normal.lives", 8);
+        config.set("tiers.heroic.requires", "normal");
+        config.set("tiers.legend.level-bonus", 30);
+        config.set("tiers.legend.requires", "heroic");
+        var tiers = Tier.load(config.getConfigurationSection("tiers"));
+        assertEquals(List.of("normal", "heroic", "legend"), List.copyOf(tiers.keySet()));
+        assertEquals(8, tiers.get("normal").lives());
+        assertEquals("Legend", tiers.get("legend").title());
+        var override = new ExpeditionDefinition.TierOverride(null, 2, null, 4, List.of("volatile"));
+        Tier heroic = Tier.DEFAULTS.get("heroic").apply(override, null);
+        assertEquals(2, heroic.levelBonus());
+        assertEquals(4, heroic.lootRolls());
+        assertEquals(List.of("volatile"), heroic.modifiers());
+        assertEquals(12, Tier.DEFAULTS.get("normal").apply(null, 12).lives());
+        assertEquals(7, Tier.DEFAULTS.get("heroic").apply(null, 12).lives());
+        YamlConfiguration broken = new YamlConfiguration();
+        broken.set("tiers.hard.requires", "missing");
+        assertThrows(IllegalArgumentException.class, () -> Tier.load(broken.getConfigurationSection("tiers")));
+    }
+
+    @Test void modifiersScaleTheRightEnemies() {
+        Set<Modifier> active = Modifier.parseAll(List.of("fortified", "TYRANNICAL", "nonsense"));
+        assertEquals(Set.of(Modifier.FORTIFIED, Modifier.TYRANNICAL), active);
+        assertEquals(1.3, Modifier.healthMultiplier(Set.of(Modifier.FORTIFIED), false));
+        assertEquals(1.0, Modifier.healthMultiplier(Set.of(Modifier.FORTIFIED), true));
+        assertEquals(1.15, Modifier.damageMultiplier(Set.of(Modifier.TYRANNICAL), true));
+        assertEquals(1080, Modifier.parSeconds(30));
+        assertEquals(60, Modifier.parSeconds(1));
+    }
+}

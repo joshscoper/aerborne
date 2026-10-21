@@ -38,9 +38,9 @@ and choices. Keep earned-only Marks and cosmetic-only monetization.
 | Gear, sockets, enchants, alchemy | Build choices and preparation for expeditions | Retained; full loot/recipe rebalance pending |
 | Collections and NPC reputation | Long-term crafting and activity goals | Retained; Skyblock supply routes pending |
 | Markets, bank, trade, Marks | Player economy centered on the city | Retained; scarcity and sink rebalance pending |
-| Distance-based mobs | Difficulty by expedition zone, fixed home baseline | Island baseline fixed; expedition tiers pending |
-| Campaigns and factions | Reopen sky routes and unlock group encounters | Existing systems retained; new story/content pending |
-| Social and parties | Co-op building plus temporary expedition groups | Existing parties retained; island membership separate |
+| Distance-based mobs | Difficulty by expedition zone, fixed home baseline | Island baseline fixed; [expedition tiers](EXPEDITIONS.md) scale instanced encounters |
+| Campaigns and factions | Reopen sky routes and unlock group encounters | [Season campaign](CAMPAIGN.md) goals unlock buffs, rewards and expeditions; faction story pending |
+| Social and parties | Co-op building plus temporary expedition groups | Parties of up to five run [expeditions](EXPEDITIONS.md); island membership separate |
 
 ## Implemented in this pass
 
@@ -70,7 +70,8 @@ record has current behavior, backup details and acceptance limits.
 - Island GUI, directory, roster, invitations, journal, contextual completion,
   quickstart and tips. Java inventory interfaces remain the current client UI.
 - Void damage on islands returns players safely instead of deleting their items.
-  Island portals are disabled; shared destinations will be reached through city
+  Island portals are disabled, and the Nether and End are reached through
+  [expeditions](EXPEDITIONS.md); other shared destinations will be reached through city
   routes. Regular deaths retain the grave system, with graves moved off the landing.
 - Island mob scaling uses distance zero; allocation position never raises home
   difficulty. Existing party-scaled elite mechanics remain.

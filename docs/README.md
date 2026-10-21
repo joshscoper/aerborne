@@ -17,6 +17,10 @@ How each feature works for players, with its commands.
 - [Farming](FARMING.md)
 - [Renewable excavation](DIG_SITES.md)
 
+**Adventure**
+- [Expeditions](EXPEDITIONS.md): instanced party adventures, the finder, tiers and modifiers, and the way into the Nether and the End
+- [Season campaign](CAMPAIGN.md): server-wide goals, milestones, buffs and claimable rewards
+
 **Economy and trading**
 - [Auctions, player stores and trades](PLAYER_COMMERCE.md)
 - [Remote player trades](REMOTE_TRADING.md)
@@ -47,6 +51,8 @@ In-game editors and moderation. Most need a staff permission.
 - [Placing NPCs](NPC_CATALOG.md)
 - [Manual hubs, warps and mob zones](MANUAL_ZONES.md)
 - [Shared RPG zones and mob loot](RPG_ZONES.md)
+- [Building expeditions](EXPEDITIONS.md#building-an-expedition-staff): wand, setup commands, validation and the file format
+- [Writing a season](CAMPAIGN.md#writing-a-season): goals, sources and rewards in `campaign/season.yml`
 - [Staff, Watchdog and workshop update](STAFF_FISHING_STATIONS.md): the web staff console and its network setup
 - [Watchdog anti-cheat](WATCHDOG_ANTICHEAT.md)
 - [Player locations](PLAYER_LOCATIONS.md): where players connect from, in the staff console

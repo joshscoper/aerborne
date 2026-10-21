@@ -147,6 +147,8 @@ public final class TravelManager implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
         Location spawn = spawnLocation();
+        // Expedition runs respawn the party at their checkpoint instead.
+        if (net.nerdsmp.paper.expedition.InstanceWorlds.isRunWorld(event.getPlayer().getWorld())) return;
         if (plugin.skyblock() != null && (plugin.skyblock().isIslandWorld(event.getPlayer().getWorld())
             || plugin.skyblock().isIslandWorld(event.getRespawnLocation().getWorld()))) return;
         if (spawn != null && !event.isBedSpawn() && !event.isAnchorSpawn()) {

@@ -1,0 +1,882 @@
+package net.nerdsmp.paper.expedition;
+
+import net.nerdsmp.api.model.AccountId;
+import net.nerdsmp.api.model.ItemId;
+import net.nerdsmp.api.service.PartyService;
+import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.expedition.content.ExpeditionLoader;
+import net.nerdsmp.paper.expedition.content.ExpeditionValidator;
+import net.nerdsmp.paper.expedition.content.Modifier;
+import net.nerdsmp.paper.expedition.content.Tier;
+import net.nerdsmp.paper.expedition.flow.ExpeditionRecords;
+import net.nerdsmp.paper.expedition.flow.Matchmaker;
+import net.nerdsmp.paper.expedition.flow.ReadyCheck;
+import net.nerdsmp.paper.presentation.Chat;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.world.PortalCreateEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitTask;
+
+import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.logging.Level;
+
+/**
+ * Instanced party expeditions: loading and validating expedition files, the party queue and ready
+ * checks, building run worlds from templates, routing game events to runs, and sending everyone home.
+ * Nether and End travel go through here too: vanilla portals stay sealed unless config reopens them.
+ */
+public final class ExpeditionService implements Listener, AutoCloseable {
+    public static final String ADMIN = "nerdsmp.expedition.admin";
+    public static final List<String> SAMPLES = List.of("hollow_barrow", "cinder_keep");
+
+    private final NerdSmpPlugin plugin;
+    private final File folder;
+    private final InstanceWorlds worlds;
+    private final ExpeditionRecords records;
+    private final ReturnStore returns;
+    private final Map<String, ExpeditionDefinition> definitions = new TreeMap<>();
+    private final Map<String, YamlConfiguration> files = new HashMap<>();
+    private final Map<String, List<ExpeditionValidator.Issue>> issues = new HashMap<>();
+    private final Map<String, String> loadErrors = new TreeMap<>();
+    private Map<String, Tier> tiers = Tier.DEFAULTS;
+    private final Matchmaker matchmaker;
+    private final Map<UUID, ReadyCheck> checks = new LinkedHashMap<>();
+    private final Map<UUID, ExpeditionRun> runs = new LinkedHashMap<>();
+    private final Map<UUID, ExpeditionRun> runByPlayer = new HashMap<>();
+    private final Map<UUID, ExpeditionRun> runByWorld = new HashMap<>();
+    private final Set<UUID> teleporting = new HashSet<>();
+    private final Map<UUID, Long> portalNotices = new HashMap<>();
+    private final int maxInstances;
+    private final Duration readyTimeout;
+    private final Duration rejoinWindow;
+    private final Duration linger;
+    private final boolean vanillaPortals;
+    private final BukkitTask task;
+    private ExpeditionSetup setup;
+    private ExpeditionMenu menu;
+
+    public ExpeditionService(NerdSmpPlugin plugin) {
+        this.plugin = plugin;
+        this.folder = new File(plugin.getDataFolder(), "expeditions");
+        var config = plugin.getConfig();
+        this.maxInstances = Math.max(1, config.getInt("expeditions.max-instances", 6));
+        this.readyTimeout = Duration.ofSeconds(Math.max(10, config.getLong("expeditions.ready-check-seconds", 30)));
+        this.rejoinWindow = Duration.ofMinutes(Math.max(1, config.getLong("expeditions.rejoin-minutes", 5)));
+        this.linger = Duration.ofSeconds(Math.max(15, config.getLong("expeditions.linger-after-finish-seconds", 180)));
+        this.vanillaPortals = config.getBoolean("expeditions.vanilla-portals", false);
+        this.matchmaker = new Matchmaker(Duration.ofSeconds(Math.max(0, config.getLong("expeditions.queue-fill-seconds", 90))));
+        this.worlds = new InstanceWorlds(plugin);
+        this.records = new ExpeditionRecords(new File(plugin.getDataFolder(), "expedition-records.yml"));
+        this.returns = new ReturnStore(new File(plugin.getDataFolder(), "expedition-returns.yml"), plugin.getLogger());
+        installSamples();
+        worlds.cleanupLeftovers();
+        reload();
+        task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
+    }
+
+    public void attach(ExpeditionSetup setup, ExpeditionMenu menu) {
+        this.setup = setup;
+        this.menu = menu;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Content
+    // ---------------------------------------------------------------------------------------------
+
+    private void installSamples() {
+        if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
+        for (String sample : SAMPLES) {
+            File file = new File(folder, sample + ".yml");
+            if (!file.exists()) plugin.saveResource("expeditions/" + sample + ".yml", false);
+        }
+    }
+
+    /** Reloads tiers and every expedition file. A file that no longer parses keeps its last good version. */
+    public synchronized List<String> reload() {
+        List<String> messages = new ArrayList<>();
+        try {
+            tiers = Tier.load(plugin.getConfig().getConfigurationSection("expeditions.tiers"));
+        } catch (IllegalArgumentException invalid) {
+            messages.add("expeditions.tiers in config.yml: " + invalid.getMessage() + " Using the built-in tiers.");
+            tiers = Tier.DEFAULTS;
+        }
+        loadErrors.clear();
+        Set<String> seen = new HashSet<>();
+        File[] found = folder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (found != null) for (File file : found) {
+            String id = file.getName().substring(0, file.getName().length() - 4).toLowerCase(Locale.ROOT);
+            seen.add(id);
+            try {
+                YamlConfiguration yaml = new YamlConfiguration();
+                yaml.load(file);
+                ExpeditionDefinition definition = ExpeditionLoader.parse(id, yaml);
+                definitions.put(id, definition);
+                files.put(id, yaml);
+            } catch (Exception invalid) {
+                loadErrors.put(id, invalid.getMessage());
+                messages.add(id + ".yml: " + invalid.getMessage() + (definitions.containsKey(id) ? " Keeping the previous version." : ""));
+            }
+        }
+        definitions.keySet().removeIf(id -> !seen.contains(id));
+        files.keySet().removeIf(id -> !seen.contains(id));
+        issues.clear();
+        for (ExpeditionDefinition definition : definitions.values()) issues.put(definition.id(), validate(definition));
+        return messages;
+    }
+
+    public List<ExpeditionValidator.Issue> validate(ExpeditionDefinition definition) {
+        List<ExpeditionValidator.Issue> found = new ArrayList<>(ExpeditionValidator.validate(definition, tiers, catalog()));
+        if (definition.sample() == null && !worlds.templateExists(definition))
+            found.add(0, new ExpeditionValidator.Issue(ExpeditionValidator.Severity.ERROR,
+                "The template world " + definition.templateWorld() + " does not exist.", "/expedition create " + definition.id()));
+        if (definition.sample() != null && SampleTemplates.plan(definition.sample()) == null)
+            found.add(0, new ExpeditionValidator.Issue(ExpeditionValidator.Severity.ERROR,
+                "Unknown sample build '" + definition.sample() + "'.", "Remove sample: from the file"));
+        return List.copyOf(found);
+    }
+
+    public ExpeditionValidator.Catalog catalog() {
+        return new ExpeditionValidator.Catalog() {
+            @Override public boolean mob(String id) {
+                try { plugin.mobs().encounterType(id); return true; } catch (IllegalArgumentException unknown) { return false; }
+            }
+            @Override public boolean boss(String id) { return plugin.mobs().encounterBoss(id); }
+            @Override public boolean lootProfile(String id) { return plugin.rewardDrops().profiles().find(id).isPresent(); }
+            @Override public boolean item(String id) {
+                try { return plugin.rewardDrops().profiles().knownItems().contains(new ItemId(id)); } catch (IllegalArgumentException invalid) { return false; }
+            }
+            @Override public boolean effect(String key) { return registered(Registry.MOB_EFFECT, key); }
+            @Override public boolean sound(String key) { return registered(Registry.SOUND_EVENT, key); }
+            @Override public boolean material(String key) { return Material.matchMaterial(key) != null; }
+            @Override public boolean biome(String key) {
+                try { TemplateGenerator.resolve(key); return true; } catch (RuntimeException unknown) { return false; }
+            }
+        };
+    }
+
+    private static boolean registered(Registry<?> registry, String key) {
+        NamespacedKey parsed = NamespacedKey.fromString(key.toLowerCase(Locale.ROOT));
+        return parsed != null && registry.get(parsed) != null;
+    }
+
+    public Collection<ExpeditionDefinition> definitions() { return List.copyOf(definitions.values()); }
+    public Optional<ExpeditionDefinition> definition(String id) { return Optional.ofNullable(definitions.get(id.toLowerCase(Locale.ROOT))); }
+    public List<ExpeditionValidator.Issue> issues(String id) { return issues.getOrDefault(id, List.of()); }
+    public Map<String, String> loadErrors() { return Map.copyOf(loadErrors); }
+    public Map<String, Tier> tiers() { return tiers; }
+    public YamlConfiguration file(String id) { return files.get(id); }
+    public File fileFor(String id) { return new File(folder, id + ".yml"); }
+    public InstanceWorlds worlds() { return worlds; }
+    ExpeditionRecords records() { return records; }
+    ReturnStore returns() { return returns; }
+    Duration rejoinWindow() { return rejoinWindow; }
+    Duration lingerAfterFinish() { return linger; }
+    public boolean vanillaPortals() { return vanillaPortals; }
+
+    /** Stores an edited file from the setup flow and makes it live. */
+    public synchronized void store(String id, YamlConfiguration yaml) throws java.io.IOException {
+        ExpeditionDefinition definition = ExpeditionLoader.parse(id, yaml);
+        net.nerdsmp.paper.storage.AtomicYamlFiles.save(yaml, fileFor(id));
+        definitions.put(id, definition);
+        files.put(id, yaml);
+        loadErrors.remove(id);
+        issues.put(id, validate(definition));
+    }
+
+    /** Re-runs validation, e.g. once a new template world exists. */
+    public void revalidate(String id) {
+        ExpeditionDefinition definition = definitions.get(id);
+        if (definition != null) issues.put(id, validate(definition));
+    }
+
+    public boolean playable(ExpeditionDefinition definition) {
+        return definition.published() && ExpeditionValidator.publishable(issues(definition.id()));
+    }
+
+    /** Tiers the expedition offers, in config order, with its overrides applied. */
+    public List<Tier> tiersFor(ExpeditionDefinition definition) {
+        List<Tier> offered = new ArrayList<>();
+        for (Tier tier : tiers.values()) {
+            Tier applied = tier.apply(definition.tiers().get(tier.id()), definition.lives());
+            if (applied != null) offered.add(applied);
+        }
+        return offered;
+    }
+
+    public Optional<Tier> tier(ExpeditionDefinition definition, String id) {
+        return tiersFor(definition).stream().filter(tier -> tier.id().equalsIgnoreCase(id)).findFirst();
+    }
+
+    public Set<Modifier> modifiers(ExpeditionDefinition definition, Tier tier) {
+        Set<Modifier> active = new HashSet<>(Modifier.parseAll(definition.modifiers()));
+        active.addAll(Modifier.parseAll(tier.modifiers()));
+        return active;
+    }
+
+    /** Why this player cannot run this tier right now, or empty when they can. */
+    public Optional<String> problem(Player player, ExpeditionDefinition definition, Tier tier) {
+        if (!player.isOnline()) return Optional.of(player.getName() + " is offline.");
+        Optional<AccountId> account = plugin.sessions().account(player.getUniqueId());
+        if (account.isEmpty()) return Optional.of(player.getName() + "'s account is still loading.");
+        if (runByPlayer.containsKey(player.getUniqueId())) return Optional.of(player.getName() + " is already on an expedition.");
+        if (InstanceWorlds.isRunWorld(player.getWorld())) return Optional.of(player.getName() + " is still inside an expedition.");
+        boolean bypass = player.hasPermission("nerdsmp.progression.bypass") || player.hasPermission(ADMIN);
+        Optional<String> lock = plugin.campaign().expeditionLock(definition.id());
+        if (lock.isPresent() && !bypass) return Optional.of(definition.title() + " is sealed until the campaign reaches " + lock.get() + ".");
+        if (tier.requires() != null && !bypass && !records.cleared(account.get().toString(), definition.id(), tier.requires()))
+            return Optional.of(player.getName() + " needs to clear " + definition.title() + " on " + tiers.get(tier.requires()).title() + " first.");
+        return Optional.empty();
+    }
+
+    public boolean cleared(Player player, ExpeditionDefinition definition, String tier) {
+        return plugin.sessions().account(player.getUniqueId()).map(account -> records.cleared(account.toString(), definition.id(), tier)).orElse(false);
+    }
+
+    public long clears(Player player, ExpeditionDefinition definition) {
+        return plugin.sessions().account(player.getUniqueId()).map(account -> records.clears(account.toString(), definition.id())).orElse(0L);
+    }
+
+    public Map<String, ExpeditionRecords.Totals> totals(String expedition) { return records.totals(expedition); }
+    public int waiting(String expedition, String tier) { return matchmaker.waiting(expedition, tier); }
+    public int activeRuns() { return runs.size(); }
+    public int maxInstances() { return maxInstances; }
+
+    public long activeRuns(String expedition) {
+        return runs.values().stream().filter(run -> run.expedition.id().equals(expedition)).count();
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Joining
+    // ---------------------------------------------------------------------------------------------
+
+    /** The leader starts (queue=false) or queues (queue=true) their whole party, or themselves solo. */
+    public void join(Player leader, String id, String tierId, boolean queue) {
+        ExpeditionDefinition definition = definitions.get(id.toLowerCase(Locale.ROOT));
+        if (definition == null || !playable(definition) && !leader.hasPermission(ADMIN)) {
+            Chat.error(leader, "There is no open expedition called " + Chat.escape(id) + ". Browse them with " + Chat.command("expedition") + ".");
+            return;
+        }
+        if (!playable(definition)) {
+            Chat.error(leader, Chat.escape(definition.title()) + " isn't published or has setup errors. Staff can use " + Chat.command("expedition test " + definition.id()) + ".");
+            return;
+        }
+        Optional<Tier> tier = tier(definition, tierId == null ? tiersFor(definition).get(0).id() : tierId);
+        if (tier.isEmpty()) {
+            Chat.error(leader, "That difficulty isn't offered. Choose " + String.join(", ", tiersFor(definition).stream().map(Tier::id).toList()) + ".");
+            return;
+        }
+        if (matchmaker.ticketOf(leader.getUniqueId()).isPresent() || checkOf(leader.getUniqueId()).isPresent()) {
+            Chat.error(leader, "You're already queued or in a ready check. Use " + Chat.command("expedition leave") + " first.");
+            return;
+        }
+        Optional<AccountId> account = plugin.sessions().account(leader.getUniqueId());
+        if (account.isEmpty()) { Chat.accountLoading(leader); return; }
+        plugin.parties().partyOf(account.get()).thenAccept(party -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!leader.isOnline()) return;
+            List<Player> members = new ArrayList<>();
+            if (party.isEmpty()) members.add(leader);
+            else {
+                PartyService.PartyView view = party.get();
+                if (!view.leader().equals(account.get())) {
+                    Chat.error(leader, "Only your party leader can start or queue an expedition. Leave the party to go solo.");
+                    return;
+                }
+                for (AccountId member : view.members())
+                    plugin.sessions().player(member).map(Bukkit::getPlayer).ifPresent(members::add);
+                if (members.size() < view.members().size())
+                    Chat.notice(leader, "Offline party members stay behind.");
+            }
+            if (members.size() > definition.maxParty()) {
+                Chat.error(leader, Chat.escape(definition.title()) + " allows up to " + definition.maxParty() + " players; your party has " + members.size() + ".");
+                return;
+            }
+            for (Player member : members) {
+                Optional<String> problem = problem(member, definition, tier.get());
+                if (problem.isEmpty() && (matchmaker.ticketOf(member.getUniqueId()).isPresent() || checkOf(member.getUniqueId()).isPresent()))
+                    problem = Optional.of(member.getName() + " is already queued.");
+                if (problem.isPresent()) { Chat.error(leader, Chat.escape(problem.get())); return; }
+            }
+            List<UUID> ids = members.stream().map(Player::getUniqueId).toList();
+            boolean full = members.size() >= definition.minParty();
+            if (!queue && full && runs.size() + checks.size() < maxInstances) {
+                if (ids.size() == 1) launch(definition, tier.get(), ids, List.of(), false);
+                else startCheck(definition, tier.get(), ids, List.of(), leader.getUniqueId());
+                return;
+            }
+            var ticket = new Matchmaker.Ticket(UUID.randomUUID(), definition.id(), tier.get().id(), ids, Instant.now());
+            var result = matchmaker.enqueue(ticket, new Matchmaker.Rules(definition.minParty(), definition.maxParty()));
+            if (result != Matchmaker.QueueResult.QUEUED) { Chat.error(leader, "Could not join the queue: " + Chat.humanize(result.name()) + "."); return; }
+            String why = !queue && full ? "Every expedition instance is busy, so you're in line for the next one."
+                : !queue ? "You need at least " + definition.minParty() + " players, so the finder will fill your group."
+                : "The finder will match you with other players.";
+            for (Player member : members)
+                Chat.success(member, "Queued for <white>" + Chat.escape(definition.title()) + "</white> (" + Chat.escape(tier.get().title()) + "). "
+                    + why + " Leave with " + Chat.command("expedition leave") + ".");
+        }));
+    }
+
+    public void leave(Player player) {
+        UUID uuid = player.getUniqueId();
+        ExpeditionRun run = runByPlayer.get(uuid);
+        if (run != null && run.state != ExpeditionRun.State.PREPARING) {
+            sendHome(player, run, "<gray>You left " + Chat.escape(run.expedition.title()) + ".</gray>");
+            run.broadcast("<gray>" + Chat.escape(player.getName()) + " left the expedition.</gray>");
+            return;
+        }
+        Optional<ReadyCheck> check = checkOf(uuid);
+        if (check.isPresent()) { decline(player); return; }
+        Optional<Matchmaker.Ticket> ticket = matchmaker.leave(uuid);
+        if (ticket.isPresent()) {
+            for (UUID member : ticket.get().members()) {
+                Player other = Bukkit.getPlayer(member);
+                if (other != null) Chat.notice(other, member.equals(uuid) ? "You left the expedition queue."
+                    : Chat.escape(player.getName()) + " left the queue, so your group was removed from it.");
+            }
+            return;
+        }
+        Chat.notice(player, "You aren't queued or on an expedition.");
+    }
+
+    private Optional<ReadyCheck> checkOf(UUID player) {
+        return checks.values().stream().filter(check -> check.members().contains(player)).findFirst();
+    }
+
+    private void startCheck(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, UUID autoAccept) {
+        ReadyCheck check = new ReadyCheck(definition.id(), tier.id(), members, tickets, Instant.now(), readyTimeout);
+        checks.put(check.id(), check);
+        if (autoAccept != null) check.accept(autoAccept);
+        for (UUID member : members) {
+            Player player = Bukkit.getPlayer(member);
+            if (player == null) continue;
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 1F, 1.2F);
+            if (member.equals(autoAccept)) {
+                Chat.info(player, "Ready check sent to your party for <white>" + Chat.escape(definition.title()) + "</white>.");
+                continue;
+            }
+            Chat.send(player, "<gold>Ready check:</gold> <white>" + Chat.escape(definition.title()) + "</white> <gray>(" + Chat.escape(tier.title())
+                + ", " + members.size() + " players)</gray>  <green><click:run_command:'/expedition ready'><hover:show_text:'Join the run'>[Ready]</hover></click></green>"
+                + "  <red><click:run_command:'/expedition decline'><hover:show_text:'Decline'>[Decline]</hover></click></red>"
+                + " <dark_gray>" + readyTimeout.toSeconds() + "s</dark_gray>");
+        }
+        resolve(check);
+    }
+
+    public void ready(Player player) {
+        Optional<ReadyCheck> check = checkOf(player.getUniqueId());
+        if (check.isEmpty()) { Chat.notice(player, "There's no ready check waiting for you."); return; }
+        check.get().accept(player.getUniqueId());
+        for (UUID member : check.get().members()) {
+            Player other = Bukkit.getPlayer(member);
+            if (other != null) Chat.info(other, Chat.escape(player.getName()) + " is ready <dark_gray>(" + check.get().acceptedCount() + "/" + check.get().members().size() + ")</dark_gray>.");
+        }
+        resolve(check.get());
+    }
+
+    public void decline(Player player) {
+        Optional<ReadyCheck> check = checkOf(player.getUniqueId());
+        if (check.isEmpty()) { Chat.notice(player, "There's no ready check waiting for you."); return; }
+        check.get().decline(player.getUniqueId());
+        resolve(check.get());
+    }
+
+    private void resolve(ReadyCheck check) {
+        if (check.state() == ReadyCheck.State.PENDING) return;
+        checks.remove(check.id());
+        ExpeditionDefinition definition = definitions.get(check.expedition());
+        Optional<Tier> tier = definition == null ? Optional.empty() : tier(definition, check.tier());
+        if (check.state() == ReadyCheck.State.READY && tier.isPresent()) {
+            launch(definition, tier.get(), check.orderedMembers(), check.tickets(), false);
+            return;
+        }
+        Player decliner = check.decliner() == null ? null : Bukkit.getPlayer(check.decliner());
+        String reason = decliner != null ? Chat.escape(decliner.getName()) + " declined" : "Not everyone was ready in time";
+        List<Matchmaker.Ticket> back = check.tickets().isEmpty() ? List.of() : check.innocentTickets();
+        matchmaker.requeue(back);
+        Set<UUID> requeued = new HashSet<>();
+        back.forEach(ticket -> requeued.addAll(ticket.members()));
+        for (UUID member : check.members()) {
+            Player player = Bukkit.getPlayer(member);
+            if (player == null) continue;
+            Chat.notice(player, reason + ", so the run didn't start." + (requeued.contains(member) ? " You're back in the queue at your old place." : ""));
+        }
+    }
+
+    /** Builds the run world, then brings everyone in. Staff test runs skip records, Marks and campaign credit. */
+    void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test) {
+        List<UUID> online = members.stream().filter(member -> Bukkit.getPlayer(member) != null && !runByPlayer.containsKey(member)).toList();
+        if (online.size() < (test ? 1 : definition.minParty())) {
+            matchmaker.requeue(tickets.stream().filter(ticket -> online.containsAll(ticket.members())).toList());
+            online.forEach(member -> Chat.notice(Bukkit.getPlayer(member), "A player dropped out before the run began."));
+            return;
+        }
+        BuildCanvas.Plan plan = definition.sample() == null ? null : SampleTemplates.plan(definition.sample());
+        ExpeditionRun run = new ExpeditionRun(this, plugin, definition, tier, modifiers(definition, tier), online, test, plan);
+        runs.put(run.id, run);
+        for (UUID member : online) {
+            runByPlayer.put(member, run);
+            Player player = Bukkit.getPlayer(member);
+            Chat.info(player, "Preparing <white>" + Chat.escape(definition.title()) + "</white>…");
+        }
+        worlds.createRun(definition, plan).whenComplete((world, failure) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (failure != null || world == null) {
+                plugin.getLogger().log(Level.SEVERE, "Could not build expedition " + definition.id(), failure);
+                runs.remove(run.id);
+                online.forEach(member -> {
+                    runByPlayer.remove(member, run);
+                    Player player = Bukkit.getPlayer(member);
+                    if (player != null) Chat.error(player, "The expedition instance could not be built. Staff have been told.");
+                });
+                return;
+            }
+            runByWorld.put(world.getUID(), run);
+            if (run.state == ExpeditionRun.State.CLOSED) { worlds.destroy(world); return; }
+            run.begin(world);
+        }));
+    }
+
+    public void test(Player staff, ExpeditionDefinition definition, String tierId) {
+        if (!ExpeditionValidator.publishable(issues(definition.id()))) {
+            Chat.error(staff, "Fix the setup errors first: " + Chat.command("expedition check " + definition.id()) + ".");
+            return;
+        }
+        if (runByPlayer.containsKey(staff.getUniqueId())) { Chat.error(staff, "Leave your current expedition first."); return; }
+        Optional<Tier> tier = tier(definition, tierId == null ? tiersFor(definition).get(0).id() : tierId);
+        if (tier.isEmpty()) { Chat.error(staff, "Unknown tier for this expedition."); return; }
+        matchmaker.leave(staff.getUniqueId());
+        launch(definition, tier.get(), List.of(staff.getUniqueId()), List.of(), true);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Ending
+    // ---------------------------------------------------------------------------------------------
+
+    void teleport(Player player, Location location) {
+        teleporting.add(player.getUniqueId());
+        try {
+            player.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
+        } finally {
+            teleporting.remove(player.getUniqueId());
+        }
+    }
+
+    private Location fallbackHome() {
+        Location spawn = plugin.travel() == null ? null : plugin.travel().publicSpawn();
+        return spawn != null ? spawn : Bukkit.getWorlds().get(0).getSpawnLocation();
+    }
+
+    /** Sends one member back to where they entered from, with any loot that didn't fit. */
+    void sendHome(Player player, ExpeditionRun run, String message) {
+        UUID uuid = player.getUniqueId();
+        runByPlayer.remove(uuid, run);
+        run.left(uuid);
+        if (player.isDead()) player.spigot().respawn();
+        Location home = returns.location(uuid).orElseGet(this::fallbackHome);
+        teleport(player, home);
+        returns.forget(uuid);
+        List<ItemStack> loot = run.takePendingLoot(uuid);
+        if (!loot.isEmpty()) {
+            player.getInventory().addItem(loot.toArray(ItemStack[]::new)).values()
+                .forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
+            Chat.notice(player, "The loot that didn't fit is at your feet.");
+        }
+        if (message != null) Chat.send(player, message);
+    }
+
+    boolean attached(ExpeditionRun run) { return runByPlayer.containsValue(run); }
+
+    /** A member timed out while offline. Their return point stays on disk for when they next join. */
+    void detach(ExpeditionRun run, UUID member) {
+        runByPlayer.remove(member, run);
+        run.left(member);
+    }
+
+    void close(ExpeditionRun run, String message) {
+        if (run.state == ExpeditionRun.State.CLOSED) return;
+        for (UUID member : run.members) {
+            Player player = Bukkit.getPlayer(member);
+            if (player != null && runByPlayer.get(member) == run) sendHome(player, run, message);
+            else runByPlayer.remove(member, run);
+        }
+        run.close();
+        runs.remove(run.id);
+        World world = run.world;
+        if (world == null) return;
+        runByWorld.remove(world.getUID());
+        for (Player straggler : world.getPlayers()) {
+            if (straggler.isDead()) straggler.spigot().respawn();
+            teleport(straggler, returns.location(straggler.getUniqueId()).orElseGet(this::fallbackHome));
+            returns.forget(straggler.getUniqueId());
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> worlds.destroy(world), 2L);
+    }
+
+    private void tick() {
+        Instant now = Instant.now();
+        for (ReadyCheck check : List.copyOf(checks.values())) {
+            check.tick(now);
+            resolve(check);
+        }
+        Map<String, Matchmaker.Rules> rules = new HashMap<>();
+        for (ExpeditionDefinition definition : definitions.values())
+            if (playable(definition)) rules.put(definition.id(), new Matchmaker.Rules(definition.minParty(), definition.maxParty()));
+        int free = maxInstances - runs.size() - checks.size();
+        if (free > 0) for (Matchmaker.Group group : matchmaker.match(rules, free, now)) {
+            ExpeditionDefinition definition = definitions.get(group.expedition());
+            Optional<Tier> tier = tier(definition, group.tier());
+            if (tier.isEmpty()) continue;
+            List<UUID> members = group.members();
+            if (members.size() == 1) launch(definition, tier.get(), members, group.tickets(), false);
+            else startCheck(definition, tier.get(), members, group.tickets(), null);
+        }
+        long millis = System.currentTimeMillis();
+        for (ExpeditionRun run : List.copyOf(runs.values())) {
+            try {
+                run.tick(millis);
+            } catch (RuntimeException failure) {
+                plugin.getLogger().log(Level.SEVERE, "Expedition run " + run.id + " failed; closing it", failure);
+                close(run, "<red>The expedition hit a problem and closed. Staff have been told.</red>");
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Events
+    // ---------------------------------------------------------------------------------------------
+
+    private ExpeditionRun runIn(World world) { return world == null ? null : runByWorld.get(world.getUID()); }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        if (!event.hasChangedBlock()) return;
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        if (run != null && run.world != null && run.world.equals(event.getTo().getWorld())) run.moved(event.getPlayer(), event.getTo());
+    }
+
+    /** Ender pearls, chorus fruit and staff teleports inside a run count as walking for room triggers and the exit. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTeleportWithin(PlayerTeleportEvent event) {
+        if (event.getTo() == null) return;
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        if (run != null && run.world != null && run.world.equals(event.getTo().getWorld()) && run.world.equals(event.getFrom().getWorld()))
+            run.moved(event.getPlayer(), event.getTo());
+    }
+
+    @EventHandler(priority = EventPriority.LOW)
+    public void onDeath(PlayerDeathEvent event) {
+        Player player = event.getPlayer();
+        if (!InstanceWorlds.isRunWorld(player.getWorld())) return;
+        // Runs never cost gear: no drops, so the grave system has nothing to collect.
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        if (run != null && run.world == player.getWorld()) run.died(player);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRespawn(PlayerRespawnEvent event) {
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        if (run == null || run.world == null || run.state == ExpeditionRun.State.CLOSED) return;
+        if (!run.world.equals(event.getPlayer().getWorld())) return;
+        event.setRespawnLocation(run.respawned(event.getPlayer()));
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        checkOf(uuid).ifPresent(check -> { check.decline(uuid); resolve(check); });
+        matchmaker.leave(uuid).ifPresent(ticket -> ticket.members().forEach(member -> {
+            Player other = Bukkit.getPlayer(member);
+            if (other != null && !member.equals(uuid)) Chat.notice(other, Chat.escape(event.getPlayer().getName()) + " logged off, so your group left the queue.");
+        }));
+        ExpeditionRun run = runByPlayer.get(uuid);
+        if (run != null) {
+            if (run.state == ExpeditionRun.State.ACTIVE) run.quit(event.getPlayer());
+            else if (run.state == ExpeditionRun.State.ENDING) detach(run, uuid);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+            if (run != null && run.rejoin(player)) {
+                Chat.info(player, "Welcome back. Your party is still in <white>" + Chat.escape(run.expedition.title()) + "</white>.");
+                return;
+            }
+            if (returns.has(player.getUniqueId()) || InstanceWorlds.isRunWorld(player.getWorld())) {
+                teleport(player, returns.location(player.getUniqueId()).orElseGet(this::fallbackHome));
+                returns.forget(player.getUniqueId());
+                Chat.notice(player, "Your expedition ended while you were away, so you've been returned.");
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onChangedWorld(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        if (run == null || run.world == null || !run.world.equals(event.getFrom()) || teleporting.contains(player.getUniqueId())) return;
+        runByPlayer.remove(player.getUniqueId(), run);
+        run.left(player.getUniqueId());
+        returns.forget(player.getUniqueId());
+        run.broadcast("<gray>" + Chat.escape(player.getName()) + " left the expedition.</gray>");
+        Chat.notice(player, "You left " + Chat.escape(run.expedition.title()) + ".");
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) {
+        if (event.getTo() == null || teleporting.contains(event.getPlayer().getUniqueId()) || event instanceof PlayerPortalEvent) return;
+        World to = event.getTo().getWorld();
+        Player player = event.getPlayer();
+        if (to == null || to.equals(event.getFrom().getWorld()) || player.hasPermission(ADMIN)) return;
+        if (InstanceWorlds.isRunWorld(to)) {
+            event.setCancelled(true);
+            Chat.error(player, "That expedition is a private instance. Join through " + Chat.command("expedition") + ".");
+        } else if (definitions.values().stream().anyMatch(definition -> definition.templateWorld().equals(to.getName()))) {
+            event.setCancelled(true);
+            Chat.error(player, "That world is a staff expedition template.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPortal(PlayerPortalEvent event) {
+        if (vanillaPortals) return;
+        var cause = event.getCause();
+        if (cause != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL && cause != PlayerTeleportEvent.TeleportCause.END_PORTAL
+            && cause != PlayerTeleportEvent.TeleportCause.END_GATEWAY) return;
+        if (InstanceWorlds.isRunWorld(event.getFrom().getWorld()) || isTemplate(event.getFrom().getWorld())) {
+            if (cause == PlayerTeleportEvent.TeleportCause.END_GATEWAY) return;
+        }
+        event.setCancelled(true);
+        long now = System.currentTimeMillis();
+        Long last = portalNotices.get(event.getPlayer().getUniqueId());
+        if (last == null || now - last > 5000) {
+            portalNotices.put(event.getPlayer().getUniqueId(), now);
+            Chat.notice(event.getPlayer(), "The portals are sealed. Reach the Nether and the End with your party through "
+                + Chat.command("expedition") + ".");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityPortal(EntityPortalEvent event) {
+        if (!vanillaPortals && event.getPortalType() != org.bukkit.PortalType.END_GATEWAY) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPortalCreate(PortalCreateEvent event) {
+        if (vanillaPortals || event.getReason() == PortalCreateEvent.CreateReason.END_PLATFORM) return;
+        if (isTemplate(event.getWorld()) || InstanceWorlds.isRunWorld(event.getWorld())) return;
+        event.setCancelled(true);
+        if (event.getEntity() instanceof Player player)
+            Chat.notice(player, "The portal won't take. Reach the Nether with your party through " + Chat.command("expedition") + ".");
+    }
+
+    private boolean isTemplate(World world) {
+        return world != null && definitions.values().stream().anyMatch(definition -> definition.templateWorld().equals(world.getName()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMobDeath(EntityDeathEvent event) {
+        ExpeditionRun run = runIn(event.getEntity().getWorld());
+        if (run != null && !(event.getEntity() instanceof Player) && run.tracks(event.getEntity())) run.mobDied(event.getEntity());
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDamage(EntityDamageByEntityEvent event) {
+        ExpeditionRun run = runIn(event.getEntity().getWorld());
+        if (run == null || !(event.getEntity() instanceof Player)) return;
+        Entity source = event.getDamager();
+        if (source instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter) source = shooter;
+        if (source instanceof LivingEntity living && run.tracks(living)) event.setDamage(event.getDamage() * run.damageMultiplier(living));
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBreak(BlockBreakEvent event) {
+        if (InstanceWorlds.isRunWorld(event.getBlock().getWorld()) && !event.getPlayer().hasPermission(ADMIN)) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlace(BlockPlaceEvent event) {
+        if (InstanceWorlds.isRunWorld(event.getBlock().getWorld()) && !event.getPlayer().hasPermission(ADMIN)) event.setCancelled(true);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Commands
+    // ---------------------------------------------------------------------------------------------
+
+    public boolean command(CommandSender sender, String[] args) {
+        String action = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
+        if (setup != null && setup.handles(action)) return setup.command(sender, args);
+        if (!(sender instanceof Player player)) {
+            Chat.playersOnly(sender);
+            return true;
+        }
+        switch (action) {
+            case "" -> menu.open(player);
+            case "start", "queue" -> {
+                if (args.length < 2 || args.length > 3) Chat.usage(player, "/expedition " + action + " <expedition> [tier]");
+                else join(player, args[1], args.length == 3 ? args[2] : null, action.equals("queue"));
+            }
+            case "leave" -> leave(player);
+            case "ready", "accept" -> ready(player);
+            case "decline" -> decline(player);
+            case "list" -> list(player);
+            case "info" -> {
+                if (args.length != 2) Chat.usage(player, "/expedition info <expedition>");
+                else definition(args[1]).filter(definition -> playable(definition) || player.hasPermission(ADMIN))
+                    .ifPresentOrElse(definition -> menu.openDetail(player, definition),
+                        () -> Chat.error(player, "Unknown expedition. See " + Chat.command("expedition list") + "."));
+            }
+            case "status" -> status(player);
+            case "routes" -> {
+                if (plugin.expeditionRoutes() == null) Chat.notice(player, "Travel with " + Chat.command("warps") + ".");
+                else plugin.expeditionRoutes().command(player, java.util.Arrays.copyOfRange(args, 1, args.length));
+            }
+            default -> {
+                Chat.error(player, "Unknown expedition command.");
+                Chat.usage(player, "/expedition [start|queue|leave|ready|decline|list|info|status]");
+                if (plugin.travel() != null && plugin.travel().warpNames().contains(action))
+                    Chat.info(player, "Looking for the warp? Use " + Chat.command("warp " + action) + ".");
+            }
+        }
+        return true;
+    }
+
+    private void list(Player player) {
+        List<ExpeditionDefinition> open = definitions.values().stream().filter(this::playable).toList();
+        if (open.isEmpty()) { Chat.notice(player, "No expeditions are open yet."); return; }
+        Chat.send(player, "<gold><bold>Expeditions</bold></gold>");
+        for (ExpeditionDefinition definition : open) {
+            Optional<String> lock = plugin.campaign().expeditionLock(definition.id());
+            Chat.send(player, "<gray>•</gray> <click:run_command:'/expedition info " + definition.id() + "'><aqua>" + Chat.escape(definition.title())
+                + "</aqua></click> <dark_gray>" + definition.dimension().key() + " · level " + definition.level() + " · "
+                + definition.minParty() + "-" + definition.maxParty() + " players</dark_gray>"
+                + lock.map(milestone -> " <red>sealed: " + Chat.escape(milestone) + "</red>").orElse(""));
+        }
+    }
+
+    private void status(Player player) {
+        UUID uuid = player.getUniqueId();
+        ExpeditionRun run = runByPlayer.get(uuid);
+        if (run != null) {
+            Chat.info(player, "You're in <white>" + Chat.escape(run.expedition.title()) + "</white> (" + Chat.escape(run.tier.title()) + ")"
+                + (run.progress == null ? ", still preparing." : ", room " + Math.min(run.progress.roomCount(), run.progress.roomIndex() + 1)
+                + "/" + run.progress.roomCount() + ", " + run.progress.lives() + " lives left."));
+            return;
+        }
+        Optional<ReadyCheck> check = checkOf(uuid);
+        if (check.isPresent()) { Chat.info(player, "A ready check is waiting: " + Chat.command("expedition ready") + "."); return; }
+        Optional<Matchmaker.Ticket> ticket = matchmaker.ticketOf(uuid);
+        if (ticket.isPresent()) {
+            var definition = definitions.get(ticket.get().expedition());
+            Chat.info(player, "Queued for <white>" + Chat.escape(definition == null ? ticket.get().expedition() : definition.title()) + "</white> for "
+                + Chat.duration(Duration.between(ticket.get().queuedAt(), Instant.now())) + ". "
+                + matchmaker.waiting(ticket.get().expedition(), ticket.get().tier()) + " players are waiting for this run.");
+            return;
+        }
+        Chat.notice(player, "You aren't queued. Browse expeditions with " + Chat.command("expedition") + ".");
+    }
+
+    public List<String> complete(CommandSender sender, String[] args) {
+        if (args.length == 1) {
+            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "list", "info", "status"));
+            if (sender.hasPermission(ADMIN) && setup != null) options.addAll(setup.subcommands());
+            return options;
+        }
+        String action = args[0].toLowerCase(Locale.ROOT);
+        if (setup != null && setup.handles(action)) return setup.complete(sender, args);
+        if (args.length == 2 && List.of("start", "queue", "info").contains(action))
+            return definitions.values().stream().filter(definition -> playable(definition) || sender.hasPermission(ADMIN)).map(ExpeditionDefinition::id).toList();
+        if (args.length == 3 && List.of("start", "queue").contains(action))
+            return definition(args[1]).map(definition -> tiersFor(definition).stream().map(Tier::id).toList()).orElse(List.of());
+        return List.of();
+    }
+
+    /** Staff overview of live runs. */
+    public List<String> describeRuns() {
+        List<String> lines = new ArrayList<>();
+        int index = 1;
+        for (ExpeditionRun run : runs.values()) {
+            String names = String.join(", ", run.members.stream().map(Bukkit::getOfflinePlayer).map(player -> String.valueOf(player.getName())).toList());
+            lines.add(index++ + ". " + run.expedition.id() + " (" + run.tier.id() + (run.test ? ", test" : "") + ") " + run.state.name().toLowerCase(Locale.ROOT)
+                + (run.progress == null ? "" : ", room " + Math.min(run.progress.roomCount(), run.progress.roomIndex() + 1) + "/" + run.progress.roomCount()
+                + ", lives " + run.progress.lives()) + " — " + names);
+        }
+        return lines;
+    }
+
+    public boolean stopRun(int index) {
+        List<ExpeditionRun> list = List.copyOf(runs.values());
+        if (index < 1 || index > list.size()) return false;
+        close(list.get(index - 1), "<yellow>Staff closed this expedition.</yellow>");
+        return true;
+    }
+
+    @Override
+    public void close() {
+        task.cancel();
+        for (ExpeditionRun run : List.copyOf(runs.values())) {
+            for (UUID member : run.members) {
+                Player player = Bukkit.getPlayer(member);
+                if (player == null || runByPlayer.get(member) != run) continue;
+                if (player.isDead()) player.spigot().respawn();
+                teleport(player, returns.location(member).orElseGet(this::fallbackHome));
+                returns.forget(member);
+                run.takePendingLoot(member).forEach(item -> player.getInventory().addItem(item).values()
+                    .forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left)));
+            }
+            run.close();
+            if (run.world != null) Bukkit.unloadWorld(run.world, false); // Folder is removed on the next start.
+        }
+        runs.clear();
+        runByPlayer.clear();
+        runByWorld.clear();
+    }
+}

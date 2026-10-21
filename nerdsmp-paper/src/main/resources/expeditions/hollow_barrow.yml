@@ -1,0 +1,74 @@
+# The Hollow Barrow: the sample overworld expedition. Copy this file to start your own, or build one
+# in game with /expedition create <id>. Full reference: docs/EXPEDITIONS.md.
+#
+# Coordinates are blocks in the template world (nerdsmp_exp_tpl_hollow_barrow). Every run is a fresh
+# copy of that world, so the same coordinates work in every run. Points are [x, y, z] or [x, y, z, yaw];
+# regions and gates are [x1, y1, z1, x2, y2, z2].
+title: The Hollow Barrow
+description: A barrow-king stirs beneath the old hills. Clear his crypts and put him back to rest.
+icon: skeleton_skull
+dimension: overworld
+# Built from code. Delete this line if you rebuild the template by hand.
+sample: hollow_barrow
+published: true
+# Base mob level. Each tier adds its own level bonus on top.
+level: 8
+party: {min: 1, max: 5}
+time-limit-minutes: 25
+spawn: [0, 64, 4, 0]
+exit: [0, 64, 78]
+modifiers: []
+rooms:
+  crypt_gallery:
+    title: The Crypt Gallery
+    region: [-7, 64, 14, 7, 69, 34]
+    checkpoint: [0, 64, 32, 0]
+    # These iron bars lift when the room is cleared.
+    gate: [-1, 64, 35, 1, 66, 35]
+    points: [[-5, 64, 19], [5, 64, 19], [-5, 64, 29], [5, 64, 29], [0, 64, 24]]
+    encounter:
+      type: waves
+      waves:
+        - {"vanilla:zombie": 3, "custom:thorn_sentinel": 1}
+        - {mobs: {"custom:veil_stalker": 2, "vanilla:skeleton": 2}, delay-seconds: 3}
+      scripts:
+        start: ["message <gray>Dust shivers from the niches. Something is waking.</gray>"]
+        clear: ["message <gray>The bars to the ossuary grind upward.</gray>"]
+  ossuary:
+    title: The Ossuary
+    region: [-8, 64, 36, 8, 69, 54]
+    checkpoint: [0, 64, 52, 0]
+    gate: [-1, 64, 55, 1, 66, 55]
+    points: [[-6, 64, 38], [6, 64, 38], [-6, 64, 51], [6, 64, 51], [0, 64, 45]]
+    encounter:
+      # Survive rooms keep releasing their waves until the timer runs out.
+      type: survive
+      survive-seconds: 45
+      waves:
+        - {"vanilla:zombie": 3}
+        - {mobs: {"custom:mire_weaver": 2, "vanilla:skeleton": 1}, delay-seconds: 12}
+      scripts:
+        start: ["title <gold>Hold the ossuary|<gray>Survive until the bones fall still</gray>"]
+        timer-30: ["message <yellow>The rattling slows. Fifteen more seconds!</yellow>"]
+  kings_rest:
+    title: The King's Rest
+    region: [-10, 64, 56, 10, 73, 80]
+    # The first point is where the boss rises; adds use the others.
+    points: [[0, 65, 72], [-8, 64, 62], [8, 64, 62], [-8, 64, 68], [8, 64, 68]]
+    encounter:
+      type: boss
+      boss: custom:the_hollow_huntsman
+      boss-level-bonus: 3
+      # Each threshold releases the next wave as adds.
+      adds-at-health: [66, 33]
+      waves:
+        - {"vanilla:skeleton": 3}
+        - {"custom:veil_stalker": 2}
+      scripts:
+        start: ["message <dark_gray>A hollow voice: <italic>Who disturbs the King's rest?</italic></dark_gray>"]
+        health-50: ["title <dark_red>The Huntsman calls the hunt|<gray>Bone answers bone</gray>", "sound entity.wither_skeleton.ambient 0.6"]
+        clear: ["message <green>The King's Rest falls silent. Walk into the light at the far wall to leave.</green>"]
+loot:
+  marks: 120
+  items: {iron_ingot: 4, bone: 8, experience_bottle: 3}
+# Campaign credit is set in the season file (campaign/season.yml), not here.
