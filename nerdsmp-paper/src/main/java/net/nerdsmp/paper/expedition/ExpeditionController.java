@@ -66,16 +66,21 @@ public final class ExpeditionController implements Listener, AutoCloseable {
             ? ExpeditionLayout.zoneAt(location.getX(),location.getZ()) : Optional.empty();
     }
     private boolean unlocked(Zone zone) { return zone.unlock==null || plugin.serverProgression().unlocked(zone.unlock); }
+    /** Open for everyone through the campaign, or for this player: beating the Cinder Keep raid's first boss opens the Cinder Shelf. */
+    private boolean unlocked(Player player,Zone zone) {
+        return unlocked(zone) || zone.unlock==net.nerdsmp.paper.campaign.ServerProgressionService.Unlock.NETHER
+            && plugin.expeditions()!=null && plugin.expeditions().raidUnlocked(player,"nether");
+    }
     static boolean routeAccessible(Player player,boolean campaignUnlocked) {
         return campaignUnlocked || player.hasPermission("nerdsmp.progression.bypass");
     }
-    private boolean accessible(Player player,Zone zone) { return routeAccessible(player,unlocked(zone)); }
+    private boolean accessible(Player player,Zone zone) { return routeAccessible(player,unlocked(player,zone)); }
     public boolean mayHarvest(BlockBreakEvent event) {
         Block block=event.getBlock();
         if(!manages(block.getWorld()) || event.getPlayer().getGameMode()!=GameMode.SURVIVAL
             || plugin.sessions().account(event.getPlayer().getUniqueId()).isEmpty()) return false;
         Node node=ExpeditionPlanV2.NODES.get(new Cell(block.getX(),block.getY(),block.getZ()));
-        return node!=null && unlocked(node.zone()) && block.getType()==node.material()
+        return node!=null && unlocked(event.getPlayer(),node.zone()) && block.getType()==node.material()
             && !block.getChunk().getPersistentDataContainer().has(keys.get(node.cell()));
     }
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true)
@@ -141,13 +146,15 @@ public final class ExpeditionController implements Listener, AutoCloseable {
         Inventory menu=Bukkit.createInventory(board,27,Chat.render("<dark_aqua><bold>Expeditions</bold></dark_aqua>")); board.inventory=menu;
         MenuKit.frame(menu);
         for(int i=0;i<Zone.values().length;i++) {
-            Zone zone=Zone.values()[i]; boolean campaignOpen=unlocked(zone), access=routeAccessible(player,campaignOpen);
+            Zone zone=Zone.values()[i]; boolean campaignOpen=unlocked(player,zone), access=routeAccessible(player,campaignOpen);
             List<String> lore=new ArrayList<>();
             for(String line:wrap(zone.description,42)) lore.add("<gray>"+Chat.escape(line)+"</gray>");
             if(access && !campaignOpen) lore.add("<gold>Staff preview; campaign remains sealed.</gold>");
             if(access) menu.setItem(10+i,MenuKit.item(zone.icon,"<aqua>"+Chat.escape(zone.title)+"</aqua>",MenuKit.withHint(lore,"travel")));
             else {
                 lore.add(""); lore.add("<gold>Requires campaign: "+Chat.escape(zone.unlock.displayName())+"</gold>");
+                if(zone.unlock==net.nerdsmp.paper.campaign.ServerProgressionService.Unlock.NETHER)
+                    lore.add("<gold>Or defeat Gorrak in the Cinder Keep raid.</gold>");
                 menu.setItem(10+i,MenuKit.locked(Material.GRAY_DYE,zone.title,lore));
             }
         }

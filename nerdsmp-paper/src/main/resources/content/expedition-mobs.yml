@@ -147,3 +147,131 @@ mobs:
     ability: none
     mark-reward: 120
     equipment: {head: mossy_cobblestone, hand: stone_axe}
+
+  # Cinder Keep (raid)
+  gorrak_kilnbreaker:
+    name: "<gradient:#ff9f43:#c0392b><bold>Gorrak the Kilnbreaker</bold></gradient>"
+    type: ravager
+    boss: true
+    health: 900
+    attack-damage: 12
+    scale: 1.35
+    ability: none
+    mark-reward: 60
+  ember_hound:
+    name: "<gold>Ember Hound</gold>"
+    type: hoglin
+    health: 40
+    attack-damage: 6
+    scale: 0.9
+    ability: none
+    mark-reward: 4
+  skarn:
+    name: "<gradient:#bdc3c7:#7f8c8d><bold>Skarn, the Ash Hound</bold></gradient>"
+    type: hoglin
+    boss: true
+    health: 520
+    attack-damage: 10
+    scale: 1.8
+    ability: none
+    mark-reward: 40
+  vesh:
+    name: "<gradient:#ffb142:#ff5252><bold>Vesh, the Ember Hound</bold></gradient>"
+    type: hoglin
+    boss: true
+    health: 520
+    attack-damage: 10
+    scale: 1.8
+    ability: none
+    mark-reward: 40
+  lava_brute:
+    name: "<red>Lava Brute</red>"
+    type: piglin_brute
+    health: 90
+    attack-damage: 9
+    scale: 1.25
+    ability: none
+    mark-reward: 8
+    equipment: {chest: golden_chestplate, hand: golden_axe}
+  flamewaker:
+    name: "<gold>Flamewaker</gold>"
+    type: wither_skeleton
+    health: 50
+    attack-damage: 7
+    ability: none
+    mark-reward: 5
+    equipment: {head: golden_helmet, hand: golden_sword}
+  rune_warden:
+    name: "<gradient:#f6e58d:#e17055>Rune Warden</gradient>"
+    type: wither_skeleton
+    health: 110
+    attack-damage: 9
+    scale: 1.3
+    ability: none
+    mark-reward: 10
+    equipment: {head: netherite_helmet, chest: golden_chestplate, hand: netherite_sword}
+  firesworn:
+    name: "<yellow>Firesworn</yellow>"
+    type: blaze
+    health: 36
+    attack-damage: 5
+    ability: none
+    mark-reward: 4
+  vael_slag_priest:
+    name: "<gradient:#a29bfe:#e17055><bold>Vael, the Slag Priest</bold></gradient>"
+    type: witch
+    boss: true
+    health: 700
+    attack-damage: 8
+    scale: 1.6
+    ability: none
+    mark-reward: 60
+  steward_ashkar:
+    name: "<gradient:#fdcb6e:#d63031><bold>Steward Ashkar</bold></gradient>"
+    type: piglin_brute
+    boss: true
+    health: 640
+    attack-damage: 12
+    scale: 1.4
+    ability: none
+    mark-reward: 60
+    equipment: {head: golden_helmet, chest: netherite_chestplate, hand: golden_axe}
+  flamewaker_guard:
+    name: "<gold><bold>Flamewaker Guard</bold></gold>"
+    type: wither_skeleton
+    boss: true
+    health: 360
+    attack-damage: 10
+    scale: 1.25
+    ability: none
+    mark-reward: 20
+    equipment: {head: golden_helmet, chest: golden_chestplate, hand: netherite_sword}
+  flamewaker_priest:
+    name: "<gold><bold>Flamewaker Priest</bold></gold>"
+    type: wither_skeleton
+    boss: true
+    health: 300
+    attack-damage: 7
+    scale: 1.15
+    ability: none
+    mark-reward: 20
+    equipment: {head: golden_helmet, hand: blaze_rod}
+  pyrrhax:
+    name: "<gradient:#ffeaa7:#ff7675:#d63031><bold>Pyrrhax, the Ashen Sovereign</bold></gradient>"
+    type: wither_skeleton
+    boss: true
+    health: 1800
+    attack-damage: 14
+    speed: 0.2
+    scale: 3.0
+    ability: none
+    mark-reward: 150
+    equipment: {head: netherite_helmet, chest: netherite_chestplate, legs: netherite_leggings, feet: netherite_boots, hand: mace}
+  son_of_flame:
+    name: "<gradient:#ff7675:#fdcb6e>Son of Flame</gradient>"
+    type: magma_cube
+    health: 70
+    attack-damage: 8
+    scale: 1.4
+    ability: none
+    mark-reward: 6

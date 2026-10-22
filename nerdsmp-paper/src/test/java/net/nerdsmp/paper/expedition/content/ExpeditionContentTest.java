@@ -85,14 +85,21 @@ class ExpeditionContentTest {
         assertEquals(new ExpeditionDefinition.Point(0, 64, 4, 0), barrow.spawn());
     }
 
-    @Test void cinderKeepIsANetherExpeditionWithoutMythic() {
+    @Test void cinderKeepIsAnEightPlayerNetherRaidWithThreeTunedTiers() {
         ExpeditionDefinition keep = sample("cinder_keep");
         assertEquals(ExpeditionDefinition.Dimension.NETHER, keep.dimension());
         assertEquals("basalt_deltas", keep.biome());
-        assertEquals(2, keep.minParty());
-        assertNull(Tier.DEFAULTS.get("mythic").apply(keep.tiers().get("mythic"), keep.lives()));
-        var health50 = keep.rooms().get("throne_of_embers").encounter().script("health-50");
-        assertEquals(List.of(ScriptAction.Verb.TITLE, ScriptAction.Verb.WAIT, ScriptAction.Verb.SPAWN), health50.stream().map(ScriptAction::verb).toList());
+        assertTrue(keep.story().raid());
+        assertEquals(8, keep.maxParty());
+        assertEquals(List.of("nether"), keep.rooms().get("kilnbreaker").unlocks());
+        assertEquals(10, keep.rooms().get("cinderhounds").encounter().linkSeconds());
+        assertEquals(30, keep.rooms().get("molten_heart").encounter().phases().getFirst().submergeSeconds());
+        assertTrue(keep.rooms().get("molten_heart").loot().marks() > 0);
+        Tier mythic = Tier.DEFAULTS.get("mythic").apply(keep.tiers().get("mythic"), keep.lives());
+        assertEquals(3.0, mythic.health());
+        assertEquals(List.of("fortified", "tyrannical"), mythic.modifiers());
+        assertEquals(15, Tier.DEFAULTS.get("normal").apply(keep.tiers().get("normal"), keep.lives()).lives());
+        assertEquals(List.of(), errors(keep));
     }
 
     @Test void blankFileFromCreateLoadsAndListsTheMissingSteps() {
@@ -172,6 +179,11 @@ class ExpeditionContentTest {
         assertEquals(2, heroic.levelBonus());
         assertEquals(4, heroic.lootRolls());
         assertEquals(List.of("volatile"), heroic.modifiers());
+        Tier tuned = Tier.DEFAULTS.get("mythic").apply(new ExpeditionDefinition.TierOverride(null, null, 12, null, List.of(), 3.4, 2.0), null);
+        assertEquals(3.4, tuned.health());
+        assertEquals(2.0, tuned.damage());
+        assertEquals(12, tuned.lives());
+        assertEquals(Tier.DEFAULTS.get("heroic").health(), heroic.health(), "Unset multipliers keep the global value");
         assertEquals(12, Tier.DEFAULTS.get("normal").apply(null, 12).lives());
         assertEquals(7, Tier.DEFAULTS.get("heroic").apply(null, 12).lives());
         YamlConfiguration broken = new YamlConfiguration();

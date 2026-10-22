@@ -31,6 +31,7 @@ public final class Abilities {
         add("barrage", "Barrage", "Looses a volley of arrows at random players.", 10);
         add("mend", "Mend", "Heals itself and wounded allies around it. Interrupt it with burst damage.", 16);
         add("web", "Web", "Throws a web that pins a player in place.", 12);
+        add("wrath", "Wrath", "A wide ring of flame marks the ground, then a blast throws everyone inside outward. Keep your back to safe ground.", 20);
     }
 
     /** Abilities an elite can roll when it has none listed. */

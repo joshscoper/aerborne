@@ -226,11 +226,21 @@ public record ExpeditionDefinition(
      * (as well as the encounter) for the room to clear.
      */
     public record Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
-                       List<String> requires, boolean optional, Map<String, Puzzle> puzzles) {
+                       List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks) {
+        /** What a room can unlock for everyone who clears it. */
+        public static final List<String> UNLOCKS = List.of("nether");
+
         public Room {
             points = List.copyOf(points);
             requires = requires == null ? null : List.copyOf(requires);
             puzzles = puzzles == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(puzzles));
+            loot = loot == null ? Loot.NONE : loot;
+            unlocks = unlocks == null ? List.of() : List.copyOf(unlocks);
+        }
+
+        public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
+                    List<String> requires, boolean optional, Map<String, Puzzle> puzzles) {
+            this(id, title, region, checkpoint, gate, points, encounter, requires, optional, puzzles, Loot.NONE, List.of());
         }
 
         public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter) {
@@ -248,21 +258,34 @@ public record ExpeditionDefinition(
      */
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
-    /** A boss phase: below {@code atHealth} percent the boss switches to these abilities. */
-    public record Phase(int atHealth, List<String> abilities, String title) {
+    /**
+     * A boss phase: below {@code atHealth} percent the boss switches to these abilities. With
+     * {@code submergeSeconds} it first withdraws, untouchable, for that long or until its adds are dead.
+     */
+    public record Phase(int atHealth, List<String> abilities, String title, int submergeSeconds) {
         public Phase { abilities = List.copyOf(abilities); }
+
+        public Phase(int atHealth, List<String> abilities, String title) { this(atHealth, abilities, title, 0); }
     }
 
     /**
      * {@code waves} are the room's mob groups. Boss rooms use them as adds released at {@code addsAtHealth}
-     * thresholds; survive rooms release them in a loop until the timer ends.
+     * thresholds; survive rooms release them in a loop until the timer ends. A council with
+     * {@code linkSeconds} is linked: a fallen member rises again unless the rest fall within that time.
      */
     public record Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus,
                             int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts,
                             double bossDamage, double bossHealth, List<String> bosses, List<String> abilities,
-                            List<Phase> phases, int enrageSeconds) {
+                            List<Phase> phases, int enrageSeconds, int linkSeconds) {
         public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1,
             List.of(), List.of(), List.of(), 0);
+
+        public Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus, int surviveSeconds,
+                         List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts, double bossDamage, double bossHealth,
+                         List<String> bosses, List<String> abilities, List<Phase> phases, int enrageSeconds) {
+            this(type, waves, boss, bossLevelBonus, surviveSeconds, addsAtHealth, scripts, bossDamage, bossHealth, bosses, abilities,
+                phases, enrageSeconds, 0);
+        }
 
         public Encounter {
             waves = List.copyOf(waves);
@@ -322,9 +345,14 @@ public record ExpeditionDefinition(
     }
 
     /** Optional per-expedition changes to a global difficulty tier. Null fields keep the global value. */
-    public record TierOverride(Boolean enabled, Integer levelBonus, Integer lives, Integer lootRolls, List<String> modifiers) {
+    public record TierOverride(Boolean enabled, Integer levelBonus, Integer lives, Integer lootRolls, List<String> modifiers,
+                               Double health, Double damage) {
         public TierOverride {
             modifiers = modifiers == null ? null : List.copyOf(modifiers);
+        }
+
+        public TierOverride(Boolean enabled, Integer levelBonus, Integer lives, Integer lootRolls, List<String> modifiers) {
+            this(enabled, levelBonus, lives, lootRolls, modifiers, null, null);
         }
     }
 }

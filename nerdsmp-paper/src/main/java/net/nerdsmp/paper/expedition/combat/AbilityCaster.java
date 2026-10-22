@@ -81,6 +81,7 @@ public final class AbilityCaster {
             case "barrage" -> barrage(caster, arena, targets);
             case "mend" -> mend(caster, arena);
             case "web" -> web(caster, arena, targets);
+            case "wrath" -> wrath(caster, arena, power);
             default -> false;
         };
     }
@@ -134,6 +135,25 @@ public final class AbilityCaster {
             for (Player player : arena.targets(caster, 6.5)) {
                 hit(player, caster, 8 * power);
                 player.setVelocity(player.getVelocity().setY(.7));
+            }
+        });
+        return true;
+    }
+
+    /** A wide ring, then a blast that throws everyone inside outward. Stand at the edge, with your back to safe ground. */
+    private boolean wrath(LivingEntity caster, Arena arena, double power) {
+        hold(caster, 40);
+        Location center = caster.getLocation();
+        caster.getWorld().playSound(center, Sound.ENTITY_BLAZE_AMBIENT, 1.4F, .5F);
+        repeat(caster, arena, 8, 5, tick -> Telegraph.ring(center, 9, Telegraph.DANGER), () -> {
+            caster.getWorld().spawnParticle(Particle.FLAME, center.clone().add(0, 1, 0), 120, 4, .6, 4, .15);
+            caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 1);
+            caster.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.4F, .5F);
+            for (Player player : arena.targets(caster, 9.5)) {
+                hit(player, caster, 6 * power);
+                var push = player.getLocation().toVector().subtract(center.toVector()).setY(0);
+                if (push.lengthSquared() < .01) push = new org.bukkit.util.Vector(1, 0, 0);
+                player.setVelocity(push.normalize().multiply(1.6).setY(.55));
             }
         });
         return true;

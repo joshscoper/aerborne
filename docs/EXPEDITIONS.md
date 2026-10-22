@@ -146,7 +146,7 @@ and other members need only be allowed into the expedition itself.
 | `sunken_aqueduct` | Flooded waterworks, level 16, timed (10 min, +2 min per room) | 1–5 | Sluice Hall (waves + three valves in the shown order, which drain the channel) → Cistern (survive 50 s, geysers) → Floodgate Control (clear + two counterweight plates) → Pumphouse Stove → Tidewarden's Basin (The Tidewarden: tether, frost nova; below 50% meteor, summon, geysers) |
 | `gloomforge_mines` | Deep mines, level 20, rooms | 1–5 | Ore Galleries (waves + three alarm targets in 25 s) → Grell's Shaft (Overseer Grell) → Blasting Hall (the Blastmaster + two ore-cart plates, blasting charges) → Slag Pits (the Slag Hound, rockfall) → Miners' Rest → Foreman's Delve (The Deep Foreman: slam, summon; below 50% meteor, charge, collapsing pillars) |
 | `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | From the concourse, three wings in any order: Ember Antechamber (four brazier targets) → Ember Throne; Frost Antechamber (four chimes in the shown order) → Frost Hall; Stone Antechamber (three plates) → Stone Court |
-| `cinder_keep` | Nether (basalt deltas), level 20 | 2–5 | Gatehouse (2 waves) → Blaze Forge (survive 60 s) → Throne of Embers (Keeper of Embers, adds at 75%/40%) |
+| `cinder_keep` | **Raid**: Nether (basalt deltas), level 26 | 2–8 | Scorched Descent (clear) → Gorrak's Kiln (Gorrak the Kilnbreaker; opens the Cinder Shelf) → Slagfalls (3 waves, falling slag) → Hound Pens (Skarn and Vesh, linked) → Rune Galleries (clear + three rune valves) → Slag Chapel (Vael, the Slag Priest) → Great Bellows (survive 75 s, vents) → Steward's Hall (Steward Ashkar and his guard; raises the causeway) → Molten Heart (Pyrrhax, the Ashen Sovereign) |
 
 **The campaign path.** Each campaign expedition opens once you've cleared the one before it
 (`requires:`): the Hollow Barrow, then Thornwood Canopy, the Sunken Aqueduct, Gloomforge Mines and
@@ -154,9 +154,8 @@ the Hall of the Three Wardens. In a party, every member must have cleared the ea
 `nerdsmp.progression.bypass` skip the check, and the board shows "Clear … first" on locked cards.
 
 Ratings: First Flight 1, Hollow Barrow 2, Thornwood Canopy 3, Sunken Aqueduct 3, Gloomforge Mines 4,
-Hall of the Three Wardens 4, Cinder Keep 3. All ship guides. Their bosses
-are tuned down from the authored mobs: the Hollow Huntsman to 60% damage and 85% health, and the
-Keeper of Embers to 70% damage. An unarmoured player now survives a Huntsman hit, measured at 9–11
+Hall of the Three Wardens 4, Cinder Keep 5. All ship guides. The Hollow Huntsman is tuned down from
+the authored mob to 60% damage and 85% health. An unarmoured player now survives a Huntsman hit, measured at 9–11
 damage instead of a one-shot.
 
 A server that already installed an earlier sample file gets the current one on the next start, but
@@ -172,7 +171,39 @@ ships no world files. The first time a sample is edited or run, the build is gen
 plan, and the template is stamped with the plan's fingerprint (`nerdsmp-plan.txt`). When an update
 changes the plan, the next edit or run rebuilds the template from the new one. To build on a sample
 by hand, delete its `sample:` line first: templates without it are never rebuilt. Cinder Keep is sealed by the sample season until the
-**Ember Gate** milestone.
+**Ember Gate** milestone, and also needs a clear of the Hall of the Three Wardens.
+
+## Raids
+
+A raid is an expedition file with `raid: true`: parties of up to eight, no hired allies, and loot
+paid per boss. **Cinder Keep** is the first: nine volcanic caverns under the keep with five boss
+fights, ending at Pyrrhax, the Ashen Sovereign, in the Molten Heart.
+
+- **Tiers.** Normal is tuned for pickup groups (15 lives). Heroic (10 lives, ×1.9 health, ×1.4
+  damage) and Mythic (6 lives, ×3.0 health, ×1.8 damage, Fortified and Tyrannical) are for organised
+  raids. They're set with `tiers:` overrides, which now accept `health-multiplier` and
+  `damage-multiplier`. Keystones never roll raids.
+- **Boss loot and weekly lockouts.** A room with its own `loot:` pays it to everyone present when it
+  clears. In a raid each boss room, and the finish, pays each player once per tier per week; after
+  that they can still help, and are told the loot is spent. Lockouts reset on Monday (UTC) with the
+  keystone affixes, and live in `expedition-raid-lockouts.yml`. The board's tier cards show
+  "Looted this week: n/6".
+- **Unlocks.** `unlocks: [nether]` on a room records the unlock for everyone present when it clears
+  (`expedition-records.yml`). Gorrak's Kiln has it: beating Gorrak on any tier opens the Nether's
+  **Cinder Shelf** route (`/expedition routes`) to that player, even before the season unlocks it
+  for everyone. Vanilla portals stay sealed.
+- **Linked councils.** `link-seconds: 10` on a council: when one member falls, the rest must follow
+  within that time or it rises again at full health (a `revive` script trigger fires). Skarn and
+  Vesh use it.
+- **Submerging bosses.** A phase with `submerge-seconds: 30` makes the boss sink out of reach:
+  untouchable, unseen and silent until the time is up or its adds are dead. Pyrrhax submerges at
+  66% and 33% and sends his Sons of Flame.
+- **Wrath** joins the ability kit: a wide ring, then a blast that throws everyone inside outward.
+- Encounter magma cubes no longer split and encounter piglins and hoglins no longer convert, and
+  claim protection no longer shields expedition enemies that count as animals (hoglins).
+
+When Cinder Keep's sample file changes, a server whose copy is unedited gets the raid on the next
+start; its template rebuilds from the new plan (`CinderKeepTemplate`).
 
 ## Building an expedition (staff)
 
@@ -303,7 +334,11 @@ rooms:
       abilities: [cleave, slam]                # boss abilities from the kit
       phases:                                  # switch abilities below a health %
         - {at: 50, abilities: [meteor, summon], title: The council rages}
+        - {at: 25, abilities: [meteor], title: Sinking, submerge-seconds: 20}   # vanish until adds die or time is up
       enrage-seconds: 240                      # bosses hit 50% harder and move faster after this
+      link-seconds: 10                         # council: a fallen member rises unless the rest fall in time
+    loot: {marks: 120, items: {gold_ingot: 6}} # paid when this room clears (raids: once a week)
+    unlocks: [nether]                          # recorded for everyone present (opens the Cinder Shelf)
 ```
 
 The **goal** decides when a run is won:
@@ -352,6 +387,7 @@ Ability damage is dealt as the caster, so tier, modifier and `boss-damage` multi
 | `barrage` | A volley of arrows at random players | 10 s |
 | `mend` | Heals itself and wounded allies by 15%; burst damage during the channel interrupts it | 16 s |
 | `web` | Pins a player in a cobweb | 12 s |
+| `wrath` | A ring 9 blocks wide, then a blast that throws everyone inside outward | 20 s |
 
 Expedition creatures ship in the plugin as `content/expedition-mobs.yml`, so updates bring new ones.
 An entry with the same id in `content/mobs.yml` overrides the shipped one. Mob entries accept

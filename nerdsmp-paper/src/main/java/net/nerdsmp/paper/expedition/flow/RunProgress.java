@@ -11,6 +11,7 @@ import net.nerdsmp.paper.expedition.content.Tier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -58,6 +59,8 @@ public final class RunProgress {
         record TimeBonus(int seconds) implements Effect { }
         /** A lit campfire became the respawn point. */
         record Campfire(String campfire) implements Effect { }
+        /** A linked council member's partners didn't fall in time, so it rises again at full health. */
+        record ReviveBoss(String room, int index) implements Effect { }
     }
 
     /** Sidebar line: an objective with its state and indent depth. */
@@ -94,6 +97,8 @@ public final class RunProgress {
     private boolean encounterDone;
     private boolean enraged;
     private final Set<Integer> bossesAlive = new TreeSet<>();
+    /** Linked council members that have fallen, and when; they rise again unless the rest follow in time. */
+    private final Map<Integer, Long> fallen = new java.util.HashMap<>();
     private int bossesDown;
     private final Set<String> solved = new LinkedHashSet<>();
     private final Set<String> fired = new HashSet<>();
@@ -201,6 +206,7 @@ public final class RunProgress {
         encounterDone = false;
         enraged = false;
         bossesAlive.clear();
+        fallen.clear();
         bossesDown = 0;
         thresholdsPassed = 0;
         phasesPassed = 0;
@@ -265,6 +271,15 @@ public final class RunProgress {
             released = true;
         }
         if (encounterDone) return effects; // Waiting on puzzles.
+        if (encounter.type() == EncounterType.COUNCIL && encounter.linkSeconds() > 0 && !bossesAlive.isEmpty())
+            for (var entry : List.copyOf(fallen.entrySet())) {
+                if (now - entry.getValue() < encounter.linkSeconds() * 1000L) continue;
+                fallen.remove(entry.getKey());
+                bossesAlive.add(entry.getKey());
+                bossesDown--;
+                effects.add(new Effect.ReviveBoss(room.id(), entry.getKey()));
+                effects.add(new Effect.Script(room.id(), "revive"));
+            }
         switch (encounter.type()) {
             case WAVES -> {
                 if (!released && alive == 0 && pendingWave < 0 && waveIndex >= 0) {
@@ -323,9 +338,11 @@ public final class RunProgress {
         if (phase != Phase.ACTIVE || room == null || !bossSpawned || !bossesAlive.remove(index)) return effects;
         bossesDown++;
         if (!bossesAlive.isEmpty()) {
+            if (room.encounter().linkSeconds() > 0) fallen.put(index, now);
             effects.add(new Effect.Script(room.id(), "down-" + bossesDown));
             return effects;
         }
+        fallen.clear();
         if (room.encounter().type() == EncounterType.COUNCIL) effects.add(new Effect.Script(room.id(), "down-" + bossesDown));
         finishEncounter(effects, now, true);
         return effects;
@@ -452,6 +469,7 @@ public final class RunProgress {
         pendingWave = -1;
         bossSpawned = false;
         bossesAlive.clear();
+        fallen.clear();
         solved.clear();
         encounterDone = false;
     }

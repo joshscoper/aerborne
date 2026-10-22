@@ -20,7 +20,7 @@ public final class SampleTemplates {
         "sunken_aqueduct", AqueductTemplate::build,
         "gloomforge_mines", MinesTemplate::build,
         "hall_of_wardens", WardensTemplate::build,
-        "cinder_keep", SampleTemplates::cinderKeep);
+        "cinder_keep", CinderKeepTemplate::build);
     private static final Map<String, BuildCanvas.Plan> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
 
     private SampleTemplates() { }
@@ -38,42 +38,6 @@ public final class SampleTemplates {
         new Material[]{Material.STONE_BRICKS, Material.MOSSY_STONE_BRICKS, Material.CRACKED_STONE_BRICKS, Material.STONE_BRICKS},
         new Material[]{Material.DEEPSLATE_BRICKS, Material.CRACKED_DEEPSLATE_BRICKS, Material.DEEPSLATE_BRICKS, Material.DEEPSLATE_TILES},
         Material.POLISHED_DEEPSLATE, "", Material.DEEPSLATE_TILES, Material.SOUL_LANTERN, "hanging=true");
-
-    static final Palette KEEP = new Palette(
-        new Material[]{Material.NETHER_BRICKS, Material.RED_NETHER_BRICKS, Material.CRACKED_NETHER_BRICKS, Material.NETHER_BRICKS},
-        new Material[]{Material.POLISHED_BLACKSTONE_BRICKS, Material.CRACKED_POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE},
-        Material.BASALT, "axis=y", Material.BLACKSTONE, Material.LANTERN, "hanging=true");
-
-    static BuildCanvas.Plan cinderKeep() {
-        BuildCanvas b = new BuildCanvas();
-        // Ashen approach (spawn), Gatehouse, Blaze Forge, Throne of Embers.
-        hall(b, -5, 5, 0, 10, 69, KEEP);
-        hall(b, -7, 7, 12, 30, 70, KEEP);
-        hall(b, -9, 9, 32, 54, 75, KEEP);
-        hall(b, -11, 11, 56, 84, 74, KEEP);
-        doorway(b, 11, null, Material.CHISELED_POLISHED_BLACKSTONE);
-        doorway(b, 31, Material.IRON_BARS, Material.CHISELED_POLISHED_BLACKSTONE);
-        doorway(b, 55, Material.IRON_BARS, Material.CHISELED_POLISHED_BLACKSTONE);
-        // Braziers: netherrack under eternal fire, fenced in nether brick.
-        for (int[] brazier : new int[][]{{-3, 3}, {3, 3}, {-5, 16}, {5, 16}, {-5, 26}, {5, 26}, {-7, 36}, {7, 36}, {-7, 50}, {7, 50},
-            {-9, 60}, {9, 60}, {-9, 80}, {9, 80}}) brazier(b, brazier[0], brazier[1]);
-        // Magma seams along the gatehouse and forge walls: warm underfoot unless you sneak.
-        for (int z = 13; z <= 29; z++) for (int x : new int[]{-7, 7}) b.block(x, 63, z, Material.MAGMA_BLOCK);
-        for (int z = 33; z <= 53; z++) for (int x : new int[]{-9, 9}) b.block(x, 63, z, Material.MAGMA_BLOCK);
-        // Forge anvils of blackstone and the bellows of crying obsidian.
-        for (int[] anvil : new int[][]{{-4, 40}, {4, 40}, {-4, 47}, {4, 47}}) {
-            b.box(anvil[0] - 1, 64, anvil[1], anvil[0] + 1, 64, anvil[1] + 1, Material.POLISHED_BLACKSTONE);
-            b.block(anvil[0], 65, anvil[1], Material.CRYING_OBSIDIAN);
-        }
-        for (int z = 34; z <= 52; z += 6) for (int x : new int[]{-5, 5}) b.block(x, 75, z, Material.SHROOMLIGHT);
-        // Throne: a gilded dais the Keeper guards.
-        b.box(-5, 64, 75, 5, 64, 81, Material.POLISHED_BLACKSTONE_BRICKS);
-        b.box(-2, 65, 79, 2, 65, 81, Material.GILDED_BLACKSTONE);
-        for (int x = -5; x <= 5; x++) b.block(x, 64, 74, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=south,half=bottom,shape=straight");
-        for (int z = 60; z <= 80; z += 10) for (int x : new int[]{-6, 0, 6}) b.block(x, 74, z, Material.SHROOMLIGHT);
-        b.box(-1, 63, 82, 1, 63, 83, Material.CRYING_OBSIDIAN);
-        return b.freeze();
-    }
 
     /** An enclosed hall: interior X/Z inclusive, walking space from Y64 up to {@code top}. */
     static void hall(BuildCanvas b, int x1, int x2, int z1, int z2, int top, Palette p) {
@@ -101,11 +65,6 @@ public final class SampleTemplates {
 
     static void candles(BuildCanvas b, int[][] spots) {
         for (int[] spot : spots) b.block(spot[0], 64, spot[1], Material.CANDLE, "candles=3,lit=true");
-    }
-
-    static void brazier(BuildCanvas b, int x, int z) {
-        b.block(x, 64, z, Material.NETHERRACK);
-        b.block(x, 65, z, Material.FIRE);
     }
 
     private static Material pick(Material[] options, int x, int z, int salt) {

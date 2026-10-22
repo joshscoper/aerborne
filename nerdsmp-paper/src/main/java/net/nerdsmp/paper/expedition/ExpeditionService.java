@@ -14,6 +14,7 @@ import net.nerdsmp.paper.expedition.content.PartyScaling;
 import net.nerdsmp.paper.expedition.content.Tier;
 import net.nerdsmp.paper.expedition.flow.ExpeditionRecords;
 import net.nerdsmp.paper.expedition.flow.KeystoneStore;
+import net.nerdsmp.paper.expedition.flow.RaidLockouts;
 import net.nerdsmp.paper.expedition.flow.Matchmaker;
 import net.nerdsmp.paper.expedition.flow.ReadyCheck;
 import net.nerdsmp.paper.presentation.Chat;
@@ -86,6 +87,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     private final InstanceWorlds worlds;
     private final ExpeditionRecords records;
     private final KeystoneStore keystones;
+    private final RaidLockouts lockouts;
     /** Accounts whose key is in a ready check or a live run, so one key can't run twice. */
     private final Set<String> keysInUse = new HashSet<>();
     /** Ready checks that start a keystone, by check id. */
@@ -128,6 +130,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         this.worlds = new InstanceWorlds(plugin);
         this.records = new ExpeditionRecords(new File(plugin.getDataFolder(), "expedition-records.yml"));
         this.keystones = new KeystoneStore(new File(plugin.getDataFolder(), "expedition-keystones.yml"));
+        this.lockouts = new RaidLockouts(new File(plugin.getDataFolder(), "expedition-raid-lockouts.yml"), raidWeek());
         this.returns = new ReturnStore(new File(plugin.getDataFolder(), "expedition-returns.yml"), plugin.getLogger());
         installSamples();
         worlds.cleanupLeftovers();
@@ -153,7 +156,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         "hall_of_wardens", Set.of(),
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0"),
-        "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1"));
+        "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
+            "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e"));
 
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
@@ -260,6 +264,37 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     public InstanceWorlds worlds() { return worlds; }
     ExpeditionRecords records() { return records; }
     public KeystoneStore keystones() { return keystones; }
+    public RaidLockouts lockouts() { return lockouts; }
+
+    /** Raid lockouts and keystone affixes reset together, every Monday (UTC). */
+    public long raidWeek() { return Keystone.week(LocalDate.now(ZoneOffset.UTC)); }
+
+    /** Whether this player cleared a room that unlocks {@code key} (such as the Nether's Cinder Shelf route). */
+    public boolean raidUnlocked(Player player, String key) {
+        return plugin.sessions().account(player.getUniqueId()).map(account -> records.unlocked(account.toString(), key)).orElse(false);
+    }
+
+    /** A room cleared in a real run: its unlocks and its own loot. */
+    void roomCleared(ExpeditionRun run, ExpeditionDefinition.Room room) {
+        for (String key : room.unlocks()) unlock(run, key);
+        run.payRoom(room);
+    }
+
+    /** A room unlocked something for everyone present; tells those it's new for. */
+    void unlock(ExpeditionRun run, String key) {
+        for (UUID member : run.progress.present()) {
+            Player player = Bukkit.getPlayer(member);
+            Optional<AccountId> account = plugin.sessions().account(member);
+            if (player == null || account.isEmpty() || !records.unlock(account.get().toString(), key)) continue;
+            if (key.equals("nether")) {
+                player.showTitle(net.kyori.adventure.title.Title.title(Chat.render("<red><bold>The Nether opens</bold></red>"),
+                    Chat.render("<gray>The Cinder Shelf route is open to you</gray>")));
+                Chat.success(player, "<red>The Nether is open to you.</red> Travel to the Cinder Shelf for quartz, gold and glowstone with "
+                    + Chat.command("expedition routes") + ".");
+                player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_TRIGGER, .7F, 1.2F);
+            }
+        }
+    }
     ReturnStore returns() { return returns; }
     Duration rejoinWindow() { return rejoinWindow; }
     Duration lingerAfterFinish() { return linger; }
@@ -926,6 +961,12 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     private ExpeditionRun runIn(World world) { return world == null ? null : runByWorld.get(world.getUID()); }
 
+    /** An expedition enemy: a run fights it, so claim protection leaves its hoglins and golems alone. */
+    public boolean enemy(Entity entity) {
+        ExpeditionRun run = runIn(entity.getWorld());
+        return run != null && entity instanceof LivingEntity living && run.tracks(living);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         if (!event.hasChangedBlock()) return;
@@ -1161,6 +1202,17 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (run == null || !run.isNpc(event.getRightClicked())) return;
         event.setCancelled(true); // No trading with a dungeon guide.
         if (event.getHand() == org.bukkit.inventory.EquipmentSlot.HAND) run.talk(event.getPlayer(), event.getRightClicked());
+    }
+
+    /** Encounter magma cubes don't split and encounter piglins and hoglins don't turn: every enemy is one the run counts. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSplit(org.bukkit.event.entity.SlimeSplitEvent event) {
+        if (runIn(event.getEntity().getWorld()) != null) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+        if (runIn(event.getEntity().getWorld()) != null) event.setCancelled(true);
     }
 
     /** Falling rocks from a hazard never become blocks. */

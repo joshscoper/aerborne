@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 23
+LATEST = 24
 C = "static:img/companions/"
 
 
@@ -68,6 +68,8 @@ def apply(conn):
         _rev22(conn)
     if current < 23:
         _rev23(conn)
+    if current < 24:
+        _rev24(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -161,6 +163,37 @@ def _rev23(conn):
         conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
     region = conn.execute("SELECT * FROM regions WHERE slug = 'expeditions'").fetchone()
     if region and region['updated_by'] == 'starter content' and (region['points_of_interest'] or '') == REV20_EXPEDITIONS_POI:
+        fresh = REGIONS['expeditions']
+        conn.execute('UPDATE regions SET points_of_interest = ?, activities = ?, updated_at = ? WHERE id = ?',
+                     (fresh['points_of_interest'], fresh['activities'], now_str(), region['id']))
+
+
+# The expeditions and parties guides and the expeditions region as revision 23 shipped them, before
+# keystones and the Cinder Keep raid.
+REV23_GUIDES = {
+    'expeditions': ('232491f023637baecaad91c555207668d8f029f015fa4ac490f13b10a96e46cf',
+                    'Form a party of up to five, clear the rooms, beat the boss and leave with loot.'),
+    'parties': ('21a199419ef97e99f9bfb02de0038b85e5bf84aaf14864561681bb4571e7b89d', None),
+}
+REV23_EXPEDITIONS_POI = ('First Flight, the tutorial across the sky islands\nThe Hollow Barrow, a crypt beneath the old hills\n'
+                         'Thornwood Canopy, treetops at night\nThe Sunken Aqueduct, flooded waterworks\n'
+                         'Gloomforge Mines, deep galleries and their foremen\nThe Hall of the Three Wardens, a citadel in the sky\n'
+                         'Cinder Keep, a fortress in the Nether')
+
+
+def _rev24(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED, REGIONS
+    for slug, (fingerprint, old_summary) in REV23_GUIDES.items():
+        guide = next(g for g in REVIEWED if g['slug'] == slug)
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
+        if not (row and row['updated_by'] == 'starter content'
+                and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == fingerprint):
+            continue
+        summary = guide['summary'] if old_summary is not None and row['summary'] == old_summary else row['summary']
+        conn.execute('UPDATE guides SET body = ?, summary = ?, updated_at = ? WHERE id = ?', (guide['body'], summary, now_str(), row['id']))
+    region = conn.execute("SELECT * FROM regions WHERE slug = 'expeditions'").fetchone()
+    if region and region['updated_by'] == 'starter content' and (region['points_of_interest'] or '') == REV23_EXPEDITIONS_POI:
         fresh = REGIONS['expeditions']
         conn.execute('UPDATE regions SET points_of_interest = ?, activities = ?, updated_at = ? WHERE id = ?',
                      (fresh['points_of_interest'], fresh['activities'], now_str(), region['id']))

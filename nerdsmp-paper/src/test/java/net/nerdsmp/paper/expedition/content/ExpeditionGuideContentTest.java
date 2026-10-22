@@ -21,9 +21,8 @@ class ExpeditionGuideContentTest {
         assertEquals(0.85, huntsman.bossHealth());
 
         ExpeditionDefinition keep = ExpeditionContentTest.sample("cinder_keep");
-        assertEquals(3, Difficulty.rating(keep));
-        assertEquals(0.7, keep.rooms().get("throne_of_embers").encounter().bossDamage());
-        assertEquals(1.0, keep.rooms().get("throne_of_embers").encounter().bossHealth(), "Unset multipliers stay as authored");
+        assertEquals(5, Difficulty.rating(keep));
+        assertEquals(1.0, keep.rooms().get("molten_heart").encounter().bossHealth(), "Unset multipliers stay as authored");
         assertEquals(keep.rooms().keySet(), keep.guide().rooms().keySet());
     }
 

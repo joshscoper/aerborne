@@ -17,6 +17,7 @@ import net.nerdsmp.paper.expedition.content.Keystone;
 import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.ScriptAction;
 import net.nerdsmp.paper.expedition.content.Tier;
+import net.nerdsmp.paper.expedition.flow.RaidLockouts;
 import net.nerdsmp.paper.expedition.flow.RunProgress;
 import net.nerdsmp.paper.expedition.flow.RunProgress.Effect;
 import net.nerdsmp.paper.presentation.Chat;
@@ -100,6 +101,9 @@ final class ExpeditionRun {
     /** True once the key's result (upgrade or deplete) has been written. */
     boolean keySettled;
     private final Set<UUID> raging = new HashSet<>();
+    /** While the room's boss is submerged: when it surfaces again (-1 when it isn't). */
+    private long surfaceAt = -1;
+    private long submergedAt;
 
     /** An encounter mob with abilities: its role, what it can cast, and when each is ready again. */
     private static final class Caster {
@@ -267,6 +271,8 @@ final class ExpeditionRun {
         Room active = progress.activeRoom();
         int alive = active == null ? 0 : alive(active.id());
         apply(progress.tick(now, alive), now);
+        // A submerged boss surfaces when its time is up, or once its adds are dead.
+        if (surfaceAt > 0 && (now >= surfaceAt || alive == 0 && now - submergedAt > 3_000)) surface();
         stage.tick(now);
         puzzles.tick(now);
         if (!bosses.isEmpty() && state == State.ACTIVE) {
@@ -417,7 +423,10 @@ final class ExpeditionRun {
                 Player player = Bukkit.getPlayer(member);
                 if (player != null) plugin.campaign().recordBoss(player, mobId, expedition.id());
             }
-            if (!bosses.isEmpty()) broadcast("<gold>" + plainName(entity) + " falls!</gold> <gray>" + bosses.size() + " remain.</gray>");
+            int link = progress.activeRoom() == null ? 0 : progress.activeRoom().encounter().linkSeconds();
+            if (!bosses.isEmpty() && link > 0) broadcast("<gold>" + plainName(entity) + " falls!</gold> <yellow>Their bond holds: bring down the rest within "
+                + link + " seconds or it rises again.</yellow>");
+            else if (!bosses.isEmpty()) broadcast("<gold>" + plainName(entity) + " falls!</gold> <gray>" + bosses.size() + " remain.</gray>");
             apply(progress.bossDefeated(bossSlot, now), now);
             return;
         }
@@ -496,10 +505,15 @@ final class ExpeditionRun {
             }
             case Effect.SpawnWave wave -> spawnWave(wave.room(), wave.wave());
             case Effect.SpawnBoss spawn -> spawnBoss(spawn.room(), spawn.index());
+            case Effect.ReviveBoss revive -> {
+                spawnBoss(revive.room(), revive.index());
+                broadcast("<red>Too slow!</red> <gray>A fallen foe answers its partner's call and rises again.</gray>");
+            }
             case Effect.Script script -> runScript(script.room(), expedition.rooms().get(script.room()).encounter().script(script.trigger()), 0);
             case Effect.OpenGate open -> gate(open.room(), true);
             case Effect.DespawnRoom despawn -> despawn(despawn.room());
             case Effect.ResetRoom reset -> {
+                surfaceAt = -1;
                 despawn(reset.room());
                 puzzles.reset(expedition.rooms().get(reset.room()));
                 stage.stopHazards();
@@ -510,10 +524,12 @@ final class ExpeditionRun {
             case Effect.Checkpoint checkpoint -> broadcast("<aqua>Checkpoint reached.</aqua> <gray>The party will regroup here.</gray>");
             case Effect.ClearRoom clear -> {
                 Room room = expedition.rooms().get(clear.room());
+                surfaceAt = -1;
                 if (room.encounter().type() != ExpeditionDefinition.EncounterType.NONE) {
                     broadcast("<green>✔ " + Chat.escape(room.title()) + " cleared.</green>");
                     for (Player player : online()) player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, .5F, 1.4F);
                 }
+                if (!test) service.roomCleared(this, room);
             }
             case Effect.Lives lives -> {
                 Player died = Bukkit.getPlayer(lives.died());
@@ -574,24 +590,19 @@ final class ExpeditionRun {
             Optional<AccountId> account = plugin.sessions().account(member);
             if (player == null || account.isEmpty()) continue;
             party.put(account.get().toString(), player.getName());
-            List<ItemStack> rewards = new ArrayList<>();
-            var loot = expedition.loot();
-            for (int roll = 0; roll < rolls && loot.profile() != null; roll++) rewards.addAll(plugin.rewardDrops().rollProfile(loot.profile()));
-            loot.items().forEach((item, amount) -> rewards.add(item(item, amount)));
-            List<ItemStack> overflow = new ArrayList<>(player.getInventory().addItem(rewards.toArray(ItemStack[]::new)).values());
-            if (!overflow.isEmpty()) {
-                pendingLoot.put(member, overflow);
-                Chat.notice(player, "Your bags are full. The rest of your loot waits until you leave the expedition.");
-            }
-            long marks = Math.round(loot.marks() * tier.marks());
-            if (marks > 0 && !test) plugin.economy().credit(account.get(), marks,
-                new EconomyService.TransactionReason("expedition.reward", expedition.id() + ":" + tier.id()), "expedition:" + id + ":" + account.get());
             if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), key != null ? "mythic" : tier.id());
             player.showTitle(Title.title(Chat.render("<gold><bold>Expedition complete</bold></gold>"),
                 Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
-            Chat.success(player, "Loot: <white>" + rewards.stream().mapToInt(ItemStack::getAmount).sum() + " items</white>"
-                + (marks > 0 ? " and " + Chat.marks(marks) : "") + (underPar ? " <yellow>(+1 timed roll)</yellow>" : "") + ".");
+            // A raid's finish pays once per tier per week, like its bosses.
+            if (expedition.story().raid() && !test
+                && !service.lockouts().claim(account.get().toString(), expedition.id(), tier.id(), RaidLockouts.FINISH, service.raidWeek())) {
+                Chat.notice(player, "You've already claimed this raid's finishing reward on " + Chat.escape(tier.title()) + " this week. It resets on Monday.");
+                continue;
+            }
+            Reward reward = pay(player, account.get(), expedition.loot(), rolls, "complete");
+            Chat.success(player, "Loot: <white>" + reward.items() + " items</white>"
+                + (reward.marks() > 0 ? " and " + Chat.marks(reward.marks()) : "") + (underPar ? " <yellow>(+1 timed roll)</yellow>" : "") + ".");
         }
         boolean record = key == null && !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
         if (key != null && !test) service.settleKey(this, keyClock(now), party);
@@ -602,6 +613,42 @@ final class ExpeditionRun {
             + Chat.duration(service.lingerAfterFinish()) + ".</gray>");
         if (test) broadcast("<yellow>Test run: no Marks, records or campaign progress were awarded.</yellow>");
         else if (assisted()) broadcast("<gray>Allies helped with this run, so it doesn't count toward the campaign or the expedition records.</gray>");
+    }
+
+    private record Reward(int items, long marks) { }
+
+    /** Gives one player a loot table: profile rolls, fixed items and Marks. Overflow waits until they leave. */
+    private Reward pay(Player player, AccountId account, ExpeditionDefinition.Loot loot, int rolls, String slot) {
+        List<ItemStack> rewards = new ArrayList<>();
+        for (int roll = 0; roll < rolls && loot.profile() != null; roll++) rewards.addAll(plugin.rewardDrops().rollProfile(loot.profile()));
+        loot.items().forEach((item, amount) -> rewards.add(item(item, amount)));
+        List<ItemStack> overflow = new ArrayList<>(player.getInventory().addItem(rewards.toArray(ItemStack[]::new)).values());
+        if (!overflow.isEmpty()) {
+            pendingLoot.computeIfAbsent(player.getUniqueId(), uuid -> new ArrayList<>()).addAll(overflow);
+            Chat.notice(player, "Your bags are full. The rest of your loot waits until you leave the expedition.");
+        }
+        long marks = Math.round(loot.marks() * tier.marks());
+        if (marks > 0 && !test) plugin.economy().credit(account, marks,
+            new EconomyService.TransactionReason("expedition.reward", expedition.id() + ":" + tier.id()), "expedition:" + id + ":" + slot + ":" + account);
+        return new Reward(rewards.stream().mapToInt(ItemStack::getAmount).sum(), marks);
+    }
+
+    /** A room's own loot (a raid boss's), once per player per tier per week on raids. */
+    void payRoom(Room room) {
+        var loot = room.loot();
+        if (loot.profile() == null && loot.items().isEmpty() && loot.marks() == 0) return;
+        for (UUID member : progress.present()) {
+            Player player = Bukkit.getPlayer(member);
+            Optional<AccountId> account = plugin.sessions().account(member);
+            if (player == null || account.isEmpty()) continue;
+            if (expedition.story().raid() && !service.lockouts().claim(account.get().toString(), expedition.id(), tier.id(), room.id(), service.raidWeek())) {
+                Chat.notice(player, "You've already looted " + Chat.escape(room.title()) + " on " + Chat.escape(tier.title()) + " this week.");
+                continue;
+            }
+            Reward reward = pay(player, account.get(), loot, 1, room.id());
+            Chat.success(player, "<gold>" + Chat.escape(room.title()) + "</gold> spoils: <white>" + reward.items() + " items</white>"
+                + (reward.marks() > 0 ? " and " + Chat.marks(reward.marks()) : "") + ".");
+        }
     }
 
     List<ItemStack> takePendingLoot(UUID member) {
@@ -680,6 +727,7 @@ final class ExpeditionRun {
             }
         }
         String title = definition.title() == null ? "Phase " + (phase + 1) : definition.title();
+        if (definition.submergeSeconds() > 0) submerge(definition.submergeSeconds());
         for (Player player : online()) {
             player.showTitle(Title.title(Component.empty(), Chat.render("<dark_red>" + title + "</dark_red>"),
                 Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))));
@@ -687,6 +735,42 @@ final class ExpeditionRun {
         }
         if (!abilities.isEmpty()) broadcast("<red>" + Chat.escape(title) + ":</red> <gray>" + String.join(", ",
             abilities.stream().map(id -> Abilities.info(id).map(Abilities.Info::title).orElse(id)).toList()) + "</gray>");
+    }
+
+    /** The boss withdraws, untouchable and unseen, while its adds fight; see {@link #surface()}. */
+    private void submerge(int seconds) {
+        long now = System.currentTimeMillis();
+        submergedAt = now;
+        surfaceAt = now + seconds * 1000L;
+        for (UUID uuid : bosses.keySet()) {
+            if (!(Bukkit.getEntity(uuid) instanceof LivingEntity boss)) continue;
+            world.spawnParticle(Particle.LAVA, boss.getLocation(), 40, 1, .5, 1, 0);
+            world.playSound(boss.getLocation(), Sound.BLOCK_LAVA_EXTINGUISH, 1.2F, .6F);
+            boss.setInvulnerable(true);
+            boss.setInvisible(true);
+            if (boss instanceof Mob mob) mob.setAware(false);
+            Caster caster = casters.get(uuid);
+            if (caster != null) caster.nextCast = surfaceAt + 2_000;
+        }
+        if (bossBar != null) bossBar.color(BossBar.Color.PURPLE);
+        broadcast("<dark_red>The boss sinks out of reach!</dark_red> <gray>Hold out, and kill what it leaves behind to bring it back sooner.</gray>");
+    }
+
+    private void surface() {
+        surfaceAt = -1;
+        for (UUID uuid : bosses.keySet()) {
+            if (!(Bukkit.getEntity(uuid) instanceof LivingEntity boss)) continue;
+            boss.setInvulnerable(false);
+            boss.setInvisible(false);
+            if (boss instanceof Mob mob) mob.setAware(true);
+            world.spawnParticle(Particle.LAVA, boss.getLocation(), 60, 1.2, .8, 1.2, 0);
+            world.spawnParticle(Particle.EXPLOSION, boss.getLocation(), 2, .6, .4, .6, 0);
+            world.playSound(boss.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.3F, .5F);
+            Caster caster = casters.get(uuid);
+            if (caster != null) caster.nextCast = System.currentTimeMillis() + 2_000;
+        }
+        if (bossBar != null) bossBar.color(BossBar.Color.RED);
+        broadcast("<red><bold>It rises again!</bold></red>");
     }
 
     private Component displayName(LivingEntity entity) {

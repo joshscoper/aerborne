@@ -144,6 +144,17 @@ public final class ExpeditionMenu implements Listener {
             var modifiers = service.modifiers(definition, tier);
             for (Modifier modifier : modifiers) lore.add("<light_purple>" + modifier.title() + ":</light_purple> <gray>" + modifier.description() + "</gray>");
             if (cleared) lore.add("<green>✔ You've cleared this.</green>");
+            if (definition.story().raid()) {
+                // Each boss with loot, plus the finish, pays once per tier per week.
+                List<String> slots = new ArrayList<>();
+                for (var room : definition.roomList())
+                    if (room.loot().profile() != null || !room.loot().items().isEmpty() || room.loot().marks() > 0) slots.add(room.id());
+                slots.add(net.nerdsmp.paper.expedition.flow.RaidLockouts.FINISH);
+                String account = plugin.sessions().account(player.getUniqueId()).map(Object::toString).orElse("");
+                var claimed = service.lockouts().claimed(account, definition.id(), tier.id(), service.raidWeek());
+                long looted = slots.stream().filter(claimed::contains).count();
+                lore.add("<gold>Looted this week:</gold> <white>" + looted + "/" + slots.size() + "</white> <dark_gray>(resets Monday)</dark_gray>");
+            }
             int waiting = service.waiting(definition.id(), tier.id());
             if (waiting > 0) lore.add("<aqua>" + waiting + " waiting in the finder</aqua>");
             lore.add("");

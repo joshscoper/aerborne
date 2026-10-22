@@ -141,6 +141,25 @@ public final class ExpeditionValidator {
             }
             if (encounter.enrageSeconds() != 0 && (encounter.enrageSeconds() < 30 || encounter.enrageSeconds() > 1800))
                 error(issues, name + " enrage-seconds must be 30-1800.", "rooms." + room.id() + ".encounter.enrage-seconds");
+            if (encounter.linkSeconds() != 0) {
+                if (encounter.type() != EncounterType.COUNCIL)
+                    warn(issues, name + " sets link-seconds but isn't a council; it has no effect.", "rooms." + room.id() + ".encounter.link-seconds");
+                if (encounter.linkSeconds() < 3 || encounter.linkSeconds() > 60)
+                    error(issues, name + " link-seconds must be 3-60.", "rooms." + room.id() + ".encounter.link-seconds");
+            }
+            for (var phase : encounter.phases())
+                if (phase.submergeSeconds() < 0 || phase.submergeSeconds() > 120)
+                    error(issues, name + " phase at " + phase.atHealth() + "% submerge-seconds must be 0-120.", "rooms." + room.id() + ".encounter.phases");
+            for (String unlock : room.unlocks())
+                if (!Room.UNLOCKS.contains(unlock))
+                    error(issues, name + " unlocks unknown '" + unlock + "'.", "Use one of: " + String.join(", ", Room.UNLOCKS));
+            room.loot().items().forEach((item, amount) -> {
+                if (!catalog.item(item) && !catalog.material(item)) error(issues, name + " has unknown loot item '" + item + "'.", "rooms." + room.id() + ".loot.items");
+                if (amount < 1 || amount > 64) error(issues, name + " loot item '" + item + "' amount must be 1-64.", "rooms." + room.id() + ".loot.items");
+            });
+            if (room.loot().profile() != null && !catalog.lootProfile(room.loot().profile()))
+                error(issues, name + " loot profile '" + room.loot().profile() + "' does not exist.", "/mobloot create " + room.loot().profile());
+            if (room.loot().marks() < 0 || room.loot().marks() > 10_000) error(issues, name + " loot Marks must be 0-10000.", "rooms." + room.id() + ".loot.marks");
             switch (encounter.type()) {
                 case WAVES, CLEAR -> { if (encounter.waves().isEmpty()) error(issues, name + " is a wave room without waves.", "/expedition wave " + room.id() + " <mob> [count]"); }
                 case PUZZLE -> { if (room.puzzles().isEmpty()) error(issues, name + " is a puzzle room without puzzles.", "rooms." + room.id() + ".puzzles"); }
@@ -185,7 +204,7 @@ public final class ExpeditionValidator {
             }
             for (var script : encounter.scripts().entrySet()) {
                 if (!ScriptAction.TRIGGER.matcher(script.getKey()).matches())
-                    error(issues, name + " has an unknown script trigger '" + script.getKey() + "'.", "Use start, clear, enrage, wave-N, health-N, timer-N, down-N or solved-<puzzle>");
+                    error(issues, name + " has an unknown script trigger '" + script.getKey() + "'.", "Use start, clear, enrage, revive, wave-N, health-N, timer-N, down-N or solved-<puzzle>");
                 if (script.getKey().startsWith("health-") && !room.bossRoom())
                     warn(issues, name + " uses '" + script.getKey() + "' but has no boss.", "Use it in a boss room");
                 if (script.getKey().startsWith("down-") && encounter.type() != EncounterType.COUNCIL)

@@ -18,6 +18,17 @@ final class SampleKit {
         return (h & 0x7fffffff) / (double) Integer.MAX_VALUE;
     }
 
+    /** Smooth value noise in [0, 1): {@link #noise} on a grid of {@code cell}-block squares, blended between corners. */
+    static double smooth(int x, int z, int cell, int salt) {
+        int gx = Math.floorDiv(x, cell), gz = Math.floorDiv(z, cell);
+        double fx = (x - gx * cell) / (double) cell, fz = (z - gz * cell) / (double) cell;
+        fx = fx * fx * (3 - 2 * fx);
+        fz = fz * fz * (3 - 2 * fz);
+        double top = noise(gx, gz, salt) * (1 - fx) + noise(gx + 1, gz, salt) * fx;
+        double bottom = noise(gx, gz + 1, salt) * (1 - fx) + noise(gx + 1, gz + 1, salt) * fx;
+        return top * (1 - fz) + bottom * fz;
+    }
+
     static Material pick(Material[] options, int x, int z, int salt) {
         return options[(int) Math.floor(noise(x, z, salt) * options.length) % options.length];
     }

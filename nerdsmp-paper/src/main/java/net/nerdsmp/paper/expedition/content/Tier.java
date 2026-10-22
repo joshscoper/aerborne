@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * A difficulty tier. Global tiers live in config.yml ({@code expeditions.tiers}); an expedition can
- * disable one or change its level, lives, loot rolls and modifiers.
+ * disable one or change its level, health, damage, lives, loot rolls and modifiers.
  */
 public record Tier(String id, String title, int levelBonus, double health, double damage, int lives, int lootRolls,
                    double marks, double campaign, String requires, List<String> modifiers) {
@@ -63,10 +63,10 @@ public record Tier(String id, String title, int levelBonus, double health, doubl
         int baseLives = expeditionLives == null ? lives : Math.max(1, Math.round(expeditionLives * (lives / 10F)));
         if (override == null) return expeditionLives == null ? this : with(levelBonus, baseLives, lootRolls, modifiers);
         if (Boolean.FALSE.equals(override.enabled())) return null;
-        return with(override.levelBonus() == null ? levelBonus : override.levelBonus(),
-            override.lives() == null ? baseLives : override.lives(),
-            override.lootRolls() == null ? lootRolls : override.lootRolls(),
-            override.modifiers() == null ? modifiers : override.modifiers());
+        return new Tier(id, title, override.levelBonus() == null ? levelBonus : override.levelBonus(),
+            override.health() == null ? health : override.health(), override.damage() == null ? damage : override.damage(),
+            override.lives() == null ? baseLives : override.lives(), override.lootRolls() == null ? lootRolls : override.lootRolls(),
+            marks, campaign, requires, override.modifiers() == null ? modifiers : override.modifiers());
     }
 
     private Tier with(int level, int livesValue, int rolls, List<String> mods) {

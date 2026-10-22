@@ -618,7 +618,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
                 || expeditionRoutes != null && expeditionRoutes.mayHarvest(event),
             event -> zoneSpawner != null && zoneSpawner.zoneId(event.getEntity()).isPresent()
                 && event.getDamageSource().getCausingEntity() instanceof org.bukkit.entity.Player attacker
-                && zoneSpawner.canFight(attacker,event.getEntity())), this);
+                && zoneSpawner.canFight(attacker,event.getEntity())
+                || expeditions() != null && expeditions().enemy(event.getEntity())), this);
         plugins.registerEvents(skillListener, this);
         plugins.registerEvents(new net.nerdsmp.paper.gathering.LivestockService(this), this);
         plugins.registerEvents(hoeHarvest, this);

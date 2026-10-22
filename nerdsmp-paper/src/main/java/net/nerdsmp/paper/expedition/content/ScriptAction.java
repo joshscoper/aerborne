@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public record ScriptAction(Verb verb, List<String> args, String text) {
     /** Triggers an encounter can attach actions to. */
     public static final Pattern TRIGGER = Pattern.compile(
-        "start|clear|enrage|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
+        "start|clear|enrage|revive|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
 
     public ScriptAction {
         args = List.copyOf(args);

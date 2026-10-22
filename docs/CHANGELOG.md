@@ -5,6 +5,20 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Cinder Keep becomes the first raid (October 21)
+- **Cinder Keep** is remodelled into a raid for up to eight players: nine volcanic caverns under the
+  keep with lava channels, lavafalls, a rune lake and a lava-ringed final arena. Five boss fights:
+  Gorrak the Kilnbreaker, the linked hounds Skarn and Vesh, Vael the Slag Priest, Steward Ashkar and
+  his guard, and Pyrrhax, the Ashen Sovereign, who submerges twice and calls his Sons of Flame.
+- Normal is tuned for pickup groups; Heroic and Mythic are for organised raids. Each boss, and the
+  finish, pays its loot once per tier per week; lockouts reset on Monday.
+- Beating Gorrak on any tier opens the Nether's Cinder Shelf route to everyone who was there.
+- Expedition files gain room `loot:` and `unlocks:`, linked councils (`link-seconds`), submerging
+  boss phases (`submerge-seconds`), tier `health-multiplier`/`damage-multiplier` overrides and the
+  Wrath ability.
+- Hoglins in expeditions can be hurt again (claim protection treated them as livestock), and
+  encounter magma cubes no longer split.
+
 ### Mythic keystones (October 21)
 - Clearing any campaign expedition on Mythic earns a **keystone**: a personal key to a random
   campaign expedition at +2. The keyholder starts it for their party with `/expedition key start` or

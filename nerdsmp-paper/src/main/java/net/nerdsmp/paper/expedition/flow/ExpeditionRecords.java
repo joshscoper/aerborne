@@ -63,6 +63,20 @@ public final class ExpeditionRecords {
         return totals;
     }
 
+    /** Records an unlock (such as the Nether) for a player; true when it is new. */
+    public synchronized boolean unlock(String account, String key) {
+        List<String> unlocks = new java.util.ArrayList<>(yaml.getStringList("unlocks." + account));
+        if (unlocks.contains(key)) return false;
+        unlocks.add(key);
+        yaml.set("unlocks." + account, unlocks);
+        save();
+        return true;
+    }
+
+    public synchronized boolean unlocked(String account, String key) {
+        return yaml.getStringList("unlocks." + account).contains(key);
+    }
+
     private static String personal(String account, String expedition, String tier) {
         return "players." + account + "." + expedition + "." + tier;
     }

@@ -98,6 +98,39 @@ class RunObjectivesTest {
         assertEquals(1, of(last, Effect.Complete.class).size());
     }
 
+    @Test void aLinkedCouncilMemberRisesAgainUnlessTheRestFallInTime() {
+        YamlConfiguration yaml = base();
+        room(yaml, "den", 10);
+        yaml.set("rooms.den.encounter.bosses", List.of("custom:a", "custom:b"));
+        yaml.set("rooms.den.encounter.link-seconds", 10);
+        yaml.set("rooms.den.encounter.phases", List.of(Map.of("at", 40, "abilities", List.of("slam"), "submerge-seconds", 20)));
+        RunProgress run = start(yaml);
+        assertEquals(10, run.expedition().rooms().get("den").encounter().linkSeconds());
+        assertEquals(20, run.expedition().rooms().get("den").encounter().phases().getFirst().submergeSeconds());
+        run.enter("den", 0);
+        run.bossDefeated(0, 1_000);
+        assertTrue(of(run.tick(10_000, 0), Effect.ReviveBoss.class).isEmpty(), "Still inside the window");
+        List<Effect> late = run.tick(11_500, 0);
+        assertEquals(List.of(new Effect.ReviveBoss("den", 0)), of(late, Effect.ReviveBoss.class));
+        assertTrue(late.contains(new Effect.Script("den", "revive")));
+        assertTrue(run.objectives(12_000).getFirst().text().endsWith("0/2 down"));
+        // Together within the window: the room clears and nothing rises.
+        run.bossDefeated(1, 20_000);
+        List<Effect> both = run.bossDefeated(0, 25_000);
+        assertEquals(1, of(both, Effect.Complete.class).size());
+        assertTrue(of(run.tick(40_000, 0), Effect.ReviveBoss.class).isEmpty());
+    }
+
+    @Test void anUnlinkedCouncilNeverRevives() {
+        YamlConfiguration yaml = base();
+        room(yaml, "den", 10);
+        yaml.set("rooms.den.encounter.bosses", List.of("custom:a", "custom:b"));
+        RunProgress run = start(yaml);
+        run.enter("den", 0);
+        run.bossDefeated(0, 1_000);
+        assertTrue(of(run.tick(120_000, 0), Effect.ReviveBoss.class).isEmpty());
+    }
+
     @Test void bossPhasesFireOnceInOrderAndEnrageFollowsTheTimer() {
         YamlConfiguration yaml = base();
         room(yaml, "throne", 10);

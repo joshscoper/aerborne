@@ -69,6 +69,7 @@ final class PublicGameJson {
             entry.addProperty("level", definition.level());
             entry.addProperty("minParty", definition.minParty());
             entry.addProperty("maxParty", definition.maxParty());
+            entry.addProperty("raid", definition.story().raid());
             entry.addProperty("rooms", definition.rooms().size());
             entry.addProperty("bosses", definition.rooms().values().stream()
                 .filter(room -> room.encounter().type() == ExpeditionDefinition.EncounterType.BOSS).count());

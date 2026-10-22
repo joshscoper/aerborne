@@ -51,7 +51,9 @@ public final class ExpeditionLoader {
                 tier.contains("level-bonus") ? integer(tier, "level-bonus") : null,
                 tier.contains("lives") ? integer(tier, "lives") : null,
                 tier.contains("loot-rolls") ? integer(tier, "loot-rolls") : null,
-                tier.contains("modifiers") ? lower(tier.getStringList("modifiers")) : null));
+                tier.contains("modifiers") ? lower(tier.getStringList("modifiers")) : null,
+                tier.contains("health-multiplier") ? tier.getDouble("health-multiplier") : null,
+                tier.contains("damage-multiplier") ? tier.getDouble("damage-multiplier") : null));
         }
         return new ExpeditionDefinition(id,
             yaml.getString("title", titleCase(id)),
@@ -228,7 +230,9 @@ public final class ExpeditionLoader {
             if (map == null || !(map.get("at") instanceof Number at) || at.intValue() < 1 || at.intValue() > 99)
                 throw new IllegalArgumentException(where + ": a phase is {at: <health %>, abilities: [...], title: ...}.");
             List<String> abilities = map.get("abilities") instanceof List<?> list ? list.stream().map(String::valueOf).map(text -> text.toLowerCase(Locale.ROOT)).toList() : List.of();
-            phases.add(new ExpeditionDefinition.Phase(at.intValue(), abilities, map.get("title") == null ? null : String.valueOf(map.get("title"))));
+            int submerge = map.get("submerge-seconds") instanceof Number seconds ? seconds.intValue() : 0;
+            phases.add(new ExpeditionDefinition.Phase(at.intValue(), abilities, map.get("title") == null ? null : String.valueOf(map.get("title")),
+                submerge));
         }
         phases.sort(java.util.Comparator.comparingInt(ExpeditionDefinition.Phase::atHealth).reversed());
         return phases;
@@ -244,7 +248,8 @@ public final class ExpeditionLoader {
         List<String> requires = room.contains("requires") ? lower(room.getStringList("requires")) : null;
         return new Room(id, room.getString("title", titleCase(id)), box(room, "region", path), point(room, "checkpoint"),
             box(room, "gate", path), points, encounter == null ? Encounter.NONE : encounter(encounter, path + ".encounter"),
-            requires, room.getBoolean("optional", false), puzzles(room, path));
+            requires, room.getBoolean("optional", false), puzzles(room, path), loot(room.getConfigurationSection("loot")),
+            lower(room.getStringList("unlocks")));
     }
 
     private static Encounter encounter(ConfigurationSection section, String path) {
@@ -289,7 +294,8 @@ public final class ExpeditionLoader {
             section.contains("survive-seconds") ? integer(section, "survive-seconds") : 60, thresholds, scripts,
             multiplier(section, "boss-damage", path), multiplier(section, "boss-health", path), bosses,
             lower(section.getStringList("abilities")), phases(section, path),
-            section.contains("enrage-seconds") ? integer(section, "enrage-seconds") : 0);
+            section.contains("enrage-seconds") ? integer(section, "enrage-seconds") : 0,
+            section.contains("link-seconds") ? integer(section, "link-seconds") : 0);
     }
 
     @SuppressWarnings("unchecked")

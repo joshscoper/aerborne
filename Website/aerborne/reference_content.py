@@ -589,16 +589,16 @@ If the leader leaves, the party passes to the member who has been there longest.
 Your party stays together when people log out, and through server restarts. If the leader is offline for a minute, the next online member takes over. A member who is offline for 15 minutes leaves the party. When you log back in, you're told which party you're in and about any invites waiting for you.
 
 ## Run expeditions together
-A party holds up to **five** players, which is also the largest expedition group. The leader starts a run with `/expedition start <expedition>` or from the `/expedition` menu. Everyone online gets a ready check. Click **[Ready]** or type `/expedition ready`, and the run starts once everyone has accepted. Offline members stay behind.
+A party holds up to **eight** players. Expeditions take up to five; [raids](/guide/expeditions) take all eight. The leader starts a run with `/expedition start <expedition>` or from the `/expedition` menu. Everyone online gets a ready check. Click **[Ready]** or type `/expedition ready`, and the run starts once everyone has accepted. Offline members stay behind.
 
 Short of players? The leader can use `/expedition queue <expedition>` instead, and the finder fills the empty places with other queued players. See the [expedition guide](/guide/expeditions).
 
 Party membership does not grant building, storage or visitor access to another player's island. For a shared home, use the separate [co-op system](/guide/island-coop).
 """, 'world', 'Expeditions | /guide/expeditions\nCo-op permissions | /guide/island-coop'),
     _guide('expeditions', 'Expeditions: party adventures',
-           'Form a party of up to five, clear the rooms, beat the boss and leave with loot.', """
+           'Form a party, clear the rooms, beat the boss and leave with loot. Raids take up to eight.', """
 ## What an expedition is
-An expedition is a short adventure for **one to five players** in a private instance: your party gets its own copy of the map, so nobody else's fight gets in your way. Each run is a set of rooms. Enter a room to start it. Clear its waves, survive its timer, solve its puzzle or defeat its boss to open the way forward. Some maps branch, so you choose the order. Win, collect your loot and walk into the exit light.
+An expedition is a short adventure for **one to five players** (a raid takes up to eight) in a private instance: your party gets its own copy of the map, so nobody else's fight gets in your way. Each run is a set of rooms. Enter a room to start it. Clear its waves, survive its timer, solve its puzzle or defeat its boss to open the way forward. Some maps branch, so you choose the order. Win, collect your loot and walk into the exit light.
 
 New to expeditions? Start with **First Flight**, a gentle tour across the sky islands with Captain Wren. It's marked *Start here* on the board.
 
@@ -644,7 +644,17 @@ Each expedition opens once you've cleared the one before it: **The Hollow Barrow
 | **Heroic** | Stronger enemies, 6 lives, two loot rolls. Clear Normal first. |
 | **Mythic** | Much stronger enemies, 3 lives, three loot rolls and extra modifiers. Clear Heroic first. |
 
-Modifiers add twists: **Fortified** (tougher regular enemies), **Tyrannical** (tougher bosses), **Bolstering** (enemies grow stronger when allies fall), **Volatile** (enemies burst after dying) and **Timed** (finish under par for an extra loot roll). The board shows which apply before you start.
+Modifiers add twists: **Fortified** (tougher regular enemies), **Tyrannical** (tougher bosses), **Bolstering** (enemies grow stronger when allies fall), **Volatile** (enemies burst after dying), **Raging** (wounded enemies hit harder), **Sanguine** (fallen enemies leave healing pools) and **Timed** (finish under par for an extra loot roll). The board shows which apply before you start.
+
+## Mythic keystones
+Your first Mythic clear of a campaign expedition earns a **keystone**: a key to a random campaign expedition at +2. Start it with your party using `/expedition key start` or the keystone card on the board. Each level makes enemies 8% tougher, and weekly affixes join at +4, +7 and +10. A key run has no lives: each death adds 10 seconds to the clock instead. Beat the timer and the key goes up one to three levels and moves to a new expedition; finish late or fail and it drops a level. `/expedition key` shows your key and this week's affixes, and each expedition's page shows the highest timed key.
+
+## Raids
+A raid is a bigger, harder expedition for **up to eight players**, with no hired allies. The first is **Cinder Keep**: nine volcanic caverns under the keep and five boss fights, ending at Pyrrhax, the Ashen Sovereign. Normal is tuned for pickup groups; Heroic and Mythic are for organised raids.
+
+- **Weekly loot.** Each boss, and the finish, pays its loot once per difficulty each week. You can keep helping after that; the lockouts reset every Monday. The board's difficulty cards show how much you've looted this week.
+- **The Nether.** Defeating the first boss, Gorrak the Kilnbreaker, on any difficulty opens the Nether's **Cinder Shelf** route to you (`/expedition routes`).
+- **Know the fights.** Skarn and Vesh must die within ten seconds of each other. Turn the three rune valves to bring out the Steward. Pyrrhax's Wrath throws you outward, so keep your back to solid rock, not the lava.
 
 ## Rewards
 Every player gets their own loot when the final boss falls. Items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
@@ -814,8 +824,8 @@ The artwork illustrates the intended Arcane City. It is not an in-game screensho
     'expeditions': dict(name='Expeditions', theme='Party adventures', availability='released',
         summary='Short adventures for a party of up to five in a private instance: rooms, bosses, loot, and the way into the Nether and the End.',
         requirements='Open /expedition in game. Some expeditions open only when the season campaign reaches a milestone.',
-        activities='Clear rooms of waves and survive timed holds\nSolve lever, chime, plate, target and jump puzzles\nDefeat bosses with telegraphed attacks and claim your own loot\nTry Heroic and Mythic for bigger rewards\nQueue alone and let the finder fill your group',
-        points_of_interest='First Flight, the tutorial across the sky islands\nThe Hollow Barrow, a crypt beneath the old hills\nThornwood Canopy, treetops at night\nThe Sunken Aqueduct, flooded waterworks\nGloomforge Mines, deep galleries and their foremen\nThe Hall of the Three Wardens, a citadel in the sky\nCinder Keep, a fortress in the Nether',
+        activities='Clear rooms of waves and survive timed holds\nSolve lever, chime, plate, target and jump puzzles\nDefeat bosses with telegraphed attacks and claim your own loot\nTry Heroic and Mythic for bigger rewards, then push Mythic keystones\nRaid Cinder Keep with up to eight players\nQueue alone and let the finder fill your group',
+        points_of_interest='First Flight, the tutorial across the sky islands\nThe Hollow Barrow, a crypt beneath the old hills\nThornwood Canopy, treetops at night\nThe Sunken Aqueduct, flooded waterworks\nGloomforge Mines, deep galleries and their foremen\nThe Hall of the Three Wardens, a citadel in the sky\nCinder Keep, a raid for up to eight in the Nether',
         body='''## Your party, your instance
 Every run is a private copy of the map, built for your group alone. Gather a [party](/guide/parties) of up to five, start from `/expedition`, and answer the ready check. Or queue alone and the finder fills the empty places.
 
