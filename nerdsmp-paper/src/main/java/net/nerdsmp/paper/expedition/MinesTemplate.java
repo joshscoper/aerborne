@@ -96,6 +96,7 @@ final class MinesTemplate {
 
     /** Three alarm posts: a target on a deepslate post with the alarm bell hung beside it. */
     private static void galleries(BuildCanvas b) {
+        b.block(3, 64, 16, Material.BARREL, "facing=up"); // Supply crate: a bow and arrows.
         for (int[] alarm : new int[][]{{-6, 19}, {5, 29}, {-6, 35}}) {
             b.block(alarm[0], 64, alarm[1], Material.POLISHED_DEEPSLATE);
             b.block(alarm[0], 65, alarm[1], Material.DEEPSLATE_BRICK_WALL);
@@ -122,6 +123,7 @@ final class MinesTemplate {
 
     /** Ore carts on two weighted plates; crates of blasting powder along the walls. */
     private static void blastingHall(BuildCanvas b) {
+        b.block(-3, 64, 63, Material.BARREL, "facing=up"); // Supply crate: counterweights for the carts.
         for (int[] plate : new int[][]{{-6, 66}, {6, 66}}) {
             b.block(plate[0], 64, plate[1], Material.LIGHT_WEIGHTED_PRESSURE_PLATE, "power=0");
             for (int dz = 1; dz <= 4; dz++) b.block(plate[0], 64, plate[1] + dz, Material.RAIL, "shape=north_south");

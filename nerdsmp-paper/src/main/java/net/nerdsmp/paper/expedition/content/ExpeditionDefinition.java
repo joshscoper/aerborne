@@ -145,15 +145,21 @@ public record ExpeditionDefinition(
      * {@code order} (mistakes reset; {@code show} flashes the order first). {@code PLATES}: hold every
      * pressure plate down at once. {@code REACH}: get someone into {@code area}; anyone falling below
      * {@code failBelowY} is put back at {@code start} without losing a life. {@code TARGETS}: hit every
-     * target block within {@code seconds}.
+     * target block within {@code seconds}. A target or plate puzzle can name a {@code supply} crate
+     * that hands out what it needs (a bow and arrows, or counterweights).
      */
     public enum PuzzleType { LEVERS, SEQUENCE, PLATES, REACH, TARGETS }
 
     public record Puzzle(String id, PuzzleType type, String title, List<Point> blocks, List<Integer> order, boolean show,
-                         Box area, Point start, Integer failBelowY, int seconds) {
+                         Box area, Point start, Integer failBelowY, int seconds, Point supply) {
         public Puzzle {
             blocks = List.copyOf(blocks);
             order = List.copyOf(order);
+        }
+
+        public Puzzle(String id, PuzzleType type, String title, List<Point> blocks, List<Integer> order, boolean show,
+                      Box area, Point start, Integer failBelowY, int seconds) {
+            this(id, type, title, blocks, order, show, area, start, failBelowY, seconds, null);
         }
 
         /** Block indexes in the order they must be used. */

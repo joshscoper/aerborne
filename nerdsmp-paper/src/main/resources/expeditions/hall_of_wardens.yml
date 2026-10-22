@@ -26,7 +26,7 @@ npcs:
       - "Three wardens hold the archive's seals. Break all three and the archive opens. The order is yours."
       - "West burns: light the four braziers with arrows, all within half a minute."
       - "East sings: ring the four chimes in the order the frost shows you."
-      - "South holds: the old plates want weight. Anything you throw will do."
+      - "South holds: the old plates want weight. Take counterweights from the crate, or throw anything you like."
       - "Each warden was a keeper once. Don't let that make you gentle."
 
 campfires:
@@ -62,6 +62,7 @@ rooms:
         type: targets
         title: Light the four braziers with arrows
         blocks: [[-33, 65, -4], [-33, 65, 4], [-23, 65, -4], [-23, 65, 4]]
+        supply: [-28, 64, -6]
         seconds: 30
     encounter:
       type: waves
@@ -142,6 +143,7 @@ rooms:
         type: plates
         title: Weigh down the three old plates
         blocks: [[-4, 65, 26], [4, 65, 26], [0, 65, 31]]
+        supply: [4, 64, 23]
     encounter:
       type: waves
       waves:
@@ -172,9 +174,9 @@ rooms:
 guide:
   overview: A floating citadel with three wings. Each wing has a puzzle antechamber and a warden. Defeat all three wardens, in any order, then step into the light at the centre of the concourse.
   tips:
-    - Bring a bow. The ember braziers need four arrows within thirty seconds.
+    - The ember antechamber's supply crate hands out a bow and arrows. The braziers need four arrows within thirty seconds.
     - Watch the frost pillars when you enter the east wing; they flash the chime order. A wrong chime resets it.
-    - Throw items onto the stone plates; one item each keeps them down.
+    - Throw counterweights from the crate (or any items) onto the stone plates; one each keeps them down.
     - Every warden gets harder below half health and calls helpers at 60%. Rest at the concourse fire between wings.
   rooms:
     ember_antechamber: Two blazes while you shoot four targets on the brazier pedestals.

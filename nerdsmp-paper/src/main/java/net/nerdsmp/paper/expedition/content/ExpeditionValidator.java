@@ -269,6 +269,10 @@ public final class ExpeditionValidator {
                 }
             }
             if (puzzle.seconds() < 0 || puzzle.seconds() > 300) error(issues, label + " seconds must be 0-300.", "seconds:");
+            if (puzzle.supply() != null && !room.region().contains(puzzle.supply()))
+                error(issues, label + "'s supply crate is outside the room.", "rooms." + room.id() + ".puzzles." + puzzle.id() + ".supply");
+            if ((puzzle.type() == ExpeditionDefinition.PuzzleType.TARGETS || puzzle.type() == ExpeditionDefinition.PuzzleType.PLATES) && puzzle.supply() == null)
+                warn(issues, label + " needs items (arrows or something to throw) but has no supply crate.", "supply: [x, y, z] (a barrel players right-click)");
         }
     }
 

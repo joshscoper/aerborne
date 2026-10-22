@@ -205,7 +205,7 @@ public final class ExpeditionLoader {
             puzzles.put(entry.getKey(), new ExpeditionDefinition.Puzzle(entry.getKey(), type, puzzle.getString("title", defaultPuzzleTitle(type, blocks.size())),
                 blocks, order, puzzle.getBoolean("show", false), box(puzzle, "area", where), point(puzzle, "start"),
                 puzzle.contains("fail-below") ? integer(puzzle, "fail-below") : null,
-                puzzle.contains("seconds") ? integer(puzzle, "seconds") : 0));
+                puzzle.contains("seconds") ? integer(puzzle, "seconds") : 0, point(puzzle, "supply")));
         }
         return puzzles;
     }

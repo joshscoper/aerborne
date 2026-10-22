@@ -151,9 +151,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
         "first_flight", Set.of(),
         "thornwood_canopy", Set.of(),
-        "sunken_aqueduct", Set.of(),
-        "gloomforge_mines", Set.of(),
-        "hall_of_wardens", Set.of(),
+        "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38"),
+        "gloomforge_mines", Set.of("66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07"),
+        "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9"),
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
@@ -237,6 +237,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             @Override public boolean boss(String id) { return plugin.mobs().encounterBoss(id); }
             @Override public boolean lootProfile(String id) { return plugin.rewardDrops().profiles().find(id).isPresent(); }
             @Override public boolean item(String id) {
+                if (plugin.skillLamps() != null && plugin.skillLamps().parse(id).isPresent()) return true;
                 try { return plugin.rewardDrops().profiles().knownItems().contains(new ItemId(id)); } catch (IllegalArgumentException invalid) { return false; }
             }
             @Override public boolean effect(String key) { return registered(Registry.MOB_EFFECT, key); }
@@ -887,6 +888,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         Location home = returns.location(uuid).orElseGet(this::fallbackHome);
         teleport(player, home);
         returns.forget(uuid);
+        RunSupplies.strip(plugin, player);
         List<ItemStack> loot = run.takePendingLoot(uuid);
         if (!loot.isEmpty()) {
             player.getInventory().addItem(loot.toArray(ItemStack[]::new)).values()
@@ -1035,6 +1037,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 returns.forget(player.getUniqueId());
                 Chat.notice(player, "Your expedition ended while you were away, so you've been returned.");
             }
+            if (!InstanceWorlds.isRunWorld(player.getWorld())) RunSupplies.strip(plugin, player);
         });
     }
 
@@ -1100,6 +1103,17 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     private boolean isTemplate(World world) {
         return world != null && definitions.values().stream().anyMatch(definition -> definition.templateWorld().equals(world.getName()));
+    }
+
+    /**
+     * Expedition enemies drop no vanilla loot (no saddles, emeralds or worn gear): what they carry is
+     * the expedition's own. Runs before the reward drops, relics and purses are added at MONITOR.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onEnemyDrops(EntityDeathEvent event) {
+        ExpeditionRun run = runIn(event.getEntity().getWorld());
+        if (run == null || event.getEntity() instanceof Player || !run.tracks(event.getEntity())) return;
+        event.getDrops().clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -326,7 +326,7 @@ rooms:
       levers: {type: levers, title: Pull the three levers, blocks: [[3, 65, 40], [-3, 65, 40], [0, 65, 44]]}
       chimes: {type: sequence, blocks: [[...], [...], [...]], order: [2, 1, 3], show: true}
       plates: {type: plates, blocks: [[...], [...]]}          # all held down at once
-      targets: {type: targets, blocks: [[...], [...]], seconds: 20}
+      targets: {type: targets, blocks: [[...], [...]], seconds: 20, supply: [4, 64, 16]}   # supply: a barrel handing out the kit
       course: {type: reach, area: [x1, y1, z1, x2, y2, z2], start: [0, 64, 10], fail-below: 55}
     encounter:
       type: council       # waves | clear | survive | boss | council | puzzle
@@ -352,6 +352,15 @@ The **goal** decides when a run is won:
 
 Smaller parties meet fewer enemies (see party-size scaling), so each kill is worth correspondingly
 more toward the forces goal; a solo player can always reach it.
+
+**Supply crates.** A `targets` or `plates` puzzle should name a `supply:` barrel. Right-clicking it
+hands the player a bow and 16 arrows (targets) or four counterweights per plate (plates), unless
+they already carry some. Supplies are tagged and taken back when the player leaves the run or next
+joins outside one, so nobody fails a room for not packing the right thing. `/expedition check` warns
+about item puzzles without a crate.
+
+**Drops.** Expedition enemies drop none of their vanilla loot or worn gear (no saddles, emeralds or
+rotten flesh); only the server's reward drops, relics and purses.
 
 `/expedition check` reports rooms whose requirements can never be met, puzzle blocks outside their
 room, a forces goal without a target, and councils without enough spawn points.

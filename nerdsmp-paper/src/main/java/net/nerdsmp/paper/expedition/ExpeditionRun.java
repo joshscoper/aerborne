@@ -502,6 +502,9 @@ final class ExpeditionRun {
                 }
                 enraged = false;
                 puzzles.started(room);
+                for (var puzzle : room.puzzles().values())
+                    if (puzzle.supply() != null && !RunSupplies.kit(plugin, puzzle).isEmpty())
+                        broadcast("<aqua>Supplies:</aqua> <gray>right-click the supply crate for " + RunSupplies.describe(puzzle) + ".</gray>");
             }
             case Effect.SpawnWave wave -> spawnWave(wave.room(), wave.wave());
             case Effect.SpawnBoss spawn -> spawnBoss(spawn.room(), spawn.index());
@@ -657,6 +660,8 @@ final class ExpeditionRun {
     }
 
     private ItemStack item(String id, int amount) {
+        var lamp = plugin.skillLamps() == null ? java.util.Optional.<net.nerdsmp.paper.item.SkillLamps.Grade>empty() : plugin.skillLamps().parse(id);
+        if (lamp.isPresent()) return plugin.skillLamps().bottle(lamp.get(), amount);
         ItemStack item;
         try {
             ItemId itemId = new ItemId(id);
@@ -886,7 +891,29 @@ final class ExpeditionRun {
     /** A player right-clicked a block in the run: campfires, then puzzle blocks. */
     void interact(Player player, Block block) {
         if (state != State.ACTIVE || stage.interact(player, block)) return;
+        if (supplies(player, block)) return;
         puzzles.used(player, block);
+    }
+
+    /** A puzzle supply crate in the active room: hands out the puzzle's kit to anyone without one. */
+    boolean supplies(Player player, Block block) {
+        Room room = progress.activeRoom();
+        if (room == null) return false;
+        for (var puzzle : room.puzzles().values()) {
+            Point at = puzzle.supply();
+            if (at == null || at.x() != block.getX() || at.y() != block.getY() || at.z() != block.getZ()) continue;
+            if (RunSupplies.carries(plugin, player, puzzle)) {
+                Chat.notice(player, "You already have supplies for this. Use what you're carrying.");
+                return true;
+            }
+            var kit = RunSupplies.kit(plugin, puzzle);
+            player.getInventory().addItem(kit.toArray(ItemStack[]::new)).values()
+                .forEach(item -> world.dropItem(player.getLocation(), item));
+            player.playSound(block.getLocation(), Sound.BLOCK_BARREL_OPEN, 1F, 1.1F);
+            Chat.success(player, "The supply crate hands you " + RunSupplies.describe(puzzle) + ".");
+            return true;
+        }
+        return false;
     }
 
     void hitBlock(Block block) { if (state == State.ACTIVE) puzzles.hit(block, System.currentTimeMillis()); }

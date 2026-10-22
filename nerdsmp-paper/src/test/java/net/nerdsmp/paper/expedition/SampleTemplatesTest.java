@@ -51,6 +51,14 @@ class SampleTemplatesTest {
                 if (room.checkpoint() != null) spots.add(room.checkpoint());
                 for (var puzzle : room.puzzles().values()) {
                     if (puzzle.start() != null) spots.add(puzzle.start());
+                    if (puzzle.supply() != null) {
+                        var crate = puzzle.supply();
+                        if (blocks.get(new Cell(crate.x(), crate.y(), crate.z())) != Material.BARREL)
+                            problems.add(id + " " + room.id() + "/" + puzzle.id() + " supply crate is " + blocks.get(new Cell(crate.x(), crate.y(), crate.z())));
+                        if (!solid(blocks, crate.x(), crate.y() - 1, crate.z())) problems.add(id + " " + room.id() + "/" + puzzle.id() + " supply crate floats");
+                    }
+                    boolean needsItems = puzzle.type() == ExpeditionDefinition.PuzzleType.TARGETS || puzzle.type() == ExpeditionDefinition.PuzzleType.PLATES;
+                    if (needsItems && puzzle.supply() == null) problems.add(id + " " + room.id() + "/" + puzzle.id() + " needs items but has no supply crate");
                     for (var block : puzzle.blocks()) {
                         String material = String.valueOf(blocks.get(new Cell(block.x(), block.y(), block.z())));
                         boolean fits = switch (puzzle.type()) {

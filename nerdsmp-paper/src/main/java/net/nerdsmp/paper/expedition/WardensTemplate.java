@@ -87,6 +87,7 @@ final class WardensTemplate {
     private static void embers(BuildCanvas b) {
         island(b, -28, Y, 0, 8, 10, EMBER);
         // Four brazier pedestals with targets to light by arrow.
+        b.block(-28, Y + 1, -6, Material.BARREL, "facing=up"); // Supply crate: a bow and arrows.
         for (int[] pedestal : new int[][]{{-33, -4}, {-33, 4}, {-23, -4}, {-23, 4}}) {
             b.block(pedestal[0], Y + 1, pedestal[1], Material.POLISHED_BLACKSTONE_BRICKS);
             b.block(pedestal[0], Y + 2, pedestal[1], Material.TARGET);
@@ -122,6 +123,7 @@ final class WardensTemplate {
 
     private static void stone(BuildCanvas b) {
         island(b, 0, Y, 28, 8, 10, STONE);
+        b.block(4, Y + 1, 23, Material.BARREL, "facing=up"); // Supply crate: counterweights.
         for (int[] plate : new int[][]{{-4, 26}, {4, 26}, {0, 31}}) {
             b.box(plate[0] - 1, Y + 1, plate[1] - 1, plate[0] + 1, Y + 1, plate[1] + 1, Material.STONE_BRICKS);
             b.block(plate[0], Y + 2, plate[1], Material.HEAVY_WEIGHTED_PRESSURE_PLATE, "power=0");

@@ -158,12 +158,14 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private final java.util.ArrayDeque<java.util.UUID> contentRefreshQueue=new java.util.ArrayDeque<>();
     private org.bukkit.scheduler.BukkitTask contentRefreshTask;
     private SkillListener skillListener;
+    private net.nerdsmp.paper.item.SkillLampService skillLamps;
     private net.nerdsmp.paper.gathering.HoeHarvestService hoeHarvest;
     private net.nerdsmp.paper.gathering.OreSmeltingService oreSmelting;
     private net.nerdsmp.paper.gathering.AutoSmeltService autoSmelt;
     private net.nerdsmp.paper.loot.ExpansionLootService expansionLoot;
     private net.nerdsmp.paper.gathering.ForestryService forestry;
     public SkillListener skills() { return skillListener; }
+    public net.nerdsmp.paper.item.SkillLampService skillLamps() { return skillLamps; }
     public net.nerdsmp.paper.gathering.HoeHarvestService hoeHarvest() { return hoeHarvest; }
     public net.nerdsmp.paper.gathering.OreSmeltingService oreSmelting() { return oreSmelting; }
     public net.nerdsmp.paper.gathering.AutoSmeltService autoSmelt() { return autoSmelt; }
@@ -622,6 +624,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
                 || expeditions() != null && expeditions().enemy(event.getEntity())), this);
         plugins.registerEvents(skillListener, this);
         plugins.registerEvents(new net.nerdsmp.paper.gathering.LivestockService(this), this);
+        skillLamps = new net.nerdsmp.paper.item.SkillLampService(this);
+        plugins.registerEvents(skillLamps, this);
         plugins.registerEvents(hoeHarvest, this);
         plugins.registerEvents(oreSmelting, this);
         plugins.registerEvents(autoSmelt, this);

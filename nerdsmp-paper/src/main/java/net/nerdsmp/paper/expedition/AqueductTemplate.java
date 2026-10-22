@@ -99,6 +99,7 @@ final class AqueductTemplate {
 
     /** Two heavy plates on raised plinths: weigh them down with anything thrown. */
     private static void floodgate(BuildCanvas b) {
+        b.block(3, 64, 71, Material.BARREL, "facing=up"); // Supply crate: counterweights.
         for (int[] plate : new int[][]{{-6, 75}, {6, 75}}) {
             b.box(plate[0] - 1, 64, plate[1] - 1, plate[0] + 1, 64, plate[1] + 1, Material.POLISHED_DIORITE);
             b.block(plate[0], 65, plate[1], Material.HEAVY_WEIGHTED_PRESSURE_PLATE, "power=0");

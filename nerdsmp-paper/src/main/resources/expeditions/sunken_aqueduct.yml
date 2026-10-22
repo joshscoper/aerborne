@@ -99,6 +99,7 @@ rooms:
         type: plates
         title: Weigh down both floodgate plates
         blocks: [[-6, 65, 75], [6, 65, 75]]
+        supply: [3, 64, 71]
     encounter:
       type: clear
       waves:
@@ -140,7 +141,7 @@ guide:
   rooms:
     sluice_hall: Drowned and a Bog Oracle, then a Sluice Keeper. Turn the three valves in the order shown.
     cistern: Survive fifty seconds while geysers burst from the floor; step out of the orange rings.
-    floodgate_control: Sluice Keepers chain and freeze you. Weigh down both plates with thrown items.
+    floodgate_control: Sluice Keepers chain and freeze you. Weigh down both plates with counterweights from the supply crate.
     tidewardens_basin: The Tidewarden, a moat of water and geysers in the second half.
   boss: The Tidewarden chains players to it and freezes anyone close. At two-thirds and one-third health drowned pour in. Below half it drops a crushing wave on one player (share it with them to split the damage), calls helpers, and geysers burst from the floor.
 loot:

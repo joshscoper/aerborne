@@ -5,6 +5,15 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Fair puzzles, clean drops and skill lamps (October 22)
+- Right-clicking an **experience bottle** now opens a skill picker instead of throwing it: the bottle
+  grants that skill 10% of the XP it needs for its next level (at least 40). **Greater** (25%, at least
+  100) and **Grand** (60%, at least 250) bottles can appear in expedition loot. Shift-click spends the
+  whole stack. Dispensers still throw bottles.
+- Target and plate puzzles have a **supply crate**: right-click it for a bow and arrows or
+  counterweights. Supplies are taken back when you leave, so no room needs anything brought from home.
+- Expedition enemies no longer drop vanilla junk such as saddles, emeralds or their worn gear.
+
 ### Cinder Keep becomes the first raid (October 21)
 - **Cinder Keep** is remodelled into a raid for up to eight players: nine volcanic caverns under the
   keep with lava channels, lavafalls, a rune lake and a lava-ringed final arena. Five boss fights:

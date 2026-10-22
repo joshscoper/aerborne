@@ -62,6 +62,7 @@ rooms:
         type: targets
         title: Shoot the three alarm targets
         blocks: [[-6, 66, 19], [5, 66, 29], [-6, 66, 35]]
+        supply: [3, 64, 16]
         seconds: 25
     encounter:
       type: waves
@@ -95,6 +96,7 @@ rooms:
         type: plates
         title: Load both ore carts
         blocks: [[-6, 64, 66], [6, 64, 66]]
+        supply: [-3, 64, 63]
     encounter:
       type: waves
       waves:
@@ -142,14 +144,14 @@ rooms:
 guide:
   overview: A gauntlet through the deep galleries. Ring the alarms, then beat three mini-bosses (Overseer Grell, the Blastmaster and the Slag Hound) before the Deep Foreman.
   tips:
-    - Bring a bow and arrows. The galleries' alarm targets have to be hit within 25 seconds of the first.
+    - The supply crate by the galleries' entrance hands out a bow and arrows. The alarm targets have to be hit within 25 seconds of the first.
     - Throw anything heavy onto the Blasting Hall's two cart plates; an item on each keeps them down.
     - Each mini-boss gets the boss bar. Kill its helpers first if you're struggling.
     - In the Foreman's second half the west pillars collapse and rocks fall all through the delve. Keep moving.
   rooms:
     ore_galleries: Gloom miners and a pillager while you shoot the targets on three alarm posts.
     grells_shaft: Overseer Grell charges and cleaves. Don't get knocked into the open shaft.
-    blasting_hall: The Blastmaster fires volleys and sets the floor alight, and blasting charges go off around the hall. Load both ore carts.
+    blasting_hall: The Blastmaster fires volleys and sets the floor alight, and blasting charges go off around the hall. Load both ore carts with counterweights from the supply crate.
     slag_pits: The Slag Hound charges and leaps while rock falls from the ceiling. Stay off the glowing slag.
     foremans_delve: The Deep Foreman, his miners, and a cave-in.
   boss: The Deep Foreman slams the ground and calls his miners; at three-quarters and two-fifths health more arrive. Below half he charges, drops a crushing rock on one player (stand with them to share it), the west pillars collapse and rocks fall throughout the delve.
