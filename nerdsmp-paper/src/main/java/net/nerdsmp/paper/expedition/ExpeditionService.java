@@ -152,20 +152,27 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
-        "first_flight", Set.of("5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad"),
-        "thornwood_canopy", Set.of("363bab2993b0d86720b4348a6ba320ac75bca0b14e920a32e0bf05300692a5ba"),
+        "first_flight", Set.of("5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad",
+            "cd56c677ebc280c6fe935fa0510d8114edd81d34d4d3b1de04c682ac87fa52be"),
+        "thornwood_canopy", Set.of("363bab2993b0d86720b4348a6ba320ac75bca0b14e920a32e0bf05300692a5ba",
+            "cbd9898be9c3d1d8b04026bd9eead04f4554cde6e688dc6197868e5aec5c9e62"),
         "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38",
-            "211143e698ae6e4f09b27ce5072f2d42893f6410552911370546b4af8e551f85"),
+            "211143e698ae6e4f09b27ce5072f2d42893f6410552911370546b4af8e551f85",
+            "b88195d3d642eaad1da15d2ef31e583ee259af233ff105fd5add54565f01c1b5"),
         "gloomforge_mines", Set.of("66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07",
-            "68ecbced26e68dd599978d1b9a11bd1931208749eb5b583399a2a7720ed87781"),
+            "68ecbced26e68dd599978d1b9a11bd1931208749eb5b583399a2a7720ed87781",
+            "6d82451550d698f60690d95f326fe3b2dfa112c62dc8f9266e88b467d9ea5d13"),
         "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9",
-            "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31"),
+            "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31",
+            "434cacf4dc64073543d4cd3ee72faac553495b06ab4c423cc240669e7016c0c3"),
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
-            "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf"),
+            "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf",
+            "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
-            "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e"));
+            "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
+            "fb3085e71b27aee47b1a1788465423c60fb2a5c8fd9fdf6b73bb12c5aba18dd3"));
 
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);

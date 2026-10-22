@@ -23,7 +23,7 @@ npcs:
     lines:
       - "Three bosses ran the Gloomforge: Grell, the Blastmaster and that slag-fed hound. Now they answer to the Foreman."
       - "Ring the alarms in the galleries. Shoot the targets on the three bell posts, quick as you can."
-      - "The Blastmaster's carts need loading before the far door opens. Throw ore on the plates, or anything heavy."
+      - "The Blastmaster's carts need loading before the far door opens. There's a crate of counterweights by the door: throw them on the plates."
       - "When the Foreman's angry the whole delve shakes. Stay off the pillars."
 
 campfires:
@@ -38,17 +38,27 @@ hazards:
   pit_rockfall: {type: rocks, area: [-9, 63, 86, 9, 63, 103], every: 6, count: 3, damage: 5}
   delve_rockfall: {type: rocks, area: [-12, 63, 115, 12, 63, 132], every: 6, count: 4, damage: 6}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "Among the Foreman's papers: a contract sealed with a burning crown, signed 'Ashkar, Steward of the Sovereign'."
+  - "Old Miner Hesk: 'The Archivist up in the sky citadel will know that seal. Take it to the Hall of the Wardens.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 67, 3, 0, 5], seconds: 5, title: "<gold>Gloomforge Mines</gold>", text: "<gray>The deep galleries</gray>", sound: "block.anvil.land 0.5", lines: ["|The Gloomforge was dug for gloomsteel, the dark ore that drinks the light.", "hesk|Forty years I worked these galleries. Never dug this deep. Never wanted to."]}
+    - {at: [0.5, 68, 20, 0, 10], seconds: 5, fade: true, lines: ["hesk|The Deep Foreman took a new contract. Paid in gold, with orders to dig straight down.", "hesk|Down towards the old keep. Towards the heat."]}
+    - {at: [0.5, 70, 118, 0, 20], seconds: 4, lines: ["|At the bottom of the delve, the Foreman's lamp burns with a flame that isn't his own."]}
   foreman:
-    - {at: [0.5, 73, 116, 0, 25], seconds: 3, text: "<gold>The Foreman's Delve</gold>"}
-    - {at: [0.5, 68, 125, 0, 5], seconds: 3, text: "<dark_red>The Deep Foreman clocks in</dark_red>"}
+    - {at: [0.5, 73, 116, 0, 25], seconds: 3, text: "<gold>The Foreman's Delve</gold>", sound: "block.anvil.land 0.6", lines: ["|The picks fall silent. The pillars groan."]}
+    - {at: [0.5, 68, 125, 0, 5], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.7", lines: ["The Deep Foreman|The Steward pays in gold, and gold doesn't ask questions. Get off my site!"]}
 
 mobs:
   "custom:gloom_miner": {role: normal}
   "custom:grell_overseer": {role: miniboss, abilities: [charge, cleave]}
   "custom:blastmaster": {role: miniboss, abilities: [barrage, fire_pools]}
   "custom:slag_hound": {role: miniboss, abilities: [charge, leap]}
-  "vanilla:pillager": {role: elite, abilities: [barrage]}
+  "custom:powder_sapper": {role: elite, abilities: [barrage]}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
@@ -79,7 +89,7 @@ rooms:
       type: waves
       waves:
         - {"custom:gloom_miner": 4}
-        - {mobs: {"custom:gloom_miner": 2, "vanilla:pillager": 1}, delay-seconds: 4}
+        - {mobs: {"custom:gloom_miner": 2, "custom:powder_sapper": 1}, delay-seconds: 4}
       scripts:
         start: ["say hesk|Shoot the targets on the bell posts, all three, quick! That raises the gate."]
         solved-alarms: ["sound block.bell.use 0.8", "message <yellow>The alarm bells clang down the galleries.</yellow>"]
@@ -111,7 +121,7 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"custom:blastmaster": 1, "vanilla:pillager": 2}
+        - {"custom:blastmaster": 1, "custom:powder_sapper": 2}
       scripts:
         start: ["say The Blastmaster|Fire in the hole!", "hazard start blast_charges"]
         clear: ["hazard stop blast_charges", "say hesk|Load those carts if you haven't. The door won't budge till they're full."]
@@ -143,16 +153,17 @@ rooms:
       adds-at-health: [75, 40]
       waves:
         - {"custom:gloom_miner": 3}
-        - {"vanilla:pillager": 2, "custom:gloom_miner": 1}
+        - {"custom:powder_sapper": 2, "custom:gloom_miner": 1}
       scripts:
         start:
           - "cutscene foreman"
-          - "wait 6"
+          - "wait 7"
           - "say The Deep Foreman|Shift's over when I say it's over."
         health-50: ["break west_pillars", "hazard start delve_rockfall", "say The Deep Foreman|Bring it ALL down!"]
         clear: ["hazard stop delve_rockfall", "say hesk|The Gloomforge goes quiet. First time in years. Out past the gold vein, friends."]
 
 guide:
+  lore: "Gloomsteel is the dark ore that drinks light, and the Gloomforge has mined it for generations. Old Miner Hesk worked these galleries for forty years. Then the Deep Foreman took a new contract: payment in gold from a buyer who signs with a burning crown, and orders to dig straight down towards the old keep. Overseer Grell, the Blastmaster and the slag-fed hound follow the Foreman now, and the deeper they dig, the hotter the stone runs."
   overview: A gauntlet through the deep galleries. Ring the alarms, then beat three mini-bosses (Overseer Grell, the Blastmaster and the Slag Hound) before the Deep Foreman.
   tips:
     - The supply crate by the galleries' entrance hands out a bow and arrows. The alarm targets have to be hit within 25 seconds of the first.

@@ -40,6 +40,14 @@ class ExpeditionLootTest(unittest.TestCase):
             gameapi.clear_cache()
             self.assertNotIn("Expedition loot", self.client.get("/expeditions/hollow_barrow").get_data(as_text=True))
 
+    def test_the_expedition_page_tells_the_story(self):
+        data = copy.deepcopy(EXPEDITIONS)
+        data["expeditions"][0]["guide"]["lore"] = "The Huntsman held the hill road while the last carts climbed into the sky."
+        with mock.patch.object(gameapi, "_request", return_value=(data, None)):
+            html = self.client.get("/expeditions/hollow_barrow").get_data(as_text=True)
+        self.assertIn("The story", html)
+        self.assertIn("held the hill road", html)
+
     def test_new_sites_explain_loot_reward_chests_the_forge_and_skill_lamps(self):
         guide = self.client.get("/guide/expeditions").get_data(as_text=True)
         for text in ("Reward chests", "bonus chest", "/expedition forge", "supply crate", "Hidden caches"):

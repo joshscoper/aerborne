@@ -166,6 +166,7 @@ final class PublicGameJson {
         var guide = definition.guide();
         JsonObject json = new JsonObject();
         json.addProperty("overview", guide.overview());
+        if (!guide.lore().isBlank()) json.addProperty("lore", guide.lore());
         JsonArray tips = new JsonArray();
         guide.tips().stream().limit(12).forEach(tips::add);
         json.add("tips", tips);

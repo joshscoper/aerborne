@@ -165,7 +165,7 @@ public final class ExpeditionLoader {
         return new ExpeditionDefinition.Story(goal, yaml.contains("forces") ? integer(yaml, "forces") : 0,
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
-            lower(yaml.getStringList("requires")), chests, rewardChests);
+            lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"));
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {
@@ -191,9 +191,19 @@ public final class ExpeditionLoader {
         Object seconds = map.getOrDefault("seconds", 3);
         if (!(seconds instanceof Number number) || number.intValue() < 1 || number.intValue() > 20)
             throw new IllegalArgumentException(path + ".seconds: 1-20.");
+        List<String> lines = map.get("lines") instanceof List<?> list ? list.stream().map(String::valueOf).toList() : List.of();
+        List<ScriptAction> actions = new ArrayList<>();
+        if (map.get("actions") instanceof List<?> list) for (int index = 0; index < list.size(); index++) {
+            try {
+                actions.add(ScriptAction.parse(String.valueOf(list.get(index))));
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException(path + ".actions[" + (index + 1) + "]: " + invalid.getMessage());
+            }
+        }
         return new ExpeditionDefinition.Shot(((Number) at.get(0)).doubleValue(), ((Number) at.get(1)).doubleValue(), ((Number) at.get(2)).doubleValue(),
             ((Number) at.get(3)).floatValue(), ((Number) at.get(4)).floatValue(), number.intValue(),
-            map.get("text") == null ? null : String.valueOf(map.get("text")));
+            map.get("text") == null ? null : String.valueOf(map.get("text")), map.get("title") == null ? null : String.valueOf(map.get("title")),
+            lines, map.get("sound") == null ? null : String.valueOf(map.get("sound")), actions, Boolean.TRUE.equals(map.get("fade")));
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {
@@ -348,7 +358,8 @@ public final class ExpeditionLoader {
         if (roomSection != null) for (String room : roomSection.getKeys(false)) rooms.put(room, roomSection.getString(room, ""));
         List<String> tips = section.isList("tips") ? section.getStringList("tips")
             : section.contains("tips") ? List.of(section.getString("tips", "")) : List.of();
-        return new ExpeditionDefinition.Guide(section.getString("overview", "").strip(), tips, rooms, section.getString("boss", "").strip());
+        return new ExpeditionDefinition.Guide(section.getString("overview", "").strip(), tips, rooms, section.getString("boss", "").strip(),
+            section.getString("lore", "").strip());
     }
 
     private static double multiplier(ConfigurationSection section, String key, String path) {

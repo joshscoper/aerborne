@@ -466,10 +466,15 @@ setpieces:
   bridge: {box: [-1, 63, 60, 1, 63, 70], block: spruce_planks, style: rise}   # instant | rise | crumble
 hazards:
   rockfall: {type: rocks, area: [-9, 63, 78, 9, 63, 94], every: 6, count: 3, damage: 4}  # rocks | fire | eruption | gas
+intro: prologue           # a cutscene played for the party as the run starts
+outro:                    # narration lines after the win, a few seconds apart
+  - "The Old Sentinel lowers its blade and steps aside."
 cutscenes:
   boss_wakes:
-    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: <gray>Something stirs…</gray>}
-    - {at: [0.5, 67, 113, 0, 8], seconds: 3}
+    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: <gray>Something stirs…</gray>, sound: "block.stone.break 0.5",
+       lines: ["|Dust falls from its shoulders."]}
+    - {at: [0.5, 67, 113, 0, 8], seconds: 4, title: <gold>The Old Sentinel</gold>, text: <gray>Last guardian of the road</gray>,
+       fade: true, lines: ["The Old Sentinel|Who walks the Wardens' road?"], actions: ["build bridge"]}
 npcs:
   wren: {name: Captain Wren, entity: villager, at: [2, 64, 3, 90], lines: [Welcome aboard!, ...]}
 ```
@@ -481,8 +486,17 @@ npcs:
 - **Hazards** always telegraph (a disc on the floor for about 1.5 s). About half of each strike aims
   at players inside the area. `rocks` drop falling rock, `fire` leaves brief fire, `eruption`
   launches players and `gas` leaves a poison cloud. Wipes stop every hazard.
-- **Cutscenes** glide the camera between shots (eased), showing each shot's text as a subtitle.
-  Players are spectators meanwhile; anyone who logs off mid-scene gets their game mode back on join.
+- **Cutscenes** glide the camera between shots (eased). Each shot can show a `title` card and a
+  subtitle (`text`), play a `sound` (`key [pitch]`), and speak `lines` spread across its length:
+  `"Speaker|line"` (an NPC id or any name) or `"|line"` for narration. `fade: true` cuts to the shot
+  through black instead of gliding to it. `actions` are script lines run as the shot starts, once for
+  the party, so a scene can raise a bridge or start a hazard. Players are spectators meanwhile;
+  anyone who logs off mid-scene gets their game mode back on join. A scene can run 45 seconds.
+- **Intro and outro.** `intro:` plays a cutscene for the party as the run starts; `outro:` lines are
+  narrated after the win. `guide.lore` is the expedition's backstory: the guide book's first page
+  after the overview, and the website shows it.
+- **Boss name cards.** A boss's name appears as a title when it spawns, with the `title` from its
+  `mobs:` profile underneath, unless a cutscene is introducing it.
 - **Characters** stand where placed, can't be hurt or traded with, and play their next line when
   right-clicked. Scripts make them (or anyone) speak with `say`.
 

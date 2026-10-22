@@ -50,14 +50,24 @@ hazards:
   heart_eruptions: {type: eruption, area: [-11, 63, 142, 11, 63, 164], every: 6, count: 5, damage: 6}
   heart_rockfall: {type: rocks, area: [-12, 63, 141, 12, 63, 165], every: 7, count: 4, damage: 7}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "Pyrrhax sinks back into the molten stone, and the Heart's glow fades to a dull red."
+  - "Hesk the Forgewright: 'He's asleep, not gone. The Wardens knew that. Now so do we.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 68, -114, 0, 15], seconds: 5, title: "<red>Cinder Keep</red>", text: "<gold>The Molten Deep</gold>", sound: "block.lava.ambient", lines: ["|Beneath Cinder Keep, the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone.", "|For an age he slept. Now his Steward stokes every forge in the deep to wake him."]}
+    - {at: [0.5, 70, -96, 0, 15], seconds: 5, fade: true, lines: ["hesk|Remember me from the Gloomforge? I followed the gloomsteel down, and found worse at the bottom.", "hesk|Break Gorrak's kiln and the Cinder Shelf opens to you. Then we go deeper."]}
+    - {at: [0.5, 82, 133.5, 0, 32], seconds: 5, fade: true, lines: ["|Nine caverns lie between you and the Molten Heart. The Steward waits at the last door."]}
   kiln:
-    - {at: [0.5, 74, -70.5, 0, 28], seconds: 3, text: "<gold>Gorrak's Kiln</gold>"}
+    - {at: [0.5, 74, -70.5, 0, 28], seconds: 4, title: "<gold>Gorrak the Kilnbreaker</gold>", text: "<gray>Keeper of the Great Kiln</gray>", sound: "entity.ravager.roar 0.6", lines: ["Gorrak the Kilnbreaker|More fuel for the kiln! The Sovereign hungers!"]}
   hounds:
-    - {at: [0.5, 70, -8.5, 0, 20], seconds: 3, text: "<gray>The Hound Pens</gray>"}
+    - {at: [0.5, 70, -8.5, 0, 20], seconds: 4, title: "<gray>Skarn and Vesh</gray>", text: "<gray>The Steward's hounds</gray>", sound: "entity.hoglin.angry 0.7", lines: ["|Two shapes rise from the ash, one grey and one glowing. They move as one."]}
   heart:
-    - {at: [0.5, 82, 133.5, 0, 32], seconds: 3, text: "<red>The Molten Heart</red>"}
-    - {at: [0.5, 70, 147.5, 0, 12], seconds: 3, text: "<gold><bold>Pyrrhax rises</bold></gold>"}
+    - {at: [0.5, 82, 133.5, 0, 32], seconds: 3, title: "<red>The Molten Heart</red>", sound: "block.lava.pop", lines: ["|The causeway glows. The lava begins to churn."]}
+    - {at: [0.5, 70, 147.5, 0, 12], seconds: 4, title: "<gold><bold>Pyrrhax</bold></gold>", text: "<gray>The Ashen Sovereign</gray>", sound: "entity.blaze.death 0.4", fade: true, lines: ["Pyrrhax, the Ashen Sovereign|Who dares disturb my slumber?"]}
 
 mobs:
   "custom:flamewaker": {role: normal}
@@ -66,7 +76,7 @@ mobs:
   "custom:firesworn": {role: normal}
   "custom:ember_hound": {role: normal}
   "custom:son_of_flame": {role: elite, abilities: [slam]}
-  "vanilla:wither_skeleton": {role: normal}
+  "custom:cinder_thrall": {role: normal}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
@@ -90,7 +100,7 @@ rooms:
     encounter:
       type: clear
       waves:
-        - {"custom:flamewaker": 4, "vanilla:wither_skeleton": 2}
+        - {"custom:flamewaker": 4, "custom:cinder_thrall": 2}
         - {"custom:lava_brute": 2, "custom:sulfur_spawn": 2}
       scripts:
         start: ["say hesk|They've seen you. Flamewakers! Keep off the lava and cross at the bridges."]
@@ -118,7 +128,7 @@ rooms:
         - {"custom:ember_hound": 3}
         - {"custom:ember_hound": 2, "custom:firesworn": 2}
       scripts:
-        start: ["cutscene kiln", "wait 3", "say Gorrak the Kilnbreaker|More fuel for the kiln!", "sound entity.ravager.roar 0.6"]
+        start: ["cutscene kiln", "wait 4", "sound entity.ravager.roar 0.6"]
         health-50: ["title <red>The kiln roars|<gold>Fire spills across the floor</gold>", "hazard start kiln_fire"]
         clear: ["hazard stop kiln_fire", "say hesk|Gorrak's down! His hold on the Cinder Shelf is broken. The Nether is yours."]
   slagfalls:
@@ -159,7 +169,7 @@ rooms:
       waves:
         - {"custom:ember_hound": 3}
       scripts:
-        start: ["cutscene hounds", "wait 3", "say hesk|Split them, but keep their health even. They have to die within ten seconds of each other!"]
+        start: ["cutscene hounds", "wait 4", "say hesk|Split them, but keep their health even. They have to die within ten seconds of each other!"]
         revive: ["sound entity.hoglin.angry 0.6"]
         clear: ["say hesk|Both down. The runes are past the pens."]
   rune_galleries:
@@ -279,7 +289,7 @@ rooms:
       scripts:
         start:
           - "cutscene heart"
-          - "wait 6"
+          - "wait 7"
           - "say Pyrrhax, the Ashen Sovereign|TOO SOON! You have woken me too soon, mortals. Now you will burn!"
           - "sound entity.blaze.death 0.4"
           - "hazard start heart_rockfall"
@@ -292,6 +302,7 @@ rooms:
           - "message <green>The Heart dims to embers. Step onto the crying obsidian by the entrance to leave.</green>"
 
 guide:
+  lore: "Cinder Keep was built over the place where the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone. For an age he slept while the islands drifted above. His Steward, Ashkar, never stopped serving: he raised the Huntsman, poisoned the Heart Tree, drove the Tidewarden to drown the waterworks and paid the Deep Foreman to dig. Now every forge in the deep burns at once, and the Sovereign stirs. Hesk the Forgewright, who once mined the Gloomforge, waits at the top of the stair."
   overview: "Cinder Keep is a raid for two to eight players: five boss fights across nine caverns under the keep, ending at the Ashen Sovereign in the Molten Heart. Normal is tuned for pickup groups; Heroic and Mythic are for organised raids. Each boss pays its loot once per tier per week. Defeating Gorrak the Kilnbreaker opens the Nether's Cinder Shelf route to you."
   tips:
     - Bring fire resistance. Lava fills the channels, the moat and the falls, and many abilities set fires.

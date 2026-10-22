@@ -41,10 +41,20 @@ hazards:
   bone_rain: {type: rocks, area: [-7, 63, 37, 7, 63, 53], every: 7, count: 3, damage: 4}
   falling_masonry: {type: rocks, area: [-10, 63, 85, 10, 63, 106], every: 9, count: 3, damage: 5}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "The Huntsman's bones settle. For a moment his face is only tired."
+  - "Old Sexton Pell lays the longbow back across his chest. 'Rest now. You held the road long enough.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 67, 3, 0, 5], seconds: 5, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky.", "|They buried him here with honours, his longbow across his chest."]}
+    - {at: [0.5, 67, 18, 0, 10], seconds: 5, fade: true, lines: ["sexton|Something woke him. A voice from the deep, whispering of embers.", "sexton|Now he hunts the living, and the dead rise to follow."]}
+    - {at: [0.5, 67, 58, 0, 10], seconds: 4, lines: ["|Past the ossuary, the Lever Vault guards the King's Rest. The candles still remember the order."]}
   king_wakes:
-    - {at: [0.5, 71, 86, 0, 25], seconds: 3, text: "<gray>The King's Rest…</gray>"}
-    - {at: [0.5, 67, 95, 0, 12], seconds: 3, text: "<dark_red>The Hollow Huntsman rises</dark_red>"}
+    - {at: [0.5, 71, 86, 0, 25], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
+    - {at: [0.5, 67, 95, 0, 12], seconds: 4, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
 
 mobs:
   "custom:veil_stalker": {role: elite, abilities: [blink]}
@@ -72,8 +82,8 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"vanilla:zombie": 3, "custom:thorn_sentinel": 1}
-        - {mobs: {"custom:veil_stalker": 2, "vanilla:skeleton": 2}, delay-seconds: 3}
+        - {"custom:barrow_thrall": 3, "custom:thorn_sentinel": 1}
+        - {mobs: {"custom:veil_stalker": 2, "custom:crypt_archer": 2}, delay-seconds: 3}
       scripts:
         start: ["message <gray>Dust shivers from the niches. Something is waking.</gray>"]
         wave-2: ["say sexton|Veil Stalkers! They step through shadow. Watch your backs!"]
@@ -89,8 +99,8 @@ rooms:
       type: survive
       survive-seconds: 45
       waves:
-        - {"vanilla:zombie": 3}
-        - {mobs: {"custom:mire_weaver": 2, "vanilla:skeleton": 1}, delay-seconds: 12}
+        - {"custom:barrow_thrall": 3}
+        - {mobs: {"custom:mire_weaver": 2, "custom:crypt_archer": 1}, delay-seconds: 12}
       scripts:
         start: ["title <gold>Hold the ossuary|<gray>Survive until the bones fall still</gray>", "hazard start bone_rain"]
         timer-30: ["message <yellow>The rattling slows. Fifteen more seconds!</yellow>"]
@@ -111,7 +121,7 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"custom:barrow_warden": 1, "vanilla:skeleton": 2}
+        - {"custom:barrow_warden": 1, "custom:crypt_archer": 2}
       scripts:
         start:
           - "say The Barrow Warden|None pass the vault while I stand."
@@ -137,12 +147,12 @@ rooms:
       # Each threshold releases the next wave as adds.
       adds-at-health: [66, 33]
       waves:
-        - {"vanilla:skeleton": 3}
+        - {"custom:crypt_archer": 3}
         - {"custom:veil_stalker": 2}
       scripts:
         start:
           - "cutscene king_wakes"
-          - "wait 6"
+          - "wait 7"
           - "say The Hollow Huntsman|Who disturbs the King's rest?"
         health-50: ["say The Hollow Huntsman|The hunt is called! Bone answers bone!", "hazard start falling_masonry", "sound entity.wither_skeleton.ambient 0.6"]
         enrage: ["say The Hollow Huntsman|Enough! The King's patience ends!"]
@@ -150,6 +160,7 @@ rooms:
 
 # Shown in the guide book (/expedition guide hollow_barrow) and on the website.
 guide:
+  lore: "The Huntsman was the hero of the Sundering: when the world below burned, he held the hill road against Pyrrhax's cultists while the last carts climbed into the sky. The survivors buried him in the barrow with his longbow across his chest. Generations later a voice from deep below began whispering of embers, and the Huntsman rose hollow, hunting the living for the master he once fought. Old Sexton Pell has tended the barrow all his life. He wants the Huntsman laid to rest, not destroyed."
   overview: A crypt crawl and the first stop of the campaign. Two waves of undead, a survival hold in the ossuary under falling bones, the Barrow Warden and its lever vault, then the Hollow Huntsman in his tomb.
   tips:
     - Bring a shield and a bow. Thorn Sentinels and skeletons shoot from the back of the gallery.

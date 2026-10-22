@@ -46,6 +46,11 @@ final class ExpeditionGuideBook {
             book.gap();
             book.text("black", expedition.description());
         }
+        if (!guide.lore().isBlank()) {
+            book.newPage();
+            book.heading("The story");
+            book.text("dark_gray", guide.lore());
+        }
         if (!guide.tips().isEmpty()) {
             book.newPage();
             book.heading("Tips");

@@ -37,13 +37,23 @@ npcs:
 campfires:
   wayfarers_fire: {at: [3, 64, 68], lit: false, title: "Wayfarer's Fire"}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "The Old Sentinel lowers its blade and steps aside. The road is open."
+  - "Captain Wren grins. 'You've got sky-legs. They need help at the Hollow Barrow: start there.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 80, -12, 0, 20], seconds: 5, title: "<aqua>First Flight</aqua>", text: "<gray>The skyways of Aerborne</gray>", sound: "entity.phantom.flap 0.6", lines: ["|Long before the islands flew, the world below burned.", "|The Wardens lifted what they could save into the sky. We call it Aerborne."]}
+    - {at: [12.5, 70, 26, 90, 15], seconds: 5, fade: true, lines: ["wren|Stay on the stones and mind the gaps. The wind up here doesn't forgive."]}
+    - {at: [0.5, 78, 90, 0, 25], seconds: 5, fade: true, lines: ["|At the far end, the Old Sentinel still keeps the Wardens' road.", "wren|Show it you're worth the sky, and it'll let you pass."]}
   sentinel_wakes:
-    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: "<gray>Something stirs atop the plinth…</gray>"}
-    - {at: [0.5, 67, 113, 0, 8], seconds: 3, text: "<gold>The Old Sentinel wakes</gold>"}
+    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: "<gray>Something stirs atop the plinth…</gray>", sound: "block.stone.break 0.5", lines: ["|Dust falls from the Sentinel's shoulders."]}
+    - {at: [0.5, 67, 113, 0, 8], seconds: 4, title: "<gold>The Old Sentinel</gold>", text: "<gray>Last guardian of the Wardens' road</gray>", sound: "entity.iron_golem.repair 0.6", lines: ["The Old Sentinel|Who walks the Wardens' road? Prove your hands are steady."]}
 
 mobs:
-  "vanilla:husk":
+  "custom:gale_raider":
     role: elite
     abilities: [cleave]
     title: Drillmaster
@@ -99,8 +109,8 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"vanilla:zombie": 3}
-        - {mobs: {"vanilla:skeleton": 2, "vanilla:husk": 1}, delay-seconds: 4}
+        - {"custom:skyway_brigand": 3}
+        - {mobs: {"custom:cloudline_archer": 2, "custom:gale_raider": 1}, delay-seconds: 4}
       scripts:
         start: ["say wren|Training dummies? No, these ones bite. Clear both waves."]
         wave-2: ["say wren|See the husk? It's an elite: tougher, with an ability. Watch for the red arc in front of it and step aside."]
@@ -121,17 +131,17 @@ rooms:
         - {at: 50, abilities: [slam, summon], title: "The Sentinel calls its stone guards"}
       adds-at-health: [35]
       waves:
-        - {"vanilla:zombie": 2}
+        - {"custom:skyway_brigand": 2}
       scripts:
         start:
           - "cutscene sentinel_wakes"
-          - "wait 6"
-          - "say The Old Sentinel|Who climbs to my watch? Turn back, little sparrows."
+          - "wait 7"
           - "say wren|When the ground glows red around it, get out of the ring!"
         health-50: ["say The Old Sentinel|Guards! To me!"]
         clear: ["say wren|Well flown! Walk into the light behind the plinth to head home. Real expeditions await."]
 
 guide:
+  lore: "Aerborne was not always in the sky. When Pyrrhax, the Ashen Sovereign, set the old world burning, the three Wardens of Ember, Frost and Stone bound him beneath Cinder Keep and tore the survivors' lands free, raising them above the smoke. The Wardens' road still links the islands, kept by guardians like the Old Sentinel. Captain Wren flies new adventurers along it, so they learn the sky before it tests them."
   overview: The tutorial. A gentle run that shows how expeditions work, from jump courses and puzzles to campfires, elites and a boss. Talk to Captain Wren at the pier for tips.
   tips:
     - Your sidebar shows the clock, the party's lives and your objectives.

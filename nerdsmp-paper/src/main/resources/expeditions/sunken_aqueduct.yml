@@ -39,14 +39,24 @@ hazards:
   cistern_geysers: {type: eruption, area: [-9, 63, 44, 9, 63, 64], every: 6, count: 3, damage: 4}
   basin_geysers: {type: eruption, area: [-9, 63, 100, 9, 63, 118], every: 7, count: 3, damage: 5}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "The basin drains with a long sigh. Under the silt, the stones are scorched black."
+  - "Engineer Brann: 'Scorch marks. Under water. She wasn't mad: something is burning below. The miners at the Gloomforge will know more.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 67, 2, 0, 5], seconds: 5, title: "<aqua>The Sunken Aqueduct</aqua>", text: "<dark_aqua>Waterworks of the old keep</dark_aqua>", sound: "block.water.ambient", lines: ["|These waterworks carried cold water down to cool the forges beneath Cinder Keep.", "|Engineer Brann's guild kept them running for three hundred years."]}
+    - {at: [0.5, 68, 47, 0, 10], seconds: 5, fade: true, lines: ["brann|Then the Tidewarden sealed the floodgates and drowned the lower halls.", "brann|She says she's drowning a fire. There's no fire down here. Is there?"]}
+    - {at: [0.5, 67, 70, 0, 10], seconds: 4, lines: ["|The water is rising, and the clock with it. Every hall you clear buys a little more time."]}
   basin:
-    - {at: [0.5, 71, 99, 0, 28], seconds: 3, text: "<aqua>The Tidewarden's Basin</aqua>"}
-    - {at: [0.5, 67, 104, 0, 10], seconds: 3, text: "<dark_aqua>The water rises to meet you</dark_aqua>"}
+    - {at: [0.5, 71, 99, 0, 28], seconds: 3, text: "<aqua>The Tidewarden's Basin</aqua>", sound: "block.water.ambient", lines: ["|The water stills. Something vast moves beneath it."]}
+    - {at: [0.5, 67, 104, 0, 10], seconds: 4, title: "<dark_aqua>The Tidewarden</dark_aqua>", text: "<gray>Keeper of the floodgates, drowning a fire only she can feel</gray>", sound: "entity.elder_guardian.curse 0.8", lines: ["The Tidewarden|Open the gates and let the embers breathe? Then you drown with them!"]}
 
 mobs:
   "custom:bog_oracle": {role: elite, abilities: [mend, poison_cloud]}
-  "vanilla:drowned": {role: normal}
+  "custom:sluicehand": {role: normal}
   "custom:sluice_keeper": {role: elite, abilities: [tether, frost_nova]}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
@@ -77,8 +87,8 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"vanilla:drowned": 3, "custom:bog_oracle": 1}
-        - {mobs: {"vanilla:drowned": 2, "custom:sluice_keeper": 1}, delay-seconds: 4}
+        - {"custom:sluicehand": 3, "custom:bog_oracle": 1}
+        - {mobs: {"custom:sluicehand": 2, "custom:sluice_keeper": 1}, delay-seconds: 4}
       scripts:
         start: ["say brann|Valves are on the west wall. Watch for the lights, then turn them in that order!"]
         solved-valves: ["break sluice_water", "message <aqua>The channel drains with a roar.</aqua>"]
@@ -93,8 +103,8 @@ rooms:
       type: survive
       survive-seconds: 50
       waves:
-        - {"vanilla:drowned": 3}
-        - {mobs: {"custom:bog_oracle": 1, "vanilla:drowned": 2}, delay-seconds: 10}
+        - {"custom:sluicehand": 3}
+        - {mobs: {"custom:bog_oracle": 1, "custom:sluicehand": 2}, delay-seconds: 10}
       scripts:
         start: ["title <aqua>Hold the cistern|<gray>The pumps need fifty seconds</gray>", "hazard start cistern_geysers"]
         timer-35: ["message <yellow>Fifteen seconds! The pumps are catching!</yellow>"]
@@ -114,7 +124,7 @@ rooms:
     encounter:
       type: clear
       waves:
-        - {"custom:sluice_keeper": 2, "custom:bog_oracle": 1, "vanilla:drowned": 2}
+        - {"custom:sluice_keeper": 2, "custom:bog_oracle": 1, "custom:sluicehand": 2}
       scripts:
         start: ["say brann|Throw anything on those plates. Both of them have to stay down!"]
         clear: ["say brann|The floodgate's up! Stoke the pumphouse stove; the basin's right after."]
@@ -132,17 +142,18 @@ rooms:
       enrage-seconds: 240
       adds-at-health: [70, 35]
       waves:
-        - {"vanilla:drowned": 3}
-        - {"custom:sluice_keeper": 1, "vanilla:drowned": 2}
+        - {"custom:sluicehand": 3}
+        - {"custom:sluice_keeper": 1, "custom:sluicehand": 2}
       scripts:
         start:
           - "cutscene basin"
-          - "wait 6"
+          - "wait 7"
           - "say The Tidewarden|The water was here first. It will be here last."
         health-50: ["hazard start basin_geysers", "say The Tidewarden|Rise!"]
         clear: ["hazard stop basin_geysers", "say brann|The water's going down! Out through the back, quick."]
 
 guide:
+  lore: "The aqueduct was built to carry cold water down from the clouds to the forges beneath Cinder Keep, cooling the stone that holds Pyrrhax asleep. Engineer Brann's guild has kept it running for three centuries. When the Tidewarden, the aqueduct's ancient keeper, felt the deep stone warming, she sealed the floodgates and drowned the lower halls to smother the heat. Brann thinks she has gone mad. The truth is worse."
   overview: A timed run through flooding waterworks. You start with ten minutes and each cleared room adds two. Turn the valves, hold the cistern, weigh down the floodgates and face the Tidewarden.
   tips:
     - The clock is the danger. Don't wait for stragglers; push room to room.

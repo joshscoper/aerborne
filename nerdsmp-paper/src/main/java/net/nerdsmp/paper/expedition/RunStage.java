@@ -10,6 +10,7 @@ import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Hazard;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Npc;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.SetPiece;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Shot;
+import net.nerdsmp.paper.expedition.content.ScriptAction;
 import net.nerdsmp.paper.presentation.Chat;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -66,6 +67,8 @@ final class RunStage {
         void campfireLit(String id);
         void teleport(Player player, Location to);
         void broadcast(String markup);
+        /** Runs script actions from a cutscene shot, as the active room's script would. */
+        void perform(List<ScriptAction> actions);
     }
 
     /** Players out of combat this close to a lit campfire rest. */
@@ -460,6 +463,18 @@ final class RunStage {
     private void play(String id) {
         Cutscene cutscene = host.expedition().story().cutscenes().get(id);
         if (cutscene == null || cutscene.shots().isEmpty()) return;
+        // Once for the party: each shot's actions as it starts, and its lines spread across it.
+        int start = 0;
+        for (Shot shot : cutscene.shots()) {
+            int at = start, length = shot.seconds() * 20;
+            if (!shot.actions().isEmpty()) Bukkit.getScheduler().runTaskLater(plugin, () -> { if (host.live()) host.perform(shot.actions()); }, at);
+            for (int line = 0; line < shot.lines().size(); line++) {
+                String spoken = shot.lines().get(line);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> { if (host.live()) narrate(spoken); },
+                    at + 10L + (long) line * Math.max(20, length - 10) / shot.lines().size());
+            }
+            start += length;
+        }
         for (Player player : host.online()) {
             if (player.isDead() || inCutscene(player)) continue;
             Shot first = cutscene.shots().getFirst();
@@ -489,10 +504,9 @@ final class RunStage {
                     Shot current = cutscene.shots().get(shot);
                     int length = current.seconds() * 20;
                     if (tick[0] < elapsed + length) {
-                        if (tick[0] == elapsed && current.text() != null)
-                            player.showTitle(Title.title(net.kyori.adventure.text.Component.empty(), Chat.render(current.text()),
-                                Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(current.seconds()), Duration.ofMillis(200))));
+                        if (tick[0] == elapsed) beginShot(player, current, shot == 0);
                         Shot next = shot + 1 < cutscene.shots().size() ? cutscene.shots().get(shot + 1) : current;
+                        if (next.fade()) next = current; // A cut through black: hold this frame, then jump.
                         double t = (tick[0] - elapsed) / (double) length;
                         camera.teleport(lerp(current, next, t));
                         break;
@@ -504,6 +518,31 @@ final class RunStage {
             }, 0L, 1L);
             cameras.put(player.getUniqueId(), new CameraState(mode, from, camera.getUniqueId(), task));
         }
+    }
+
+    /** A shot begins for one viewer: its cards, its sound, and a fade through black when it cuts in. */
+    private void beginShot(Player player, Shot shot, boolean first) {
+        if (shot.text() != null || shot.title() != null)
+            player.showTitle(Title.title(shot.title() == null ? net.kyori.adventure.text.Component.empty() : Chat.render(shot.title()),
+                shot.text() == null ? net.kyori.adventure.text.Component.empty() : Chat.render(shot.text()),
+                Title.Times.times(Duration.ofMillis(first || shot.fade() ? 700 : 250), Duration.ofSeconds(Math.max(1, shot.seconds() - 1)), Duration.ofMillis(400))));
+        if (first || shot.fade()) player.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS, 22, 0, false, false, false));
+        if (shot.sound() != null) {
+            String[] parts = shot.sound().split(" ");
+            float pitch = parts.length > 1 ? Float.parseFloat(parts[1]) : 1F;
+            player.playSound(player.getLocation(), parts[0], 1F, pitch);
+        }
+    }
+
+    /** A cutscene line: a named speaker (an NPC id or any name), or plain narration when the name is empty. */
+    private void narrate(String spoken) {
+        String[] parts = spoken.split("\\|", 2);
+        String speaker = parts.length > 1 ? parts[0].strip() : "";
+        String line = parts.length > 1 ? parts[1].strip() : spoken.strip();
+        Npc npc = host.expedition().story().npcs().get(speaker);
+        String name = npc != null ? npc.name() : speaker;
+        for (Player player : host.online())
+            Chat.send(player, name.isEmpty() ? "<gray><italic>" + line + "</italic></gray>" : speech(name, line));
     }
 
     void endCutscene(Player player) {

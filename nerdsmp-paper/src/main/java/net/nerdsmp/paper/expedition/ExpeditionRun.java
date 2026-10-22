@@ -170,6 +170,10 @@ final class ExpeditionRun {
             @Override public void campfireLit(String id) { run.apply(run.progress.campfire(id), System.currentTimeMillis()); }
             @Override public void teleport(Player player, Location to) { run.service.teleport(player, to); }
             @Override public void broadcast(String markup) { run.broadcast(markup); }
+            @Override public void perform(List<ScriptAction> actions) {
+                Room active = run.progress == null ? null : run.progress.activeRoom();
+                run.runScript(active != null ? active.id() : run.expedition.roomList().getFirst().id(), actions, 0);
+            }
         });
     }
 
@@ -229,6 +233,9 @@ final class ExpeditionRun {
                 Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(600))));
         }
         for (AllySlot slot : allies) spawnAlly(slot, spawn);
+        // The opening scene, once everyone has arrived.
+        if (expedition.story().intro() != null)
+            Bukkit.getScheduler().runTaskLater(plugin, () -> { if (state == State.ACTIVE) stage.cutscene(expedition.story().intro()); }, 30L);
         if (assisted()) broadcast("<aqua>Hired allies:</aqua> <white>" + String.join(", ", allies.stream()
             .map(slot -> slot.role.title() + " (" + slot.role.job() + ")").toList()) + "</white>. <gray>This is an assisted run: "
             + "it pays loot and Marks, but doesn't count toward the campaign or the expedition records.</gray>");
@@ -626,6 +633,14 @@ final class ExpeditionRun {
         for (Player player : online()) player.showTitle(Title.title(Chat.render(gradeColor(grade) + "<bold>" + grade.title() + "</bold>"),
             Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
         loot.finish(fixed, grade, lockedOut, net.nerdsmp.paper.expedition.content.ExpeditionLoot.bonusPrice(expedition.level(), tier.marks()));
+        // The closing narration, a line every few seconds.
+        List<String> outro = expedition.story().outro();
+        for (int line = 0; line < outro.size(); line++) {
+            String spoken = outro.get(line);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (state == State.ENDING) broadcast("<gray><italic>" + spoken + "</italic></gray>");
+            }, 60L + line * 70L);
+        }
         boolean record = key == null && !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
         if (key != null && !test) service.settleKey(this, keyClock(now), party);
         else if (tier.id().equals("mythic") && !test && !assisted()) service.grantFirstKeys(party.keySet());
@@ -756,6 +771,12 @@ final class ExpeditionRun {
             for (Player player : online()) player.showBossBar(bossBar);
         }
         world.playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.2F, .8F);
+        // A name card for the boss, unless a cutscene is introducing it.
+        String epithet = expedition.story().mob(id).title();
+        for (Player player : online())
+            if (!stage.inCutscene(player)) player.showTitle(Title.title(displayName(entity),
+                epithet == null ? Component.empty() : Chat.render("<gray>" + Chat.escape(epithet) + "</gray>"),
+                Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2500), Duration.ofMillis(600))));
     }
 
     /** A boss's abilities for a phase: the phase's list, or the encounter's when the phase lists none. */

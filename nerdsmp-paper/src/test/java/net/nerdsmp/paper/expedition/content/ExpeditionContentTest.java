@@ -69,7 +69,7 @@ class ExpeditionContentTest {
         ExpeditionDefinition barrow = sample("hollow_barrow");
         assertEquals(List.of("crypt_gallery", "ossuary", "lever_vault", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
         var gallery = barrow.rooms().get("crypt_gallery");
-        assertEquals(Map.of("vanilla:zombie", 3, "custom:thorn_sentinel", 1), gallery.encounter().waves().get(0).mobs());
+        assertEquals(Map.of("custom:barrow_thrall", 3, "custom:thorn_sentinel", 1), gallery.encounter().waves().get(0).mobs());
         assertEquals(3, gallery.encounter().waves().get(1).delaySeconds());
         assertEquals(ExpeditionDefinition.Box.of(-1, 64, 35, 1, 66, 35), gallery.gate());
         assertEquals(ScriptAction.Verb.MESSAGE, gallery.encounter().script("start").get(0).verb());

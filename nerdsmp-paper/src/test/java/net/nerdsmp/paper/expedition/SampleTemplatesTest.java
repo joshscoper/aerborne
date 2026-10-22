@@ -92,6 +92,13 @@ class SampleTemplatesTest {
                 if (!solid(blocks, at.x(), at.y() - 1, at.z())) problems.add(id + " chest " + chest.id() + " floats");
                 if (solid(blocks, at.x(), at.y() + 1, at.z())) problems.add(id + " chest " + chest.id() + " can't open (blocked above)");
             }
+            // Cutscene cameras sit in open air, never inside a wall.
+            for (var cutscene : expedition.story().cutscenes().values())
+                for (var shot : cutscene.shots()) {
+                    int x = (int) Math.floor(shot.x()), y = (int) Math.floor(shot.y()), z = (int) Math.floor(shot.z());
+                    if (solid(blocks, x, y, z) || solid(blocks, x, y + 1, z))
+                        problems.add(id + " cutscene " + cutscene.id() + " camera at " + x + "," + y + "," + z + " is inside " + blocks.get(new Cell(x, y, z)));
+                }
             // Reward chests appear at the finish, so their spots are empty floor.
             var rewards = expedition.story().rewardChests();
             if (expedition.sample() != null && rewards == null) problems.add(id + " has no reward-chests");

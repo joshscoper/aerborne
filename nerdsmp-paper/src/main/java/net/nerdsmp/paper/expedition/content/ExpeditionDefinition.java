@@ -71,14 +71,22 @@ public record ExpeditionDefinition(
     public record Story(Goal goal, int forces, int timeBonusSeconds, boolean raid,
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
-                        List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
+                        List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null);
+            Map.of(), null, null, List.of());
+
+        public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
+                     Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
+                     Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
+            this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
+                null, List.of());
+        }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
-            this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null);
+            this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
+                null, List.of());
         }
 
         public Story {
@@ -91,6 +99,7 @@ public record ExpeditionDefinition(
             mobs = ordered(mobs);
             requires = requires == null ? List.of() : List.copyOf(requires);
             chests = ordered(chests);
+            outro = outro == null ? List.of() : List.copyOf(outro);
         }
 
         /** How many secret caches the map hides, for the run's exploration score. */
@@ -130,8 +139,24 @@ public record ExpeditionDefinition(
     /** A hazard over an area: every {@code everySeconds} it strikes {@code count} spots for {@code damage}. */
     public record Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage) { }
 
-    /** One camera position; the camera glides from each shot to the next over {@code seconds}. */
-    public record Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text) { }
+    /**
+     * One camera position; the camera glides from each shot to the next over {@code seconds}, unless
+     * the next shot {@code fade}s in (a cut through black). A shot can show a {@code title} card and a
+     * subtitle ({@code text}), play a {@code sound}, speak {@code lines} ({@code "Speaker|line"}, or
+     * {@code "|line"} for narration) spread across its length, and run script {@code actions} as it
+     * starts (once for the party), so a scene can change the map.
+     */
+    public record Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text, String title,
+                       List<String> lines, String sound, List<ScriptAction> actions, boolean fade) {
+        public Shot {
+            lines = lines == null ? List.of() : List.copyOf(lines);
+            actions = actions == null ? List.of() : List.copyOf(actions);
+        }
+
+        public Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text) {
+            this(x, y, z, yaw, pitch, seconds, text, null, List.of(), null, List.of(), false);
+        }
+    }
 
     public record Cutscene(String id, List<Shot> shots) {
         public Cutscene { shots = List.copyOf(shots); }
@@ -359,13 +384,16 @@ public record ExpeditionDefinition(
      * Player-facing advice shown in the expedition's in-game guide book and on the website: an overview,
      * general tips, a line per room and notes on the boss. Everything is optional.
      */
-    public record Guide(String overview, List<String> tips, Map<String, String> rooms, String boss) {
-        public static final Guide EMPTY = new Guide("", List.of(), Map.of(), "");
+    public record Guide(String overview, List<String> tips, Map<String, String> rooms, String boss, String lore) {
+        public static final Guide EMPTY = new Guide("", List.of(), Map.of(), "", "");
 
         public Guide {
             tips = List.copyOf(tips);
             rooms = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(rooms));
+            lore = lore == null ? "" : lore;
         }
+
+        public Guide(String overview, List<String> tips, Map<String, String> rooms, String boss) { this(overview, tips, rooms, boss, ""); }
 
         public boolean isEmpty() { return overview.isBlank() && tips.isEmpty() && rooms.isEmpty() && boss.isBlank(); }
     }

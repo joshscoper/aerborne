@@ -37,16 +37,26 @@ hazards:
   frost_gas: {type: gas, area: [44, 63, -10, 64, 63, 10], every: 9, count: 3, damage: 0}
   stone_fall: {type: rocks, area: [-10, 63, 44, 10, 63, 64], every: 6, count: 4, damage: 6}
 
+# The opening scene, played as the run starts, and the narration after the win.
+intro: prologue
+outro:
+  - "The three seals rise from the wardens' thrones and settle into your hands: one warm, one cold, one heavy."
+  - "Archivist Vell: 'With these, the Ember Gate will open. Cinder Keep waits below the clouds. Ashkar must not wake his master.'"
+
 cutscenes:
+  prologue:
+    - {at: [0.5, 82, -25, 0, 30], seconds: 5, title: "<gold>The Hall of the Three Wardens</gold>", text: "<gray>The sky archive</gray>", sound: "block.beacon.ambient", lines: ["|Here the Wardens of Ember, Frost and Stone kept the record of the Binding.", "vell|And here they left their echoes, to guard the seals until they were needed."]}
+    - {at: [-14.5, 74, 0.5, 90, 20], seconds: 4, fade: true, lines: ["vell|Each warden's seal is a key to the road below. The Steward wants them. We need them first."]}
+    - {at: [0.5, 74, 14, 0, 25], seconds: 5, lines: ["vell|The echoes won't know friend from foe. You'll have to earn the seals.", "|Ember to the west, frost to the east, stone to the south. The order is yours."]}
   ember_warden:
-    - {at: [-41.5, 72, 0.5, 90, 25], seconds: 3, text: "<gold>The Ember Throne</gold>"}
+    - {at: [-41.5, 72, 0.5, 90, 25], seconds: 4, title: "<gold>The Ember Warden</gold>", text: "<gray>Echo of the first Warden</gray>", sound: "block.fire.ambient", lines: ["The Ember Warden|I sealed the fire once. Show me you could do the same."]}
   frost_warden:
-    - {at: [42.5, 72, 0.5, -90, 25], seconds: 3, text: "<aqua>The Frost Hall</aqua>"}
+    - {at: [42.5, 72, 0.5, -90, 25], seconds: 4, title: "<aqua>The Frost Warden</aqua>", text: "<gray>Echo of the second Warden</gray>", sound: "block.glass.break 0.6", lines: ["The Frost Warden|Cold kept him sleeping. Is your nerve as cold?"]}
   stone_warden:
-    - {at: [0.5, 72, 42.5, 0, 25], seconds: 3, text: "<green>The Stone Court</green>"}
+    - {at: [0.5, 72, 42.5, 0, 25], seconds: 4, title: "<green>The Stone Warden</green>", text: "<gray>Echo of the third Warden</gray>", sound: "block.stone.break 0.5", lines: ["The Stone Warden|Stone holds. Stone endures. Do you?"]}
 
 mobs:
-  "vanilla:vindicator": {role: elite, abilities: [charge]}
+  "custom:archive_sentry": {role: elite, abilities: [charge]}
   "custom:frostmarked": {role: elite, abilities: [frost_nova]}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
@@ -78,7 +88,7 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"vanilla:blaze": 2}
+        - {"custom:ember_wisp": 2}
       scripts:
         start: ["say vell|The braziers! Arrows into all four targets, quickly."]
         solved-braziers: ["sound item.firecharge.use 0.8", "message <gold>The braziers roar and the bars to the throne lift.</gold>"]
@@ -97,9 +107,9 @@ rooms:
       enrage-seconds: 300
       adds-at-health: [60]
       waves:
-        - {"vanilla:blaze": 2}
+        - {"custom:ember_wisp": 2}
       scripts:
-        start: ["cutscene ember_warden", "wait 3", "say The Ember Warden|The flame does not yield its seal."]
+        start: ["cutscene ember_warden", "wait 4", "say The Ember Warden|The flame does not yield its seal."]
         health-50: ["hazard start ember_rain"]
         clear: ["hazard stop ember_rain", "say vell|The ember seal breaks! Two remain."]
   frost_antechamber:
@@ -139,7 +149,7 @@ rooms:
       waves:
         - {"custom:frostmarked": 2}
       scripts:
-        start: ["cutscene frost_warden", "wait 3", "say The Frost Warden|Be still. Be cold. Be gone."]
+        start: ["cutscene frost_warden", "wait 4", "say The Frost Warden|Be still. Be cold. Be gone."]
         health-50: ["hazard start frost_gas"]
         clear: ["hazard stop frost_gas", "say vell|The frost seal shatters!"]
   stone_antechamber:
@@ -158,7 +168,7 @@ rooms:
     encounter:
       type: waves
       waves:
-        - {"vanilla:silverfish": 4, "vanilla:vindicator": 1}
+        - {"custom:stonemite": 4, "custom:archive_sentry": 1}
       scripts:
         start: ["say vell|The plates want weight. Throw anything onto all three."]
   stone_court:
@@ -176,13 +186,14 @@ rooms:
       enrage-seconds: 300
       adds-at-health: [60]
       waves:
-        - {"vanilla:vindicator": 2}
+        - {"custom:archive_sentry": 2}
       scripts:
-        start: ["cutscene stone_warden", "wait 3", "say The Stone Warden|I have stood a thousand years. I will stand a thousand more."]
+        start: ["cutscene stone_warden", "wait 4", "say The Stone Warden|I have stood a thousand years. I will stand a thousand more."]
         health-50: ["hazard start stone_fall"]
         clear: ["hazard stop stone_fall", "say vell|The stone seal cracks!"]
 
 guide:
+  lore: "When the Wardens bound Pyrrhax beneath Cinder Keep, they wrote the Binding into three seals and left them in their sky archive, guarded by echoes of themselves. Archivist Vell has studied the seals all her life. Now a Steward named Ashkar is digging, drowning and burning his way towards the keep, and Vell believes he means to wake his master. The seals open the Ember Gate, and the echoes will not hand them to anyone who has not earned them."
   overview: A floating citadel with three wings. Each wing has a puzzle antechamber and a warden. Defeat all three wardens, in any order, then step into the light at the centre of the concourse.
   tips:
     - The ember antechamber's supply crate hands out a bow and arrows. The braziers need four arrows within thirty seconds.

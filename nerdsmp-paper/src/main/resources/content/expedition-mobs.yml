@@ -275,3 +275,115 @@ mobs:
     scale: 1.4
     ability: none
     mark-reward: 6
+
+  # Themed regulars: every expedition's rank and file, in place of plain vanilla mobs.
+  gale_raider:
+    name: "<white>Gale Raider</white>"
+    type: husk
+    health: 22
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+    equipment: {head: leather_helmet, chest: leather_chestplate, hand: wooden_sword}
+  skyway_brigand:
+    name: "<white>Skyway Brigand</white>"
+    type: zombie
+    health: 22
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+    equipment: {head: chainmail_helmet, hand: stone_axe}
+  cloudline_archer:
+    name: "<white>Cloudline Archer</white>"
+    type: skeleton
+    health: 20
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+    equipment: {head: leather_helmet, hand: bow}
+  barrow_thrall:
+    name: "<gray>Barrow Thrall</gray>"
+    type: zombie
+    health: 28
+    attack-damage: 4
+    ability: none
+    mark-reward: 3
+    equipment: {head: chainmail_helmet, chest: chainmail_chestplate, hand: iron_shovel}
+  crypt_archer:
+    name: "<gray>Crypt Archer</gray>"
+    type: skeleton
+    health: 24
+    attack-damage: 4
+    ability: none
+    mark-reward: 3
+    equipment: {head: chainmail_helmet, hand: bow}
+  canopy_stalker:
+    name: "<dark_green>Canopy Stalker</dark_green>"
+    type: spider
+    health: 24
+    attack-damage: 4
+    scale: 1.15
+    ability: none
+    mark-reward: 3
+  thornling:
+    name: "<green>Thornling</green>"
+    type: cave_spider
+    health: 16
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+  bough_sniper:
+    name: "<dark_green>Bough Sniper</dark_green>"
+    type: skeleton
+    health: 26
+    attack-damage: 5
+    ability: none
+    mark-reward: 3
+    equipment: {head: leather_helmet, chest: leather_chestplate, hand: bow}
+  sluicehand:
+    name: "<dark_aqua>Drowned Sluicehand</dark_aqua>"
+    type: drowned
+    health: 30
+    attack-damage: 5
+    ability: none
+    mark-reward: 3
+    equipment: {head: iron_helmet, hand: iron_axe}
+  powder_sapper:
+    name: "<gold>Powder Sapper</gold>"
+    type: pillager
+    health: 30
+    attack-damage: 5
+    ability: none
+    mark-reward: 4
+    equipment: {head: iron_helmet, hand: crossbow}
+  ember_wisp:
+    name: "<gold>Ember Wisp</gold>"
+    type: blaze
+    health: 30
+    attack-damage: 5
+    ability: none
+    mark-reward: 4
+  stonemite:
+    name: "<gray>Stonemite</gray>"
+    type: silverfish
+    health: 14
+    attack-damage: 3
+    scale: 1.4
+    ability: none
+    mark-reward: 2
+  archive_sentry:
+    name: "<white>Archive Sentry</white>"
+    type: vindicator
+    health: 36
+    attack-damage: 8
+    ability: none
+    mark-reward: 5
+    equipment: {head: iron_helmet, chest: iron_chestplate, hand: iron_axe}
+  cinder_thrall:
+    name: "<red>Cinder Thrall</red>"
+    type: wither_skeleton
+    health: 40
+    attack-damage: 7
+    ability: none
+    mark-reward: 4
+    equipment: {head: golden_helmet, hand: stone_sword}

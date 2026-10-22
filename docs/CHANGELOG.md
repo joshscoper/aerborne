@@ -5,6 +5,18 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Expedition story and cinematics (October 22)
+- One story now runs through the campaign: the Wardens bound Pyrrhax beneath Cinder Keep and lifted
+  Aerborne into the sky, and his Steward, Ashkar, is behind every expedition's trouble. Each
+  expedition has its lore in the guide book and on the website.
+- Every expedition opens with a narrated scene, and its boss scenes have title cards, dialogue, sounds
+  and cuts through black. Each win ends with closing narration that points to the next expedition.
+- Cutscenes can show titles, speak timed lines, play sounds, fade between shots and change the map
+  mid-scene. Bosses get a name card when they appear.
+- Plain vanilla mobs in the expeditions are replaced by themed, equipped creatures: Barrow Thralls,
+  Crypt Archers, Canopy Stalkers, Drowned Sluicehands, Powder Sappers, Archive Sentries, Cinder
+  Thralls and more.
+
 ### Expedition loot overhaul (October 22)
 - Every expedition now has its own loot: three **materials**, a five-piece **signature set** with set
   bonuses (Barrowguard, Thornwarden, Tidebound, Gloomforged, Wardensworn and the raid's Kilnborn),

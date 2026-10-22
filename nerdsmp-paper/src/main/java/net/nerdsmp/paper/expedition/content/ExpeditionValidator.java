@@ -306,9 +306,17 @@ public final class ExpeditionValidator {
             if (hazard.count() < 1 || hazard.count() > 12) error(issues, "Hazard '" + hazard.id() + "' count must be 1-12.", where + ".count");
             if (hazard.damage() < 0 || hazard.damage() > 40) error(issues, "Hazard '" + hazard.id() + "' damage must be 0-40.", where + ".damage");
         });
+        if (story.intro() != null && !story.cutscenes().containsKey(story.intro()))
+            error(issues, "The intro plays unknown cutscene '" + story.intro() + "'.", "intro: in the expedition file");
         story.cutscenes().values().forEach(cutscene -> {
             if (cutscene.shots().isEmpty()) error(issues, "Cutscene '" + cutscene.id() + "' has no shots.", "cutscenes." + cutscene.id());
-            if (cutscene.seconds() > 30) error(issues, "Cutscene '" + cutscene.id() + "' runs " + cutscene.seconds() + " s; keep it to 30.", "cutscenes." + cutscene.id());
+            if (cutscene.seconds() > 45) error(issues, "Cutscene '" + cutscene.id() + "' runs " + cutscene.seconds() + " s; keep it to 45.", "cutscenes." + cutscene.id());
+            for (var shot : cutscene.shots()) {
+                if (shot.sound() != null && !catalog.sound(shot.sound().split(" ")[0]))
+                    error(issues, "Cutscene '" + cutscene.id() + "' plays unknown sound '" + shot.sound() + "'.", "cutscenes." + cutscene.id());
+                for (var action : shot.actions())
+                    if (action.verb() == ScriptAction.Verb.CUTSCENE) error(issues, "Cutscene '" + cutscene.id() + "' can't start another cutscene.", action.text());
+            }
         });
         story.npcs().values().forEach(npc -> {
             if (!catalog.npcEntity(npc.entity())) error(issues, "NPC '" + npc.id() + "' uses an unsupported entity '" + npc.entity() + "'.", "npcs." + npc.id() + ".entity");
