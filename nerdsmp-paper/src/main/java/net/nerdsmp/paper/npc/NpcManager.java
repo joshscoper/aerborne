@@ -762,6 +762,7 @@ public final class NpcManager implements Listener, AutoCloseable {
             case OPEN_FORGE -> "<gray>Opens:</gray> <white>Arcane forge</white>";
             case OPEN_ENCHANTMENTS -> "<gray>Opens:</gray> <white>Arcane enchanting</white>";
             case OPEN_COMMAND -> "<gray>Opens:</gray> <white>/" + escape(effect.command()) + "</white>";
+            case OPEN_QUESTS -> "<gray>Opens:</gray> <white>Quests</white>";
             case FLAG -> null;
         };
     }
@@ -783,6 +784,7 @@ public final class NpcManager implements Listener, AutoCloseable {
                 case OPEN_FORGE -> Material.SMITHING_TABLE;
                 case OPEN_ENCHANTMENTS -> Material.ENCHANTING_TABLE;
                 case OPEN_COMMAND -> Material.COMPASS;
+                case OPEN_QUESTS -> Material.WRITABLE_BOOK;
                 default -> null;
             };
             if (service != null) {
@@ -875,6 +877,9 @@ public final class NpcManager implements Listener, AutoCloseable {
                     plugin.menus().openStation(player, net.nerdsmp.paper.gui.MenuManager.View.FORGE);
                 } else if (outcome.service() == ServiceAction.ENCHANTMENTS) {
                     plugin.menus().openStation(player, net.nerdsmp.paper.gui.MenuManager.View.ENCHANTMENTS);
+                } else if (outcome.service() == ServiceAction.QUESTS) {
+                    if (plugin.quests() == null) player.sendRichMessage("<red>Quests are currently unavailable.</red>");
+                    else plugin.quests().open(player, instance.definitionId());
                 } else if (outcome.shopId() != null) {
                     openShop(player, instance, outcome.shopId(), node.id());
                 } else if (outcome.command() != null) {
@@ -1022,6 +1027,8 @@ public final class NpcManager implements Listener, AutoCloseable {
                 service = ServiceAction.FORGE;
             } else if (effect.type() == NpcContent.EffectType.OPEN_ENCHANTMENTS) {
                 service = ServiceAction.ENCHANTMENTS;
+            } else if (effect.type() == NpcContent.EffectType.OPEN_QUESTS) {
+                service = ServiceAction.QUESTS;
             } else if (effect.type() == NpcContent.EffectType.OPEN_COMMAND) {
                 command = effect.command();
             }
@@ -1600,8 +1607,17 @@ public final class NpcManager implements Listener, AutoCloseable {
         LivingEntity body = liveByInstance.get(instance.id());
         double radius = Math.clamp(plugin.getConfig().getDouble("skyblock.market.hub-radius", 256), 16, 512);
         return !player.isDead() && player.getGameMode() == org.bukkit.GameMode.SURVIVAL
-            && currentNpcContext(player, account, instance) && plugin.travel().nearCentralSpawn(instance.location(), radius)
+            && currentNpcContext(player, account, instance)
+            && (plugin.travel().nearCentralSpawn(instance.location(), radius) || safeOutpost(instance.location()))
             && body != null && body.isValid() && player.hasLineOfSight(body);
+    }
+
+    /** Merchants in a peaceful outpost (an enabled safe zone, such as a desert bazaar) trade like those in the hub. */
+    private boolean safeOutpost(Location location) {
+        if (location == null || location.getWorld() == null || plugin.zones() == null
+            || !plugin.getConfig().getBoolean("skyblock.market.safe-zone-outposts", true)) return false;
+        return plugin.zones().at(location.getWorld().getUID(), location.getX(), location.getY(), location.getZ())
+            .filter(zone -> zone.enabled() && zone.safe()).isPresent();
     }
     private void marketTrade(Player player, NpcInstance instance, NpcContent.ShopDefinition shop,
                              NpcContent.ShopProduct product, NpcMarket.Quote quote, NpcInventory holder, String returnNodeId) {
@@ -2304,7 +2320,11 @@ public final class NpcManager implements Listener, AutoCloseable {
     }
 
     private NpcInstance createInstance(String definitionId, Location location) {
-        NpcInstance instance = NpcInstance.create(UUID.randomUUID(), definitionId, location);
+        return createInstance(UUID.randomUUID(), definitionId, location);
+    }
+
+    private NpcInstance createInstance(UUID id, String definitionId, Location location) {
+        NpcInstance instance = NpcInstance.create(id, definitionId, location);
         boolean committed = false;
         try {
             if (!spawnLive(instance) || !NpcPlacementSafety.fits(liveByInstance.get(instance.id()))) return null;
@@ -2320,6 +2340,56 @@ public final class NpcManager implements Listener, AutoCloseable {
                 releaseUnusedTickets();
             }
         }
+    }
+
+    public enum AnchorResult { UNCHANGED, PLACED, MOVED, FAILED }
+
+    /**
+     * Shipped world content keeps its NPCs under stable anchor ids, so applying the same content again never
+     * duplicates a body. An existing anchor is moved only when the caller passes a new location.
+     */
+    public AnchorResult ensureAnchor(UUID id, String definitionId, Location location) {
+        if (!content.npcs().containsKey(definitionId) || location.getWorld() == null) return AnchorResult.FAILED;
+        NpcInstance current = instances.get(id);
+        if (current != null) {
+            Location at = current.location();
+            if (current.definitionId().equals(definitionId) && at != null && at.getWorld().equals(location.getWorld())
+                && at.distanceSquared(location) < 0.0001D && Math.abs(current.yaw() - location.getYaw()) < 0.01F) return AnchorResult.UNCHANGED;
+            removeLive(id);
+            NpcInstance moved = NpcInstance.create(id, definitionId, location);
+            Map<UUID, NpcInstance> next = new LinkedHashMap<>(instances);
+            next.put(id, moved);
+            saveInstances(next);
+            instances.put(id, moved);
+            spawnLive(moved);
+            return AnchorResult.MOVED;
+        }
+        if (instances.size() >= maximumInstances) {
+            plugin.getLogger().warning("NPC anchor " + definitionId + " was not placed: npcs.maximum-instances (" + maximumInstances + ") is reached.");
+            return AnchorResult.FAILED;
+        }
+        try {
+            return createInstance(id, definitionId, location) == null ? AnchorResult.FAILED : AnchorResult.PLACED;
+        } catch (RuntimeException failure) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "NPC anchor " + definitionId + " could not be placed", failure);
+            return AnchorResult.FAILED;
+        }
+    }
+
+    public boolean hasAnchor(UUID id) {
+        return instances.containsKey(id);
+    }
+
+    public void removeAnchor(UUID id) {
+        if (instances.remove(id) == null) return;
+        removeLive(id);
+        saveInstances();
+    }
+
+    /** The NPC definition behind a placed body, for listeners such as quest objectives. */
+    public java.util.Optional<String> definitionId(Entity entity) {
+        NpcInstance instance = instance(entity);
+        return instance == null ? java.util.Optional.empty() : java.util.Optional.of(instance.definitionId());
     }
 
     public void respawnAll() {
@@ -2875,7 +2945,8 @@ public final class NpcManager implements Listener, AutoCloseable {
         FISHERY,
         ALCHEMY,
         FORGE,
-        ENCHANTMENTS
+        ENCHANTMENTS,
+        QUESTS
     }
 
     private enum PurchaseStatus {

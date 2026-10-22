@@ -1,6 +1,6 @@
 # Manual hubs, warps and mob zones
 
-Build or import the shared hub and adventure areas, place NPCs yourself, and save their travel destinations. The plugin provides travel and bounded encounter spawning; it does not build the map for you.
+Build or import the shared hub and adventure areas, place NPCs yourself, and save their travel destinations. The plugin provides travel and bounded encounter spawning; it does not build the map for you. The one exception is a known map with a shipped world pack, such as [The Highcrown Isles](HIGHCROWN_ISLES.md), whose zones, NPCs and warps are placed automatically.
 
 `expeditions.generated-worlds` defaults to `false`. Existing generated prototype worlds with valid manifests are retained without regenerating their terrain. Existing worlds, islands, player progress, NPC placements and saved warps are not reset. The old generated-world switch remains an explicit preview option. Do not remove world directories referenced by an existing manifest.
 

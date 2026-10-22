@@ -107,4 +107,4 @@ Zones persist in `plugins/NerdSMP/zones.yml`; loot profiles and assignments pers
 
 Prefer the commands so validation and permissions are applied. If you edit `mob-loot.yml` externally, back it up first and use `/mobloot reload confirm`. Invalid files are rejected without replacing the active snapshot. The shipped default drop table is unchanged by this editor.
 
-Only settings are installed with the feature update. No live zone, mob spawn, warp, loot assignment or NPC is automatically added to your map.
+Only settings are installed with the feature update. No live zone, mob spawn, warp, loot assignment or NPC is automatically added to your map, unless the map is one with a shipped world pack (see [The Highcrown Isles](HIGHCROWN_ISLES.md)).

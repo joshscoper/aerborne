@@ -2,7 +2,7 @@
 
 Excavation now uses the `excavation-power` on shovels and brushes for its equipment XP bonus. Base block XP remains unchanged. Ordinary player-placed, replaced, and moved soil still gives no XP or finds.
 
-Staff can register the existing soil in a shared-world zone as a dig site. Registered blocks give the normal Excavation XP, finds, geodes, job work, and quest progress. After a break, each block has its own cooldown, then regrows in place. No pit, building, world, NPC, or warp is generated automatically.
+Staff can register the existing soil in a shared-world zone as a dig site. Registered blocks give the normal Excavation XP, finds, geodes, job work, and quest progress. After a break, each block has its own cooldown, then regrows in place. No pit, building, world, NPC, or warp is generated automatically, except by a shipped world pack for a known map (see [The Highcrown Isles](HIGHCROWN_ISLES.md)). Dig sites also accept ore blocks: a mined vein node gives Mining XP and regrows the same way.
 
 ## Set up a peaceful dig site
 

@@ -50,6 +50,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "permissions" -> plugin.staffPermissions().command(sender, args);
             case "zone" -> plugin.zoneCommands().command(sender,args);
             case "digsite" -> plugin.digSiteCommands().command(sender,args);
+            case "journal" -> plugin.quests().command(sender,args);
+            case "worldpack" -> plugin.worldPacks().command(sender,args);
             case "mobloot" -> plugin.mobLootCommands().command(sender,args);
             case "itemengine" -> { if(sender instanceof Player player) plugin.studioUi().cancel(player); yield plugin.contentEditor().handleItems(sender,args); }
             case "mobengine" -> { if(sender instanceof Player player) plugin.studioUi().cancel(player); yield plugin.contentEditor().handleMobs(sender,args); }
@@ -993,6 +995,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "expedition" -> plugin.expeditions().complete(sender, args);
             case "zone" -> plugin.zoneCommands().tabComplete(sender,args);
             case "digsite" -> plugin.digSiteCommands().complete(sender,args);
+            case "journal" -> plugin.quests().complete(args,sender);
+            case "worldpack" -> sender.hasPermission("nerdsmp.zone.admin") ? plugin.worldPacks().complete(args) : List.of();
             case "mobloot" -> plugin.mobLootCommands().complete(sender,args);
             case "itemengine" -> sender.hasPermission("nerdsmp.content.items") ? plugin.contentEditor().tab(false,args) : List.of();
             case "mobengine" -> sender.hasPermission("nerdsmp.content.mobs") ? plugin.contentEditor().tab(true,args) : List.of();

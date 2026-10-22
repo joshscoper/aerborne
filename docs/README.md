@@ -52,6 +52,7 @@ In-game editors and moderation. Most need a staff permission.
 - [Placing NPCs](NPC_CATALOG.md)
 - [Manual hubs, warps and mob zones](MANUAL_ZONES.md)
 - [Shared RPG zones and mob loot](RPG_ZONES.md)
+- [The Highcrown Isles](HIGHCROWN_ISLES.md): the spawn map's shipped zones, NPCs, quests, dig sites and warps
 - [Building expeditions](EXPEDITIONS.md#building-an-expedition-staff): wand, setup commands, validation and the file format
 - [Writing a season](CAMPAIGN.md#writing-a-season): goals, sources and rewards in `campaign/season.yml`
 - [Staff, Watchdog and workshop update](STAFF_FISHING_STATIONS.md): the web staff console and its network setup

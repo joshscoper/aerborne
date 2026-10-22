@@ -44,6 +44,8 @@ skyblock:
   market:
     # NPCs must be physically within this radius of /setspawn to offer shop trades.
     hub-radius: 256
+    # Merchants standing inside an enabled safe zone (a peaceful town or outpost) may trade too.
+    safe-zone-outposts: true
   # Floating holograms on islands.
   displays:
     enabled: true
@@ -561,6 +563,11 @@ tips:
 # ---------------------------------------------------------------------------------------------
 # 7. NPCs
 # ---------------------------------------------------------------------------------------------
+
+# Shipped content for known maps (zones, NPCs, quests' places, warps, dig sites and ore veins). A pack only
+# applies to a world whose seed and landmark blocks match it; staff edits are kept. /worldpack shows status.
+world-packs:
+  enabled: true
 
 npcs:
   maximum-instances: 100

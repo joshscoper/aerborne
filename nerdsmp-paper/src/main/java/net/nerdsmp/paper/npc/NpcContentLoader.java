@@ -27,11 +27,12 @@ import java.util.Set;
 
 public final class NpcContentLoader {
     private static final int SCHEMA_VERSION = 10;
+    static final String WORLD_CONTENT = "content/world-npcs.yml";
     private static final Set<String> NPC_SERVICE_COMMANDS = Set.of(
         "menu", "quickstart", "settings", "profile", "adventurer", "skills", "mastery",
         "jobs", "daily", "playtime", "campaign", "warps", "party", "social", "duel",
         "cosmetics", "relics", "recipes", "fishing",
-        "excavation", "claim", "market", "shops", "grave", "reputation"
+        "excavation", "claim", "market", "shops", "grave", "reputation", "journal", "digsite", "expedition"
     );
 
     private final JavaPlugin plugin;
@@ -62,8 +63,26 @@ public final class NpcContentLoader {
         Map<String, NpcContent.ShopDefinition> shops = shops(yaml);
         Map<String, NpcContent.DialogueNode> dialogues = dialogues(yaml);
         Map<String, NpcContent.NpcDefinition> npcs = npcs(yaml);
+        // World-map NPCs ship inside the jar so every update brings their newest lines; an id that the
+        // server's own npcs.yml also defines keeps the server's version.
+        YamlConfiguration world = bundled(WORLD_CONTENT);
+        if (world != null) {
+            shops(world).forEach(shops::putIfAbsent);
+            dialogues(world).forEach(dialogues::putIfAbsent);
+            npcs(world).forEach(npcs::putIfAbsent);
+        }
         validateReferences(factions, shops, dialogues, npcs);
         return new NpcContent(factions, npcs, dialogues, shops);
+    }
+
+    private YamlConfiguration bundled(String path) {
+        var resource = plugin.getResource(path);
+        if (resource == null) return null;
+        try (var reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(reader);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to load bundled NPC content " + path, exception);
+        }
     }
 
     private YamlConfiguration content() {
@@ -271,7 +290,8 @@ public final class NpcContentLoader {
             || effect.type() == NpcContent.EffectType.OPEN_ALCHEMY
             || effect.type() == NpcContent.EffectType.OPEN_FORGE
             || effect.type() == NpcContent.EffectType.OPEN_ENCHANTMENTS
-            || effect.type() == NpcContent.EffectType.OPEN_COMMAND).count();
+            || effect.type() == NpcContent.EffectType.OPEN_COMMAND
+            || effect.type() == NpcContent.EffectType.OPEN_QUESTS).count();
         if (openActions > 1L) {
             throw new IllegalStateException("A dialogue choice can open only one service: " + nodeId + "/" + choiceId);
         }

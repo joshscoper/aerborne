@@ -54,9 +54,10 @@ public record DigSiteDefinition(String id, String zoneId, UUID worldId, UUID gen
                 || z < -WORLD_COORDINATE_LIMIT || z > WORLD_COORDINATE_LIMIT || y < MIN_Y || y > MAX_Y) {
                 throw new IllegalArgumentException("Dig-site nodes must be within the world limits (Y -64 to 319).");
             }
-            if (material == null || !ResourceMaterials.excavation(material)
+            // Ore veins are renewable gathering nodes: they regrow like soil and reward Mining instead of Excavation.
+            if (material == null || !(ResourceMaterials.excavation(material) || ResourceMaterials.ore(material))
                 || material.equals("SUSPICIOUS_SAND") || material.equals("SUSPICIOUS_GRAVEL")) {
-                throw new IllegalArgumentException("Dig-site nodes require ordinary excavation soil, not loot-bearing blocks.");
+                throw new IllegalArgumentException("Dig-site nodes require ordinary excavation soil or ore, not loot-bearing blocks.");
             }
             String prefix = "minecraft:" + material.toLowerCase(Locale.ROOT);
             if (blockData == null || blockData.length() > 256 || !blockData.startsWith(prefix)) {

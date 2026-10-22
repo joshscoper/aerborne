@@ -116,6 +116,9 @@ public final class NpcCatalog {
                     } else if (effect.type() == NpcContent.EffectType.OPEN_CONTRACTS) {
                         categories.add(Category.QUESTS);
                         services.add("Faction contracts");
+                    } else if (effect.type() == NpcContent.EffectType.OPEN_QUESTS) {
+                        categories.add(Category.QUESTS);
+                        services.add("Story quests");
                     } else if (effect.type() == NpcContent.EffectType.OPEN_COMMAND) {
                         String command = effect.command();
                         if (command == null) continue;

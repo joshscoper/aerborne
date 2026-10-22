@@ -78,6 +78,14 @@ commands:
     description: Find renewable excavation sites or manage staff-authored digging areas.
     usage: /digsite [wand|selection|clear|list|info <id>|create <id> [cooldown]|enable|disable|delete]
     aliases: [digsites]
+  journal:
+    description: View your active story quests and their objectives.
+    usage: /journal [abandon <quest>|admin <player> info|complete <quest>|reset [quest]]
+    aliases: [questlog, storyquests]
+  worldpack:
+    description: Show or re-apply the shipped content for a known world map.
+    usage: /worldpack [status|apply [force]]
+    permission: nerdsmp.zone.admin
   marks:
     description: View your earned Marks balance.
     usage: /marks
@@ -421,6 +429,8 @@ permissions:
       nerdsmp.studio.tester: true
       nerdsmp.store.fulfill: true
       nerdsmp.forge.admin: true
+      nerdsmp.quests.admin: true
+      nerdsmp.worldpack.bypass: true
   nerdsmp.forge.admin:
     description: Arcane Forge diagnostics, strict config reload, migration reports and audited knowledge grants.
     default: op
@@ -470,4 +480,10 @@ permissions:
     default: op
   nerdsmp.anticheat.bypass:
     description: Exempts trusted staff and test accounts from Watchdog checks.
+    default: op
+  nerdsmp.quests.admin:
+    description: Inspect, complete or reset a player's story quests with /journal admin.
+    default: op
+  nerdsmp.worldpack.bypass:
+    description: Lets staff cross a world pack's map border (spectators always can).
     default: op

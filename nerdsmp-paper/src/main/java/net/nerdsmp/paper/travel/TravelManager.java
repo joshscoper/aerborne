@@ -116,6 +116,21 @@ public final class TravelManager implements Listener, AutoCloseable {
     public Optional<WarpDefinition> spawnDefinition() {
         return destinations.spawn().map(point->new WarpDefinition(point.world(),point.x(),point.y(),point.z(),point.yaw(),point.pitch()));
     }
+    /** Saves a warp for shipped world content. The caller decides whether an existing warp may be replaced. */
+    public void saveWarp(String name, Location location) {
+        if (!publicDestination(location)) throw new IllegalArgumentException("Public warps cannot be placed on private island worlds.");
+        destinations.setWarp(name, TravelStore.Destination.from(location));
+    }
+    public boolean removeWarp(String name) {
+        return destinations.deleteWarp(name);
+    }
+    /** Saves the public spawn for shipped world content and moves the world's fallback spawn with it. */
+    public void saveSpawn(Location location) {
+        if (!publicDestination(location)) throw new IllegalArgumentException("The public spawn cannot be placed on a private island world.");
+        destinations.setSpawn(TravelStore.Destination.from(location));
+        try { location.getWorld().setSpawnLocation(location); }
+        catch (RuntimeException error) { plugin.getLogger().log(Level.WARNING, "Public spawn saved, but the world fallback spawn could not be updated", error); }
+    }
     public Optional<Location> warpLocation(String name) {
         return destinations.warp(name).flatMap(point -> point.resolve(TravelManager::resolveWorld))
             .filter(this::publicDestination).map(Location::clone);

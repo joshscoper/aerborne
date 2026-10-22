@@ -82,12 +82,12 @@ class DigSiteDefinitionTest {
         assertThrows(IllegalArgumentException.class, () -> dirt(0, MAX_Y + 1, 0));
     }
 
-    @Test void onlyOrdinaryExcavationMaterialsCanBecomeRenewableNodes() {
+    @Test void onlyOrdinaryExcavationMaterialsAndOreVeinsCanBecomeRenewableNodes() {
         for (String material : List.of("DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK", "SAND",
-            "RED_SAND", "GRAVEL", "CLAY", "MUD", "SOUL_SAND")) {
+            "RED_SAND", "GRAVEL", "CLAY", "MUD", "SOUL_SAND", "GOLD_ORE", "DEEPSLATE_IRON_ORE", "COAL_ORE")) {
             assertNotNull(new Node(0, 60, 0, material, "minecraft:" + material.toLowerCase(java.util.Locale.ROOT)));
         }
-        for (String material : List.of("SUSPICIOUS_SAND", "SUSPICIOUS_GRAVEL", "STONE", "DIAMOND_ORE",
+        for (String material : List.of("SUSPICIOUS_SAND", "SUSPICIOUS_GRAVEL", "STONE", "OAK_LOG", "WHEAT",
             "AIR", "CHEST", "LAVA", "dirt", "minecraft:dirt", "DIRT ", "")) {
             assertThrows(IllegalArgumentException.class, () -> new Node(0, 60, 0, material, "minecraft:dirt"));
         }

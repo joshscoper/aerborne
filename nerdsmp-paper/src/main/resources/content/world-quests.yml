@@ -1,0 +1,591 @@
+# Story quests of the Highcrown Isles (the shared spawn map placed by worldpacks/highcrown.yml).
+# Ships inside the plugin; a server can override the whole file by saving its own copy as
+# plugins/NerdSMP/content/world-quests.yml.
+#
+# Each quest: chain, title, giver (NPC id), optional turn-in NPC (defaults to the giver), level (minimum
+# adventurer level), requires (quest ids), offer/complete lines, 1-6 objectives and rewards.
+# Objective types:
+#   kill     targets: mob ids (custom:<id> or vanilla:<type>); optional zone
+#   harvest  targets: block materials broken at gathering nodes (e.g. GOLD_ORE); optional zone
+#   dig      targets: soil materials (empty = any soil) dug at dig sites; optional zone
+#   visit    zone: reach the zone
+#   talk     targets: NPC ids to speak with
+#   deliver  targets: item materials handed over (and taken) at turn-in
+# Rewards: marks, xp (skill: amount), reputation (faction: amount), items ("material:bread 4").
+schema-version: 1
+
+quests:
+  # ------------------------------------------------------------------ Highcrown (level 1)
+  welcome_to_highcrown:
+    chain: highcrown_welcome
+    title: A Crown of Welcome
+    giver: steward_aldric
+    level: 1
+    offer:
+      - "Before you wander off, meet the people who keep this place running."
+      - "Cassia knows every street, Orin keeps your Marks safe, and the market is just north of the keep."
+    complete:
+      - "Good. Now you know your way around. The Master-at-Arms has been asking about you."
+    objectives:
+      - {type: talk, targets: [cassia_dawn], description: Meet Cassia Dawn the City Guide}
+      - {type: talk, targets: [orin_ledger], description: Visit Orin Ledger the banker}
+      - {type: visit, zone: highcrown_town, description: Walk to the Highcrown market}
+    rewards:
+      marks: 40
+      reputation: {frontier_wardens: 10}
+      items: ["material:bread 8"]
+
+  sword_and_shield:
+    chain: highcrown_welcome
+    title: Sword and Shield
+    giver: master_corwin
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The Goldenreach fields west of the keep are crawling with gnawers. Perfect practice."
+      - "Thin them out, then report back to Captain Brenna. She has real work for you."
+    complete:
+      - "Corwin says you hold a blade the right way round. That's more than most recruits."
+    turn-in: captain_brenna
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: goldenreach_fields, count: 5, description: Defeat Field Gnawers}
+      - {type: kill, targets: ["custom:bristle_boar"], zone: goldenreach_fields, count: 2, description: Defeat Bristle Boars}
+    rewards:
+      marks: 60
+      xp: {hunting: 150}
+      items: ["material:iron_sword 1", "material:shield 1"]
+
+  # ------------------------------------------------------------------ Goldenreach Fields (levels 1-4)
+  pests_in_the_wheat:
+    chain: goldenreach_harvest
+    title: Pests in the Wheat
+    giver: farmer_odo
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Gnawers. Hundreds of 'em, chewing through the stalks before I can cut them."
+      - "Clear out a few for me and I'll make it worth your while."
+    complete:
+      - "Ha! Quieter already. Here, take something for the trouble."
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: goldenreach_fields, count: 8, description: Clear Field Gnawers from the wheat}
+    rewards:
+      marks: 50
+      xp: {hunting: 100}
+      items: ["material:bread 6"]
+
+  boars_at_the_fence:
+    chain: goldenreach_harvest
+    title: Boars at the Fence
+    giver: farmer_odo
+    level: 1
+    requires: [pests_in_the_wheat]
+    offer:
+      - "Bristle boars broke the south fence again. Drive them off, and bring me some pork for the smokehouse."
+    complete:
+      - "That'll feed the farmhands for a week. Thank you kindly."
+    objectives:
+      - {type: kill, targets: ["custom:bristle_boar"], zone: goldenreach_fields, count: 5, description: Drive off Bristle Boars}
+      - {type: deliver, targets: [PORKCHOP], count: 3, description: Bring Odo 3 raw porkchops}
+    rewards:
+      marks: 70
+      xp: {hunting: 120, cooking: 80}
+
+  the_scarecrow_rebellion:
+    chain: goldenreach_harvest
+    title: The Scarecrow Rebellion
+    giver: farmer_odo
+    level: 2
+    requires: [boars_at_the_fence]
+    offer:
+      - "I told you not to ask about the scarecrows. They got up last full moon and they won't lie back down."
+      - "Put them to rest. And if you've any spare wheat from your island, the mill needs it."
+    complete:
+      - "No more creaking in the night. Goldenreach owes you, friend."
+    objectives:
+      - {type: kill, targets: ["custom:straw_scarecrow"], zone: goldenreach_fields, count: 6, description: Put the Straw Scarecrows to rest}
+      - {type: deliver, targets: [WHEAT], count: 8, description: Bring 8 wheat for the mill}
+    rewards:
+      marks: 90
+      xp: {hunting: 150, farming: 120}
+      reputation: {frontier_wardens: 20}
+      items: ["material:golden_carrot 4"]
+
+  # ------------------------------------------------------------------ Gullwater Harbour and the gardens
+  trouble_on_the_shore:
+    chain: gullwater_harbour
+    title: Trouble on the Shore
+    giver: harbormaster_wynn
+    level: 3
+    requires: [sword_and_shield]
+    offer:
+      - "Wolfhounds come down from the Gloomroot to the north shore and spook the dock crews."
+      - "Head west along the coast and send them back into the pines."
+    complete:
+      - "The crews are back at work. You've earned your keep at Gullwater."
+    objectives:
+      - {type: visit, zone: gloomroot_coast, description: Reach the Gloomroot Shore}
+      - {type: kill, targets: ["custom:gloom_wolfhound"], zone: gloomroot_coast, count: 4, description: Drive off Gloomroot Wolfhounds}
+    rewards:
+      marks: 90
+      xp: {hunting: 200, fishing: 100}
+      items: ["material:fishing_rod 1"]
+
+  blossoms_for_the_gardens:
+    chain: lanternmere_gardens
+    title: Blossoms for the Gardens
+    giver: liss_fernwhistle
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The lantern beds need fresh colour. Grow me some berries and saplings on your island and bring them here."
+    complete:
+      - "Oh, they're lovely. The gardens thank you, and so do I."
+    objectives:
+      - {type: deliver, targets: [SWEET_BERRIES], count: 8, description: Bring 8 sweet berries}
+      - {type: deliver, targets: [OAK_SAPLING, BIRCH_SAPLING, SPRUCE_SAPLING, CHERRY_SAPLING], count: 4, description: Bring 4 saplings}
+    rewards:
+      marks: 80
+      xp: {farming: 200, forestry: 100}
+      reputation: {rift_scholars: 15}
+      items: ["material:bone_meal 16"]
+
+  # ------------------------------------------------------------------ The Kingsroad (levels 4-10)
+  trouble_on_the_road:
+    chain: kingsroad_justice
+    title: Trouble on the Kingsroad
+    giver: captain_brenna
+    turn-in: waywarden_garet
+    level: 2
+    requires: [sword_and_shield]
+    offer:
+      - "Brigands are robbing travellers in the Wildwood Vale. Waywarden Garet holds the crossroads west of here."
+      - "Report to him and thin their numbers on the way."
+    complete:
+      - "Brenna sent you? Good. Those cutthroats will think twice now."
+    objectives:
+      - {type: kill, targets: ["custom:vale_brigand"], zone: wildwood_vale, count: 6, description: Defeat Kingsroad Brigands in the Wildwood Vale}
+      - {type: talk, targets: [waywarden_garet], description: Report to Waywarden Garet at the crossroads}
+    rewards:
+      marks: 90
+      xp: {hunting: 200}
+      reputation: {frontier_wardens: 25}
+
+  crossbows_in_the_hedges:
+    chain: kingsroad_justice
+    title: Crossbows in the Hedges
+    giver: waywarden_garet
+    level: 3
+    requires: [trouble_on_the_road]
+    offer:
+      - "Their crossbowmen shoot from the hedgerows and vanish. Find them and finish them."
+    complete:
+      - "The hedges are hedges again. Well done."
+    objectives:
+      - {type: kill, targets: ["custom:brigand_crossbow"], count: 6, description: Defeat Brigand Crossbows}
+    rewards:
+      marks: 110
+      xp: {hunting: 250}
+      items: ["material:arrow 32", "material:bow 1"]
+
+  the_western_road:
+    chain: kingsroad_justice
+    title: The Western Road
+    giver: waywarden_garet
+    level: 4
+    requires: [crossbows_in_the_hedges]
+    offer:
+      - "The gang's real camp is out in the Kingsroad Meadows, past Mossfall. Tobin the peddler saw it."
+      - "Find Tobin, clear the meadows, then come back to me."
+    complete:
+      - "The Kingsroad is safe end to end for the first time in a year. The Wardens won't forget it."
+    objectives:
+      - {type: talk, targets: [tobin_peddler], description: Find Tobin the peddler on the western road}
+      - {type: kill, targets: ["custom:vale_brigand", "custom:brigand_crossbow"], zone: kingsroad_meadows, count: 8, description: Break the brigand camp in the Kingsroad Meadows}
+    rewards:
+      marks: 150
+      xp: {hunting: 300}
+      reputation: {frontier_wardens: 40}
+      items: ["material:iron_chestplate 1"]
+
+  # ------------------------------------------------------------------ Gloomroot Taiga (levels 8-13)
+  howls_in_the_pines:
+    chain: gloomroot_hunt
+    title: Howls in the Pines
+    giver: ranger_ilsa
+    level: 3
+    requires: [sword_and_shield]
+    offer:
+      - "The wolfhounds are bigger than they have any right to be. Hunt a few and we'll see what's feeding them."
+    complete:
+      - "Clean kills. You'd make a fair ranger."
+    objectives:
+      - {type: kill, targets: ["custom:gloom_wolfhound"], count: 6, description: Hunt Gloomroot Wolfhounds}
+    rewards:
+      marks: 140
+      xp: {hunting: 300}
+      reputation: {free_delvers: 20}
+
+  the_weavers_nest:
+    chain: gloomroot_hunt
+    title: The Weavers' Nest
+    giver: ranger_ilsa
+    turn-in: elder_moss
+    level: 4
+    requires: [howls_in_the_pines]
+    offer:
+      - "Something's feeding them, and it spins webs. The Mire Weavers nest deep in the pines."
+      - "Burn through the nest, then take word to Elder Moss in the druids' hollow."
+    complete:
+      - "Ilsa sent you. The forest breathes easier already. Sit, rest a moment in the Ward."
+    objectives:
+      - {type: kill, targets: ["custom:mire_weaver"], count: 8, description: Destroy Mire Weavers in the Gloomroot}
+      - {type: visit, zone: druids_ward, description: Find the Druid's Ward hollow}
+    rewards:
+      marks: 160
+      xp: {hunting: 350}
+      reputation: {rift_scholars: 20}
+
+  peat_for_the_grove:
+    chain: gloomroot_hunt
+    title: Peat for the Grove
+    giver: elder_moss
+    level: 4
+    requires: [the_weavers_nest]
+    offer:
+      - "The hollow's soil is rich, and it gives back what you take. Dig some for the grove's beds."
+      - "Who knows what you'll turn up. The earth here remembers."
+    complete:
+      - "Fine, dark peat. The grove will flourish."
+    objectives:
+      - {type: dig, zone: druids_ward, count: 12, description: Dig soil in the Druid's Ward hollow}
+    rewards:
+      marks: 120
+      xp: {excavation: 300}
+
+  the_thorned_watch:
+    chain: gloomroot_hunt
+    title: The Thorned Watch
+    giver: elder_moss
+    level: 5
+    requires: [peat_for_the_grove]
+    offer:
+      - "The Thorn Sentinels once guarded this forest. Now they guard nothing and shoot everything."
+      - "Grant them rest."
+    complete:
+      - "The watch has ended. Take this, with the grove's thanks."
+    objectives:
+      - {type: kill, targets: ["custom:thorn_sentinel"], count: 6, description: Lay the Thorn Sentinels to rest}
+    rewards:
+      marks: 200
+      xp: {hunting: 400, forestry: 150}
+      reputation: {rift_scholars: 30}
+      items: ["material:golden_apple 1"]
+
+  # ------------------------------------------------------------------ Mossfall Ruins (levels 10-15)
+  echoes_of_mossfall:
+    chain: mossfall_echoes
+    title: Echoes of Mossfall
+    giver: scholar_imre
+    level: 5
+    requires: [trouble_on_the_road]
+    offer:
+      - "Walk the ruins, count the dead that walk, and try not to join them. Purely for science."
+    complete:
+      - "Remarkable! And alarming. Mostly remarkable."
+    objectives:
+      - {type: visit, zone: mossfall_ruins, description: Enter the Mossfall Ruins}
+      - {type: kill, targets: ["custom:ruin_revenant"], zone: mossfall_ruins, count: 8, description: Defeat Mossfall Revenants}
+    rewards:
+      marks: 180
+      xp: {hunting: 400}
+      reputation: {rift_scholars: 30}
+
+  the_drowned_oracle:
+    chain: mossfall_echoes
+    title: The Drowned Oracle
+    giver: scholar_imre
+    level: 6
+    requires: [echoes_of_mossfall]
+    offer:
+      - "The bog oracles chant in the flooded crypts. Silence them, and the skeletons that guard them."
+    complete:
+      - "The humming has stopped. I may actually sleep tonight."
+    objectives:
+      - {type: kill, targets: ["custom:bog_oracle"], zone: mossfall_ruins, count: 3, description: Silence the Bog Oracles}
+      - {type: kill, targets: ["vanilla:skeleton"], zone: mossfall_ruins, count: 6, description: Defeat the crypt skeletons}
+    rewards:
+      marks: 220
+      xp: {hunting: 450}
+      reputation: {rift_scholars: 40}
+      items: ["material:experience_bottle 8"]
+
+  # ------------------------------------------------------------------ Sunscar Canyons and the Gilded Hollow (levels 14-20)
+  canyon_patrol:
+    chain: sunscar_gold
+    title: Canyon Patrol
+    giver: scout_dren
+    level: 6
+    requires: [trouble_on_the_road]
+    offer:
+      - "Skulkers in the shadows, raiders on the ridges. Clear both and the road to the mine stays open."
+    complete:
+      - "That's the quietest these canyons have been all season."
+    objectives:
+      - {type: kill, targets: ["custom:canyon_skulker"], count: 8, description: Defeat Canyon Skulkers}
+      - {type: kill, targets: ["custom:dust_raider"], count: 5, description: Defeat Dust Raiders}
+    rewards:
+      marks: 220
+      xp: {hunting: 500}
+      reputation: {free_delvers: 25}
+
+  gold_fever:
+    chain: sunscar_gold
+    title: Gold Fever
+    giver: prospector_hale
+    level: 6
+    requires: [canyon_patrol]
+    offer:
+      - "Grab a pickaxe and get into the pit. Every vein you mine grows back, so don't be shy."
+    complete:
+      - "A natural! Keep what you mined, that's the deal."
+    objectives:
+      - {type: harvest, targets: [GOLD_ORE], zone: gilded_hollow, count: 12, description: Mine gold ore in the Gilded Hollow}
+    rewards:
+      marks: 250
+      xp: {mining: 600}
+      items: ["material:iron_pickaxe 1"]
+
+  lurkers_below:
+    chain: sunscar_gold
+    title: Lurkers Below
+    giver: prospector_hale
+    level: 7
+    requires: [gold_fever]
+    offer:
+      - "My diggers won't go down to the lower ledges. Tunnel Lurkers, big as dogs. Deal with them."
+    complete:
+      - "The crews are back on the lower ledges. You've got nerve."
+    objectives:
+      - {type: kill, targets: ["custom:tunnel_lurker"], zone: gilded_hollow, count: 8, description: Clear the Tunnel Lurkers}
+    rewards:
+      marks: 260
+      xp: {hunting: 600}
+
+  the_gilded_overseer:
+    chain: sunscar_gold
+    title: The Gilded Overseer
+    giver: prospector_hale
+    level: 8
+    requires: [lurkers_below]
+    offer:
+      - "The Overseer struts about in gold plate claiming the mine is his. Prove him wrong."
+      - "And while you're down there, dig me some of that red sand for the furnaces."
+    complete:
+      - "Down he goes! The Gilded Hollow belongs to honest miners again."
+    objectives:
+      - {type: kill, targets: ["custom:gilded_overseer"], zone: gilded_hollow, count: 1, description: Defeat the Gilded Overseer}
+      - {type: dig, targets: [RED_SAND], zone: gilded_hollow, count: 10, description: Dig red sand at the mine's rim}
+    rewards:
+      marks: 400
+      xp: {hunting: 800, excavation: 300}
+      reputation: {free_delvers: 50}
+      items: ["material:golden_apple 2"]
+
+  # ------------------------------------------------------------------ Sandmere and the Amberdune (levels 17-26)
+  sands_of_sandmere:
+    chain: sandmere_bazaar
+    title: Sands of Sandmere
+    giver: samar_vizier
+    level: 6
+    requires: [canyon_patrol]
+    offer:
+      - "Every newcomer meets the bazaar's three pillars: Kasim's stall, Nadira's oasis and Tavros's arena."
+    complete:
+      - "Now Sandmere knows your face. That opens doors here."
+    objectives:
+      - {type: talk, targets: [kasim_trader], description: Greet Kasim at his stall}
+      - {type: talk, targets: [nadira_oasis], description: Meet Nadira at the oasis}
+      - {type: talk, targets: [arena_master_tavros], description: Find Tavros at the colosseum}
+    rewards:
+      marks: 150
+      reputation: {free_delvers: 20}
+
+  the_oasis_finds:
+    chain: sandmere_bazaar
+    title: The Oasis Finds
+    giver: nadira_oasis
+    level: 6
+    requires: [sands_of_sandmere]
+    offer:
+      - "Dig along the oasis banks. The sand settles back overnight, but the finds are real."
+    complete:
+      - "Shards of the old city! The archive will want to see what you turned up."
+    objectives:
+      - {type: dig, targets: [SAND], zone: sandmere, count: 15, description: Dig the sand around the oasis}
+    rewards:
+      marks: 250
+      xp: {excavation: 700}
+      reputation: {rift_scholars: 30}
+
+  scorpions_at_the_well:
+    chain: sandmere_bazaar
+    title: Scorpions at the Well
+    giver: samar_vizier
+    level: 8
+    requires: [sands_of_sandmere]
+    offer:
+      - "My caravans cannot water their camels with Dune Scorpions nesting by every well."
+    complete:
+      - "The caravans move again. Sandmere prospers, and so do you."
+    objectives:
+      - {type: kill, targets: ["custom:dune_scorpion"], count: 10, description: Defeat Dune Scorpions in the Amberdune}
+    rewards:
+      marks: 300
+      xp: {hunting: 800}
+      reputation: {free_delvers: 30}
+
+  the_sandwraith_veil:
+    chain: sandmere_bazaar
+    title: The Sandwraith Veil
+    giver: samar_vizier
+    level: 9
+    requires: [scorpions_at_the_well]
+    offer:
+      - "When the wind rises the Sandwraiths ride it. Strike them down before the next storm."
+    complete:
+      - "The storms will be only storms now. You have my gratitude, and my purse."
+    objectives:
+      - {type: kill, targets: ["custom:sandwraith"], count: 6, description: Defeat Sandwraiths}
+      - {type: kill, targets: ["vanilla:husk"], count: 4, description: Defeat the husks that follow them}
+    rewards:
+      marks: 350
+      xp: {hunting: 900}
+      items: ["material:emerald 4"]
+
+  trial_of_the_sands:
+    chain: sunscorch_colosseum
+    title: Trial of the Sands
+    giver: arena_master_tavros
+    level: 8
+    requires: [sands_of_sandmere]
+    offer:
+      - "Into the pit! Beat my gladiators and net-casters and the crowd is yours."
+    complete:
+      - "Listen to them roar! You have a future in this arena."
+    objectives:
+      - {type: kill, targets: ["custom:arena_gladiator"], zone: sunscorch_colosseum, count: 6, description: Defeat Pit Gladiators}
+      - {type: kill, targets: ["custom:arena_retiarius"], zone: sunscorch_colosseum, count: 4, description: Defeat Net-Casters}
+    rewards:
+      marks: 400
+      xp: {hunting: 1000}
+
+  champion_of_the_sands:
+    chain: sunscorch_colosseum
+    title: Champion of the Sands
+    giver: arena_master_tavros
+    level: 10
+    requires: [trial_of_the_sands]
+    offer:
+      - "One challenger remains: the Champion of the Sands. Nobody has beaten him in nine seasons."
+    complete:
+      - "A new champion! Sandmere will sing of this for years."
+    objectives:
+      - {type: kill, targets: ["custom:arena_champion"], zone: sunscorch_colosseum, count: 1, description: Defeat the Champion of the Sands}
+    rewards:
+      marks: 600
+      xp: {hunting: 1500}
+      reputation: {free_delvers: 60}
+      items: ["material:diamond 2"]
+
+  # ------------------------------------------------------------------ Frostveil Glacier (levels 24-30)
+  into_the_frostveil:
+    chain: frostveil_watch
+    title: Into the Frostveil
+    giver: warden_halvard
+    level: 8
+    requires: [the_western_road]
+    offer:
+      - "The frost-marked are crossing the glacier's edge. Go in, see how many, and cut them down."
+    complete:
+      - "You came back. Most don't, the first time."
+    objectives:
+      - {type: visit, zone: frostveil_glacier, description: Cross into the Frostveil Glacier}
+      - {type: kill, targets: ["custom:frostmarked"], zone: frostveil_glacier, count: 8, description: Defeat the Frostmarked}
+    rewards:
+      marks: 400
+      xp: {hunting: 1100}
+      reputation: {frontier_wardens: 40}
+
+  wolves_of_the_rime:
+    chain: frostveil_watch
+    title: Wolves of the Rime
+    giver: warden_halvard
+    level: 9
+    requires: [into_the_frostveil]
+    offer:
+      - "Rime wolves hunt in packs and the bears are no friendlier. Thin them out."
+    complete:
+      - "Fewer howls tonight. The watch thanks you."
+    objectives:
+      - {type: kill, targets: ["custom:rime_wolf"], zone: frostveil_glacier, count: 8, description: Hunt Rime Wolves}
+      - {type: kill, targets: ["vanilla:polar_bear"], zone: frostveil_glacier, count: 4, description: Drive off polar bears}
+    rewards:
+      marks: 450
+      xp: {hunting: 1200}
+
+  heart_of_the_glacier:
+    chain: frostveil_watch
+    title: Heart of the Glacier
+    giver: warden_halvard
+    level: 10
+    requires: [wolves_of_the_rime]
+    offer:
+      - "The strays gather around the glacier's heart. Break their ranks and the cold may finally ease."
+    complete:
+      - "The wind's gentler already. You've done what the watch couldn't."
+    objectives:
+      - {type: kill, targets: ["vanilla:stray"], zone: frostveil_glacier, count: 10, description: Break the strays at the glacier's heart}
+    rewards:
+      marks: 500
+      xp: {hunting: 1300}
+      reputation: {frontier_wardens: 50}
+      items: ["material:diamond 2"]
+
+  # ------------------------------------------------------------------ Stormcrag Peaks (levels 28-34)
+  the_hermits_warning:
+    chain: stormcrag_storms
+    title: The Hermit's Warning
+    giver: hermit_orla
+    level: 9
+    requires: [into_the_frostveil]
+    offer:
+      - "The rams have gone wild with the lightning in their horns. Climb into the peaks and calm them, permanently."
+    complete:
+      - "You climbed the peaks and came back. Now listen closely."
+    objectives:
+      - {type: visit, zone: stormcrag_peaks, description: Climb into the Stormcrag Peaks}
+      - {type: kill, targets: ["custom:crag_ram"], zone: stormcrag_peaks, count: 6, description: Defeat Stormcrag Rams}
+    rewards:
+      marks: 500
+      xp: {hunting: 1400}
+
+  storm_over_stormcrag:
+    chain: stormcrag_storms
+    title: Storm over Stormcrag
+    giver: hermit_orla
+    level: 11
+    requires: [the_hermits_warning]
+    offer:
+      - "The Stormcaller Shades ride the lightning down from the summits, and the frost-marked follow them."
+      - "End them, and the isles will have peace from the north at last."
+    complete:
+      - "The sky is clear for the first time in years. Highcrown will hear of this, hero."
+    objectives:
+      - {type: kill, targets: ["custom:crag_stormcaller"], zone: stormcrag_peaks, count: 6, description: Defeat Stormcaller Shades}
+      - {type: kill, targets: ["custom:frostmarked"], zone: stormcrag_peaks, count: 6, description: Defeat the Frostmarked of the peaks}
+    rewards:
+      marks: 700
+      xp: {hunting: 1800}
+      reputation: {rift_scholars: 60}
+      items: ["material:diamond 3", "material:emerald 6"]

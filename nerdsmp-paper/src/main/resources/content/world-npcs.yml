@@ -1,0 +1,671 @@
+# NPCs of the Highcrown Isles, the shared spawn map (see worldpacks/highcrown.yml, which places them).
+# This file ships inside the plugin, so updates bring new lines automatically. A server's own
+# content/npcs.yml wins for any id it also defines. Same format as content/npcs.yml; factions come from there.
+# Quest givers open their quest board with the open_quests effect; quests live in content/world-quests.yml.
+
+npcs:
+  steward_aldric:
+    name: Steward Aldric
+    title: Steward of Highcrown
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: aldric_start
+    look-radius: 9
+  master_corwin:
+    name: Corwin Ashblade
+    title: Master-at-Arms
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: corwin_start
+    look-radius: 8
+  captain_brenna:
+    name: Captain Brenna Holt
+    title: Captain of the Watch
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: brenna_start
+    look-radius: 9
+  harbormaster_wynn:
+    name: Harbormaster Wynn
+    title: Gullwater Harbour
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: wynn_start
+    look-radius: 9
+  liss_fernwhistle:
+    name: Liss Fernwhistle
+    title: Herbalist of the Gardens
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: liss_start
+    shop: herbalist_wares
+    look-radius: 8
+  farmer_odo:
+    name: Odo Thatch
+    title: Goldenreach Farmer
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: odo_start
+    look-radius: 9
+  waywarden_garet:
+    name: Waywarden Garet
+    title: Keeper of the Kingsroad
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: garet_start
+    look-radius: 9
+  ranger_ilsa:
+    name: Ilsa Vane
+    title: Gloomroot Ranger
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: ilsa_start
+    look-radius: 9
+  elder_moss:
+    name: Elder Rowan Moss
+    title: Druid of the Ward
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: moss_start
+    look-radius: 9
+  scholar_imre:
+    name: Imre Valcourt
+    title: Ruin Scholar
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: imre_start
+    look-radius: 9
+  tobin_peddler:
+    name: Tobin
+    title: Kingsroad Peddler
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: tobin_start
+    look-radius: 9
+  scout_dren:
+    name: Scout Dren
+    title: Sunscar Lookout
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: dren_start
+    look-radius: 9
+  prospector_hale:
+    name: Magda Hale
+    title: Gilded Hollow Prospector
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: hale_start
+    look-radius: 9
+  samar_vizier:
+    name: Samar al-Rashan
+    title: Merchant-Prince of Sandmere
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: samar_start
+    look-radius: 9
+  kasim_trader:
+    name: Kasim
+    title: Bazaar Trader
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: kasim_start
+    shop: bazaar_wares
+    look-radius: 8
+  nadira_oasis:
+    name: Nadira
+    title: Keeper of the Oasis
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: nadira_start
+    look-radius: 9
+  arena_master_tavros:
+    name: Tavros
+    title: Master of the Colosseum
+    entity: VILLAGER
+    faction: free_delvers
+    root-dialogue: tavros_start
+    look-radius: 10
+  warden_halvard:
+    name: Warden Halvard
+    title: Frostwatch Sentry
+    entity: VILLAGER
+    faction: frontier_wardens
+    root-dialogue: halvard_start
+    look-radius: 9
+  hermit_orla:
+    name: Orla
+    title: Hermit of Stormcrag
+    entity: VILLAGER
+    faction: rift_scholars
+    root-dialogue: orla_start
+    look-radius: 9
+
+shops:
+  herbalist_wares:
+    title: Liss's Garden Stall
+    description: Seeds, saplings and bone meal grown in the Lanternmere Gardens for island planters.
+    products:
+      oak_sapling:
+        material: OAK_SAPLING
+        amount: 2
+        buy-price: 20
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Hardy starter trees.
+      cherry_sapling:
+        material: CHERRY_SAPLING
+        amount: 1
+        buy-price: 45
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 0
+        description: Grown from the orchards around Highcrown.
+      bone_meal:
+        material: BONE_MEAL
+        amount: 8
+        buy-price: 24
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Hurries a slow harvest along.
+      sweet_berries:
+        material: SWEET_BERRIES
+        amount: 4
+        buy-price: 18
+        sell-price: 4
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Plant them or eat them; Liss buys spare punnets.
+      flower_bundle:
+        material: CORNFLOWER
+        amount: 4
+        buy-price: 16
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: For dye vats and window boxes.
+
+  bazaar_wares:
+    title: Kasim's Bazaar Stall
+    description: Desert goods traded at Sandmere, the only market between the canyons and the colosseum.
+    products:
+      cactus:
+        material: CACTUS
+        amount: 4
+        buy-price: 22
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Green dye and a prickly fence.
+      sandstone:
+        material: SANDSTONE
+        amount: 16
+        buy-price: 40
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Sun-baked building blocks.
+      honey_bottle:
+        material: HONEY_BOTTLE
+        amount: 2
+        buy-price: 26
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Desert honey, sweet and thirst-quenching.
+      dried_kelp:
+        material: DRIED_KELP
+        amount: 8
+        buy-price: 20
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: -249
+        description: Light rations for the dunes.
+      rabbit_hide:
+        material: RABBIT_HIDE
+        amount: 4
+        buy-price: 30
+        sell-price: 10
+        daily-sell-limit: 8
+        minimum-reputation: -249
+        description: Kasim buys hides from desert hunters.
+      golden_carrot:
+        material: GOLDEN_CARROT
+        amount: 4
+        buy-price: 90
+        sell-price: 0
+        daily-sell-limit: 0
+        minimum-reputation: 250
+        description: Sandmere's finest, for trusted customers.
+
+dialogues:
+  aldric_start:
+    text:
+      - "Welcome to Highcrown, {player}. The keep, the town and the isles beyond are all yours to explore."
+      - "Every road out of these walls is short of hands. Shall I put you to work?"
+    choices:
+      quests:
+        text: "What needs doing?"
+        effects:
+          - type: open_quests
+      isles:
+        text: "Tell me about the Highcrown Isles."
+        next: aldric_isles
+      journal:
+        text: "Show my quest journal."
+        effects:
+          - type: open_command
+            command: journal
+      done:
+        text: "Later, Steward."
+        close: true
+  aldric_isles:
+    text:
+      - "West lie the Goldenreach farms and the Wildwood. North, the Gloomroot pines and the druids' hollow."
+      - "South, the Sunscar canyons and their gold mine, then the Amberdune and Sandmere's bazaar. Beyond them all, ice and storm peaks."
+    choices:
+      quests:
+        text: "Where should a newcomer start?"
+        effects:
+          - type: open_quests
+      back:
+        text: "I had another question."
+        next: aldric_start
+      done:
+        text: "Thank you."
+        close: true
+
+  corwin_start:
+    text:
+      - "Feet apart. Shield up. Nobody survives the Wildwood by swinging wildly."
+      - "I train every recruit who passes through this courtyard."
+    choices:
+      quests:
+        text: "Train me."
+        effects:
+          - type: open_quests
+      skills:
+        text: "How are my skills coming along?"
+        effects:
+          - type: open_command
+            command: skills
+      mastery:
+        text: "I want to master a discipline."
+        effects:
+          - type: open_command
+            command: mastery
+      done:
+        text: "Another time."
+        close: true
+
+  brenna_start:
+    text:
+      - "The Watch keeps the roads, {player}. Lately the roads keep us busy."
+      - "Brigands on the Kingsroad, beasts in the pines. I could use a capable blade."
+    choices:
+      quests:
+        text: "Put me on patrol."
+        effects:
+          - type: open_quests
+      contracts:
+        text: "Any Warden contracts?"
+        effects:
+          - type: open_contracts
+      done:
+        text: "Stay sharp, Captain."
+        close: true
+
+  wynn_start:
+    text:
+      - "Ships call at Gullwater whenever the weather lets them. The pines along the north shore bring trouble down to the docks."
+    choices:
+      quests:
+        text: "Need a hand on the docks?"
+        effects:
+          - type: open_quests
+      warps:
+        text: "Where can I travel from here?"
+        effects:
+          - type: open_command
+            command: warps
+      fishing:
+        text: "How is the fishing?"
+        effects:
+          - type: open_command
+            command: fishing
+      done:
+        text: "Fair winds."
+        close: true
+
+  liss_start:
+    text:
+      - "Mind the lanterns, they took me a whole summer. What brings you to the gardens?"
+    choices:
+      quests:
+        text: "Can I help with the gardens?"
+        effects:
+          - type: open_quests
+      shop:
+        text: "What are you growing for sale?"
+        effects:
+          - type: open_shop
+            shop: herbalist_wares
+      done:
+        text: "Just admiring the flowers."
+        close: true
+
+  odo_start:
+    text:
+      - "Goldenreach has fed Highcrown for three generations. This year the fields are eating us instead."
+      - "Gnawers in the wheat, boars at the fences, and the scarecrows... don't ask about the scarecrows."
+    choices:
+      quests:
+        text: "I'll help with the fields."
+        effects:
+          - type: open_quests
+      farming:
+        text: "Any farming advice?"
+        next: odo_advice
+      done:
+        text: "Good luck with the harvest."
+        close: true
+  odo_advice:
+    text:
+      - "Plant on your own island and keep the soil watered. A good hoe harvests and replants in one go."
+      - "Bring surplus wheat to Alba in the market. She pays fair."
+    choices:
+      back:
+        text: "About those pests..."
+        next: odo_start
+      done:
+        text: "Thanks, Odo."
+        close: true
+
+  garet_start:
+    text:
+      - "This crossroads is the heart of the Kingsroad. East to Highcrown, west to the meadows, south to the canyons."
+      - "Brigands think the hedges hide them. They don't hide them from me."
+    choices:
+      quests:
+        text: "Point me at the brigands."
+        effects:
+          - type: open_quests
+      roads:
+        text: "Where do the roads lead?"
+        next: garet_roads
+      done:
+        text: "Safe roads, Waywarden."
+        close: true
+  garet_roads:
+    text:
+      - "The western road runs past Mossfall to the meadows and the glacier. The southern road drops into the Sunscar canyons and on to the dunes."
+    choices:
+      back:
+        text: "Back to business."
+        next: garet_start
+      done:
+        text: "Understood."
+        close: true
+
+  ilsa_start:
+    text:
+      - "Quiet. Hear that? The wolfhounds have been circling the lumber camp for a week."
+    choices:
+      quests:
+        text: "I can hunt."
+        effects:
+          - type: open_quests
+      gloomroot:
+        text: "What's out in the Gloomroot?"
+        next: ilsa_lore
+      done:
+        text: "I'll leave you to it."
+        close: true
+  ilsa_lore:
+    text:
+      - "Old pines, older webs. The druids keep a hollow in the middle of it all. Elder Moss knows the forest better than anyone."
+    choices:
+      back:
+        text: "About the wolfhounds..."
+        next: ilsa_start
+      done:
+        text: "Thanks."
+        close: true
+
+  moss_start:
+    text:
+      - "The Ward is a quiet place, traveller. The forest around it is not."
+      - "The weavers and the thorned watchers have grown bold. The grove needs tending."
+    choices:
+      quests:
+        text: "How can I help the grove?"
+        effects:
+          - type: open_quests
+      excavation:
+        text: "What can be found in this soil?"
+        effects:
+          - type: open_command
+            command: excavation
+      dig:
+        text: "Where can I dig?"
+        effects:
+          - type: open_command
+            command: digsite
+      done:
+        text: "Peace be with the grove."
+        close: true
+
+  imre_start:
+    text:
+      - "Mossfall was a temple once. Now it hums at night and the dead walk its stairs."
+      - "Science demands that someone go and look. Preferably someone else."
+    choices:
+      quests:
+        text: "I'll be your someone."
+        effects:
+          - type: open_quests
+      archive:
+        text: "I brought finds for the archive."
+        effects:
+          - type: open_archive
+      done:
+        text: "Good luck with the research."
+        close: true
+
+  tobin_start:
+    text:
+      - "Tobin's the name, travelling's the game. The road's been unkind lately: brigands took half my stock."
+    choices:
+      quests:
+        text: "Need help on the road?"
+        effects:
+          - type: open_quests
+      news:
+        text: "Heard any news?"
+        next: tobin_news
+      done:
+        text: "Safe travels, Tobin."
+        close: true
+  tobin_news:
+    text:
+      - "Ice wolves past the glacier road, sand-scorpions near Sandmere, and gold, real gold, in the Sunscar canyons. Ask for Magda Hale."
+    choices:
+      back:
+        text: "Anything else?"
+        next: tobin_start
+      done:
+        text: "Thanks for the tip."
+        close: true
+
+  dren_start:
+    text:
+      - "From this ridge I can see every canyon in the Sunscar. Lately I can see too many raiders in them."
+    choices:
+      quests:
+        text: "I'll clear the canyons."
+        effects:
+          - type: open_quests
+      mine:
+        text: "What's in the middle of the canyons?"
+        next: dren_mine
+      done:
+        text: "Keep watching."
+        close: true
+  dren_mine:
+    text:
+      - "The Gilded Hollow, an open pit with gold in every wall. Magda Hale runs it from the southern rim."
+    choices:
+      back:
+        text: "About those raiders..."
+        next: dren_start
+      done:
+        text: "I'll pay her a visit."
+        close: true
+
+  hale_start:
+    text:
+      - "Mind the edge, it's a long way down. The Gilded Hollow's walls are thick with gold, and the veins grow back faster than you'd believe."
+    choices:
+      quests:
+        text: "I'm here to work."
+        effects:
+          - type: open_quests
+      veins:
+        text: "Gold that grows back?"
+        next: hale_veins
+      done:
+        text: "Maybe later."
+        close: true
+  hale_veins:
+    text:
+      - "Mine any ore in the pit and the vein closes up again after a short while. Something in the deep rock. Nobody's complaining."
+      - "Mind the lurkers in the tunnels, and the Overseer. He thinks he owns the place."
+    choices:
+      back:
+        text: "Put me to work."
+        next: hale_start
+      done:
+        text: "Noted."
+        close: true
+
+  samar_start:
+    text:
+      - "Peace be upon you, {player}. Sandmere welcomes every traveller with coin, and many without."
+      - "The dunes test my caravans. Perhaps you can test the dunes."
+    choices:
+      quests:
+        text: "What troubles Sandmere?"
+        effects:
+          - type: open_quests
+      bazaar:
+        text: "Tell me about the bazaar."
+        next: samar_bazaar
+      done:
+        text: "Farewell, Merchant-Prince."
+        close: true
+  samar_bazaar:
+    text:
+      - "Kasim trades in the stalls, Nadira keeps the oasis and its buried secrets, and Tavros runs the colosseum on the southern shore."
+    choices:
+      back:
+        text: "About those troubles..."
+        next: samar_start
+      done:
+        text: "Thank you."
+        close: true
+
+  kasim_start:
+    text:
+      - "Cactus, sandstone, desert honey! Everything a dune-walker needs, nothing they don't."
+    choices:
+      shop:
+        text: "Show me your wares."
+        effects:
+          - type: open_shop
+            shop: bazaar_wares
+      quests:
+        text: "Any work?"
+        effects:
+          - type: open_quests
+      done:
+        text: "Just browsing."
+        close: true
+
+  nadira_start:
+    text:
+      - "The oasis keeps more than water. Its banks hold pottery, coins, bones... the old city sleeps under the sand."
+    choices:
+      quests:
+        text: "Can I dig here?"
+        effects:
+          - type: open_quests
+      excavation:
+        text: "How do I get better at digging?"
+        effects:
+          - type: open_command
+            command: excavation
+      archive:
+        text: "I have finds to appraise."
+        effects:
+          - type: open_archive
+      done:
+        text: "Another time."
+        close: true
+
+  tavros_start:
+    text:
+      - "Step up, step up! The Sunscorch Colosseum never closes and never runs short of challengers."
+      - "Win and the crowd will chant your name. Lose and they'll chant it anyway, louder."
+    choices:
+      quests:
+        text: "I want to fight."
+        effects:
+          - type: open_quests
+      duels:
+        text: "Can I challenge another player?"
+        effects:
+          - type: open_command
+            command: duel
+      done:
+        text: "Maybe when I'm stronger."
+        close: true
+
+  halvard_start:
+    text:
+      - "Past this point the Frostveil begins. Ice spikes, rime wolves and the frost-marked dead."
+      - "Only go north if you're ready, {player}."
+    choices:
+      quests:
+        text: "I'm ready."
+        effects:
+          - type: open_quests
+      glacier:
+        text: "What is the Frostveil?"
+        next: halvard_lore
+      done:
+        text: "I'll prepare first."
+        close: true
+  halvard_lore:
+    text:
+      - "A glacier that should have melted centuries ago. The cold comes from its heart, and so do the frost-marked."
+    choices:
+      back:
+        text: "Send me in."
+        next: halvard_start
+      done:
+        text: "Understood."
+        close: true
+
+  orla_start:
+    text:
+      - "You climbed all this way to visit an old woman? Or did the storms call you too?"
+      - "The peaks have been restless. Something old walks in the lightning."
+    choices:
+      quests:
+        text: "Tell me about the storms."
+        effects:
+          - type: open_quests
+      done:
+        text: "Just passing through."
+        close: true

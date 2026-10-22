@@ -191,7 +191,8 @@ public record NpcContent(
         OPEN_ALCHEMY,
         OPEN_FORGE,
         OPEN_ENCHANTMENTS,
-        OPEN_COMMAND
+        OPEN_COMMAND,
+        OPEN_QUESTS
     }
 
     public record DialogueEffect(

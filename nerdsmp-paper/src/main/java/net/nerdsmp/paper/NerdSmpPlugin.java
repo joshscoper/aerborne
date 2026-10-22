@@ -213,6 +213,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.zone.ZoneSpawner zoneSpawner;
     private net.nerdsmp.paper.zone.AreaWand areaWand;
     private net.nerdsmp.paper.digsite.DigSiteService digSites;
+    private net.nerdsmp.paper.quest.QuestService quests;
+    private net.nerdsmp.paper.worldpack.WorldPackService worldPacks;
+    public net.nerdsmp.paper.quest.QuestService quests() { return quests; }
+    public net.nerdsmp.paper.worldpack.WorldPackService worldPacks() { return worldPacks; }
     private net.nerdsmp.paper.digsite.DigSiteCommand digSiteCommands;
     public net.nerdsmp.paper.digsite.DigSiteService digSites() { return digSites; }
     public net.nerdsmp.paper.digsite.DigSiteCommand digSiteCommands() { return digSiteCommands; }
@@ -277,6 +281,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (contentRefreshTask != null) { contentRefreshTask.cancel(); contentRefreshTask=null; }
         contentRefreshQueue.clear();
         if (menus != null) menus.close();
+        if (quests != null) quests.close();
         if (digSites != null) digSites.close();
         if (zoneSpawner != null) zoneSpawner.close();
         if (mobs != null) mobs.close();
@@ -507,6 +512,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
                 new net.nerdsmp.paper.digsite.DigSiteStore(new java.io.File(getDataFolder(), "dig-sites.yml")));
         }
         digSiteCommands = new net.nerdsmp.paper.digsite.DigSiteCommand(this);
+        quests = new net.nerdsmp.paper.quest.QuestService(this);
+        worldPacks = new net.nerdsmp.paper.worldpack.WorldPackService(this);
         guide = new PlayerGuideService(this, settings);
         rewardDrops = new RewardDropService(this, mobs, forge, items, sessions, economy);
         expansionLoot = new net.nerdsmp.paper.loot.ExpansionLootService(this);
@@ -569,6 +576,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(npcStudio, this);
         plugins.registerEvents(recipeStudio, this);
         if (digSites != null) plugins.registerEvents(digSites, this);
+        plugins.registerEvents(quests, this);
+        plugins.registerEvents(worldPacks, this);
         if (skyblock != null) plugins.registerEvents(skyblock, this);
         plugins.registerEvents(damageDisplays, this);
         plugins.registerEvents(menus, this);
@@ -661,6 +670,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         leaderboards = new net.nerdsmp.paper.leaderboard.LeaderboardService(this); leaderboards.start();
         zoneSpawner.start();
         if (digSites != null) digSites.start();
+        quests.start();
+        worldPacks.start();
         try { webApi = net.nerdsmp.paper.webapi.WebApi.start(this); }
         catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Web API unavailable; no port-9028 listener enabled", failure); }
         try { websiteRewards = net.nerdsmp.paper.webapi.WebsiteRewards.start(this); }
@@ -705,7 +716,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
             "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
-            "companion", "trail", "emote"
+            "companion", "trail", "emote", "journal", "worldpack"
         );
         for (String name : names) {
             PluginCommand command = getCommand(name);

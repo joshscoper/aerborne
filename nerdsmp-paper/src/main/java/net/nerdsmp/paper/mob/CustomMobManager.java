@@ -1002,12 +1002,15 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         Map<String, MobDefinition> loaded = new HashMap<>();
         // Expedition creatures ship inside the jar so every update brings new ones; the same id in
         // content/mobs.yml overrides the shipped version.
-        var shipped = plugin.getResource("content/expedition-mobs.yml");
-        if (shipped != null) try (var reader = new java.io.InputStreamReader(shipped, java.nio.charset.StandardCharsets.UTF_8)) {
-            ConfigurationSection extra = YamlConfiguration.loadConfiguration(reader).getConfigurationSection("mobs");
-            if (extra != null) readMobs(extra, loaded, "content/expedition-mobs.yml");
-        } catch (java.io.IOException failure) {
-            plugin.getLogger().warning("Could not read the shipped expedition mobs: " + failure.getMessage());
+        // The world-map creatures (content/world-mobs.yml) ship the same way.
+        for (String path : List.of("content/expedition-mobs.yml", "content/world-mobs.yml")) {
+            var shipped = plugin.getResource(path);
+            if (shipped != null) try (var reader = new java.io.InputStreamReader(shipped, java.nio.charset.StandardCharsets.UTF_8)) {
+                ConfigurationSection extra = YamlConfiguration.loadConfiguration(reader).getConfigurationSection("mobs");
+                if (extra != null) readMobs(extra, loaded, path);
+            } catch (java.io.IOException failure) {
+                plugin.getLogger().warning("Could not read the shipped mobs in " + path + ": " + failure.getMessage());
+            }
         }
         readMobs(mobs, loaded, "content/mobs.yml");
         return Map.copyOf(loaded);
