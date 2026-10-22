@@ -1,4 +1,4 @@
-schema-version: 10
+schema-version: 11
 
 factions:
   frontier_wardens:
@@ -113,6 +113,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: mara_start
+    look: armorer
     shop: warden_supplies
     look-radius: 9
   elian_quill:
@@ -121,6 +122,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: elian_start
+    look: cartographer
     shop: scholar_supplies
     look-radius: 8
   bram_tallow:
@@ -137,6 +139,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: nyra_start
+    look: librarian@desert
     look-radius: 8
   orin_ledger:
     name: Orin Ledger
@@ -144,6 +147,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: orin_start
+    look: librarian
     look-radius: 8
   sella_mire:
     name: Sella Mire
@@ -151,6 +155,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: sella_start
+    look: cleric@swamp
     shop: apothecary_supplies
     look-radius: 8
   torren_pike:
@@ -159,6 +164,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: torren_start
+    look: toolsmith
     look-radius: 8
   ivo_reed:
     name: Ivo Reed
@@ -174,6 +180,7 @@ npcs:
     entity: VILLAGER
     faction: free_delvers
     root-dialogue: hessa_start
+    look: mason@desert
     look-radius: 8
   gilda_penn:
     name: Gilda Penn
@@ -181,6 +188,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: gilda_start
+    look: librarian@taiga
     look-radius: 8
   orris_bell:
     name: Orris Bell
@@ -195,6 +203,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: tamsin_start
+    look: cleric
     look-radius: 8
   cassia_dawn:
     name: Cassia Dawn
@@ -202,6 +211,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: cassia_start
+    look: fisherman
     look-radius: 9
   aeron_vale:
     name: Aeron Vale
@@ -209,6 +219,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: aeron_start
+    look: weaponsmith@snow
     look-radius: 8
   pell_wren:
     name: Pell Wren
@@ -216,6 +227,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: pell_start
+    look: librarian@jungle
     look-radius: 8
   veyra_loom:
     name: Veyra Loom
@@ -223,6 +235,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: veyra_start
+    look: cleric@swamp
     look-radius: 8
   cato_flint:
     name: Cato Flint
@@ -230,6 +243,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: cato_start
+    look: armorer@taiga
     look-radius: 8
   lyra_senn:
     name: Lyra Senn
@@ -237,6 +251,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: lyra_start
+    look: librarian@snow
     look-radius: 8
   garrick_mott:
     name: Garrick Mott
@@ -251,6 +266,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: arlen_start
+    look: fletcher
     look-radius: 9
   kestrel_way:
     name: Kestrel Way
@@ -258,6 +274,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: kestrel_start
+    look: cartographer@taiga
     look-radius: 9
   nima_hart:
     name: Nima Hart
@@ -272,6 +289,7 @@ npcs:
     entity: VILLAGER
     faction: free_delvers
     root-dialogue: dorian_start
+    look: weaponsmith@desert
     look-radius: 10
   vera_lune:
     name: Vera Lune
@@ -279,6 +297,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: vera_start
+    look: leatherworker@desert
     look-radius: 8
   rook_salen:
     name: Rook Salen
@@ -286,6 +305,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: rook_start
+    look: cleric@jungle
     look-radius: 8
   fen_calder:
     name: Fen Calder
@@ -301,6 +321,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: alba_start
+    look: farmer
     shop: farmstead_supplies
     look-radius: 8
   rowan_ashwood:
@@ -309,6 +330,7 @@ npcs:
     entity: VILLAGER
     faction: free_delvers
     root-dialogue: rowan_start
+    look: fletcher@taiga
     shop: timber_yard
     look-radius: 8
   dain_slate:
@@ -317,6 +339,7 @@ npcs:
     entity: VILLAGER
     faction: free_delvers
     root-dialogue: dain_start
+    look: mason@snow
     shop: quarry_supplies
     look-radius: 8
   petra_mason:
@@ -325,6 +348,7 @@ npcs:
     entity: VILLAGER
     faction: frontier_wardens
     root-dialogue: petra_start
+    look: mason
     shop: masons_stock
     look-radius: 8
   hob_copper:
@@ -333,6 +357,7 @@ npcs:
     entity: VILLAGER
     faction: rift_scholars
     root-dialogue: hob_start
+    look: toolsmith@savanna
     shop: workshop_parts
     look-radius: 8
 
@@ -2197,13 +2222,14 @@ shops:
         description: Toggle a copper light with a pulse.
 
 dialogues:
+  # ------------------------------------------------------------------ Mara Venn, Warden Quartermaster
   mara_start:
     text:
-      - "Quartermaster's busy. If this is about missing road signs, I already know."
-      - "What do you need, {player}?"
+      - "Quartermaster's busy, {player}. Three bridges washed out on the Kingsroad this month and every one of them was on my ledger."
+      - "If you're here to help, grab a crate. If you're here to complain, Cato takes complaints. He files them very slowly."
     choices:
       ask_work:
-        text: "What are the Wardens doing out here?"
+        text: "What do the Wardens actually do?"
         next: mara_work
       volunteer:
         text: "Put my name on the watch list."
@@ -2227,6 +2253,14 @@ dialogues:
         effects:
           - type: open_command
             command: jobs
+  mara_work:
+    text:
+      - "Keep the roads open, keep the lanterns lit, and pull foolish explorers out of holes. Same work my mother did, and hers before that."
+      - "The Wardens built Highcrown after the Long Tide drowned the old coast. We've been rebuilding bridges ever since."
+    choices:
+      tide:
+        text: "What was the Long Tide?"
+        next: mara_tide
       dismissive:
         text: "The roads managed before you arrived."
         cooldown-minutes: 1440
@@ -2235,19 +2269,34 @@ dialogues:
             faction: frontier_wardens
             amount: -20
         close: true
-
-  mara_work:
-    text:
-      - "Keeping routes open. Replacing bridges. Pulling overeager explorers out of holes."
-      - "Campaign work earns trust. Starting fights in camp loses it quickly."
-    choices:
       back:
         text: "I had another question."
         next: mara_start
       done:
         text: "That's all."
         close: true
-
+  mara_tide:
+    text:
+      - "A storm that didn't stop for a season. The sea came up over the farms, the old harbour and half the Mossfall temple."
+      - "When it went down, the people who were left built the keep on the highest rock they could find. That's why it's called Highcrown."
+    choices:
+      back:
+        text: "Thanks for the history."
+        next: mara_start
+      done:
+        text: "I'll let you work."
+        close: true
+  mara_joined:
+    text:
+      - "Good. Don't make me regret the ink."
+      - "Help with campaigns and keep your hands off Warden property. People will remember."
+    choices:
+      stores:
+        text: "What does the quartermaster carry?"
+        next: mara_stores
+      done:
+        text: "Understood."
+        close: true
   mara_stores:
     text:
       - "This counter keeps travelers and road crews moving. Food, light, arrows, camp gear, and repair stock."
@@ -2272,26 +2321,30 @@ dialogues:
         text: "I'll come back when I need provisions."
         close: true
 
-  mara_joined:
-    text:
-      - "Good. Don't make me regret the ink."
-      - "Help with campaigns and keep your hands off Warden property. People will remember."
-    choices:
-      stores:
-        text: "What does the quartermaster carry?"
-        next: mara_stores
-      done:
-        text: "Understood."
-        close: true
-
+  # ------------------------------------------------------------------ Elian Quill, Rift Cartographer
   elian_start:
     text:
       - "Hold still. Your outline is interfering with the map."
-      - "There. Speak."
+      - "There. Every chart of the Highcrown Isles that's worth anything came off this desk. Speak, but speak precisely."
     choices:
       ask_rifts:
         text: "What exactly are you mapping?"
         next: elian_rifts
+      trade:
+        text: "I need supplies for field work."
+        next: elian_supplies
+      archive:
+        text: "I brought finds for the archive."
+        effects:
+          - type: open_archive
+      lyra:
+        text: "Do you work with Lyra Senn?"
+        next: elian_lyra
+  elian_rifts:
+    text:
+      - "Where the world bends, what leaks through, and which fool touched it first. The Frostveil should have melted centuries ago. It hasn't."
+      - "Bring facts, not campfire versions. The archive rewards the difference."
+    choices:
       fund_archive:
         text: "I can spare 75 Marks for the field archive."
         cooldown-minutes: 1440
@@ -2304,29 +2357,34 @@ dialogues:
             faction: rift_scholars
             amount: 20
         next: elian_thanks
-      trade:
-        text: "I need supplies for field work."
-        next: elian_supplies
-      archive:
-        text: "I brought finds for the archive."
-        effects:
-          - type: open_archive
-      done:
-        text: "Never mind."
-        close: true
-
-  elian_rifts:
-    text:
-      - "Where the world bends, what leaks through, and which fool touched it first."
-      - "Bring facts, not campfire versions. The archive rewards the difference."
-    choices:
       back:
         text: "One more thing."
         next: elian_start
       done:
         text: "I'll keep my eyes open."
         close: true
-
+  elian_lyra:
+    text:
+      - "Lyra funds the expeditions. I draw where they went. She thinks that makes her the senior partner."
+      - "It doesn't. Maps outlive budgets. Don't tell her I said that, she'll cut my ink allowance."
+    choices:
+      back:
+        text: "Your secret's safe."
+        next: elian_start
+      done:
+        text: "I'll leave you to your map."
+        close: true
+  elian_thanks:
+    text:
+      - "Useful. Ink, glass, and dry paper cost more than heroics suggest."
+      - "The archive has noted your help."
+    choices:
+      shop:
+        text: "What can the archive spare?"
+        next: elian_supplies
+      done:
+        text: "Back to your map."
+        close: true
   elian_supplies:
     text:
       - "The supply shelves hold ordinary materials: paper, glass, inks, and stable reagents."
@@ -2350,22 +2408,11 @@ dialogues:
         text: "I'll return after the next survey."
         close: true
 
-  elian_thanks:
-    text:
-      - "Useful. Ink, glass, and dry paper cost more than heroics suggest."
-      - "The archive has noted your help."
-    choices:
-      shop:
-        text: "What can the archive spare?"
-        next: elian_supplies
-      done:
-        text: "Back to your map."
-        close: true
-
+  # ------------------------------------------------------------------ Bram Tallow, Delver Fixer
   bram_start:
     text:
-      - "If you need rope, I have rope. If you need a rescue, talk to Mara."
-      - "If you need a route nobody else knows, now we're talking."
+      - "If you need rope, I have rope. If you need a rescue, talk to Mara. If you need a route nobody else knows, now we're talking."
+      - "I've been down the Gilded Hollow, under Mossfall, and out on the glacier. Came back from all three. That's the trick, mostly."
     choices:
       routes:
         text: "How do Delvers trade routes?"
@@ -2392,14 +2439,10 @@ dialogues:
         effects:
           - type: open_command
             command: relics
-      done:
-        text: "Maybe later."
-        close: true
-
   bram_routes:
     text:
-      - "You bring back a route that saves boots or blood, you share it."
-      - "Hoard a warning and somebody gets buried. That's how names end up on the bad list."
+      - "You bring back a route that saves boots or blood, you share it. Hoard a warning and somebody gets buried."
+      - "Magda Hale taught me that, out at the mine. She lost a partner to a route someone kept to themselves."
     choices:
       back:
         text: "Makes sense."
@@ -2407,7 +2450,17 @@ dialogues:
       done:
         text: "I'll remember that."
         close: true
-
+  bram_welcome:
+    text:
+      - "Level five and still curious. Good enough for an introduction."
+      - "Don't call yourself a Delver yet. Come back with mud on the map."
+    choices:
+      shop:
+        text: "Help me pack for the trail."
+        next: bram_packs
+      done:
+        text: "See you down the trail."
+        close: true
   bram_packs:
     text:
       - "I sell the things that save time underground: scaffolds, ladders, food, line, and a way out."
@@ -2430,21 +2483,11 @@ dialogues:
         text: "I'll check my pack first."
         close: true
 
-  bram_welcome:
-    text:
-      - "Level five and still curious. Good enough for an introduction."
-      - "Don't call yourself a Delver yet. Come back with mud on the map."
-    choices:
-      shop:
-        text: "Help me pack for the trail."
-        next: bram_packs
-      done:
-        text: "See you down the trail."
-        close: true
-
+  # ------------------------------------------------------------------ Nyra Vell, Arcane Identifier
   nyra_start:
     text:
       - "Bring me your sealed finds. I can read the lot, or break down what you don't need into Arcane Dust."
+      - "Every sealed piece is a little argument with whoever made it. I enjoy arguments."
     choices:
       identify:
         text: "Let me sort through my finds."
@@ -2453,13 +2496,16 @@ dialogues:
       explain:
         text: "What does identification reveal?"
         next: nyra_explain
+      past:
+        text: "How did you learn to read seals?"
+        next: nyra_past
       done:
         text: "Not right now."
         close: true
-
   nyra_explain:
     text:
-      - "The name, socket count, and every affix. Until then, the item grants nothing. Or I can scrap it for dust—better gear yields more, but there's no getting it back."
+      - "The name, socket count, and every affix. Until then, the item grants nothing."
+      - "Or I can scrap it for dust. Better gear yields more, but there's no getting it back."
     choices:
       identify:
         text: "Let's take a look."
@@ -2468,10 +2514,24 @@ dialogues:
       done:
         text: "I'll come back with a sealed find."
         close: true
+  nyra_past:
+    text:
+      - "I was a lockmaker's daughter in Sandmere. Seals are just locks that hum."
+      - "Veyra Loom taught me the runes. I taught her patience. Neither of us is finished learning."
+    choices:
+      identify:
+        text: "Then read my finds."
+        effects:
+          - type: open_identifier
+      back:
+        text: "I had another question."
+        next: nyra_start
 
+  # ------------------------------------------------------------------ Orin Ledger, Frontier Banker
   orin_start:
     text:
-      - "Nine slots are included. More space costs more each time; good vault steel is not cheap."
+      - "Nine slots are included, {player}. More space costs more each time; good vault steel is not cheap."
+      - "I kept the books on a ship once. The ship sank. The books didn't. That's banking."
     choices:
       bank:
         text: "Open my vault."
@@ -2480,10 +2540,12 @@ dialogues:
       safety:
         text: "Is the vault tied to this character?"
         next: orin_safety
+      ship:
+        text: "What ship?"
+        next: orin_ship
       done:
         text: "I'll be back."
         close: true
-
   orin_safety:
     text:
       - "Your vault stays with you, even if you change your name. Start with nine slots and buy more when you need them."
@@ -2495,10 +2557,23 @@ dialogues:
       done:
         text: "Good enough."
         close: true
+  orin_ship:
+    text:
+      - "The Gull's Promise. Purser for eleven years. She went down in the harbour mouth the night of the last great storm, cargo and all."
+      - "Half of Highcrown still owes the other half for what was in her hold. I'd like to close those accounts before I die."
+    choices:
+      back:
+        text: "I had another question."
+        next: orin_start
+      done:
+        text: "I'm sorry about your ship."
+        close: true
 
+  # ------------------------------------------------------------------ Sella Mire, Camp Alchemist
   sella_start:
     text:
-      - "Potions restore. Poisons persuade. Mine usually do one or the other."
+      - "Potions restore. Poisons persuade. Mine usually do one or the other, and I label which. Usually."
+      - "Mind the green flask. No, the other green flask."
     choices:
       workbench:
         text: "Open the alchemy workbench."
@@ -2510,22 +2585,9 @@ dialogues:
       lesson:
         text: "How do weapon poisons work?"
         next: sella_lesson
-      done:
-        text: "I'll come back when I need the bench."
-        close: true
-
-  sella_lesson:
-    text:
-      - "Distill a vial, then drag it onto your weapon or arrows to coat them. Keep an antidote handy."
-    choices:
-      workbench:
-        text: "Let's brew something."
-        effects:
-          - type: open_alchemy
-      done:
-        text: "Understood."
-        close: true
-
+      swamp:
+        text: "Where do your ingredients come from?"
+        next: sella_swamp
   sella_supplies:
     text:
       - "Bottles on the left, dry reagents on the right. Make your own brews at the bench."
@@ -2542,10 +2604,34 @@ dialogues:
       done:
         text: "I'll check my ingredients first."
         close: true
+  sella_lesson:
+    text:
+      - "Distill a vial, then drag it onto your weapon or arrows to coat them. Keep an antidote handy."
+    choices:
+      workbench:
+        text: "Let's brew something."
+        effects:
+          - type: open_alchemy
+      done:
+        text: "Understood."
+        close: true
+  sella_swamp:
+    text:
+      - "The Gloomroot, mostly. The Mire Weavers spin venom that's worth more than gold, if you can get it out of them before they get it into you."
+      - "Elder Moss disapproves. He says the forest gives what it chooses. The forest has never once chosen to give me anything."
+    choices:
+      back:
+        text: "I had another question."
+        next: sella_start
+      done:
+        text: "Watch the green flask."
+        close: true
 
+  # ------------------------------------------------------------------ Torren Pike, Forgekeeper
   torren_start:
     text:
       - "Crafted steel takes sockets. Unknown loot goes to Nyra before it comes near my bench."
+      - "Every blade on the Watch came off this anvil, {player}. Most of them came back for repairs too."
     choices:
       forge:
         text: "Open the arcane forge."
@@ -2560,13 +2646,27 @@ dialogues:
         text: "Repair everything I'm carrying."
         effects:
           - type: open_repair
+      forgeworks:
+        text: "Where did you learn the trade?"
+        next: torren_past
+  torren_past:
+    text:
+      - "Sandmere, under a smith who forged blades for the colosseum. She said a sword should outlast the fighter. I left when I saw what that meant."
+      - "Now I make steel for people who'd rather come home. Better trade."
+    choices:
+      repair:
+        text: "Then fix my gear."
+        effects:
+          - type: open_repair
       done:
         text: "Another time."
         close: true
 
+  # ------------------------------------------------------------------ Ivo Reed, River Angler
   ivo_start:
     text:
       - "Keep the line moving and the water gets generous. Stop too long and the water forgets you."
+      - "I fish the moat in the mornings and the harbour at dusk. The harbour's better. The moat's closer to breakfast."
     choices:
       journal:
         text: "Open my fishing journal."
@@ -2580,10 +2680,9 @@ dialogues:
       supplies:
         text: "I need tackle or pond supplies."
         next: ivo_supplies
-      done:
-        text: "See you on the bank."
-        close: true
-
+      tale:
+        text: "Caught anything strange lately?"
+        next: ivo_tale
   ivo_supplies:
     text:
       - "A spare rod, a water bucket, a few things to make the pond your own. Ordinary fish go over this counter."
@@ -2604,62 +2703,148 @@ dialogues:
       done:
         text: "Back to the water."
         close: true
+  ivo_tale:
+    text:
+      - "Pulled up a brass button off the Gull's Promise last week. Orin went white when I showed him."
+      - "There's still something down there. Fish know. They won't school over the wreck."
+    choices:
+      back:
+        text: "I had another question."
+        next: ivo_start
+      done:
+        text: "Tight lines, Ivo."
+        close: true
 
+  # ------------------------------------------------------------------ Hessa Clay, Field Surveyor
   hessa_start:
     text:
       - "Natural ground keeps a history. Player-laid dirt keeps receipts. I can tell which is which."
+      - "Highcrown's soil remembers the Long Tide: a band of grey silt under every field. Dig deep enough and you'll find it."
     choices:
       notes:
         text: "Show me the excavation field notes."
         effects:
           - type: open_command
             command: excavation
+      sites:
+        text: "Where can I dig around here?"
+        effects:
+          - type: open_command
+            command: digsite
+      strata:
+        text: "What can soil tell you?"
+        next: hessa_strata
       done:
         text: "I'll follow the survey notes."
         close: true
+  hessa_strata:
+    text:
+      - "Red sand at the Gilded Hollow sits on burnt clay. Something very hot happened there before the gold. I want to know what."
+      - "The oasis at Sandmere and the peat in the Druid's Ward regrow when you dig them. Don't ask me why. I'm still writing that chapter."
+    choices:
+      back:
+        text: "I had another question."
+        next: hessa_start
+      done:
+        text: "Good luck with the chapter."
+        close: true
 
+  # ------------------------------------------------------------------ Gilda Penn, Claim Registrar
   gilda_start:
     text:
       - "Four chunks to begin. Keep expansions connected and set trust deliberately."
+      - "I've settled forty-one boundary disputes this year. Thirty-nine were about one block of dirt."
     choices:
       claims:
         text: "Open the claim ledger."
         effects:
           - type: open_command
             command: claim
+      disputes:
+        text: "What were the other two about?"
+        next: gilda_disputes
       done:
         text: "I'll mark the boundary."
         close: true
+  gilda_disputes:
+    text:
+      - "One was a chicken. The other was also a chicken, but a different one. Both owners swore it was theirs."
+      - "Set your trust settings before you invite friends, {player}. It saves us both a hearing."
+    choices:
+      claims:
+        text: "Open the claim ledger, then."
+        effects:
+          - type: open_command
+            command: claim
+      done:
+        text: "I'll keep my chickens close."
+        close: true
 
+  # ------------------------------------------------------------------ Orris Bell, Market Broker
   orris_start:
     text:
-      - "The index tells you the price. The stall tells you who set it."
+      - "The index tells you the price. The stall tells you who set it. I tell you which of them is lying."
+      - "Highcrown's market runs on three things: fair weights, fast gossip, and me."
     choices:
       market:
         text: "Open the market index."
         effects:
           - type: open_command
             command: market
+      gossip:
+        text: "Heard any good gossip?"
+        next: orris_gossip
       done:
         text: "I'll check the listings."
         close: true
+  orris_gossip:
+    text:
+      - "Kasim in Sandmere is paying silly money for rabbit hides. Magda Hale has gold coming out of the Hollow faster than she can count it."
+      - "And someone's been asking Orin about the Gull's Promise. Old debts, old grudges. Watch that one."
+    choices:
+      market:
+        text: "Show me the index."
+        effects:
+          - type: open_command
+            command: market
+      done:
+        text: "Thanks for the tip."
+        close: true
 
+  # ------------------------------------------------------------------ Tamsin Wake, Grave Tender
   tamsin_start:
     text:
       - "Your grave holds for twenty-four hours. Walking back is free. The shortcut is not."
+      - "I tend the living's mistakes and the dead's leftovers. Lately the dead at Mossfall won't stay where they're put."
     choices:
       graves:
         text: "Show me my grave record."
         effects:
           - type: open_command
             command: grave
+      mossfall:
+        text: "The dead at Mossfall?"
+        next: tamsin_mossfall
       done:
         text: "I'll remember."
         close: true
+  tamsin_mossfall:
+    text:
+      - "Mossfall was a temple before the Long Tide drowned it. Its keepers were buried with their names on the stones."
+      - "Something woke them. They walk the stairs like they're still on duty. Somebody should give them leave."
+    choices:
+      back:
+        text: "I had another question."
+        next: tamsin_start
+      done:
+        text: "Rest easy, Tamsin."
+        close: true
 
+  # ------------------------------------------------------------------ Cassia Dawn, City Guide
   cassia_start:
     text:
-      - "First day? Good. The city makes more sense once you know where the lifts and portals go."
+      - "First day? Good. Highcrown makes more sense once you know where the lanterns lead."
+      - "I grew up in the lighthouse at Gullwater. Every road in this town ends at a lantern I lit as a child."
     choices:
       quickstart:
         text: "Give me the short tour."
@@ -2671,18 +2856,31 @@ dialogues:
         effects:
           - type: open_command
             command: menu
+      town:
+        text: "Where is everything in town?"
+        next: cassia_town
       settings:
         text: "I need to change my settings."
         effects:
           - type: open_command
             command: settings
+  cassia_town:
+    text:
+      - "The keep courtyard has the bank, the forge, the enchanter and the registrar. North through the gate is the market plaza."
+      - "Past the market, the harbour and the Lanternmere Gardens. Kestrel by the north wall can send you anywhere the roads reach."
+    choices:
+      back:
+        text: "I had another question."
+        next: cassia_start
       done:
         text: "I'll look around."
         close: true
 
+  # ------------------------------------------------------------------ Aeron Vale, Adventurer Registrar
   aeron_start:
     text:
       - "I record what you have done, not what you claim you can do. The ledger is kinder that way."
+      - "I adventured once. Left a good knee on the Frostveil and a bad attitude in the Sunscar. Now I write."
     choices:
       rank:
         text: "Show me my Adventurer rank."
@@ -2694,13 +2892,29 @@ dialogues:
         effects:
           - type: open_command
             command: profile
+      knee:
+        text: "What happened on the Frostveil?"
+        next: aeron_frostveil
       done:
         text: "Keep the ink dry."
         close: true
+  aeron_frostveil:
+    text:
+      - "Rime wolves. Six of them, one of me, and an ice shelf that decided to stop being a shelf."
+      - "Warden Halvard dragged me out. Buy him a drink if you go north. He won't drink it, but he likes being asked."
+    choices:
+      back:
+        text: "I had another question."
+        next: aeron_start
+      done:
+        text: "I'll mind the ice."
+        close: true
 
+  # ------------------------------------------------------------------ Pell Wren, Mastery Mentor
   pell_start:
     text:
       - "Anyone can practice everything. Mastery is deciding what deserves your best years."
+      - "I tried to master all of it once. Mining, forestry, runes, the lot. I ended up very good at being tired."
     choices:
       skills:
         text: "Show me my skill trees."
@@ -2712,26 +2926,59 @@ dialogues:
         effects:
           - type: open_command
             command: mastery
+      lesson:
+        text: "How do I choose what to master?"
+        next: pell_lesson
       done:
         text: "I need to think."
         close: true
+  pell_lesson:
+    text:
+      - "Do a little of everything first. Notice which work you'd do even unpaid. That's your mastery."
+      - "Then let the rest go without guilt. Corwin in the courtyard calls that a retreat. I call it a strategy."
+    choices:
+      mastery:
+        text: "Show me the masteries."
+        effects:
+          - type: open_command
+            command: mastery
+      done:
+        text: "I'll think it over."
+        close: true
 
+  # ------------------------------------------------------------------ Veyra Loom, Runic Enchanter
   veyra_start:
     text:
       - "An enchantment is a promise written in a language the item cannot refuse."
+      - "I learned that language from the walls of Mossfall, before the water rose too high to read them."
     choices:
       enchants:
         text: "Show me the known enchantments."
         effects:
           - type: open_enchantments
+      runes:
+        text: "What did the walls of Mossfall say?"
+        next: veyra_runes
       done:
         text: "No promises today."
         close: true
-
+  veyra_runes:
+    text:
+      - "Mostly prayers, a few grocery lists, and one warning carved very deep: do not wake the keepers."
+      - "Lapis holds a rune better than anything. Bring me some and I'll show you why the keepers bothered."
+    choices:
+      enchants:
+        text: "Show me what you can do."
+        effects:
+          - type: open_enchantments
+      back:
+        text: "I had another question."
+        next: veyra_start
+  # ------------------------------------------------------------------ Cato Flint, Warden Contract Clerk
   cato_start:
     text:
       - "The Wardens post short work, week work, and the jobs nobody finishes in an afternoon."
-      - "Take an assignment before you start. Bring it back here when the count is done."
+      - "Take an assignment before you start. Bring it back here when the count is done. In triplicate, ideally."
     choices:
       faction_contracts:
         text: "Open the Warden contract board."
@@ -2747,14 +2994,30 @@ dialogues:
         effects:
           - type: open_command
             command: playtime
+      complaints:
+        text: "Mara says you handle complaints."
+        next: cato_complaints
       done:
         text: "I'll decide what I can finish."
         close: true
+  cato_complaints:
+    text:
+      - "I do. Form seven, three copies, one for the Watch, one for the archive, one for the fire."
+      - "Twenty years a soldier, {player}. Now I fight paper. Paper fights dirtier."
+    choices:
+      faction_contracts:
+        text: "I'll take a contract instead."
+        effects:
+          - type: open_contracts
+      done:
+        text: "I'll leave you to the paper."
+        close: true
 
+  # ------------------------------------------------------------------ Lyra Senn, Research Commissioner
   lyra_start:
     text:
       - "The archive pays for complete field records, not interesting pockets full of rubble."
-      - "Choose a commission, do the work, then return for your seal."
+      - "Choose a commission, do the work, then return for your seal. Elian will draw where you went. I decide whether it mattered."
     choices:
       faction_contracts:
         text: "Open the Scholar commission board."
@@ -2765,19 +3028,40 @@ dialogues:
         effects:
           - type: open_command
             command: reputation
+      veil:
+        text: "What is the archive studying?"
+        next: lyra_veil
       done:
         text: "I'll come back with proper notes."
         close: true
+  lyra_veil:
+    text:
+      - "The Veil. Places where the world is thin: the Frostveil's cold that never melts, the storms that never leave Stormcrag."
+      - "Every expedition beyond the isles starts with someone noticing something wrong at home. Notice things, {player}."
+    choices:
+      faction_contracts:
+        text: "Show me the commissions."
+        effects:
+          - type: open_contracts
+      done:
+        text: "I'll keep notes."
+        close: true
 
+  # ------------------------------------------------------------------ Garrick Mott, Expedition Broker
   garrick_start:
     text:
       - "Delvers trust finished routes, full provision crates, and people who return when they say they will."
-      - "Pick a job that fits your boots."
+      - "I used to run cargo the Wardens didn't need to know about. Now I run people. Better margins, fewer customs officers."
     choices:
       faction_contracts:
         text: "Open the Delver expedition board."
         effects:
           - type: open_contracts
+      expeditions:
+        text: "What expeditions are running?"
+        effects:
+          - type: open_command
+            command: expedition
       standing:
         text: "How is my name traveling?"
         effects:
@@ -2787,35 +3071,73 @@ dialogues:
         text: "Nothing I can promise today."
         close: true
 
+  # ------------------------------------------------------------------ Arlen Voss, Campaign Herald
   arlen_start:
     text:
-      - "The campaign board tracks what the city needs and what the frontier has already paid for."
+      - "Hear ye, hear ye! The campaign board tracks what Highcrown needs and what the frontier has already paid for."
+      - "My voice reaches the harbour on a calm day. On a stormy day it reaches the harbour and annoys the fish."
     choices:
       campaign:
         text: "Open the campaign board."
         effects:
           - type: open_command
             command: campaign
+      news:
+        text: "What's the news?"
+        next: arlen_news
       done:
         text: "I'll listen for the bells."
         close: true
+  arlen_news:
+    text:
+      - "Brigands on the Kingsroad! Scorpions at Sandmere's wells! Gold in the Hollow and ghosts in Mossfall!"
+      - "And the colosseum's Champion of the Sands is still unbeaten. Nine seasons. Somebody should do something about that."
+    choices:
+      campaign:
+        text: "Show me the campaign board."
+        effects:
+          - type: open_command
+            command: campaign
+      done:
+        text: "Quite the news."
+        close: true
 
+  # ------------------------------------------------------------------ Kestrel Way, Portal Master
   kestrel_start:
     text:
-      - "Every public route returns here. That is the useful part of building a city in the sky."
+      - "Every public route returns here. Waystones, roads, and the portals to your sky islands all start at this wall."
+      - "I've walked every road on these isles at least twice. The second time is always faster."
     choices:
       warps:
         text: "Show me the public destinations."
         effects:
           - type: open_command
             command: warps
+      skies:
+        text: "How do the sky islands connect to Highcrown?"
+        next: kestrel_skies
       done:
         text: "I'll take the long way."
         close: true
+  kestrel_skies:
+    text:
+      - "The old Highcrown mages anchored islands above the clouds for the families the Long Tide left homeless. Your island is one of them."
+      - "The anchor stones still hum. When you travel, you're borrowing a little of that old promise."
+    choices:
+      warps:
+        text: "Show me where I can go."
+        effects:
+          - type: open_command
+            command: warps
+      done:
+        text: "Thanks, Kestrel."
+        close: true
 
+  # ------------------------------------------------------------------ Nima Hart, Party Liaison
   nima_start:
     text:
       - "Good groups agree on the plan before the boss explains it for them."
+      - "I've matched more adventuring parties than the harbour has matched sailors to bad decisions. Need company?"
     choices:
       party:
         text: "Open the party desk."
@@ -2827,52 +3149,142 @@ dialogues:
         effects:
           - type: open_command
             command: social
+      advice:
+        text: "What makes a good party?"
+        next: nima_advice
       done:
         text: "I work alone today."
         close: true
+  nima_advice:
+    text:
+      - "Someone who watches the health bars, someone who watches the map, and someone who doesn't touch the glowing thing."
+      - "The third one is the hardest to find."
+    choices:
+      party:
+        text: "Find me a party."
+        effects:
+          - type: open_command
+            command: party
+      done:
+        text: "I'll keep my hands off glowing things."
+        close: true
 
+  # ------------------------------------------------------------------ Dorian Ash, Duel Marshal
   dorian_start:
     text:
       - "A duel begins with consent and ends without your inventory scattered across the floor."
+      - "I fought in the Sunscorch Colosseum for six seasons. Lost the seventh. Some fights are worth losing, if you learn from them."
     choices:
       duel:
         text: "Open the duel controls."
         effects:
           - type: open_command
             command: duel
+      colosseum:
+        text: "Who beat you?"
+        next: dorian_champion
       done:
         text: "Not looking for a fight."
         close: true
+  dorian_champion:
+    text:
+      - "The Champion of the Sands. Still undefeated, nine seasons now. Tavros keeps him fed and angry."
+      - "If you ever face him, keep moving. He swings like a falling wall, but walls don't turn quickly."
+    choices:
+      back:
+        text: "I had another question."
+        next: dorian_start
+      done:
+        text: "I'll keep moving."
+        close: true
 
+  # ------------------------------------------------------------------ Vera Lune, Wardrobe Keeper
   vera_start:
     text:
       - "A good wardrobe says something. Preferably something other than 'I fell into a dye vat.'"
+      - "Sandmere silk, Gullwater wool, and absolutely no fur from anything that's still using it."
     choices:
       wardrobe:
         text: "Open my cosmetic wardrobe."
         effects:
           - type: open_command
             command: cosmetics
+      style:
+        text: "What's in fashion in Highcrown?"
+        next: vera_style
       done:
         text: "This look will do."
         close: true
+  vera_style:
+    text:
+      - "Warden blue is always respectable. Delver browns hide the mud. Scholars wear whatever they slept in."
+      - "Champions of the colosseum wear red. Only earn it, darling. Nobody likes a pretender."
+    choices:
+      wardrobe:
+        text: "Show me the wardrobe."
+        effects:
+          - type: open_command
+            command: cosmetics
+      done:
+        text: "I'll dress the part."
+        close: true
 
+  # ------------------------------------------------------------------ Rook Salen, Relic Curator
   rook_start:
     text:
       - "Relics are arguments between old magic and whoever is reckless enough to wear three pieces."
+      - "I've catalogued every set that's come through Highcrown. Half of them tried to kill me. The other half were patient about it."
     choices:
       relics:
         text: "Show me the known collections."
         effects:
           - type: open_command
             command: relics
+      danger:
+        text: "Which relics tried to kill you?"
+        next: rook_danger
       done:
         text: "I'll bring you something interesting."
         close: true
+  rook_danger:
+    text:
+      - "A compass from the Veil that always pointed at me. A pickaxe from the Hollow that hummed when gold was near, and screamed when it wasn't."
+      - "The bog oracles of Mossfall carry shards of the temple's old relics. I'd give a great deal to study one."
+    choices:
+      relics:
+        text: "Show me the collections."
+        effects:
+          - type: open_command
+            command: relics
+      done:
+        text: "I'll keep an eye out."
+        close: true
 
+  # ------------------------------------------------------------------ Fen Calder, Job Steward
+  fen_start:
+    text:
+      - "Work pays well until you repeat yourself. Then the ledger starts shaving the rate."
+      - "Variety keeps Highcrown fed. Somebody has to chop, mine, farm and fish, and it shouldn't always be the same somebody."
+    choices:
+      jobs:
+        text: "Show me the job board and orders."
+        effects:
+          - type: open_command
+            command: jobs
+      daily:
+        text: "Any daily contracts?"
+        effects:
+          - type: open_command
+            command: daily
+      done:
+        text: "I'll find my own work."
+        close: true
+
+  # ------------------------------------------------------------------ Alba Meadow, Farmer & Grocer
   alba_start:
     text:
       - "Seeds out front, groceries behind me. Keep a little of each harvest for the next planting."
+      - "My cousin Odo farms Goldenreach. He grows the wheat, I sell the bread, and we argue about the price every harvest."
     choices:
       browse:
         text: "Show me the farm and pantry stock."
@@ -2885,7 +3297,6 @@ dialogues:
       done:
         text: "I'll come back when I need something."
         close: true
-
   alba_advice:
     text:
       - "Start small. Keep tilled soil near water and leave space beside melon and pumpkin stems."
@@ -2899,9 +3310,11 @@ dialogues:
         text: "Thanks. I'll put that to use."
         close: true
 
+  # ------------------------------------------------------------------ Rowan Ashwood, Timber Merchant
   rowan_start:
     text:
       - "Logs to build with, saplings to keep the yard growing. Which do you need?"
+      - "Every beam in the harbour came through this yard. Every beam in the harbour is also starting to rot. Business is good."
     choices:
       browse:
         text: "Show me the timber yard."
@@ -2914,7 +3327,6 @@ dialogues:
       done:
         text: "I'll come back when I need something."
         close: true
-
   rowan_advice:
     text:
       - "Give each tree a clear patch of soil. Dark oak needs four saplings together; spruce and jungle can grow larger that way too."
@@ -2928,9 +3340,11 @@ dialogues:
         text: "Thanks. I'll put that to use."
         close: true
 
+  # ------------------------------------------------------------------ Dain Slate, Quarry Merchant
   dain_start:
     text:
       - "Fuel, ore, and picks that do their job. I also buy spare material from the island mines."
+      - "Winters on the coast are long and the keep burns coal like it's angry at it. I keep the bins full."
     choices:
       browse:
         text: "Show me the quarry stock."
@@ -2943,7 +3357,6 @@ dialogues:
       done:
         text: "I'll come back when I need something."
         close: true
-
   dain_advice:
     text:
       - "A furnace and a pick get work moving. Spare iron can wait until you know what you are building."
@@ -2957,9 +3370,11 @@ dialogues:
         text: "Thanks. I'll put that to use."
         close: true
 
+  # ------------------------------------------------------------------ Petra Mason, Building Merchant
   petra_start:
     text:
       - "Bring a plan, or bring a handful of blocks and see where they lead. I can help with either."
+      - "My grandfather laid the keep's courtyard. Every stone. He'd have hated the market plaza. Too much white."
     choices:
       browse:
         text: "Show me the building yard."
@@ -2972,7 +3387,6 @@ dialogues:
       done:
         text: "I'll come back when I need something."
         close: true
-
   petra_advice:
     text:
       - "Give paths and roofs a little depth. Mix a few related blocks instead of a wall of every stone in the yard."
@@ -2986,9 +3400,11 @@ dialogues:
         text: "Thanks. I'll put that to use."
         close: true
 
+  # ------------------------------------------------------------------ Hob Copper, Mechanist
   hob_start:
     text:
       - "Ordinary parts, clearly labelled. Tell me what the machine should do before you buy the whole shelf."
+      - "I fixed the harbour crane last spring. It now unloads ships faster and only occasionally throws crates into the sea."
     choices:
       browse:
         text: "Show me the workshop parts."
@@ -3001,7 +3417,6 @@ dialogues:
       done:
         text: "I'll come back when I need something."
         close: true
-
   hob_advice:
     text:
       - "These are plain hoppers and redstone parts. Island collectors and other specialised upgrades follow their own progression."
@@ -3013,17 +3428,4 @@ dialogues:
         next: hob_start
       done:
         text: "Thanks. I'll put that to use."
-        close: true
-
-  fen_start:
-    text:
-      - "Work pays well until you repeat yourself. Then the ledger starts shaving the rate."
-    choices:
-      jobs:
-        text: "Show me the job board and orders."
-        effects:
-          - type: open_command
-            command: jobs
-      done:
-        text: "I'll find my own work."
         close: true

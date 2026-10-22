@@ -60,6 +60,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
     private final Map<UUID, List<String>> sidebarFrames = new java.util.HashMap<>();
     /** Sidebars that replace the HUD for a while, such as the expedition run panel: title and lines. */
     private final Map<UUID, Overlay> overlays = new ConcurrentHashMap<>();
+    /** Extra rows under the normal HUD, such as the tracked quest. */
+    private final Map<UUID, List<String>> appendix = new ConcurrentHashMap<>();
     private final Map<UUID, String> sidebarTitles = new java.util.HashMap<>();
     private record Overlay(String title, List<String> lines) { }
     private final Map<UUID, TabFrame> tabFrames = new java.util.HashMap<>();
@@ -291,7 +293,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         hiddenHud.clear();
         refreshTokens.clear(); refreshAgain.clear(); sidebarFrames.clear(); tabFrames.clear(); nameplateStyles.clear();
     }
-    private void clearFrames(UUID id) { overlays.remove(id); sidebarTitles.remove(id); refreshTokens.remove(id); refreshAgain.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
+    private void clearFrames(UUID id) { appendix.remove(id); overlays.remove(id); sidebarTitles.remove(id); refreshTokens.remove(id); refreshAgain.remove(id); sidebarFrames.remove(id); tabFrames.remove(id); nameplateStyles.remove(id); }
 
     private void refreshAll() {
         Bukkit.getOnlinePlayers().forEach(this::refresh);
@@ -390,7 +392,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             .at(player.getLocation().getBlockX() >> 4, player.getLocation().getBlockZ() >> 4)
             .filter(i -> plugin.skyblock().isIslandWorld(player.getWorld())).orElse(null);
         var islandProgress = island == null ? null : plugin.skyblock().development().progress(island.owner());
-        List<String> lines = List.of(
+        List<String> lines = new java.util.ArrayList<>(List.of(
             "<dark_gray>────────────</dark_gray>",
             "<gray>Player</gray> <white>" + player.getName() + "</white>",
             "<gray>Rank</gray> <light_purple>" + view.adventurerRank() + "</light_purple>",
@@ -405,7 +407,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
                 : "<white>" + escape(island.name()) + "</white> <aqua>Lv " + islandProgress.level() + "</aqua>",
             island == null ? "<gray>Progress</gray> <aqua>" + VisualFormat.compact(view.campaignPoints()) + "</aqua>"
                 : "<gray>" + islandProgress.progressLabel() + "</gray>"
-        );
+        ));
+        lines.addAll(appendix.getOrDefault(player.getUniqueId(), List.of()));
         renderSidebar(board, objective, player, plugin.branding().sidebarTitleMarkup(), lines);
     }
 
@@ -438,6 +441,16 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         if (board == null || !hudVisible(player)) return;
         Objective objective = board.getObjective(OBJECTIVE_ID);
         if (objective != null) renderSidebar(board, objective, player, title, lines);
+    }
+
+    /** Sets the rows shown under the normal HUD (at most {@code SIDEBAR_LINES - HUD_LINES}); an empty list removes them. */
+    public void hudAppendix(Player player, List<String> lines) {
+        List<String> next = List.copyOf(lines.size() > SIDEBAR_LINES - HUD_LINES ? lines.subList(0, SIDEBAR_LINES - HUD_LINES) : lines);
+        List<String> previous = next.isEmpty() ? appendix.remove(player.getUniqueId()) : appendix.put(player.getUniqueId(), next);
+        if (next.equals(previous == null ? List.of() : previous) || overlays.containsKey(player.getUniqueId())) return;
+        PlayerView view = views.get(player.getUniqueId());
+        Scoreboard board = boards.get(player.getUniqueId());
+        if (view != null && board != null) applySidebar(board, player, view);
     }
 
     /** Puts the normal HUD back. */

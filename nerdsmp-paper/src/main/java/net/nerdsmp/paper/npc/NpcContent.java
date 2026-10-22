@@ -100,6 +100,10 @@ public record NpcContent(
         }
     }
 
+    /**
+     * {@code look} dresses the body: a villager profession and/or biome type such as {@code armorer} or
+     * {@code librarian@desert} (null keeps the default look).
+     */
     public record NpcDefinition(
         String id,
         String name,
@@ -108,8 +112,13 @@ public record NpcContent(
         FactionId factionId,
         String rootDialogue,
         String shopId,
-        double lookRadius
+        double lookRadius,
+        String look
     ) {
+        public NpcDefinition(String id, String name, String title, EntityType entityType, FactionId factionId,
+                             String rootDialogue, String shopId, double lookRadius) {
+            this(id, name, title, entityType, factionId, rootDialogue, shopId, lookRadius, null);
+        }
     }
 
     public record DialogueNode(String id, List<String> text, List<DialogueChoice> choices) {

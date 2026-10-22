@@ -55,6 +55,25 @@ built from this tree, and mineflayer bots (ViaBackwards). The original zip was n
 - With `nerdsmp.worldpack.bypass` the bot swam out to z 587.8; when the permission was removed it was returned
   to z 578.6, just inside the edge.
 
+## Quest markers, tracking and NPC pass
+
+- Markers: a bot saw a gold `!` text display only over NPCs with a quest for it (Captain Brenna, Cassia
+  Dawn), nothing over NPCs without one, and a gold `?` over Cassia once her quest was ready. Accepting
+  Brenna's quest removed her marker.
+- Greetings: quest givers' conversations opened with the gold reply ("! Do you have work for me?",
+  "? I've finished what you asked.") and authored quest replies were folded into it.
+- Trail: after accepting a Wildwood Vale quest in the keep the bot received gold dust particles stepping west
+  along the ground; from 120 blocks away it also received an end-rod column over the nearest Wildwood Vale
+  spawn point (x 436, z -30). The bot can't read action bars, so the distance text wasn't checked by bot.
+- NPCs: version 2 of the pack placed 44 more NPCs (94/100 anchors). All 94 opened their dialogue for the bot;
+  two patrolling guards had to be followed from their posts. The four golem sentinels needed a 2x2 footing
+  pass before they would spawn.
+- Patrols: all 11 routes were path-found on the walkable grid with the plugin's footing rules. In game the
+  sergeant walked 26 blocks of his courtyard route in 20 seconds, stood still for 5 seconds while the bot
+  stood beside him, and walked on (10.6 blocks in 8 seconds) once it left.
+- The Lantern Route (Cassia's new personal quest): accepted from the gold reply, three talk objectives
+  (lighthouse keeper, gardener, patrolling sergeant), turned in for 50 Marks and +10 Frontier Wardens.
+
 ## Tests
 
 `./gradlew :nerdsmp-paper:build` passed, including `HighcrownContentTest` (every zone, creature, NPC, quest

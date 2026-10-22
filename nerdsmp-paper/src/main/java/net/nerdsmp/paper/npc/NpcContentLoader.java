@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 public final class NpcContentLoader {
-    private static final int SCHEMA_VERSION = 10;
+    private static final int SCHEMA_VERSION = 11;
     static final String WORLD_CONTENT = "content/world-npcs.yml";
     private static final Set<String> NPC_SERVICE_COMMANDS = Set.of(
         "menu", "quickstart", "settings", "profile", "adventurer", "skills", "mastery",
@@ -322,10 +322,20 @@ public final class NpcContentLoader {
                 new FactionId(section.getString("faction", "")),
                 id(section.getString("root-dialogue", ""), "root dialogue"),
                 section.isString("shop") ? id(section.getString("shop", ""), "shop") : null,
-                Math.max(2.0D, Math.min(24.0D, section.getDouble("look-radius", 8.0D)))
+                Math.max(2.0D, Math.min(24.0D, section.getDouble("look-radius", 8.0D))),
+                look(npcId, section.getString("look"))
             ));
         }
         return result;
+    }
+
+    /** {@code profession}, {@code profession@type} or {@code @type}, all lower case vanilla names. */
+    private static String look(String npcId, String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String look = raw.strip().toLowerCase(Locale.ROOT);
+        if (!look.matches("[a-z_]{0,24}(@[a-z_]{1,24})?") || look.equals("@"))
+            throw new IllegalStateException("NPC " + npcId + " has an invalid look: " + raw);
+        return look;
     }
 
     private void validateReferences(

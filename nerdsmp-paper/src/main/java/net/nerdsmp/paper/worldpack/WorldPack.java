@@ -52,8 +52,12 @@ public record WorldPack(
         if (border != null) {
             for (Zone zone : zones.values()) if (!border.contains(zone.bounds()))
                 throw new IllegalArgumentException("Zone " + zone.id() + " reaches past the map border");
-            for (Anchor anchor : npcs.values()) if (!border.contains(anchor.point().x(), anchor.point().z()))
-                throw new IllegalArgumentException("NPC " + anchor.key() + " stands outside the map border");
+            for (Anchor anchor : npcs.values()) {
+                if (!border.contains(anchor.point().x(), anchor.point().z()))
+                    throw new IllegalArgumentException("NPC " + anchor.key() + " stands outside the map border");
+                for (Point step : anchor.route()) if (!border.contains(step.x(), step.z()))
+                    throw new IllegalArgumentException("NPC " + anchor.key() + " patrols outside the map border");
+            }
             for (Map.Entry<String, Point> warp : warps.entrySet()) if (!border.contains(warp.getValue().x(), warp.getValue().z()))
                 throw new IllegalArgumentException("Warp " + warp.getKey() + " lies outside the map border");
             if (spawn != null && !border.contains(spawn.x(), spawn.z())) throw new IllegalArgumentException("Spawn lies outside the map border");
@@ -125,7 +129,15 @@ public record WorldPack(
         }
     }
 
-    public record Anchor(String key, String npc, Point point) { }
+    /** An NPC anchor; guards add a patrol route of block positions walked back and forth from the anchor. */
+    public record Anchor(String key, String npc, Point point, List<Point> route) {
+        public Anchor {
+            route = List.copyOf(route);
+            if (route.size() == 1 || route.size() > 32) throw new IllegalArgumentException("Patrol routes have 2-32 waypoints: " + key);
+        }
+
+        public Anchor(String key, String npc, Point point) { this(key, npc, point, List.of()); }
+    }
 
     /** Blocks of {@code materials} inside {@code bounds} become renewable nodes when the pack applies. */
     public record Site(String id, String zone, Box bounds, Set<String> materials, int cooldownSeconds) {
@@ -165,8 +177,14 @@ public record WorldPack(
             String key = String.valueOf(entry.getKey());
             if (!key.matches("[a-z0-9_-]{1,48}")) throw new IllegalArgumentException("Invalid NPC anchor key " + key);
             List<?> item = list(entry.getValue(), key);
-            if (item.size() != 5) throw new IllegalArgumentException("NPC anchors are [npc, x, y, z, yaw]: " + key);
-            npcs.put(key, new Anchor(key, string(item.get(0), "npc"), point(item.subList(1, 5))));
+            if (item.size() != 5 && item.size() != 6) throw new IllegalArgumentException("NPC anchors are [npc, x, y, z, yaw] or [npc, x, y, z, yaw, route]: " + key);
+            List<Point> route = new ArrayList<>();
+            if (item.size() == 6) for (Object raw : list(item.get(5), "route")) {
+                List<?> step = list(raw, "route point");
+                if (step.size() != 3) throw new IllegalArgumentException("Route points are [x, y, z]: " + key);
+                route.add(new Point(number(step.get(0), "x").doubleValue(), number(step.get(1), "y").doubleValue(), number(step.get(2), "z").doubleValue(), 0F));
+            }
+            npcs.put(key, new Anchor(key, string(item.get(0), "npc"), point(item.subList(1, 5)), route));
         }
         Map<String, Site> sites = new LinkedHashMap<>();
         if (root.containsKey("sites")) for (Map.Entry<?, ?> entry : map(root.get("sites"), "sites").entrySet()) {

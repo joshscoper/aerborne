@@ -4,7 +4,7 @@
 # Bump version when changing anything here so servers re-apply it. Staff edits made in game are kept.
 schema-version: 1
 id: highcrown
-version: 1
+version: 2
 title: The Highcrown Isles
 match:
   seed: 27594263
@@ -1496,6 +1496,51 @@ npcs:
   arena_master: [arena_master_tavros, -437.5, 69, 350.5, 70]
   glacier_warden: [warden_halvard, -511.5, 65, -94.5, 170]
   peaks_hermit: [hermit_orla, -599.5, 111, 45.5, 55]
+  # Guards (with patrol routes walked back and forth), townsfolk and side-quest givers
+  guard_sergeant: [sergeant_ottar, 777.5, 100, -59.5, 180, [[757, 100, -72], [760, 99.9375, -100], [790, 100, -98], [788, 101, -79], [789, 102, -79], [794, 103, -70], [797, 103, -67], [802, 103, -66], [803, 103, -66], [804, 103, -67], [803, 103, -69], [798, 103, -74], [797, 103, -73], [797, 103, -72], [797, 103, -73], [798, 103, -74], [803, 103, -69], [804, 103, -67], [803, 103, -66], [790, 103, -66], [790, 101, -64], [778, 100, -60]]]
+  guard_keep_north: [highcrown_guard, 770.5, 100, -107.5, -15, [[785, 100, -109], [792, 100, -108], [760, 99, -96]]]
+  guard_plaza_west: [highcrown_guard, 742.5, 98, -196.5, -100, [[735, 98, -203], [734, 98, -204], [737, 98, -207], [752, 97, -212], [764, 98, -207], [777, 97, -194], [782, 97, -194], [787, 98, -201]]]
+  guard_plaza_east: [highcrown_guard, 795.5, 97, -197.5, 95, [[790, 97, -178], [774, 97, -185], [770, 97, -186], [768, 97, -182], [767, 98, -181], [759, 98, -180], [756, 98, -177], [749, 98, -178], [744, 98, -183], [746, 98, -190], [747, 98, -191], [749, 98, -190], [751, 98, -188], [751, 98, -187], [752, 99, -186]]]
+  guard_street: [highcrown_guard, 722.5, 98, -169.5, -60, [[708, 98.9375, -152], [704, 99, -142]]]
+  guard_harbour: [highcrown_guard, 745.5, 63, -332.5, 95, [[746, 63, -334], [746, 63, -345], [744, 63, -352], [716, 63, -354]]]
+  guard_gardens: [highcrown_guard, 738.5, 79, -411.5, 85, [[725, 77, -418], [714, 78, -426], [712, 78, -425]]]
+  guard_crossroads: [highcrown_guard, 420.5, 66, 20.5, 90, [[405, 66, 24], [390, 66, 30]]]
+  sentry_bazaar_north: [sandmere_sentry, -351.5, 75, 232.5, -25, [[-356, 74.9375, 250], [-358, 74, 266], [-360, 74, 268]]]
+  sentry_bazaar_south: [sandmere_sentry, -371.5, 75, 302.5, -130, [[-364, 76, 298], [-363, 76, 299], [-363, 75, 303], [-371, 80, 316], [-372, 81, 320], [-352, 81, 326]]]
+  watchman_hollow: [hollow_watchman, 344.5, 70, 303.5, -165, [[360, 66, 305], [368, 66, 301], [370, 65, 301]]]
+  sentinel_keep_south: [stone_sentinel, 775, 103, 13, -5]
+  sentinel_keep_north: [stone_sentinel, 785, 96, -121, 165]
+  sentinel_sandmere: [stone_sentinel, -336, 76, 230, -90]
+  sentinel_ward: [stone_sentinel, 199, 34, -235, 50]
+  folk_anselm: [brother_anselm, 753.5, 99, -87.5, -70]
+  folk_merrin: [lady_merrin, 786.5, 100, -83.5, 70]
+  folk_tib: [tib_page, 768.5, 100, -75.5, -120]
+  folk_tam: [apprentice_tam, 744.5, 99, -99.5, -65]
+  folk_hilde: [baker_hilde, 752.5, 94, -219.5, -35]
+  folk_lysander: [bard_lysander, 772.5, 97, -197.5, 110]
+  folk_wick: [old_wick, 726.5, 98, -177.5, -120]
+  folk_greer: [widow_greer, 758.5, 98, -185.5, -155]
+  folk_rufus: [dockhand_rufus, 748.5, 63, -339.5, 90]
+  folk_ardis: [keeper_ardis, 760.5, 69, -355.5, 65]
+  quest_mags: [sailor_mags, 726.5, 63, -322.5, -135]
+  folk_bryn: [gardener_bryn, 748.5, 76, -423.5, 75]
+  folk_ellery: [poet_ellery, 704.5, 79, -413.5, -90]
+  folk_wenna: [wenna_dairy, 612.5, 100, -131.5, 50]
+  quest_jory: [farmhand_jory, 591.5, 95, -139.5, 110]
+  quest_fennick: [minstrel_fennick, 426.5, 68, 28.5, -160]
+  folk_ilka: [pilgrim_ilka, -361.5, 75, -33.5, 125]
+  folk_haldor: [lumberjack_haldor, 271.5, 71, -148.5, -20]
+  quest_fern: [acolyte_fern, 184.5, 53, -219.5, -145]
+  quest_teodor: [apprentice_teodor, -277.5, 69, -127.5, 115]
+  quest_bertram: [miner_bertram, 349.5, 69, 296.5, -170]
+  folk_ysolde: [miner_ysolde, 364.5, 66, 296.5, 160]
+  folk_amira: [spice_amira, -356.5, 74, 256.5, -90]
+  folk_tarik: [water_tarik, -329.5, 76, 222.5, -65]
+  folk_ojan: [caravan_ojan, -344.5, 74, 288.5, 145]
+  quest_zahra: [seer_zahra, -365.5, 76, 232.5, -65]
+  folk_varro: [varro_scarred, -432.5, 69, 346.5, 70]
+  quest_yrsa: [scout_yrsa, -503.5, 63, -99.5, 160]
+  folk_bjorn: [goatherd_bjorn, -605.5, 131, 52.5, 60]
 sites:
   gilded_veins:  # Gold veins in the walls of the Gilded Hollow
     zone: gilded_hollow

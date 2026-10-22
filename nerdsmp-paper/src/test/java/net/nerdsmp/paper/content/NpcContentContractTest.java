@@ -17,7 +17,7 @@ final class NpcContentContractTest {
         String content = resource("/content/npcs.yml");
         String plugin = resource("/plugin.yml");
 
-        assertTrue(content.startsWith("schema-version: 10"));
+        assertTrue(content.startsWith("schema-version: 11"));
         assertEquals(3L, Pattern.compile("(?m)^  (frontier_wardens|rift_scholars|free_delvers):$")
             .matcher(content).results().count());
         assertEquals(31L, Pattern.compile("(?m)^    root-dialogue: [a-z0-9_]+$")

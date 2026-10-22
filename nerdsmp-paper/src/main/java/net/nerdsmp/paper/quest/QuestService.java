@@ -67,6 +67,9 @@ public final class QuestService implements Listener, AutoCloseable {
     private final Map<AccountId, QuestProgress> progress = new HashMap<>();
     private final Map<UUID, Integer> levels = new HashMap<>();
     private final Set<String> paying = new HashSet<>();
+    private final Map<AccountId, String> tracked = new HashMap<>();
+    private final QuestGuide guide;
+    private BukkitTask levelTask;
     private QuestCatalog catalog = QuestCatalog.empty();
     private OrderedYamlWriter writer;
     private BukkitTask visitTask;
@@ -76,6 +79,7 @@ public final class QuestService implements Listener, AutoCloseable {
         progressFile = new File(plugin.getDataFolder(), "quest-progress.yml");
         reload();
         load();
+        guide = new QuestGuide(plugin, this);
     }
 
     public QuestCatalog catalog() { return catalog; }
@@ -99,6 +103,8 @@ public final class QuestService implements Listener, AutoCloseable {
 
     public void start() {
         visitTask = Bukkit.getScheduler().runTaskTimer(plugin, this::checkVisits, 40L, 20L);
+        levelTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> Bukkit.getOnlinePlayers().forEach(this::refreshLevel), 60L, 1200L);
+        guide.start();
         List<String> problems = new ArrayList<>();
         for (QuestDefinition quest : catalog.quests().values()) {
             for (String npc : List.of(quest.giver(), quest.turnIn()))
@@ -115,6 +121,8 @@ public final class QuestService implements Listener, AutoCloseable {
 
     @Override public void close() {
         if (visitTask != null) visitTask.cancel();
+        if (levelTask != null) levelTask.cancel();
+        guide.close();
         save();
     }
 
@@ -150,6 +158,83 @@ public final class QuestService implements Listener, AutoCloseable {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         levels.remove(event.getPlayer().getUniqueId());
+        guide.forget(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> { if (player.isOnline()) { refreshLevel(player); guide.refresh(player); } }, 40L);
+    }
+
+    /** Adventurer levels gate quests; markers need them without opening a board first. */
+    private void refreshLevel(Player player) {
+        AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
+        if (account == null) return;
+        plugin.progression().snapshot(account).whenComplete((snapshot, error) -> {
+            if (error != null || snapshot == null) return;
+            int level = Math.max(1, AdventurerProgression.fromSkills(snapshot.skills()).level());
+            Bukkit.getScheduler().runTask(plugin, () -> { if (player.isOnline()) levels.put(player.getUniqueId(), level); });
+        });
+    }
+
+    int level(Player player) { return levels.getOrDefault(player.getUniqueId(), 1); }
+
+    public record Counts(int available, int ready) { }
+
+    /** Quests this NPC can give the player now, and quests the player can hand in to them. */
+    public Counts counts(Player player, String npc) {
+        QuestProgress log = log(player);
+        if (log == null) return new Counts(0, 0);
+        int available = 0, ready = 0, level = level(player);
+        for (QuestDefinition quest : catalog.offeredBy(npc)) {
+            QuestProgress.Status status = log.status(quest, level);
+            if (status == QuestProgress.Status.READY && quest.turnIn().equals(npc)) ready++;
+            else if (status == QuestProgress.Status.AVAILABLE && quest.giver().equals(npc)) available++;
+        }
+        return new Counts(available, ready);
+    }
+
+    /** The marker over an NPC for this player: a hand-in beats a new quest, which beats one in progress. */
+    QuestGuide.Mark mark(Player player, String npc) {
+        QuestProgress log = log(player);
+        if (log == null) return QuestGuide.Mark.NONE;
+        Counts counts = counts(player, npc);
+        if (counts.ready() > 0) return QuestGuide.Mark.READY;
+        if (counts.available() > 0) return QuestGuide.Mark.AVAILABLE;
+        for (QuestDefinition quest : catalog.offeredBy(npc))
+            if (quest.turnIn().equals(npc) && log.status(quest, level(player)) == QuestProgress.Status.ACTIVE) return QuestGuide.Mark.ACTIVE;
+        return QuestGuide.Mark.NONE;
+    }
+
+    /** The quest the HUD and the trail follow: the chosen one while active, else the oldest active quest. */
+    Optional<QuestDefinition> tracked(Player player) {
+        AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
+        QuestProgress log = account == null ? null : progress.get(account);
+        if (log == null || log.active().isEmpty()) return Optional.empty();
+        String chosen = tracked.get(account);
+        if (chosen != null && log.active().containsKey(chosen) && catalog.quests().containsKey(chosen))
+            return Optional.of(catalog.quests().get(chosen));
+        return log.active().keySet().stream().map(catalog.quests()::get).filter(java.util.Objects::nonNull).findFirst();
+    }
+
+    int[] counts(Player player, QuestDefinition quest) {
+        QuestProgress log = log(player);
+        return log == null ? null : log.counts(quest);
+    }
+
+    int heldFor(Player player, QuestDefinition.Objective objective) { return held(player, objective); }
+
+    String npcTitle(String npc) { return npcName(npc); }
+
+    String zoneName(String zone) { return zoneTitle(zone); }
+
+    private void track(Player player, String quest) {
+        plugin.sessions().account(player.getUniqueId()).ifPresent(account -> {
+            if (quest == null) tracked.remove(account); else tracked.put(account, quest);
+        });
+        guide.show(player);
+        guide.refresh(player);
     }
 
     private void checkVisits() {
@@ -189,7 +274,7 @@ public final class QuestService implements Listener, AutoCloseable {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.6F, 1.4F);
             }
         }
-        if (changed) save();
+        if (changed) { save(); guide.refresh(player); }
     }
 
     private String zoneAt(Location location) {
@@ -309,6 +394,7 @@ public final class QuestService implements Listener, AutoCloseable {
     private void accept(Player player, QuestDefinition quest, QuestProgress log) {
         if (!log.accept(quest)) return;
         save();
+        track(player, quest.id());
         String speaker = npcName(quest.giver());
         player.sendMessage(Component.empty());
         for (String line : quest.offer()) player.sendRichMessage("<gold>" + Chat.escape(speaker) + ":</gold> <white>" + Chat.escape(line) + "</white>");
@@ -333,6 +419,7 @@ public final class QuestService implements Listener, AutoCloseable {
             if (objective.type() == QuestDefinition.Type.DELIVER) take(player, objective);
         log.complete(quest);
         save();
+        guide.refresh(player);
         player.closeInventory();
         player.sendMessage(Component.empty());
         for (String line : quest.complete()) player.sendRichMessage("<gold>" + Chat.escape(npcName(npc)) + ":</gold> <white>" + Chat.escape(line) + "</white>");
@@ -427,11 +514,25 @@ public final class QuestService implements Listener, AutoCloseable {
     public boolean command(org.bukkit.command.CommandSender sender, String[] args) {
         if (args.length >= 1 && args[0].equalsIgnoreCase("admin")) return admin(sender, args);
         if (!(sender instanceof Player player)) { Chat.playersOnly(sender); return true; }
+        if (args.length == 2 && args[0].equalsIgnoreCase("track")) {
+            QuestProgress log = log(player);
+            QuestDefinition quest = catalog.quests().get(args[1].toLowerCase(Locale.ROOT));
+            if (log == null || quest == null || !log.active().containsKey(quest.id())) { Chat.error(player, "You are not on that quest."); return true; }
+            track(player, quest.id());
+            Chat.success(player, "Tracking <white>" + Chat.escape(quest.title()) + "</white>. Follow the gold trail.");
+            return true;
+        }
+        if (args.length == 1 && args[0].equalsIgnoreCase("untrack")) {
+            guide.hide(player);
+            Chat.notice(player, "Quest trail hidden. <white>/journal track <quest></white> shows it again.");
+            return true;
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("abandon")) {
             QuestProgress log = log(player);
             QuestDefinition quest = catalog.quests().get(args[1].toLowerCase(Locale.ROOT));
             if (log == null || quest == null || !log.abandon(quest.id())) { Chat.error(player, "You are not on that quest."); return true; }
             save();
+            guide.refresh(player);
             Chat.notice(player, "Abandoned <white>" + Chat.escape(quest.title()) + "</white>. Its giver can offer it again.");
             return true;
         }
@@ -466,6 +567,7 @@ public final class QuestService implements Listener, AutoCloseable {
             default -> { Chat.usage(sender, "/journal admin <online player> info|complete <quest>|reset [quest]"); return true; }
         }
         save();
+        guide.refresh(target);
         Chat.success(sender, "Updated " + Chat.escape(target.getName()) + "'s quest journal.");
         return true;
     }
@@ -478,7 +580,11 @@ public final class QuestService implements Listener, AutoCloseable {
             if (args.length == 4) return List.copyOf(catalog.quests().keySet());
             return List.of();
         }
-        if (args.length == 1) return staff ? List.of("abandon", "admin") : List.of("abandon");
+        if (args.length == 1) return staff ? List.of("track", "untrack", "abandon", "admin") : List.of("track", "untrack", "abandon");
+        if (args.length == 2 && args[0].equalsIgnoreCase("track") && sender instanceof Player player) {
+            QuestProgress log = log(player);
+            return log == null ? List.of() : List.copyOf(log.active().keySet());
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("abandon") && sender instanceof Player player) {
             QuestProgress log = log(player);
             return log == null ? List.of() : List.copyOf(log.active().keySet());
@@ -499,7 +605,8 @@ public final class QuestService implements Listener, AutoCloseable {
             if (quest == null) continue;
             int[] counts = log.counts(quest);
             boolean ready = QuestProgress.done(quest, counts);
-            player.sendRichMessage((ready ? "<green>? " : "<yellow>! ") + Chat.escape(quest.title()) + (ready ? "</green>" : "</yellow>")
+            boolean following = tracked(player).map(QuestDefinition::id).filter(id::equals).isPresent();
+            player.sendRichMessage((following ? "<gold>➤ </gold>" : "") + (ready ? "<green>? " : "<yellow>! ") + Chat.escape(quest.title()) + (ready ? "</green>" : "</yellow>")
                 + " <dark_gray>· " + (ready ? "return to " : "from ") + Chat.escape(npcName(ready ? quest.turnIn() : quest.giver())) + "</dark_gray>");
             for (int i = 0; i < quest.objectives().size(); i++) {
                 QuestDefinition.Objective objective = quest.objectives().get(i);
@@ -514,7 +621,7 @@ public final class QuestService implements Listener, AutoCloseable {
 
     // ---------------------------------------------------------------- helpers and storage
 
-    private QuestProgress log(Player player) {
+    QuestProgress log(Player player) {
         Optional<AccountId> account = plugin.sessions().account(player.getUniqueId());
         return account.map(id -> progress.computeIfAbsent(id, ignored -> new QuestProgress())).orElse(null);
     }
@@ -579,7 +686,10 @@ public final class QuestService implements Listener, AutoCloseable {
                 if (active != null) for (String quest : active.getKeys(false))
                     log.active().put(quest, active.getIntegerList(quest).stream().mapToInt(Integer::intValue).toArray());
                 log.completed().addAll(accounts.getStringList(key + ".completed"));
-                progress.put(AccountId.parse(key), log);
+                AccountId account = AccountId.parse(key);
+                progress.put(account, log);
+                String following = accounts.getString(key + ".tracked");
+                if (following != null) tracked.put(account, following);
             } catch (IllegalArgumentException invalid) {
                 plugin.getLogger().warning("Ignoring invalid quest progress for " + key);
             }
@@ -594,6 +704,7 @@ public final class QuestService implements Listener, AutoCloseable {
             String path = "accounts." + account;
             log.active().forEach((quest, counts) -> yaml.set(path + ".active." + quest, java.util.Arrays.stream(counts).boxed().toList()));
             yaml.set(path + ".completed", List.copyOf(log.completed()));
+            if (tracked.containsKey(account)) yaml.set(path + ".tracked", tracked.get(account));
         });
         if (writer == null) writer = new OrderedYamlWriter(plugin, progressFile, "quest progress");
         writer.submit(yaml.saveToString());

@@ -56,8 +56,9 @@ public final class ChatDialogueRenderer {
         for (int index = 0; index < responses.size(); index++) {
             Choice choice = responses.get(index);
             String label = "  [" + (index + 1) + "] " + clean(choice.text());
-            Component response = Component.text(label, choice.available()
-                ? NamedTextColor.AQUA : NamedTextColor.DARK_GRAY);
+            Component response = Component.text(label, !choice.available() ? NamedTextColor.DARK_GRAY
+                : choice.highlighted() ? NamedTextColor.GOLD : NamedTextColor.AQUA);
+            if (choice.available() && choice.highlighted()) response = response.decorate(TextDecoration.BOLD);
             List<String> details = new ArrayList<>();
             if (choice.available()) {
                 details.addAll(choice.hints().stream().map(ChatDialogueRenderer::clean).toList());
@@ -124,11 +125,16 @@ public final class ChatDialogueRenderer {
         return end;
     }
 
-    public record Choice(String text, boolean available, List<String> hints, List<String> lockedReasons) {
+    /** {@code highlighted} draws the response in gold, used for the quest board reply. */
+    public record Choice(String text, boolean available, List<String> hints, List<String> lockedReasons, boolean highlighted) {
         public Choice {
             Objects.requireNonNull(text, "text");
             hints = List.copyOf(hints);
             lockedReasons = List.copyOf(lockedReasons);
+        }
+
+        public Choice(String text, boolean available, List<String> hints, List<String> lockedReasons) {
+            this(text, available, hints, lockedReasons, false);
         }
     }
 }

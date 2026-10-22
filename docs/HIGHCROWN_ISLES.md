@@ -1,7 +1,8 @@
 # The Highcrown Isles (spawn map content)
 
 The spawn map from `MMORPG - 1.19.zip` ships with everything it needs to play as a small MMORPG: levelled
-mob zones, 50 NPCs, 31 story quests in 12 chains, renewable dig sites and ore veins, and 16 warps. Load the
+mob zones, 94 NPCs (with patrolling guards), 58 story quests, quest markers and a guided quest trail,
+renewable dig sites and ore veins, and 16 warps. Load the
 plugin on a server whose main world is this map and the content appears on its own; no staff setup is needed.
 
 ![Layout of the Highcrown Isles](highcrown-isles-map.png)
@@ -79,6 +80,8 @@ unzoned for later.
 
 ## NPCs
 
+94 of the 100 default NPC slots are used (raise `npcs.maximum-instances` if staff place more).
+
 The existing service NPCs fill the keep courtyard (guide, registrar, bank, identifier, forge, enchanter,
 mastery, portal master, herald, graves, relics, expeditions, contract clerks) and the market plaza north of
 the keep (all shops, wardrobe, jobs, party, duels, claims, surveyor, angler). Nineteen new NPCs
@@ -95,14 +98,31 @@ the keep (all shops, wardrobe, jobs, party, duels, claims, surveyor, angler). Ni
 | Sandmere | Samar al-Rashan, Kasim (desert-goods shop), Nadira (oasis), Tavros (colosseum) |
 | North and west | Warden Halvard (glacier road), Orla (Stormcrag foothills) |
 
-A quest giver's greeting has a "What needs doing?"-style reply that opens their **quest board**. Merchants in
+Every one of the 31 original service NPCs has been rewritten with a Highcrown backstory, branching lore
+and links to the others (Orin's sunken ship, Tamsin and the Mossfall keepers, Dorian's lost bout with the
+Champion...). Villager NPCs can wear a profession and biome look (`look: armorer@snow` in their definition).
+
+Around them live 44 more NPCs:
+
+- **Guards.** Sergeant Ottar and seven Watch Guards in the keep, market, street, harbour, gardens and at the
+  crossroads; two Bazaar Sentries in Sandmere; a Hollow Watchman at the mine. Each walks a patrol route back
+  and forth (`[npc, x, y, z, yaw, [[x, y, z], ...]]` in the pack), pausing at waypoints and stopping for anyone
+  who stands beside them. With no player within 56 blocks they wait at their post.
+- **Stone Sentinels.** Iron-golem gate keepers at the keep, Sandmere and the Druid's Ward.
+- **Townsfolk.** 21 residents with their own stories: a chaplain, the retired captain, a page, a baker, a bard,
+  the lighthouse keeper, dockhands, gardeners, miners, Sandmere's spice seller and water bearer, a retired
+  gladiator, a goatherd and a pilgrim. Their gossip points at quests and places.
+
+A quest giver's greeting always starts with a gold quest reply ("! Do you have work for me?", or "? I've
+finished what you asked." when something is ready); the plugin adds it, so no dialogue has to. Merchants in
 an enabled safe zone (Highcrown, Sandmere, the Druid's Ward) can trade even when they are farther than
 `skyblock.market.hub-radius` from spawn; set `skyblock.market.safe-zone-outposts: false` to keep trading
 at the hub only.
 
 ## Quests
 
-`content/world-quests.yml` holds the story quests. Each has a giver, an optional turn-in NPC, prerequisite
+`content/world-quests.yml` holds the story quests: the 31 main-chain quests, a personal quest for 19 of the
+original residents, and 8 side quests from the new townsfolk. Each has a giver, an optional turn-in NPC, prerequisite
 quests, a minimum adventurer level, up to six objectives and rewards (Marks, skill XP, faction reputation,
 items).
 
@@ -118,6 +138,16 @@ items).
 Chains: Highcrown welcome → Sword and Shield; Goldenreach harvest (3); Gullwater harbour; Lanternmere
 gardens; Kingsroad justice (3); Gloomroot hunt (4); Mossfall echoes (2); Sunscar gold (4); Sandmere bazaar (4);
 Sunscorch colosseum (2); Frostveil watch (3); Stormcrag storms (2).
+
+### Markers, tracker and trail
+
+- A gold **!** floats over an NPC with a quest you can take, a gold **?** over one you can hand a quest in to,
+  and a grey **?** over one whose quest you're still working on. Each player sees only their own markers.
+- The tracked quest (the newest one you accepted, or `/journal track <quest>`) shows on the sidebar under
+  the normal HUD with its objectives and counts.
+- A trail of gold dust on the ground leads toward its next objective (the zone, the NPC to talk to, the
+  nearest node for mining or digging, or the turn-in NPC), with a column of light over the destination when
+  it's within 160 blocks and the distance and direction on the action bar. `/journal untrack` hides it.
 
 Players use `/journal` (also `/questlog`) to see active quests and `/journal abandon <quest>` to drop one.
 Staff with `nerdsmp.quests.admin` can use `/journal admin <player> info|complete <quest>|reset [quest]`

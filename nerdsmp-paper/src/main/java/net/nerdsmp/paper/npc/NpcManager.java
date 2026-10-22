@@ -117,6 +117,8 @@ public final class NpcManager implements Listener, AutoCloseable {
     private final long assaultCooldownMillis;
     private volatile NpcContent content;
     private BukkitTask gazeTask;
+    private BukkitTask patrolTask;
+    private final Map<UUID, Patrol> patrols = new HashMap<>();
 
     public NpcManager(
         NerdSmpPlugin plugin,
@@ -165,6 +167,7 @@ public final class NpcManager implements Listener, AutoCloseable {
         respawnAll();
         if (vendorTrading != null) vendorTrading.recover();
         gazeTask = plugin.getServer().getScheduler().runTaskTimer(plugin, this::updateGaze, 10L, 10L);
+        patrolTask = plugin.getServer().getScheduler().runTaskTimer(plugin, this::walkPatrols, 20L, 1L);
     }
 
     public NpcContent content() {
@@ -471,11 +474,12 @@ public final class NpcManager implements Listener, AutoCloseable {
     private void openDialogue(Player player, NpcInstance instance, String nodeId) {
         NpcContent source = content;
         NpcContent.NpcDefinition npc = source.npcs().get(instance.definitionId());
-        NpcContent.DialogueNode node = source.dialogues().get(nodeId);
+        NpcContent.DialogueNode authored = source.dialogues().get(nodeId);
         AccountId account = account(player);
-        if (npc == null || node == null || account == null) {
+        if (npc == null || authored == null || account == null) {
             return;
         }
+        NpcContent.DialogueNode node = nodeId.equals(npc.rootDialogue()) ? withQuestReply(player, npc, authored) : authored;
         if (dialoguePending.contains(account)) {
             player.sendRichMessage("<yellow>Wait for this response to finish.</yellow>");
             return;
@@ -522,13 +526,40 @@ public final class NpcManager implements Listener, AutoCloseable {
                 if (choice.once()) hints.add("One-time response");
                 else if (!choice.cooldown().isZero()) hints.add("Cooldown: " + shortDuration(choice.cooldown()));
                 responses.add(new ChatDialogueRenderer.Choice(resolveDialogue(choice.text(), player, context),
-                    access.available(), hints, access.reasons()));
+                    access.available(), hints, access.reasons(), choice.id().equals(QUEST_REPLY) && questReplyLit(player, npc)));
             }
             ChatDialogueRenderer.render(token, npc.name(), npc.title(),
                 node.text().stream().map(line -> resolveDialogue(line, player, context)).toList(), responses)
                 .forEach(player::sendMessage);
             conversation.rendered().set(true);
         }));
+    }
+
+    static final String QUEST_REPLY = "quest_board";
+
+    /**
+     * Every quest giver's greeting opens with a quest reply, so no NPC's quests depend on hand-written dialogue.
+     * Authored open_quests replies are folded into it.
+     */
+    private NpcContent.DialogueNode withQuestReply(Player player, NpcContent.NpcDefinition npc, NpcContent.DialogueNode node) {
+        if (plugin.quests() == null || plugin.quests().catalog().offeredBy(npc.id()).isEmpty()) return node;
+        var counts = plugin.quests().counts(player, npc.id());
+        String label = counts.ready() > 0 ? "? " + (counts.ready() == 1 ? "I've finished what you asked." : "I've finished " + counts.ready() + " of your tasks.")
+            : counts.available() > 0 ? "! " + (counts.available() == 1 ? "Do you have work for me?" : "Do you have work for me? (" + counts.available() + " quests)")
+            : "Quests";
+        List<NpcContent.DialogueChoice> choices = new ArrayList<>();
+        choices.add(new NpcContent.DialogueChoice(QUEST_REPLY, label, null, false, false, java.time.Duration.ZERO,
+            NpcContent.Requirements.none(), List.of(new NpcContent.DialogueEffect(NpcContent.EffectType.OPEN_QUESTS, null, 0, null, true, null, null))));
+        for (NpcContent.DialogueChoice choice : node.choices()) {
+            if (choice.effects().stream().anyMatch(effect -> effect.type() == NpcContent.EffectType.OPEN_QUESTS)) continue;
+            if (choices.size() < 5) choices.add(choice);
+        }
+        return new NpcContent.DialogueNode(node.id(), node.text(), choices);
+    }
+
+    private boolean questReplyLit(Player player, NpcContent.NpcDefinition npc) {
+        var counts = plugin.quests().counts(player, npc.id());
+        return counts.ready() + counts.available() > 0;
     }
 
     private void replyCommand(Player player, String[] args) {
@@ -2392,6 +2423,144 @@ public final class NpcManager implements Listener, AutoCloseable {
         return instance == null ? java.util.Optional.empty() : java.util.Optional.of(instance.definitionId());
     }
 
+    /** A placed body, for features that decorate NPCs (such as quest markers). */
+    public record Body(UUID instance, String definitionId, LivingEntity entity) { }
+
+    public List<Body> bodies() {
+        List<Body> result = new ArrayList<>();
+        liveByInstance.forEach((id, body) -> {
+            NpcInstance instance = instances.get(id);
+            if (instance != null && body.isValid()) result.add(new Body(id, instance.definitionId(), body));
+        });
+        return result;
+    }
+
+    /** Where an NPC can be found: its live body, or its anchor when the body isn't loaded. */
+    public List<Location> locationsOf(String definitionId) {
+        List<Location> result = new ArrayList<>();
+        for (NpcInstance instance : instances.values()) {
+            if (!instance.definitionId().equals(definitionId)) continue;
+            LivingEntity body = liveByInstance.get(instance.id());
+            Location at = body != null && body.isValid() ? body.getLocation() : instance.location();
+            if (at != null) result.add(at);
+        }
+        return result;
+    }
+
+    /**
+     * Walks an anchored NPC along {@code route} (block positions, walked back and forth) whenever a player is
+     * near, pausing at each waypoint and for anyone who stops beside it. With nobody near it waits at its anchor.
+     */
+    public void patrol(UUID instance, List<org.bukkit.util.Vector> route) {
+        if (route.size() < 2) { patrols.remove(instance); return; }
+        patrols.put(instance, new Patrol(List.copyOf(route)));
+    }
+
+    private static final double PATROL_SPEED = 0.09D;
+
+    private void walkPatrols() {
+        long tick = plugin.getServer().getCurrentTick();
+        for (Map.Entry<UUID, Patrol> entry : patrols.entrySet()) {
+            Patrol patrol = entry.getValue();
+            NpcInstance instance = instances.get(entry.getKey());
+            LivingEntity body = liveByInstance.get(entry.getKey());
+            if (instance == null) continue;
+            if (body == null || !body.isValid()) {
+                // A body that wandered into an unloaded chunk is gone: bring it back at its anchor.
+                Location anchor = instance.location();
+                if (tick % 100 == 0 && anchor != null && anchor.isChunkLoaded()) {
+                    removeLive(instance.id());
+                    patrol.reset();
+                    try { spawnLive(instance); } catch (RuntimeException ignored) { }
+                }
+                continue;
+            }
+            Location at = body.getLocation();
+            if (at.getWorld().getNearbyPlayers(at, 56).isEmpty()) {
+                // Nobody to see the route: wait at the anchor, whose chunk always stays loaded.
+                if (++patrol.idle > 200 && !patrol.home) {
+                    Location anchor = instance.location();
+                    if (anchor != null) {
+                        body.teleport(anchor);
+                        TextDisplay nameplate = nameplateByInstance.get(entry.getKey());
+                        if (nameplate != null && nameplate.isValid()) nameplate.teleport(anchor.clone().add(0.0D, body.getHeight() + 0.55D, 0.0D));
+                        patrol.reset();
+                        patrol.home = true;
+                    }
+                }
+                continue;
+            }
+            patrol.idle = 0;
+            patrol.home = false;
+            boolean company = at.getWorld().getNearbyPlayers(at, 3.5).stream()
+                .anyMatch(player -> player.getGameMode() != org.bukkit.GameMode.SPECTATOR);
+            if (company) { patrol.pauseUntil = Math.max(patrol.pauseUntil, tick + 40); continue; }
+            if (tick < patrol.pauseUntil) continue;
+            org.bukkit.util.Vector target = patrol.route.get(patrol.index).clone().add(new org.bukkit.util.Vector(0.5, 0, 0.5));
+            double dx = target.getX() - at.getX(), dz = target.getZ() - at.getZ();
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance < 0.25D) {
+                patrol.advance();
+                patrol.pauseUntil = tick + 40 + (patrol.index * 37L % 60);
+                continue;
+            }
+            double step = Math.min(PATROL_SPEED, distance);
+            double nx = at.getX() + dx / distance * step, nz = at.getZ() + dz / distance * step;
+            if (!at.getWorld().isChunkLoaded((int) Math.floor(nx) >> 4, (int) Math.floor(nz) >> 4)) continue;
+            Double ny = footing(at.getWorld(), nx, at.getY(), nz);
+            if (ny == null) { patrol.advance(); continue; } // A blocked step: turn round at this point.
+            float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            Location next = new Location(at.getWorld(), nx, ny, nz, yaw, 0F);
+            body.teleport(next);
+            body.setRotation(yaw, 0F);
+            TextDisplay nameplate = nameplateByInstance.get(entry.getKey());
+            if (nameplate != null && nameplate.isValid()) nameplate.teleport(next.clone().add(0.0D, body.getHeight() + 0.55D, 0.0D));
+        }
+    }
+
+    /** The feet height to stand at near {@code y}: steps up or down a block at most, never into a wall or a drop. */
+    private static Double footing(World world, double x, double y, double z) {
+        int bx = (int) Math.floor(x), bz = (int) Math.floor(z), by = (int) Math.floor(y + 0.01);
+        for (int dy : new int[] {0, 1, -1}) {
+            int feet = by + dy;
+            org.bukkit.block.Block below = world.getBlockAt(bx, feet - 1, bz);
+            org.bukkit.block.Block body = world.getBlockAt(bx, feet, bz), head = world.getBlockAt(bx, feet + 1, bz);
+            if (!body.isPassable() || !head.isPassable() || body.isLiquid() || below.isLiquid() || below.isPassable()) continue;
+            double top = below.getBoundingBox().getMaxY();
+            if (top - below.getY() < 0.5D) continue;
+            return top;
+        }
+        return null;
+    }
+
+    private static final class Patrol {
+        private final List<org.bukkit.util.Vector> route;
+        private int index = 1, direction = 1, idle;
+        private long pauseUntil;
+        private boolean home = true;
+        private Patrol(List<org.bukkit.util.Vector> route) { this.route = route; }
+        private boolean paused() { return home || pauseUntil > org.bukkit.Bukkit.getCurrentTick(); }
+        private void advance() {
+            if (index + direction >= route.size() || index + direction < 0) direction = -direction;
+            index += direction;
+        }
+        private void reset() { index = 1; direction = 1; pauseUntil = 0; }
+    }
+
+    /** Villager professions and biome types make guards, scholars and merchants recognisable. */
+    private static void dress(LivingEntity living, String look) {
+        if (look == null || !(living instanceof org.bukkit.entity.Villager villager)) return;
+        String[] parts = look.split("@", -1);
+        if (!parts[0].isEmpty()) {
+            var profession = org.bukkit.Registry.VILLAGER_PROFESSION.get(org.bukkit.NamespacedKey.minecraft(parts[0]));
+            if (profession != null) { villager.setProfession(profession); villager.setVillagerLevel(5); }
+        }
+        if (parts.length > 1) {
+            var type = org.bukkit.Registry.VILLAGER_TYPE.get(org.bukkit.NamespacedKey.minecraft(parts[1]));
+            if (type != null) villager.setVillagerType(type);
+        }
+    }
+
     public void respawnAll() {
         removeAllLive();
         instances.values().forEach(this::spawnLive);
@@ -2411,7 +2580,7 @@ public final class NpcManager implements Listener, AutoCloseable {
         try {
             Class<? extends LivingEntity> type = definition.entityType().getEntityClass().asSubclass(LivingEntity.class);
             living = world.spawn(location, type, CreatureSpawnEvent.SpawnReason.CUSTOM, false,
-                entity -> configureNpcBody(entity, instance.id()));
+                entity -> { configureNpcBody(entity, instance.id()); dress(entity, definition.look()); });
         } catch (RuntimeException failure) {
             releaseUnusedTickets();
             throw failure;
@@ -2512,6 +2681,8 @@ public final class NpcManager implements Listener, AutoCloseable {
                     nameplate.teleport(expected);
                 }
             }
+            Patrol patrol = patrols.get(entry.getKey());
+            if (patrol != null && !patrol.paused()) continue;
             Player target = npc.getWorld().getNearbyPlayers(npc.getLocation(), definition.lookRadius()).stream()
                 .min(java.util.Comparator.comparingDouble(player -> player.getLocation().distanceSquared(npc.getLocation())))
                 .orElse(null);
@@ -2898,6 +3069,10 @@ public final class NpcManager implements Listener, AutoCloseable {
         if (gazeTask != null) {
             gazeTask.cancel();
             gazeTask = null;
+        }
+        if (patrolTask != null) {
+            patrolTask.cancel();
+            patrolTask = null;
         }
         removeAllLive();
         ticketedChunks.forEach(chunk -> chunk.removePluginChunkTicket(plugin));

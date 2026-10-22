@@ -589,3 +589,482 @@ quests:
       xp: {hunting: 1800}
       reputation: {rift_scholars: 60}
       items: ["material:diamond 3", "material:emerald 6"]
+
+  # ================================================================== Personal quests of Highcrown's residents
+  the_lantern_route:
+    chain: highcrown_folk
+    title: The Lantern Route
+    giver: cassia_dawn
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Every lantern in Highcrown has a keeper. Meet three of them and you'll never get lost here again."
+      - "My father Ardis at the lighthouse, Liss in the gardens, and Sergeant Ottar at the gate."
+    complete:
+      - "Now you know the lantern route. Father says you have a good handshake. That's high praise from him."
+    objectives:
+      - {type: talk, targets: [keeper_ardis], description: Meet Ardis at the Gullwater light}
+      - {type: talk, targets: [liss_fernwhistle], description: Meet Liss in the Lanternmere Gardens}
+      - {type: talk, targets: [sergeant_ottar], description: Meet Sergeant Ottar of the Watch}
+    rewards:
+      marks: 50
+      reputation: {frontier_wardens: 10}
+      items: ["material:lantern 2"]
+
+  the_gulls_promise:
+    chain: highcrown_folk
+    title: The Gull's Promise
+    giver: orin_ledger
+    level: 2
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The Gull's Promise went down with debts nobody has settled. I want to know what people still remember."
+      - "Ask Widow Greer, Mags in the galley and Ivo at the water. Gently. It still hurts them."
+    complete:
+      - "Gold in the hold, debts in my ledger, and a fish that won't swim over the wreck. It's more than I knew."
+      - "Thank you. Some accounts can't be paid. They can at least be read."
+    objectives:
+      - {type: talk, targets: [widow_greer], description: Hear Widow Greer's story}
+      - {type: talk, targets: [sailor_mags], description: Ask Mags about her last voyage}
+      - {type: talk, targets: [ivo_reed], description: Ask Ivo about the wreck}
+    rewards:
+      marks: 120
+      reputation: {frontier_wardens: 15}
+
+  three_disciplines:
+    chain: highcrown_folk
+    title: Three Disciplines
+    giver: pell_wren
+    level: 3
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Try three kinds of work before you choose one. Dig the Ward's peat, mine the Hollow's gold, and hunt the field gnawers."
+      - "Then tell me which one you'd do for free."
+    complete:
+      - "Well? Don't answer now. Answer in a month, when your hands have decided for you."
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: goldenreach_fields, count: 5, description: Hunt Field Gnawers}
+      - {type: dig, zone: druids_ward, count: 5, description: Dig peat in the Druid's Ward}
+      - {type: harvest, targets: [GOLD_ORE], zone: gilded_hollow, count: 3, description: Mine gold in the Gilded Hollow}
+    rewards:
+      marks: 150
+      xp: {hunting: 200, excavation: 200, mining: 200}
+
+  ink_of_the_deep:
+    chain: highcrown_folk
+    title: Ink of the Deep
+    giver: veyra_loom
+    level: 2
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Lapis holds a rune the way the sea holds a ship. I'm nearly out. Bring me some from your island's mines."
+    complete:
+      - "Beautiful. Watch the colour shift when I speak to it. That's the promise taking hold."
+    objectives:
+      - {type: deliver, targets: [LAPIS_LAZULI], count: 8, description: Bring Veyra 8 lapis lazuli}
+    rewards:
+      marks: 100
+      xp: {enchanting: 400}
+      reputation: {rift_scholars: 15}
+
+  scout_the_hollow:
+    chain: highcrown_folk
+    title: Scout the Hollow
+    giver: garrick_mott
+    level: 6
+    requires: [canyon_patrol]
+    offer:
+      - "I'm selling routes into the Gilded Hollow and I'd like them to be accurate. Go down, count the lurkers, thin them a little."
+    complete:
+      - "Four fewer lurkers and a fresh route map. That's what I call a sellable product."
+    objectives:
+      - {type: visit, zone: gilded_hollow, description: Climb down into the Gilded Hollow}
+      - {type: kill, targets: ["custom:tunnel_lurker"], zone: gilded_hollow, count: 4, description: Thin out the Tunnel Lurkers}
+    rewards:
+      marks: 220
+      xp: {hunting: 400}
+      reputation: {free_delvers: 25}
+
+  mapping_the_ways:
+    chain: highcrown_folk
+    title: Mapping the Ways
+    giver: kestrel_way
+    level: 4
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The waystones at Sandmere, the Druid's Ward and the Gilded Hollow need someone to walk to them and confirm they still answer."
+      - "Visit each one. You'll have the warps for life, and I'll have peace of mind."
+    complete:
+      - "All three still hum. Good. The old promises hold a little longer."
+    objectives:
+      - {type: visit, zone: druids_ward, description: Visit the Druid's Ward waystone}
+      - {type: visit, zone: gilded_hollow, description: Visit the Gilded Hollow waystone}
+      - {type: visit, zone: sandmere, description: Visit the Sandmere waystone}
+    rewards:
+      marks: 200
+      reputation: {rift_scholars: 20}
+
+  a_fair_fight:
+    chain: highcrown_folk
+    title: A Fair Fight
+    giver: dorian_ash
+    level: 8
+    requires: [sands_of_sandmere]
+    offer:
+      - "Before you fight in the colosseum, talk to Varro the Scarred near its gate. He's forgotten more about the pit than I learned."
+      - "Then win three bouts. Fairly. I'll know if you didn't."
+    complete:
+      - "Three bouts and you're still standing straight. Varro taught you to dodge, didn't he? Good."
+    objectives:
+      - {type: talk, targets: [varro_scarred], description: Learn from Varro the Scarred}
+      - {type: kill, targets: ["custom:arena_gladiator"], zone: sunscorch_colosseum, count: 3, description: Win three bouts against Pit Gladiators}
+    rewards:
+      marks: 300
+      xp: {hunting: 700}
+      reputation: {free_delvers: 20}
+
+  oracle_shards:
+    chain: highcrown_folk
+    title: Oracle Shards
+    giver: rook_salen
+    level: 6
+    requires: [echoes_of_mossfall]
+    offer:
+      - "The bog oracles of Mossfall carry shards of the temple's relics in their chants. Silence three and the shards go quiet enough to study."
+    complete:
+      - "Listen. Nothing. Do you know how rare it is for a relic to be quiet? I may weep."
+    objectives:
+      - {type: kill, targets: ["custom:bog_oracle"], zone: mossfall_ruins, count: 3, description: Silence three Bog Oracles}
+    rewards:
+      marks: 250
+      xp: {hunting: 450}
+      reputation: {rift_scholars: 30}
+      items: ["material:amethyst_shard 6"]
+
+  road_rations:
+    chain: highcrown_folk
+    title: Road Rations
+    giver: mara_venn
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The road crews eat faster than Hilde can bake. Bring me bread from your island's ovens and the Wardens will remember it."
+    complete:
+      - "That'll keep three bridge crews fed for a week. Don't tell them it came from an adventurer. They'll expect it again."
+    objectives:
+      - {type: deliver, targets: [BREAD], count: 16, description: Bring Mara 16 loaves of bread}
+    rewards:
+      marks: 80
+      reputation: {frontier_wardens: 20}
+
+  charting_the_frostveil:
+    chain: highcrown_folk
+    title: Charting the Frostveil
+    giver: elian_quill
+    level: 9
+    requires: [into_the_frostveil]
+    offer:
+      - "My charts of the north end in a guess and an apology. Walk the Frostveil and the Stormcrag Peaks so I can replace both with lines."
+    complete:
+      - "Finally. A coastline that doesn't say 'here be cold'. The archive owes you, and so do I."
+    objectives:
+      - {type: visit, zone: frostveil_glacier, description: Cross the Frostveil Glacier}
+      - {type: visit, zone: stormcrag_peaks, description: Climb into the Stormcrag Peaks}
+    rewards:
+      marks: 350
+      reputation: {rift_scholars: 40}
+
+  rope_and_rumour:
+    chain: highcrown_folk
+    title: Rope and Rumour
+    giver: bram_tallow
+    level: 3
+    requires: [trouble_on_the_road]
+    offer:
+      - "A Delver's only as good as their contacts. Meet Tobin on the western road, Scout Dren above the canyons, and Magda Hale at the mine."
+      - "Tell them Bram sent you. Two of them will be pleased."
+    complete:
+      - "Tobin owes me money, Dren owes me a favour, and Magda says I owe her both. Welcome to the Delvers, more or less."
+    objectives:
+      - {type: talk, targets: [tobin_peddler], description: Meet Tobin on the western road}
+      - {type: talk, targets: [scout_dren], description: Meet Scout Dren above the canyons}
+      - {type: talk, targets: [prospector_hale], description: Meet Magda Hale at the mine}
+    rewards:
+      marks: 150
+      reputation: {free_delvers: 30}
+
+  weaver_venom:
+    chain: highcrown_folk
+    title: Weaver Venom
+    giver: sella_mire
+    level: 4
+    requires: [howls_in_the_pines]
+    offer:
+      - "Mire Weaver venom, fresh. And spider eyes, for the base. I'll make an antidote, and possibly something rude."
+    complete:
+      - "Still twitching. Perfect. Mind the green flask on your way out."
+    objectives:
+      - {type: kill, targets: ["custom:mire_weaver"], count: 6, description: Defeat Mire Weavers in the Gloomroot}
+      - {type: deliver, targets: [SPIDER_EYE], count: 4, description: Bring Sella 4 spider eyes}
+    rewards:
+      marks: 180
+      xp: {alchemy: 400, hunting: 200}
+
+  steel_for_the_watch:
+    chain: highcrown_folk
+    title: Steel for the Watch
+    giver: torren_pike
+    level: 2
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The Watch needs new blades and I'm short of iron. Bring me ingots from your island and I'll put them where they'll do some good."
+    complete:
+      - "Good iron. Clean. These will be swords by Thursday. Take this, it's the first one off the anvil."
+    objectives:
+      - {type: deliver, targets: [IRON_INGOT], count: 12, description: Bring Torren 12 iron ingots}
+    rewards:
+      marks: 120
+      xp: {smithing: 400}
+      reputation: {frontier_wardens: 20}
+      items: ["material:iron_sword 1"]
+
+  catch_of_the_day:
+    chain: highcrown_folk
+    title: Catch of the Day
+    giver: ivo_reed
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Greer's stall is empty and the moat's been sulking. Bring me salmon from your island's waters and I'll owe you a lesson."
+    complete:
+      - "Lovely fish. Here's the lesson: never fish over a wreck. Here's the reward: Marks. The lesson was free."
+    objectives:
+      - {type: deliver, targets: [SALMON], count: 6, description: Bring Ivo 6 raw salmon}
+    rewards:
+      marks: 90
+      xp: {fishing: 300}
+
+  strata_of_sunscar:
+    chain: highcrown_folk
+    title: Strata of Sunscar
+    giver: hessa_clay
+    level: 6
+    requires: [canyon_patrol]
+    offer:
+      - "The red sand on the Hollow's rim sits on burnt clay. Dig me samples and I'll finally write that chapter."
+    complete:
+      - "Burnt, layered, and full of glassy grit. Something very hot happened under the Hollow. Chapter nine, at last."
+    objectives:
+      - {type: dig, targets: [RED_SAND], zone: gilded_hollow, count: 12, description: Dig red sand samples on the Hollow's rim}
+    rewards:
+      marks: 200
+      xp: {excavation: 500}
+      reputation: {free_delvers: 15}
+
+  names_on_the_stones:
+    chain: highcrown_folk
+    title: Names on the Stones
+    giver: tamsin_wake
+    level: 5
+    requires: [trouble_on_the_road]
+    offer:
+      - "The temple keepers of Mossfall still walk their stair. Give six of them their leave. They've stood watch long enough."
+    complete:
+      - "Six names I can finally write as resting. Thank you. I'll light a lantern for them at the memorial."
+    objectives:
+      - {type: visit, zone: mossfall_ruins, description: Go to the Mossfall Ruins}
+      - {type: kill, targets: ["custom:ruin_revenant"], zone: mossfall_ruins, count: 6, description: Lay six Mossfall Revenants to rest}
+    rewards:
+      marks: 180
+      xp: {hunting: 400}
+      reputation: {frontier_wardens: 20}
+
+  basket_for_the_keep:
+    chain: highcrown_folk
+    title: A Basket for the Keep
+    giver: alba_meadow
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The keep's kitchens want wheat and carrots and Odo's fields are overrun. Grow some on your island and bring a basket."
+    complete:
+      - "That'll feed the Watch until the fields are clear. Odo will pretend he grew it."
+    objectives:
+      - {type: deliver, targets: [WHEAT], count: 16, description: Bring Alba 16 wheat}
+      - {type: deliver, targets: [CARROT], count: 8, description: Bring Alba 8 carrots}
+    rewards:
+      marks: 100
+      xp: {farming: 300}
+      reputation: {frontier_wardens: 10}
+
+  timber_for_the_harbour:
+    chain: highcrown_folk
+    title: Timber for the Harbour
+    giver: rowan_ashwood
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The harbour's beams are rotting faster than the Gloomroot crews can cut. Bring me logs from your island and I'll keep the docks standing."
+    complete:
+      - "Good straight timber. Rufus will stop complaining about the pier for at least a week."
+    objectives:
+      - {type: deliver, targets: [OAK_LOG, SPRUCE_LOG, BIRCH_LOG, JUNGLE_LOG, ACACIA_LOG, DARK_OAK_LOG, CHERRY_LOG], count: 24, description: Bring Rowan 24 logs}
+    rewards:
+      marks: 100
+      xp: {forestry: 300}
+
+  coal_for_winter:
+    chain: highcrown_folk
+    title: Coal for Winter
+    giver: dain_slate
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The keep burns coal like it's angry at it, and winter's coming. Bring me coal from your island mines."
+    complete:
+      - "That'll heat the barracks till spring. Ottar sends his thanks. He sends it grumpily, but he sends it."
+    objectives:
+      - {type: deliver, targets: [COAL], count: 16, description: Bring Dain 16 coal}
+    rewards:
+      marks: 100
+      xp: {mining: 300}
+
+  # ================================================================== Side quests
+  salt_and_silver:
+    chain: side_tales
+    title: Salt and Silver
+    giver: sailor_mags
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "The galley's run out of anything a sailor would eat on purpose. Cooked cod, six of them. Your island's waters will do."
+    complete:
+      - "Now that's a stew base! Have a bowl. No? More for the crew."
+    objectives:
+      - {type: deliver, targets: [COOKED_COD], count: 6, description: Bring Mags 6 cooked cod}
+    rewards:
+      marks: 80
+      xp: {cooking: 250}
+
+  night_watch:
+    chain: side_tales
+    title: Night Watch
+    giver: farmhand_jory
+    level: 1
+    requires: [welcome_to_highcrown]
+    offer:
+      - "Help me watch the fields. If anything with straw for a face or tusks for a smile comes near the farmhouse, stop it."
+    complete:
+      - "I might actually sleep tonight. Might. The scarecrow by the well is still looking at me."
+    objectives:
+      - {type: kill, targets: ["custom:straw_scarecrow"], zone: goldenreach_fields, count: 4, description: Stop the Straw Scarecrows}
+      - {type: kill, targets: ["custom:bristle_boar"], zone: goldenreach_fields, count: 3, description: Drive off the Bristle Boars}
+    rewards:
+      marks: 70
+      xp: {hunting: 150}
+
+  songs_of_the_isles:
+    chain: side_tales
+    title: Songs of the Isles
+    giver: minstrel_fennick
+    level: 4
+    requires: [trouble_on_the_road]
+    offer:
+      - "Go where I can't: the drowned temple of Mossfall, the red canyons of the Sunscar, the Amberdune sands. Then tell me how they felt."
+    complete:
+      - "Cold stone, red dust and endless gold? That's three verses at least. You'll be in the chorus."
+    objectives:
+      - {type: visit, zone: mossfall_ruins, description: Stand in the Mossfall Ruins}
+      - {type: visit, zone: sunscar_west, description: Walk the Sunscar Canyons}
+      - {type: visit, zone: amberdune_north, description: Cross into the Amberdune Wastes}
+    rewards:
+      marks: 200
+      reputation: {free_delvers: 20}
+
+  hive_raiders:
+    chain: side_tales
+    title: Hive Raiders
+    giver: acolyte_fern
+    level: 3
+    requires: [howls_in_the_pines]
+    offer:
+      - "The wolfhounds keep raiding the hives. Drive them off, then dig fresh peat for the hive beds. The bees will thank you. Probably."
+    complete:
+      - "The hives are humming again. That means thank you. The angry humming would have meant something else."
+    objectives:
+      - {type: kill, targets: ["custom:gloom_wolfhound"], count: 6, description: Drive off Gloomroot Wolfhounds}
+      - {type: dig, zone: druids_ward, count: 6, description: Dig peat for the hive beds}
+    rewards:
+      marks: 150
+      xp: {hunting: 250, excavation: 150}
+      items: ["material:honey_bottle 3"]
+
+  pages_in_the_water:
+    chain: side_tales
+    title: Pages in the Water
+    giver: apprentice_teodor
+    level: 5
+    requires: [trouble_on_the_road]
+    offer:
+      - "The skeletons in the flooded crypt keep knocking my ink into the water. Could you... discourage them? Six should do."
+    complete:
+      - "Dry pages! Imre will think I'm competent. Please don't tell him otherwise."
+    objectives:
+      - {type: kill, targets: ["vanilla:skeleton"], zone: mossfall_ruins, count: 6, description: Clear the crypt skeletons}
+    rewards:
+      marks: 160
+      xp: {hunting: 350}
+      reputation: {rift_scholars: 15}
+
+  lamps_for_the_ledges:
+    chain: side_tales
+    title: Lamps for the Ledges
+    giver: miner_bertram
+    level: 6
+    requires: [gold_fever]
+    offer:
+      - "I want the lower ledges lit again. Clear the lurkers and raiders off them so the crews can hang the lamps."
+    complete:
+      - "Look at that. Lamps on the lower ledges, first time in years. The mountain looks pleased. Don't ask me how I know."
+    objectives:
+      - {type: kill, targets: ["custom:tunnel_lurker"], zone: gilded_hollow, count: 6, description: Clear Tunnel Lurkers from the ledges}
+      - {type: kill, targets: ["custom:dust_raider"], zone: gilded_hollow, count: 4, description: Drive Dust Raiders out of the pit}
+    rewards:
+      marks: 260
+      xp: {hunting: 600}
+      items: ["material:lantern 4"]
+
+  omens_in_the_sand:
+    chain: side_tales
+    title: Omens in the Sand
+    giver: seer_zahra
+    level: 8
+    requires: [sands_of_sandmere]
+    offer:
+      - "The sand shows wraiths on the wind and a champion who cannot rest. Strike down the wraiths, then stand where the champion fights."
+    complete:
+      - "The omens settle. For now. The champion still waits, but he waits for you now, not for the storm."
+    objectives:
+      - {type: kill, targets: ["custom:sandwraith"], count: 4, description: Strike down Sandwraiths}
+      - {type: visit, zone: sunscorch_colosseum, description: Stand in the Sunscorch Colosseum}
+    rewards:
+      marks: 280
+      xp: {hunting: 600}
+      reputation: {rift_scholars: 20}
+
+  lost_in_the_white:
+    chain: side_tales
+    title: Lost in the White
+    giver: scout_yrsa
+    level: 9
+    requires: [into_the_frostveil]
+    offer:
+      - "Two scouts went into the white and didn't come back. The rime wolves have their scent. Hunt the pack so I can search."
+    complete:
+      - "Found them, half frozen and very rude about it. They'll live. Thank you."
+    objectives:
+      - {type: kill, targets: ["custom:rime_wolf"], zone: frostveil_glacier, count: 6, description: Hunt the Rime Wolf pack}
+    rewards:
+      marks: 420
+      xp: {hunting: 1000}
+      reputation: {frontier_wardens: 30}

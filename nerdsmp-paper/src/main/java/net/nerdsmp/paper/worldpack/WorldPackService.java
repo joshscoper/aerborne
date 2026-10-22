@@ -75,6 +75,14 @@ public final class WorldPackService implements org.bukkit.event.Listener {
                 fence.guard(world, pack.border());
                 ensureBorder(pack, world);
             }
+            for (WorldPack.Anchor anchor : pack.npcs().values()) {
+                if (anchor.route().isEmpty()) continue;
+                UUID id = UUID.nameUUIDFromBytes(("worldpack:" + pack.id() + ":" + anchor.key()).getBytes(StandardCharsets.UTF_8));
+                List<org.bukkit.util.Vector> route = new ArrayList<>();
+                route.add(new org.bukkit.util.Vector(Math.floor(anchor.point().x()), anchor.point().y(), Math.floor(anchor.point().z())));
+                anchor.route().forEach(step -> route.add(new org.bukkit.util.Vector(step.x(), step.y(), step.z())));
+                plugin.npcs().patrol(id, route);
+            }
             try {
                 Report report = apply(pack, world, force);
                 String summary = report == null ? "already applied" : report.toString();

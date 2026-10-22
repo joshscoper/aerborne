@@ -88,9 +88,11 @@ final class HighcrownContentTest {
         Map<String, Object> world = section(yaml("/content/world-npcs.yml"), "npcs");
         npcs.putAll(world);
         Set<String> placed = new HashSet<>();
+        // Guard posts reuse one definition; everyone else is a single person.
+        Set<String> repeatable = Set.of("highcrown_guard", "sandmere_sentry", "stone_sentinel");
         for (WorldPack.Anchor anchor : pack().npcs().values()) {
             assertTrue(npcs.containsKey(anchor.npc()), anchor.key() + " places unknown NPC " + anchor.npc());
-            assertTrue(placed.add(anchor.npc()), anchor.npc() + " is placed twice");
+            assertTrue(placed.add(anchor.npc()) || repeatable.contains(anchor.npc()), anchor.npc() + " is placed twice");
         }
         for (String id : world.keySet()) assertTrue(placed.contains(id), "World NPC " + id + " is never placed");
         assertTrue(pack().npcs().size() <= 100, "pack NPCs must fit the default npcs.maximum-instances");
@@ -151,15 +153,32 @@ final class HighcrownContentTest {
     }
 
     @Test
-    void everyQuestGiverOffersItsQuestsFromDialogue() throws IOException {
+    void everyQuestGiverHasRoomForTheQuestReply() throws IOException {
+        // The plugin adds the quest reply to a giver's greeting; a node shows at most five replies.
         QuestCatalog catalog = QuestCatalog.parse(text("/content/world-quests.yml"));
-        Map<String, Object> npcs = section(yaml("/content/world-npcs.yml"), "npcs");
-        Map<String, Object> dialogues = section(yaml("/content/world-npcs.yml"), "dialogues");
+        Map<String, Object> npcs = new HashMap<>(section(yaml("/content/npcs.yml"), "npcs"));
+        npcs.putAll(section(yaml("/content/world-npcs.yml"), "npcs"));
+        Map<String, Object> dialogues = new HashMap<>(section(yaml("/content/npcs.yml"), "dialogues"));
+        dialogues.putAll(section(yaml("/content/world-npcs.yml"), "dialogues"));
         for (QuestDefinition quest : catalog.quests().values()) for (String npc : new HashSet<>(List.of(quest.giver(), quest.turnIn()))) {
             @SuppressWarnings("unchecked") Map<String, Object> definition = (Map<String, Object>) npcs.get(npc);
-            assertTrue(definition != null, npc + " must be a world NPC to give quests");
-            String root = String.valueOf(definition.get("root-dialogue"));
-            assertTrue(String.valueOf(dialogues.get(root)).contains("open_quests"), npc + "'s greeting must open the quest board");
+            assertTrue(definition != null, npc + " gives quests but is not defined");
+            @SuppressWarnings("unchecked") Map<String, Object> root = (Map<String, Object>) dialogues.get(String.valueOf(definition.get("root-dialogue")));
+            @SuppressWarnings("unchecked") Map<String, Map<String, Object>> choices = (Map<String, Map<String, Object>>) root.get("choices");
+            long others = choices.values().stream().filter(choice -> !String.valueOf(choice.get("effects")).contains("open_quests")).count();
+            assertTrue(others <= 4, npc + "'s greeting has " + others + " replies; the quest reply needs a free slot");
+        }
+    }
+
+    @Test
+    void guardPatrolsAndTheNpcCapFit() throws IOException {
+        WorldPack pack = pack();
+        long guards = pack.npcs().values().stream().filter(anchor -> !anchor.route().isEmpty()).count();
+        assertTrue(guards >= 10, "the towns need patrolling guards");
+        assertTrue(pack.npcs().size() <= 100, "pack NPCs must fit the default npcs.maximum-instances");
+        for (WorldPack.Anchor anchor : pack.npcs().values()) for (WorldPack.Point step : anchor.route()) {
+            double distance = Math.hypot(step.x() + 0.5 - anchor.point().x(), step.z() + 0.5 - anchor.point().z());
+            assertTrue(distance < 96, anchor.key() + " patrols too far from its post");
         }
     }
 

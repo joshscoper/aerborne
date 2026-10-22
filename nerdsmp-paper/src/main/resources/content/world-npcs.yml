@@ -140,6 +140,281 @@ npcs:
     root-dialogue: orla_start
     look-radius: 9
 
+  # ------------------------------------------------------------------ Guards
+  sergeant_ottar:
+    name: Sergeant Ottar Grey
+    title: Highcrown Watch
+    entity: VILLAGER
+    look: armorer@snow
+    faction: frontier_wardens
+    root-dialogue: ottar_start
+    look-radius: 7
+  highcrown_guard:
+    name: Watch Guard
+    title: Highcrown Watch
+    entity: VILLAGER
+    look: weaponsmith
+    faction: frontier_wardens
+    root-dialogue: guard_start
+    look-radius: 6
+  sandmere_sentry:
+    name: Bazaar Sentry
+    title: Sandmere Guard
+    entity: VILLAGER
+    look: weaponsmith@desert
+    faction: free_delvers
+    root-dialogue: sentry_start
+    look-radius: 6
+  hollow_watchman:
+    name: Hollow Watchman
+    title: Gilded Hollow Guard
+    entity: VILLAGER
+    look: armorer@savanna
+    faction: free_delvers
+    root-dialogue: watchman_start
+    look-radius: 6
+  stone_sentinel:
+    name: Stone Sentinel
+    title: Keeper of the Gate
+    entity: IRON_GOLEM
+    faction: frontier_wardens
+    root-dialogue: sentinel_start
+    look-radius: 10
+
+  # ------------------------------------------------------------------ Keep and town folk
+  brother_anselm:
+    name: Brother Anselm
+    title: Keeper of the Memorial
+    entity: VILLAGER
+    look: cleric
+    faction: rift_scholars
+    root-dialogue: anselm_start
+    look-radius: 7
+  lady_merrin:
+    name: Lady Merrin Holt
+    title: Retired Captain
+    entity: VILLAGER
+    look: armorer@taiga
+    faction: frontier_wardens
+    root-dialogue: merrin_start
+    look-radius: 7
+  tib_page:
+    name: Tib
+    title: Keep Messenger
+    entity: VILLAGER
+    look: '@plains'
+    faction: frontier_wardens
+    root-dialogue: tib_start
+    look-radius: 6
+  baker_hilde:
+    name: Hilde
+    title: Baker
+    entity: VILLAGER
+    look: farmer@taiga
+    faction: frontier_wardens
+    root-dialogue: hilde_start
+    look-radius: 7
+  bard_lysander:
+    name: Lysander
+    title: Wandering Bard
+    entity: VILLAGER
+    look: '@jungle'
+    faction: free_delvers
+    root-dialogue: lysander_start
+    look-radius: 8
+  old_wick:
+    name: Old Wick
+    title: Street Sage
+    entity: VILLAGER
+    look: nitwit@swamp
+    faction: rift_scholars
+    root-dialogue: wick_start
+    look-radius: 6
+  widow_greer:
+    name: Widow Greer
+    title: Fishmonger
+    entity: VILLAGER
+    look: fisherman@snow
+    faction: frontier_wardens
+    root-dialogue: greer_start
+    look-radius: 6
+  apprentice_tam:
+    name: Tam
+    title: Forge Apprentice
+    entity: VILLAGER
+    look: toolsmith@plains
+    faction: frontier_wardens
+    root-dialogue: tam_start
+    look-radius: 6
+  dockhand_rufus:
+    name: Rufus
+    title: Dockhand
+    entity: VILLAGER
+    look: fisherman@savanna
+    faction: free_delvers
+    root-dialogue: rufus_start
+    look-radius: 6
+  keeper_ardis:
+    name: Ardis Dawn
+    title: Lighthouse Keeper
+    entity: VILLAGER
+    look: fisherman
+    faction: frontier_wardens
+    root-dialogue: ardis_start
+    look-radius: 7
+  gardener_bryn:
+    name: Bryn
+    title: Garden Apprentice
+    entity: VILLAGER
+    look: farmer@jungle
+    faction: rift_scholars
+    root-dialogue: bryn_start
+    look-radius: 6
+  poet_ellery:
+    name: Ellery
+    title: Garden Poet
+    entity: VILLAGER
+    look: librarian@plains
+    faction: rift_scholars
+    root-dialogue: ellery_start
+    look-radius: 6
+  wenna_dairy:
+    name: Wenna
+    title: Goldenreach Dairymaid
+    entity: VILLAGER
+    look: butcher@plains
+    faction: frontier_wardens
+    root-dialogue: wenna_start
+    look-radius: 6
+  lumberjack_haldor:
+    name: Haldor
+    title: Lumber Camp Foreman
+    entity: VILLAGER
+    look: fletcher@taiga
+    faction: free_delvers
+    root-dialogue: haldor_start
+    look-radius: 7
+  miner_ysolde:
+    name: Ysolde
+    title: Ore Sorter
+    entity: VILLAGER
+    look: toolsmith@savanna
+    faction: free_delvers
+    root-dialogue: ysolde_start
+    look-radius: 6
+  spice_amira:
+    name: Amira
+    title: Spice Seller
+    entity: VILLAGER
+    look: leatherworker@desert
+    faction: free_delvers
+    root-dialogue: amira_start
+    look-radius: 6
+  water_tarik:
+    name: Tarik
+    title: Water Bearer
+    entity: VILLAGER
+    look: '@desert'
+    faction: free_delvers
+    root-dialogue: tarik_start
+    look-radius: 6
+  caravan_ojan:
+    name: Ojan
+    title: Caravan Master
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: ojan_start
+    look-radius: 7
+  varro_scarred:
+    name: Varro the Scarred
+    title: Retired Gladiator
+    entity: VILLAGER
+    look: weaponsmith@savanna
+    faction: free_delvers
+    root-dialogue: varro_start
+    look-radius: 7
+  goatherd_bjorn:
+    name: Bjorn
+    title: Stormcrag Goatherd
+    entity: VILLAGER
+    look: shepherd@snow
+    faction: rift_scholars
+    root-dialogue: bjorn_start
+    look-radius: 7
+  pilgrim_ilka:
+    name: Sister Ilka
+    title: Pilgrim of the Roads
+    entity: VILLAGER
+    look: cleric@plains
+    faction: rift_scholars
+    root-dialogue: ilka_start
+    look-radius: 7
+
+  # ------------------------------------------------------------------ Side-quest givers
+  sailor_mags:
+    name: Mags
+    title: Ship's Cook
+    entity: VILLAGER
+    look: butcher@swamp
+    faction: free_delvers
+    root-dialogue: mags_start
+    look-radius: 7
+  farmhand_jory:
+    name: Jory
+    title: Goldenreach Farmhand
+    entity: VILLAGER
+    look: farmer
+    faction: frontier_wardens
+    root-dialogue: jory_start
+    look-radius: 7
+  minstrel_fennick:
+    name: Fennick
+    title: Minstrel of the Kingsroad
+    entity: WANDERING_TRADER
+    faction: free_delvers
+    root-dialogue: fennick_start
+    look-radius: 8
+  acolyte_fern:
+    name: Acolyte Fern
+    title: Keeper of the Hives
+    entity: VILLAGER
+    look: cleric@swamp
+    faction: rift_scholars
+    root-dialogue: fern_start
+    look-radius: 7
+  apprentice_teodor:
+    name: Teodor
+    title: Imre's Apprentice
+    entity: VILLAGER
+    look: librarian@swamp
+    faction: rift_scholars
+    root-dialogue: teodor_start
+    look-radius: 7
+  miner_bertram:
+    name: Bertram
+    title: Old Miner
+    entity: VILLAGER
+    look: toolsmith@desert
+    faction: free_delvers
+    root-dialogue: bertram_start
+    look-radius: 7
+  seer_zahra:
+    name: Zahra
+    title: Reader of Sands
+    entity: VILLAGER
+    look: cleric@desert
+    faction: rift_scholars
+    root-dialogue: zahra_start
+    look-radius: 7
+  scout_yrsa:
+    name: Yrsa
+    title: Frostwatch Scout
+    entity: VILLAGER
+    look: weaponsmith@snow
+    faction: frontier_wardens
+    root-dialogue: yrsa_start
+    look-radius: 7
+
 shops:
   herbalist_wares:
     title: Liss's Garden Stall
@@ -668,4 +943,712 @@ dialogues:
           - type: open_quests
       done:
         text: "Just passing through."
+        close: true
+
+  # ------------------------------------------------------------------ Guards
+  ottar_start:
+    text:
+      - "Eyes front, {player}. Sergeant Ottar Grey, Highcrown Watch. Thirty years on these walls and I've never once seen them fall."
+      - "That's not luck. That's people walking the same loop ten thousand times so nobody else has to."
+    choices:
+      watch:
+        text: "What does the Watch guard against?"
+        next: ottar_watch
+      brenna:
+        text: "Is Captain Brenna your commander?"
+        next: ottar_brenna
+      directions:
+        text: "Where can I travel from here?"
+        effects:
+          - type: open_command
+            command: warps
+      done:
+        text: "Carry on, Sergeant."
+        close: true
+  ottar_watch:
+    text:
+      - "Brigands off the Kingsroad, beasts out of the Gloomroot, and the odd fool who thinks the vault is a public library."
+      - "Nothing gets into the keep while the Watch walks. Out in the wilds, you're on your own. Bring friends."
+    choices:
+      back:
+        text: "I had another question."
+        next: ottar_start
+      done:
+        text: "Understood."
+        close: true
+  ottar_brenna:
+    text:
+      - "She is. I trained her mother, Lady Merrin, and then I trained Brenna. She's better than both of us, though I'd never tell her."
+    choices:
+      back:
+        text: "I had another question."
+        next: ottar_start
+      done:
+        text: "Your secret's safe."
+        close: true
+  guard_start:
+    text:
+      - "Move along, citizen. Or don't. The Watch isn't fussy, as long as you're not causing trouble."
+      - "Need directions? The keep's behind me, the market's north, and the wilds are everywhere else."
+    choices:
+      directions:
+        text: "Show me where I can travel."
+        effects:
+          - type: open_command
+            command: warps
+      trouble:
+        text: "Seen any trouble today?"
+        next: guard_trouble
+      done:
+        text: "Stay safe out here."
+        close: true
+  guard_trouble:
+    text:
+      - "Captain Brenna's after brigands on the Kingsroad. Farmer Odo keeps reporting scarecrows walking about. I keep not believing him."
+      - "If you're heading west, talk to the Captain first. She pays better than the brigands do."
+    choices:
+      back:
+        text: "Thanks, guard."
+        next: guard_start
+      done:
+        text: "I'll keep it in mind."
+        close: true
+  sentry_start:
+    text:
+      - "Peace in the bazaar, traveller. Swords stay sheathed between the stalls. Samar's orders, and mine."
+      - "Out in the dunes, scorpions and worse. In here, only the prices bite."
+    choices:
+      dunes:
+        text: "What's out in the dunes?"
+        next: sentry_dunes
+      directions:
+        text: "Where can I travel from here?"
+        effects:
+          - type: open_command
+            command: warps
+      done:
+        text: "I'll keep my sword sheathed."
+        close: true
+  sentry_dunes:
+    text:
+      - "Dune scorpions by the wells, sandwraiths when the wind rises, and the colosseum on the south shore, if you like your danger with an audience."
+    choices:
+      back:
+        text: "I had another question."
+        next: sentry_start
+      done:
+        text: "Thanks for the warning."
+        close: true
+  watchman_start:
+    text:
+      - "Mind the rim, the ladders, and the lurkers, in that order. Magda pays me to keep claim-jumpers out of her pit."
+      - "The veins regrow. The miners who fall in don't."
+    choices:
+      overseer:
+        text: "Who is the Gilded Overseer?"
+        next: watchman_overseer
+      done:
+        text: "I'll mind the rim."
+        close: true
+  watchman_overseer:
+    text:
+      - "A foreman who claimed the mine for himself when the old company left. Wears his wages, all of them, in gold plate."
+      - "He's got friends down in the dark. Don't go after him alone."
+    choices:
+      back:
+        text: "I had another question."
+        next: watchman_start
+      done:
+        text: "Noted."
+        close: true
+  sentinel_start:
+    text:
+      - "The stone sentinel turns its head with a low grinding sound. Its eyes glow a steady amber."
+      - "It lowers itself slightly. You have the strange feeling you have been counted, checked, and let through."
+    choices:
+      maker:
+        text: "Who made you?"
+        next: sentinel_maker
+      done:
+        text: "Step past the sentinel."
+        close: true
+  sentinel_maker:
+    text:
+      - "The sentinel taps its chest. Carved there, worn almost smooth: the crown of Highcrown and the words HOLD UNTIL THE WATER FALLS."
+      - "Brother Anselm says the old mages woke these golems on the night of the Long Tide. They have stood here ever since."
+    choices:
+      done:
+        text: "Thank you, sentinel."
+        close: true
+
+  # ------------------------------------------------------------------ Keep and town folk
+  anselm_start:
+    text:
+      - "Peace to you, {player}. I keep the memorial of the Long Tide. Every name on these walls was someone's whole world."
+    choices:
+      tide:
+        text: "Tell me about the Long Tide."
+        next: anselm_tide
+      sentinels:
+        text: "Why are there golems at the gates?"
+        next: anselm_sentinels
+      done:
+        text: "I'll remember them."
+        close: true
+  anselm_tide:
+    text:
+      - "A season of storm. The sea rose over the old coast: the farms, the harbour, the temple at Mossfall."
+      - "Those who survived climbed to this rock and built the keep. Every year on the night it began, we light a lantern for each name."
+    choices:
+      back:
+        text: "I had another question."
+        next: anselm_start
+      done:
+        text: "Thank you, Brother."
+        close: true
+  anselm_sentinels:
+    text:
+      - "The last mages of the old coast carved them and gave them one order: hold until the water falls. The water fell. The order did not."
+      - "They are gentle with children and very rude to brigands."
+    choices:
+      back:
+        text: "I had another question."
+        next: anselm_start
+      done:
+        text: "Peace, Brother."
+        close: true
+  merrin_start:
+    text:
+      - "Captain Holt is my daughter, and before her it was me. Now I sit by the well and tell the young ones what they're doing wrong."
+      - "It's a full-time job."
+    choices:
+      war:
+        text: "What was it like to lead the Watch?"
+        next: merrin_war
+      done:
+        text: "I'll stand up straighter."
+        close: true
+  merrin_war:
+    text:
+      - "We held the Kingsroad against the Brigand Kings for three winters. No songs about it. Bards only sing when someone dies interestingly."
+      - "Brenna's facing the same rot now. Help her, and you help me."
+    choices:
+      done:
+        text: "I'll help the Captain."
+        close: true
+  tib_start:
+    text:
+      - "Are you a real adventurer? Have you fought a scarecrow? Odo says they walk. Ma says Odo drinks."
+      - "I carry messages for the keep. I'm the fastest runner in Highcrown, except for the Captain's dog."
+    choices:
+      messages:
+        text: "Any interesting messages lately?"
+        next: tib_messages
+      done:
+        text: "Keep running, Tib."
+        close: true
+  tib_messages:
+    text:
+      - "Orin got a letter about a ship called the Gull's Promise and went all pale. And Kestrel sent three letters to Sandmere in one week!"
+      - "I'm not supposed to read them. I'm very bad at not reading them."
+    choices:
+      done:
+        text: "Your secret's safe with me."
+        close: true
+  hilde_start:
+    text:
+      - "Fresh loaves, still warm! Well, they were warm an hour ago. Highcrown's wind is unkind to bread."
+      - "My flour comes from Goldenreach. If the gnawers keep eating Odo's wheat, there'll be no bread by winter."
+    choices:
+      rumour:
+        text: "What's the word in the market?"
+        next: hilde_rumour
+      done:
+        text: "I'll take a loaf another day."
+        close: true
+  hilde_rumour:
+    text:
+      - "Alba says her cousin Odo needs help in the fields. And Mags down at the harbour is cooking something that smells like the sea apologising."
+    choices:
+      done:
+        text: "Thanks, Hilde."
+        close: true
+  lysander_start:
+    text:
+      - "Ah, an audience! Shall I sing of the Brigand Kings, the drowned temple, or the Champion of the Sands?"
+      - "Choose carefully. I only know two verses of the third one, and they're both about his arms."
+    choices:
+      temple:
+        text: "Sing of the drowned temple."
+        next: lysander_temple
+      champion:
+        text: "Sing of the Champion."
+        next: lysander_champion
+      done:
+        text: "Maybe later."
+        close: true
+  lysander_temple:
+    text:
+      - "Oh, the bells of Mossfall rang beneath the rising tide, the keepers held the stair, and the keepers never died..."
+      - "That last line is a little too accurate these days. Ask Scholar Imre. He's been writing it down."
+    choices:
+      back:
+        text: "Another song?"
+        next: lysander_start
+      done:
+        text: "Lovely voice."
+        close: true
+  lysander_champion:
+    text:
+      - "His arms were like the anchor chains, his fists were like the stone. His arms were like... yes, it's mostly the arms."
+      - "Nine seasons undefeated. Tavros at the colosseum is waiting for someone to write me a new verse."
+    choices:
+      back:
+        text: "Another song?"
+        next: lysander_start
+      done:
+        text: "Very... muscular."
+        close: true
+  wick_start:
+    text:
+      - "A coin for an old man? No? Then a story. Stories are free. Mostly."
+      - "I was a mage once. Anchored three sky islands with my own hands. Now I can't anchor a hat in a breeze."
+    choices:
+      islands:
+        text: "You anchored sky islands?"
+        next: wick_islands
+      done:
+        text: "Take care, Wick."
+        close: true
+  wick_islands:
+    text:
+      - "After the Long Tide there wasn't land enough for everyone. So we lifted some. Kestrel looks after the anchors now."
+      - "If your island ever hums at night, that's the old promise still holding. Be kind to it."
+    choices:
+      done:
+        text: "I'll be kind to my island."
+        close: true
+  greer_start:
+    text:
+      - "Cod, salmon, and something Ivo swears is edible. Fresh from the harbour this morning, or I'm a liar, and I'm not."
+      - "My husband sailed on the Gull's Promise. Orin was the only one who came back. I don't blame him. Mostly."
+    choices:
+      ship:
+        text: "What happened to the Gull's Promise?"
+        next: greer_ship
+      done:
+        text: "I'm sorry for your loss."
+        close: true
+  greer_ship:
+    text:
+      - "Storm caught her at the harbour mouth. She went down with a hold full of Sandmere gold and Highcrown debts."
+      - "Ivo says the fish won't swim over the wreck. Fish are smarter than people, sometimes."
+    choices:
+      done:
+        text: "Thank you for telling me."
+        close: true
+  tam_start:
+    text:
+      - "Master Torren says I'll be a smith when I can make a nail that doesn't bend. That's going to be a while."
+      - "I sweep the forge, haul the coal, and listen. Mostly I listen."
+    choices:
+      torren:
+        text: "What's Torren like as a teacher?"
+        next: tam_torren
+      done:
+        text: "Keep at it, Tam."
+        close: true
+  tam_torren:
+    text:
+      - "Strict. Fair. He talks to the anvil when he thinks nobody's listening. He says sorry to it when he misses."
+      - "He's always short of good steel. If you've got iron to spare, he'd be grateful, though he'd never say so."
+    choices:
+      done:
+        text: "Good to know."
+        close: true
+  rufus_start:
+    text:
+      - "Oi, mind the ropes. Crane's been flinging crates since Hob fixed it. I've lost two hats and a nephew. Nephew came back."
+    choices:
+      harbour:
+        text: "What ships come through Gullwater?"
+        next: rufus_harbour
+      done:
+        text: "I'll mind the ropes."
+        close: true
+  rufus_harbour:
+    text:
+      - "Grain barges from Goldenreach, salt cod for the keep, and once a season the spice ship from Sandmere."
+      - "Ask Mags in the galley for the rest. She's sailed further than any of us. Cooks badly, though."
+    choices:
+      done:
+        text: "Thanks, Rufus."
+        close: true
+  ardis_start:
+    text:
+      - "Ardis Dawn, keeper of the Gullwater light. My daughter Cassia guides the newcomers now. She's better with people than I am."
+      - "I'm better with lanterns. Lanterns don't ask questions."
+    choices:
+      light:
+        text: "Why does the lighthouse matter so much?"
+        next: ardis_light
+      done:
+        text: "Keep it burning."
+        close: true
+  ardis_light:
+    text:
+      - "The night of the Long Tide, my grandmother kept this light burning while the sea came up the stairs. Forty boats found the harbour by it."
+      - "So we keep it burning. Every night. Even when there's nobody out there."
+    choices:
+      done:
+        text: "That's a good reason."
+        close: true
+  bryn_start:
+    text:
+      - "Careful with the lanterns, Liss counts them. All four hundred and twelve."
+      - "I'm learning herb-craft. Mostly I'm learning that bees don't like me."
+    choices:
+      bees:
+        text: "Where do the bees come from?"
+        next: bryn_bees
+      done:
+        text: "Good luck with the bees."
+        close: true
+  bryn_bees:
+    text:
+      - "The Druid's Ward, out in the Gloomroot. Acolyte Fern keeps the hives there. She says bees are honest: they tell you exactly how they feel."
+    choices:
+      done:
+        text: "Very honest."
+        close: true
+  ellery_start:
+    text:
+      - "Shh. I'm composing. 'Ode to a Lantern, Number Thirty-Seven.' The first thirty-six were rejected by the lantern."
+    choices:
+      poem:
+        text: "Read me a line."
+        next: ellery_poem
+      done:
+        text: "I'll leave you to it."
+        close: true
+  ellery_poem:
+    text:
+      - "'O little flame that will not drown, you hold the dark from Highcrown town...' Too sentimental? Lysander says it's too sentimental."
+      - "Lysander rhymes 'arms' with 'arms'. I don't take criticism from him."
+    choices:
+      done:
+        text: "I liked it."
+        close: true
+  wenna_start:
+    text:
+      - "Milk, butter and cheese for the keep, every morning before the bells. The cows don't care if there are scarecrows walking about."
+      - "I care. I care quite a lot."
+    choices:
+      fields:
+        text: "What's happening in the fields?"
+        next: wenna_fields
+      done:
+        text: "Stay safe, Wenna."
+        close: true
+  wenna_fields:
+    text:
+      - "Gnawers in the wheat, boars at the fences, and scarecrows that get up at night. Odo and Jory are at their wits' end."
+      - "If you can swing a sword, they'll feed you for a week. Odo's wife makes the best pie in Goldenreach."
+    choices:
+      done:
+        text: "Pie is a strong argument."
+        close: true
+  haldor_start:
+    text:
+      - "Every beam in Highcrown came from these pines, and every one of them cost us a fight with the wolfhounds."
+      - "Ilsa's the best tracker I've got. If she says there's trouble, there's trouble."
+    choices:
+      gloomroot:
+        text: "What's wrong with the Gloomroot?"
+        next: haldor_gloom
+      done:
+        text: "Good luck with the timber."
+        close: true
+  haldor_gloom:
+    text:
+      - "The pines grow too dark and too fast. The druids say the forest is angry. I say the forest is hungry, and we're the snack."
+    choices:
+      done:
+        text: "Comforting."
+        close: true
+  ysolde_start:
+    text:
+      - "Gold left, iron right, coal in the bin, rocks on the floor. You'd be amazed how many miners get that wrong."
+    choices:
+      veins:
+        text: "Why do the veins grow back?"
+        next: ysolde_veins
+      done:
+        text: "Gold left. Got it."
+        close: true
+  ysolde_veins:
+    text:
+      - "Hessa Clay thinks there's something hot and old under the Hollow, pushing gold up like a spring pushes water."
+      - "Bertram thinks the mountain likes us. Bertram also talks to his pickaxe, so."
+    choices:
+      done:
+        text: "Thanks, Ysolde."
+        close: true
+  amira_start:
+    text:
+      - "Saffron, cumin, dried rose and sand-pepper. A pinch of each makes Highcrown food taste like food."
+      - "I don't sell to those who haggle rudely. You look polite. Mostly."
+    choices:
+      sandmere:
+        text: "Tell me about Sandmere."
+        next: amira_sandmere
+      done:
+        text: "Smells wonderful."
+        close: true
+  amira_sandmere:
+    text:
+      - "A bazaar built around a well that never runs dry. Samar's family dug it, and Samar's family reminds us of that every day."
+      - "Nadira says the oasis remembers an older city under the sand. I say it remembers where I dropped my best ring."
+    choices:
+      done:
+        text: "I'll keep an eye out for the ring."
+        close: true
+  tarik_start:
+    text:
+      - "Water! Cool water from the oasis! One sip for a story, two for a Mark!"
+      - "No? Then the story's free: the dune scorpions have been nesting by the wells again. Samar wants them gone."
+    choices:
+      oasis:
+        text: "Why doesn't the oasis dry up?"
+        next: tarik_oasis
+      done:
+        text: "Thanks, Tarik."
+        close: true
+  tarik_oasis:
+    text:
+      - "Zahra the seer says the water comes up from under the Gilded Hollow, through rock older than the sea. Nadira says it's rain. They don't speak."
+    choices:
+      done:
+        text: "I'll ask them both."
+        close: true
+  ojan_start:
+    text:
+      - "Caravan's in from the canyons, two camels short and one cart lighter. Dust raiders, again."
+      - "Highcrown wants spices, Sandmere wants timber, and I want a road without arrows on it."
+    choices:
+      raiders:
+        text: "Who are the dust raiders?"
+        next: ojan_raiders
+      done:
+        text: "Safe travels, Ojan."
+        close: true
+  ojan_raiders:
+    text:
+      - "Desperate folk who took to the Sunscar canyons after the old gold company folded. Scout Dren watches the ridges for them."
+    choices:
+      done:
+        text: "I'll watch the ridges too."
+        close: true
+  varro_start:
+    text:
+      - "Forty fights in the Sunscorch Colosseum. Thirty-nine wins. Guess which one I remember."
+      - "Tavros still sends me tickets. I still don't go."
+    choices:
+      champion:
+        text: "Did you fight the Champion?"
+        next: varro_champion
+      done:
+        text: "Thirty-nine is a lot of wins."
+        close: true
+  varro_champion:
+    text:
+      - "He was a boy when I fought him. Already bigger than me. He broke my shield arm and then helped me up. Strange man."
+      - "If you face him, don't block. Dodge. Your arm will thank you."
+    choices:
+      done:
+        text: "Dodge. Got it."
+        close: true
+  bjorn_start:
+    text:
+      - "The goats came down from the peaks a month ago with lightning in their horns. Literally. One set my hat on fire."
+      - "Orla says the storms have woken something. Orla says a lot of things, but she's usually right."
+    choices:
+      peaks:
+        text: "What's up in the Stormcrag?"
+        next: bjorn_peaks
+      done:
+        text: "Mind the hat."
+        close: true
+  bjorn_peaks:
+    text:
+      - "Snow, stone, rams and the Stormcaller Shades. Grey shapes riding the lightning. My grandmother called them the Restless Watch."
+    choices:
+      done:
+        text: "I'll be careful up there."
+        close: true
+  ilka_start:
+    text:
+      - "Blessings of the road, traveller. I walk from shrine to shrine across the isles: the memorial, the Ward, the drowned temple."
+      - "The roads have grown dangerous. I walk anyway. The shrines need someone to sweep them."
+    choices:
+      shrines:
+        text: "Tell me about the shrines."
+        next: ilka_shrines
+      done:
+        text: "Safe roads, Sister."
+        close: true
+  ilka_shrines:
+    text:
+      - "Anselm keeps the memorial in the keep. Elder Moss tends the Ward in the Gloomroot. And Mossfall... nobody tends Mossfall now."
+      - "Scholar Imre is trying. He's braver than he looks, and he looks terrified."
+    choices:
+      done:
+        text: "Thank you, Sister."
+        close: true
+
+  # ------------------------------------------------------------------ Side-quest givers
+  mags_start:
+    text:
+      - "Galley's open! Stew's on, and it's mostly fish. The rest is a mystery even to me."
+      - "Thirty years cooking on ships from here to Sandmere. Every one of them still floats, so I can't be that bad."
+    choices:
+      ships:
+        text: "Thirty years at sea?"
+        next: mags_ships
+      done:
+        text: "I'll pass on the stew."
+        close: true
+  mags_ships:
+    text:
+      - "Cooked on the Gull's Promise, too, before she sank. Left a week early. Bad dreams. Best bad dreams I ever had."
+    choices:
+      done:
+        text: "Lucky dreams."
+        close: true
+  jory_start:
+    text:
+      - "Odo's got me watching the fields at night. Have you ever watched a scarecrow watching you back?"
+      - "I haven't slept since Tuesday."
+    choices:
+      night:
+        text: "What happens at night?"
+        next: jory_night
+      done:
+        text: "Get some sleep, Jory."
+        close: true
+  jory_night:
+    text:
+      - "They turn their heads. Just a little. And in the morning they're three rows closer to the farmhouse."
+    choices:
+      done:
+        text: "That's... unsettling."
+        close: true
+  fennick_start:
+    text:
+      - "Fennick the minstrel, at your service! I collect songs the way Delvers collect bruises."
+      - "Every road on the isles has a song. Some of them haven't been written yet."
+    choices:
+      songs:
+        text: "What songs are missing?"
+        next: fennick_songs
+      done:
+        text: "Keep singing."
+        close: true
+  fennick_songs:
+    text:
+      - "The drowned bells of Mossfall, the red canyons of the Sunscar, the endless sands of the Amberdune. I've heard of them all and seen none."
+      - "Someone with stronger boots could see them for me."
+    choices:
+      done:
+        text: "I'll think about it."
+        close: true
+  fern_start:
+    text:
+      - "Slowly, please. The bees decide who's welcome in the Ward, and they decide quickly."
+      - "I keep the hives for Elder Moss. Honey for the healers, wax for the memorial candles."
+    choices:
+      hives:
+        text: "Are the hives in danger?"
+        next: fern_hives
+      done:
+        text: "I'll move slowly."
+        close: true
+  fern_hives:
+    text:
+      - "The wolfhounds have started raiding them. Wolves don't eat honey. Something is driving them mad."
+    choices:
+      done:
+        text: "I'll keep an eye out."
+        close: true
+  teodor_start:
+    text:
+      - "Oh! Sorry, I thought you were a revenant. You have very revenant-ish posture. That's a compliment. Probably."
+      - "I copy the inscriptions for Scholar Imre. The water ruins the pages faster than I can write them."
+    choices:
+      pages:
+        text: "What's on the pages?"
+        next: teodor_pages
+      done:
+        text: "Mind the water."
+        close: true
+  teodor_pages:
+    text:
+      - "Names of the temple keepers. Prayers. A list of who was meant to hold the stair when the water came. It's a very long list."
+    choices:
+      done:
+        text: "Thank you, Teodor."
+        close: true
+  bertram_start:
+    text:
+      - "Forty years in the Hollow, man and boy. The mountain and I have an understanding. I don't ask, it doesn't fall on me."
+    choices:
+      mine:
+        text: "What was the Hollow like before?"
+        next: bertram_mine
+      done:
+        text: "Long may it last."
+        close: true
+  bertram_mine:
+    text:
+      - "A proper company mine, with lamps on every ledge. When the company left, the Overseer took the lamps and the raiders took the rest."
+      - "I'd like to see the lower ledges lit again before I'm done."
+    choices:
+      done:
+        text: "Maybe you will."
+        close: true
+  zahra_start:
+    text:
+      - "Sit. The sand has already told me you would come. It tells me many things. Most of them about the weather."
+    choices:
+      reading:
+        text: "Read my future."
+        next: zahra_reading
+      done:
+        text: "Another time."
+        close: true
+  zahra_reading:
+    text:
+      - "I see... a long road, a sharp blade, and a great deal of walking. That will be one Mark. No? Then it was a gift."
+      - "The sand speaks of wraiths on the wind and a champion who cannot rest. Omens, {player}. Read them before they read you."
+    choices:
+      done:
+        text: "Thank you, Zahra."
+        close: true
+  yrsa_start:
+    text:
+      - "Don't stand there. Cold gets into the boots if you stand still. Yrsa, Frostwatch scout."
+      - "Halvard sends me in, I come back out. That's the job. Sometimes I come back out faster than I went in."
+    choices:
+      ice:
+        text: "What's it like on the glacier?"
+        next: yrsa_ice
+      done:
+        text: "Stay warm."
+        close: true
+  yrsa_ice:
+    text:
+      - "Quiet. Too quiet. Then rime wolves, all at once. They hunt in silence and howl only when they've already won."
+    choices:
+      done:
+        text: "I'll listen for silence."
         close: true
