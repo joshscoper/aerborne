@@ -44,7 +44,7 @@ import java.util.UUID;
 
 public final class PaperItemService implements ItemService<ItemStack> {
     private static final int SCHEMA_VERSION = 5;
-    private static final int CONTENT_SCHEMA_VERSION = 12;
+    private static final int CONTENT_SCHEMA_VERSION = 13;
     private final JavaPlugin plugin;
     static final String TOOLTIP_DIVIDER = "<dark_gray>----------------------------</dark_gray>";
     private static final List<String> STAT_ORDER = List.of(

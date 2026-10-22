@@ -97,6 +97,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     private final Map<String, YamlConfiguration> files = new HashMap<>();
     private final Map<String, List<ExpeditionValidator.Issue>> issues = new HashMap<>();
     private final Map<String, String> loadErrors = new TreeMap<>();
+    private Map<String, net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table> lootTables = Map.of();
     private Map<String, Tier> tiers = Tier.DEFAULTS;
     private final Matchmaker matchmaker;
     private final Map<UUID, ReadyCheck> checks = new LinkedHashMap<>();
@@ -116,6 +117,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     private final BukkitTask task;
     private ExpeditionSetup setup;
     private ExpeditionMenu menu;
+    private final ExpeditionForge forge;
 
     public ExpeditionService(NerdSmpPlugin plugin) {
         this.plugin = plugin;
@@ -129,6 +131,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         this.matchmaker = new Matchmaker(Duration.ofSeconds(Math.max(0, config.getLong("expeditions.queue-fill-seconds", 90))));
         this.worlds = new InstanceWorlds(plugin);
         this.records = new ExpeditionRecords(new File(plugin.getDataFolder(), "expedition-records.yml"));
+        this.forge = new ExpeditionForge(plugin, this);
         this.keystones = new KeystoneStore(new File(plugin.getDataFolder(), "expedition-keystones.yml"));
         this.lockouts = new RaidLockouts(new File(plugin.getDataFolder(), "expedition-raid-lockouts.yml"), raidWeek());
         this.returns = new ReturnStore(new File(plugin.getDataFolder(), "expedition-returns.yml"), plugin.getLogger());
@@ -149,15 +152,20 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
-        "first_flight", Set.of(),
-        "thornwood_canopy", Set.of(),
-        "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38"),
-        "gloomforge_mines", Set.of("66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07"),
-        "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9"),
+        "first_flight", Set.of("5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad"),
+        "thornwood_canopy", Set.of("363bab2993b0d86720b4348a6ba320ac75bca0b14e920a32e0bf05300692a5ba"),
+        "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38",
+            "211143e698ae6e4f09b27ce5072f2d42893f6410552911370546b4af8e551f85"),
+        "gloomforge_mines", Set.of("66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07",
+            "68ecbced26e68dd599978d1b9a11bd1931208749eb5b583399a2a7720ed87781"),
+        "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9",
+            "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31"),
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
-            "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0"),
+            "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
+            "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
-            "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e"));
+            "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
+            "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e"));
 
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
@@ -213,9 +221,39 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         }
         definitions.keySet().removeIf(id -> !seen.contains(id));
         files.keySet().removeIf(id -> !seen.contains(id));
+        lootTables = loadLootTables(messages);
         issues.clear();
         for (ExpeditionDefinition definition : definitions.values()) issues.put(definition.id(), validate(definition));
         return messages;
+    }
+
+    /**
+     * Each expedition's loot (materials, set gear, signatures) from the plugin's
+     * content/expedition-loot.yml; an entry in the data folder's copy replaces the shipped one.
+     */
+    private Map<String, net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table> loadLootTables(List<String> messages) {
+        Map<String, net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table> tables = new HashMap<>();
+        List<YamlConfiguration> sources = new ArrayList<>();
+        try (var stream = plugin.getResource("content/expedition-loot.yml")) {
+            if (stream != null) sources.add(YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.io.IOException unreadable) {
+            messages.add("content/expedition-loot.yml in the plugin could not be read.");
+        }
+        File override = new File(plugin.getDataFolder(), "content/expedition-loot.yml");
+        if (override.isFile()) sources.add(YamlConfiguration.loadConfiguration(override));
+        for (YamlConfiguration source : sources) {
+            var section = source.getConfigurationSection("expeditions");
+            if (section == null) continue;
+            for (String id : section.getKeys(false))
+                tables.put(id.toLowerCase(Locale.ROOT), new net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table(
+                    section.getStringList(id + ".materials"), section.getStringList(id + ".gear"), section.getStringList(id + ".signatures")));
+        }
+        return Map.copyOf(tables);
+    }
+
+    /** An expedition's loot table, or an empty one (experience bottles only) for expeditions without one. */
+    public net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table lootTable(String expedition) {
+        return lootTables.getOrDefault(expedition, net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table.EMPTY);
     }
 
     public List<ExpeditionValidator.Issue> validate(ExpeditionDefinition definition) {
@@ -265,6 +303,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     public InstanceWorlds worlds() { return worlds; }
     ExpeditionRecords records() { return records; }
     public KeystoneStore keystones() { return keystones; }
+    public ExpeditionForge forge() { return forge; }
     public RaidLockouts lockouts() { return lockouts; }
 
     /** Raid lockouts and keystone affixes reset together, every Monday (UTC). */
@@ -1199,6 +1238,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         var type = event.getClickedBlock().getType();
         // Food on a campfire or flint on it would change the rest point; the run handles campfires itself.
         if (type == org.bukkit.Material.CAMPFIRE || type == org.bukkit.Material.SOUL_CAMPFIRE) event.setCancelled(true);
+        // Chests, barrels and crates in a run are the run's: loot, reward chests and supply crates.
+        if (type == org.bukkit.Material.CHEST || type == org.bukkit.Material.TRAPPED_CHEST || type == org.bukkit.Material.BARREL
+            || type == org.bukkit.Material.ENDER_CHEST) event.setCancelled(true);
         var block = event.getClickedBlock();
         Bukkit.getScheduler().runTask(plugin, () -> run.interact(event.getPlayer(), block));
     }
@@ -1227,6 +1269,37 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTransform(org.bukkit.event.entity.EntityTransformEvent event) {
         if (runIn(event.getEntity().getWorld()) != null) event.setCancelled(true);
+    }
+
+    /** Loot windows: take items out freely; an unbought bonus chest only offers its price button. */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onLootClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof RunLoot.Window window)) return;
+        if (!(event.getWhoClicked() instanceof Player player) || !player.getUniqueId().equals(window.player)) {
+            event.setCancelled(true);
+            return;
+        }
+        boolean top = event.getClickedInventory() == event.getView().getTopInventory();
+        if (window.price > 0 && !window.paid) {
+            event.setCancelled(true);
+            if (top && event.getRawSlot() == RunLoot.BUY_SLOT) window.loot.buy(player, window);
+            return;
+        }
+        // Nothing goes in: only taking items out.
+        if (!top && event.isShiftClick() || top && !event.getCursor().getType().isAir()
+            || event.getAction() == org.bukkit.event.inventory.InventoryAction.HOTBAR_SWAP || event.getAction() == org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR)
+            event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onLootDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof RunLoot.Window) event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onLootClose(org.bukkit.event.inventory.InventoryCloseEvent event) {
+        if (event.getInventory().getHolder() instanceof RunLoot.Window window && event.getPlayer() instanceof Player player
+            && player.getUniqueId().equals(window.player)) window.loot.closed(player, window);
     }
 
     /** Falling rocks from a hazard never become blocks. */
@@ -1295,6 +1368,13 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             case "ready", "accept" -> ready(player);
             case "decline" -> decline(player);
             case "allies" -> startWithAllies(player);
+            case "forge" -> forge.open(player);
+            case "rewards", "bonus" -> {
+                ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+                if (run == null) Chat.notice(player, "Reward chests open when your party wins an expedition.");
+                else if (action.equals("rewards")) run.loot.openReward(player);
+                else run.loot.openBonus(player);
+            }
             case "key", "keystone" -> {
                 if (args.length >= 2 && args[1].equalsIgnoreCase("start")) startKey(player);
                 else if (args.length >= 2 && args[1].equalsIgnoreCase("give") && player.hasPermission(ADMIN)) giveKey(player, args);
@@ -1314,7 +1394,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             }
             default -> {
                 Chat.error(player, "Unknown expedition command.");
-                Chat.usage(player, "/expedition [start|queue|leave|ready|decline|key|list|info|status]");
+                Chat.usage(player, "/expedition [start|queue|leave|ready|decline|key|forge|list|info|status]");
                 if (plugin.travel() != null && plugin.travel().warpNames().contains(action))
                     Chat.info(player, "Looking for the warp? Use " + Chat.command("warp " + action) + ".");
             }
@@ -1364,7 +1444,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "allies", "key", "list", "info", "guide", "status"));
+            List<String> options = new ArrayList<>(List.of("start", "queue", "leave", "ready", "decline", "allies", "key", "forge", "list", "info", "guide", "status"));
             if (sender.hasPermission(ADMIN) && setup != null) options.addAll(setup.subcommands());
             return options;
         }

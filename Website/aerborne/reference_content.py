@@ -298,6 +298,9 @@ Marks are earned through gameplay. The website store does not sell Marks, gear s
 | Cooking | Successfully crafting food and meals. |
 | Enchanting | Eligible Arcane binds, discoveries and other rewarded actions. |
 
+## Experience bottles
+Right-click an **experience bottle** to choose a skill: the bottle gives that skill 10% of the XP it needs for its next level. **Greater** bottles give 25% and **Grand** bottles 60%; they come from expedition chests. Shift-click a skill to use the whole stack. Bottles fired from a dispenser still shatter as usual.
+
 Open `/skills` for levels, talent requirements and bonuses. Repeating placed-resource loops, cancelled actions and machine output do not provide unrestricted XP. Rates depend on the activity, equipment, talents and server tuning.
 
 ## Keep the progress tracks separate
@@ -629,7 +632,7 @@ A run with hired allies still pays loot and Marks, but it doesn't count toward t
 While you're in a run, your sidebar shows the time left, your lives, every objective and your party's health. The bar at the top of the screen appears only for a boss or mini-boss.
 
 ## Puzzles, campfires and bosses
-- **Puzzles**: pull levers, press buttons in the order shown, weigh down pressure plates by throwing items on them, shoot targets before time runs out, or cross a jump course. Falling off a course puts you back at its start without costing a life.
+- **Puzzles**: pull levers, press buttons in the order shown, weigh down pressure plates by throwing items on them, shoot targets before time runs out, or cross a jump course. Falling off a course puts you back at its start without costing a life. Puzzles that need a bow or something to throw have a **supply crate**: right-click it for what you need, and it's taken back when you leave.
 - **Campfires**: right-click to light one between fights. Rest beside it out of combat to heal, and the party respawns there.
 - **Warnings**: elites, mini-bosses and bosses have special attacks, and every one is shown first: a red ring, cone or line on the ground, or a marker under a player. Step out of it. A meteor shadow is the exception: stand in it with the marked player to share the hit.
 - **Different goals**: most runs end at the boss, but some ask you to slay enough enemies first, beat the clock (each cleared room adds time), or defeat several bosses in any order.
@@ -657,7 +660,15 @@ A raid is a bigger, harder expedition for **up to eight players**, with no hired
 - **Know the fights.** Skarn and Vesh must die within ten seconds of each other. Turn the three rune valves to bring out the Steward. Pyrrhax's Wrath throws you outward, so keep your back to solid rock, not the lava.
 
 ## Rewards
-Every player gets their own loot when the final boss falls. Items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
+Every expedition has its own loot: **materials** from common to rare, a **signature set** of armour and a weapon, and rare boss **signatures**.
+
+- **Enemies** drop the expedition's materials, and elites, mini-bosses and bosses drop more. Nobody gets saddles or emeralds.
+- **Crates, chests and hidden caches** stand in the rooms. Each player loots each one once, with their own roll. Hidden caches count toward your score.
+- **Reward chests.** Winning grades your run from D to S+ by speed, survival and the secrets you found. Each player opens a free reward chest whose contents grow with the grade, and can open a **bonus chest** for Marks, with better odds and always a set piece. Use the chests by the exit, or `/expedition rewards` and `/expedition bonus`.
+- **The Expedition Forge.** Bring materials home and forge the set from them with `/expedition forge`, once you've cleared the expedition. Pieces come out sealed; [identify](/guide/gear-and-sockets) them to reveal their affixes.
+- **Experience bottles** from chests are skill lamps: right-click one to choose the skill that gets its XP.
+
+Marks are paid as soon as you win, and items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
 """, 'world', 'Expedition board | /expeditions\nParties | /guide/parties\nSeason campaign | /guide/season-campaign'),
     _guide('season-campaign', 'The season campaign',
            'Work towards server-wide goals together and unlock rewards for everyone.', """

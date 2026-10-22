@@ -30,6 +30,7 @@ final class ThornwoodTemplate {
         nest(b);
         huntersFire(b);
         grove(b);
+        SampleChests.place(b, "thornwood_canopy");
         return b.freeze();
     }
 

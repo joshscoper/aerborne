@@ -48,6 +48,16 @@ mobs:
     abilities: [cleave]
     title: Drillmaster
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  wren_crate: {at: [-9, 64, 80], kind: crate, title: "Wren's Supply Crate"}
+  skyfarer_chest: {at: [7, 64, 93], kind: chest, title: "Skyfarer's Chest"}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-2, 64, 126]
+  bonus: [2, 64, 126]
+
 rooms:
   skyhop:
     title: Skyhop Crossing

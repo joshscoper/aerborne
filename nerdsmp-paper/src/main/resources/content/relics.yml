@@ -1,4 +1,4 @@
-schema-version: 12
+schema-version: 13
 sets:
   wayfarer:
     name: Wayfarer
@@ -199,6 +199,84 @@ sets:
           damage-flat: 1
           geode-find-percent: 15
 
+  barrowguard:
+    name: Barrowguard
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+2 Defense"
+        stats: {defense: 2}
+      '3':
+        description: "+6% execute damage"
+        stats: {execute-damage-percent: 6}
+      '5':
+        description: "+2% life steal"
+        stats: {life-steal-percent: 2}
+  thornwarden:
+    name: Thornwarden
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+8% poison potency"
+        stats: {poison-potency-percent: 8}
+      '3':
+        description: "+6% projectile damage"
+        stats: {projectile-damage-percent: 6}
+      '5':
+        description: "+6% bleed"
+        stats: {bleed-percent: 6}
+  tidebound:
+    name: Tidebound
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+2 Defense"
+        stats: {defense: 2}
+      '3':
+        description: "+2% life steal"
+        stats: {life-steal-percent: 2}
+      '5':
+        description: "+8% damage"
+        stats: {damage-percent: 8}
+  gloomforged:
+    name: Gloomforged
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+1 Mining Power"
+        stats: {mining-power: 1}
+      '3':
+        description: "+10% durability preservation"
+        stats: {durability-save-percent: 10}
+      '5':
+        description: "+8% damage"
+        stats: {damage-percent: 8}
+  wardensworn:
+    name: Wardensworn
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+3 Defense"
+        stats: {defense: 3}
+      '3':
+        description: "+6% damage"
+        stats: {damage-percent: 6}
+      '5':
+        description: "+10% execute damage"
+        stats: {execute-damage-percent: 10}
+  kilnborn:
+    name: Kilnborn
+    piece-count: 5
+    bonuses:
+      '2':
+        description: "+3 Defense"
+        stats: {defense: 3}
+      '3':
+        description: "+8% damage"
+        stats: {damage-percent: 8}
+      '5':
+        description: "+4% life steal"
+        stats: {life-steal-percent: 4}
 relics:
   wayfarer_helm:
     material: iron_helmet
@@ -1142,3 +1220,538 @@ relics:
     sockets: 0
     lore:
       - "<gray>Pinpricks of light move beneath its midnight scales.</gray>"
+# Expedition loot (generated)
+  skyward_feather:
+    material: feather
+    name: "<white>Skyward Feather</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>A pinion shed by the wind over the sky islands. Captain Wren swears they bring fair weather.</gray>"
+  grave_dust:
+    material: gunpowder
+    name: "<white>Barrow Grave Dust</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>Grey dust from the barrow's oldest niches. Smiths fold it into steel so the blade remembers.</gray>"
+  barrow_wax:
+    material: phantom_membrane
+    name: "<green>Barrow Candlewax</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>Wax from candles that never quite burn down, still warm to the touch.</gray>"
+  huntsmans_antler:
+    material: bone
+    name: "<aqua>Huntsman's Antler</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>Snapped from the Hollow Huntsman's crown. It still twitches toward the moon.</gray>"
+  barrowguard_helm:
+    material: iron_helmet
+    name: "<green>Barrowguard Helm</green>"
+    set: barrowguard
+    slot: head
+    rarity: uncommon
+    item-level: 10
+    stats: {defense: 3}
+    lore:
+      - "<gray>Riveted iron, blackened in the barrow's smoke.</gray>"
+  barrowguard_cuirass:
+    material: iron_chestplate
+    name: "<green>Barrowguard Cuirass</green>"
+    set: barrowguard
+    slot: chest
+    rarity: uncommon
+    item-level: 10
+    stats: {defense: 5}
+    lore:
+      - "<gray>Worn by the sextons who sealed the King's Rest.</gray>"
+  barrowguard_greaves:
+    material: iron_leggings
+    name: "<green>Barrowguard Greaves</green>"
+    set: barrowguard
+    slot: legs
+    rarity: uncommon
+    item-level: 10
+    stats: {defense: 4}
+    lore:
+      - "<gray>Knee plates scored by a thousand kneelings.</gray>"
+  barrowguard_boots:
+    material: iron_boots
+    name: "<green>Barrowguard Boots</green>"
+    set: barrowguard
+    slot: feet
+    rarity: uncommon
+    item-level: 10
+    stats: {defense: 3}
+    lore:
+      - "<gray>Heavy soles for the long stair down.</gray>"
+  sextons_edge:
+    material: iron_sword
+    name: "<green>Sexton's Edge</green>"
+    set: barrowguard
+    slot: main_hand
+    rarity: uncommon
+    item-level: 10
+    stats: {damage: 7, execute-damage-percent: 4}
+    lore:
+      - "<gray>A gravedigger's blade, sharpened for the ones who climb back out.</gray>"
+  huntsmans_longbow:
+    material: bow
+    name: "<gold>Huntsman's Longbow</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 14
+    sockets: 3
+    stats: {projectile-damage: 8, execute-damage-percent: 8}
+    lore:
+      - "<gray>The Hollow Huntsman's own bow. It never misses the fleeing.</gray>"
+  briar_silk:
+    material: string
+    name: "<white>Briar Silk</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>Thread spun by the canopy's spiders, tough as wire and twice as sharp.</gray>"
+  thornheart_sap:
+    material: slime_ball
+    name: "<green>Thornheart Sap</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>Bitter green sap that seals wounds and stings eyes.</gray>"
+  matrons_fang:
+    material: fermented_spider_eye
+    name: "<aqua>Matron's Fang</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>Venom still beads at the tip of the Briar Matron's fang.</gray>"
+  thornwarden_hood:
+    material: chainmail_helmet
+    name: "<aqua>Thornwarden Hood</aqua>"
+    set: thornwarden
+    slot: head
+    rarity: rare
+    item-level: 14
+    stats: {defense: 3, poison-potency-percent: 3}
+    lore:
+      - "<gray>Woven with briar so nothing grabs the wearer twice.</gray>"
+  thornwarden_jerkin:
+    material: chainmail_chestplate
+    name: "<aqua>Thornwarden Jerkin</aqua>"
+    set: thornwarden
+    slot: chest
+    rarity: rare
+    item-level: 14
+    stats: {defense: 5}
+    lore:
+      - "<gray>Ring mail threaded with canopy silk.</gray>"
+  thornwarden_leggings:
+    material: chainmail_leggings
+    name: "<aqua>Thornwarden Leggings</aqua>"
+    set: thornwarden
+    slot: legs
+    rarity: rare
+    item-level: 14
+    stats: {defense: 4}
+    lore:
+      - "<gray>Light enough to run the boughs.</gray>"
+  thornwarden_boots:
+    material: chainmail_boots
+    name: "<aqua>Thornwarden Boots</aqua>"
+    set: thornwarden
+    slot: feet
+    rarity: rare
+    item-level: 14
+    stats: {defense: 3}
+    lore:
+      - "<gray>Soles studded for bark and moss.</gray>"
+  briarshot_crossbow:
+    material: crossbow
+    name: "<aqua>Briarshot Crossbow</aqua>"
+    set: thornwarden
+    slot: main_hand
+    rarity: rare
+    item-level: 14
+    stats: {projectile-damage: 7, poison-potency-percent: 6}
+    lore:
+      - "<gray>Fires thorn-tipped bolts that keep on biting.</gray>"
+  thornheart_rapier:
+    material: iron_sword
+    name: "<gold>Thornheart Rapier</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 18
+    sockets: 3
+    stats: {damage: 8, poison-potency-percent: 10, bleed-percent: 4}
+    lore:
+      - "<gray>Grown, not forged, from the Thornheart Shaman's living staff.</gray>"
+  tidepearl:
+    material: prismarine_crystals
+    name: "<white>Tidepearl</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>A pearl that glows faintly whenever the water level drops.</gray>"
+  sluice_cog:
+    material: nautilus_shell
+    name: "<green>Sluice Cog</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>A bronze cog from the floodgates, still turning when nobody watches.</gray>"
+  tidewardens_scale:
+    material: turtle_scute
+    name: "<aqua>Tidewarden's Scale</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>Shed by the Tidewarden. Cold, and never dry.</gray>"
+  tidebound_helm:
+    material: turtle_helmet
+    name: "<aqua>Tidebound Helm</aqua>"
+    set: tidebound
+    slot: head
+    rarity: rare
+    item-level: 18
+    stats: {defense: 4}
+    lore:
+      - "<gray>A shell helm that breathes when you can't.</gray>"
+  tidebound_cuirass:
+    material: iron_chestplate
+    name: "<aqua>Tidebound Cuirass</aqua>"
+    set: tidebound
+    slot: chest
+    rarity: rare
+    item-level: 18
+    stats: {defense: 6}
+    lore:
+      - "<gray>Plate patched with sluice bronze.</gray>"
+  tidebound_greaves:
+    material: iron_leggings
+    name: "<aqua>Tidebound Greaves</aqua>"
+    set: tidebound
+    slot: legs
+    rarity: rare
+    item-level: 18
+    stats: {defense: 5}
+    lore:
+      - "<gray>Waterlogged and somehow lighter for it.</gray>"
+  tidebound_boots:
+    material: iron_boots
+    name: "<aqua>Tidebound Boots</aqua>"
+    set: tidebound
+    slot: feet
+    rarity: rare
+    item-level: 18
+    stats: {defense: 3}
+    lore:
+      - "<gray>Grips wet stone like it's dry.</gray>"
+  sluicebreaker_trident:
+    material: trident
+    name: "<aqua>Sluicebreaker Trident</aqua>"
+    set: tidebound
+    slot: main_hand
+    rarity: rare
+    item-level: 18
+    stats: {damage: 8, projectile-damage: 7}
+    lore:
+      - "<gray>Pried from the floodgate's own winding gear.</gray>"
+  tidewardens_trident:
+    material: trident
+    name: "<gold>Tidewarden's Trident</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 22
+    sockets: 3
+    stats: {damage: 9, projectile-damage: 9, life-steal-percent: 2}
+    lore:
+      - "<gray>The Tidewarden's crown-spear. The cistern answers when it is raised.</gray>"
+  gloomsteel_ore:
+    material: raw_iron
+    name: "<white>Gloomsteel Ore</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>Ore from the deep galleries. It drinks the light around it.</gray>"
+  blasting_powder:
+    material: firework_star
+    name: "<green>Blasting Powder</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>The Blastmaster's mix, packed tight. Keep it away from your lantern.</gray>"
+  foremans_lamp:
+    material: glowstone_dust
+    name: "<aqua>Foreman's Lampglow</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>The last light of the Deep Foreman's lamp, gathered in your palm.</gray>"
+  gloomforged_helm:
+    material: diamond_helmet
+    name: "<light_purple>Gloomforged Helm</light_purple>"
+    set: gloomforged
+    slot: head
+    rarity: epic
+    item-level: 24
+    stats: {defense: 4, mining-power: 1}
+    lore:
+      - "<gray>A miner's helm with a gloomsteel brow.</gray>"
+  gloomforged_plate:
+    material: diamond_chestplate
+    name: "<light_purple>Gloomforged Plate</light_purple>"
+    set: gloomforged
+    slot: chest
+    rarity: epic
+    item-level: 24
+    stats: {defense: 6}
+    lore:
+      - "<gray>Hammered in the Foreman's own forge.</gray>"
+  gloomforged_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Gloomforged Greaves</light_purple>"
+    set: gloomforged
+    slot: legs
+    rarity: epic
+    item-level: 24
+    stats: {defense: 5}
+    lore:
+      - "<gray>Plates hinged for long hours on your knees.</gray>"
+  gloomforged_boots:
+    material: diamond_boots
+    name: "<light_purple>Gloomforged Boots</light_purple>"
+    set: gloomforged
+    slot: feet
+    rarity: epic
+    item-level: 24
+    stats: {defense: 4}
+    lore:
+      - "<gray>Steel toes. Very steel toes.</gray>"
+  gloomforged_pick:
+    material: diamond_pickaxe
+    name: "<light_purple>Gloomforged Pick</light_purple>"
+    set: gloomforged
+    slot: main_hand
+    rarity: epic
+    item-level: 24
+    stats: {damage: 6, mining-power: 3, durability-save-percent: 8}
+    lore:
+      - "<gray>Cuts gloomsteel like chalk.</gray>"
+  deep_foremans_pick:
+    material: netherite_pickaxe
+    name: "<gold>Deep Foreman's Pick</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 28
+    sockets: 3
+    stats: {damage: 7, mining-power: 4, durability-save-percent: 12}
+    lore:
+      - "<gray>The Foreman never let anyone else hold it. Now you know why.</gray>"
+  sigil_shard:
+    material: amethyst_shard
+    name: "<white>Sigil Shard</white>"
+    category: expedition material
+    slot: none
+    rarity: common
+    lore:
+      - "<gray>A splinter of a warden's sigil, humming with its element.</gray>"
+  wardens_seal:
+    material: echo_shard
+    name: "<green>Warden's Seal Fragment</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>Part of the seal that bound the archive. It remembers being whole.</gray>"
+  archive_key:
+    material: clock
+    name: "<aqua>Archive Key</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>A key to the sky archive that ticks like a heart.</gray>"
+  wardensworn_helm:
+    material: diamond_helmet
+    name: "<light_purple>Wardensworn Helm</light_purple>"
+    set: wardensworn
+    slot: head
+    rarity: epic
+    item-level: 28
+    stats: {defense: 5}
+    lore:
+      - "<gray>Engraved with all three seals.</gray>"
+  wardensworn_plate:
+    material: diamond_chestplate
+    name: "<light_purple>Wardensworn Plate</light_purple>"
+    set: wardensworn
+    slot: chest
+    rarity: epic
+    item-level: 28
+    stats: {defense: 7}
+    lore:
+      - "<gray>Warm on the left, cold on the right, heavy all over.</gray>"
+  wardensworn_greaves:
+    material: diamond_leggings
+    name: "<light_purple>Wardensworn Greaves</light_purple>"
+    set: wardensworn
+    slot: legs
+    rarity: epic
+    item-level: 28
+    stats: {defense: 6}
+    lore:
+      - "<gray>Stone-weighted so no wind moves you.</gray>"
+  wardensworn_boots:
+    material: diamond_boots
+    name: "<light_purple>Wardensworn Boots</light_purple>"
+    set: wardensworn
+    slot: feet
+    rarity: epic
+    item-level: 28
+    stats: {defense: 4}
+    lore:
+      - "<gray>Sky-archive boots, built for long watches.</gray>"
+  tri_seal_blade:
+    material: diamond_sword
+    name: "<light_purple>Tri-Seal Blade</light_purple>"
+    set: wardensworn
+    slot: main_hand
+    rarity: epic
+    item-level: 28
+    stats: {damage: 9, execute-damage-percent: 8}
+    lore:
+      - "<gray>Ember, frost and stone in one edge.</gray>"
+  wardens_aegis:
+    material: shield
+    name: "<gold>Wardens' Aegis</gold>"
+    slot: off_hand
+    rarity: legendary
+    item-level: 32
+    sockets: 3
+    stats: {defense: 6, life-steal-percent: 2}
+    lore:
+      - "<gray>The three wardens' shields, melted into one.</gray>"
+  cinder_shard:
+    material: resin_brick
+    name: "<green>Cinder Shard</green>"
+    category: expedition material
+    slot: none
+    rarity: uncommon
+    lore:
+      - "<gray>A shard of the keep's living stone, still glowing at the edges.</gray>"
+  smoldering_core:
+    material: magma_cream
+    name: "<aqua>Smoldering Core</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>The burning heart of a fire elemental. It pulses against your palm.</gray>"
+  sovereigns_ember:
+    material: nether_star
+    name: "<light_purple>Sovereign's Ember</light_purple>"
+    category: expedition material
+    slot: none
+    rarity: epic
+    lore:
+      - "<gray>A spark of Pyrrhax himself. It wants to be a fire again.</gray>"
+  kilnborn_crown:
+    material: netherite_helmet
+    name: "<gold>Kilnborn Crown</gold>"
+    set: kilnborn
+    slot: head
+    rarity: legendary
+    item-level: 36
+    stats: {defense: 5}
+    lore:
+      - "<gray>Forged in Gorrak's kiln from the keep's own gates.</gray>"
+  kilnborn_cuirass:
+    material: netherite_chestplate
+    name: "<gold>Kilnborn Cuirass</gold>"
+    set: kilnborn
+    slot: chest
+    rarity: legendary
+    item-level: 36
+    stats: {defense: 8}
+    lore:
+      - "<gray>Its plates glow when you're angry.</gray>"
+  kilnborn_greaves:
+    material: netherite_leggings
+    name: "<gold>Kilnborn Greaves</gold>"
+    set: kilnborn
+    slot: legs
+    rarity: legendary
+    item-level: 36
+    stats: {defense: 7}
+    lore:
+      - "<gray>Lava-quenched, three times over.</gray>"
+  kilnborn_sabatons:
+    material: netherite_boots
+    name: "<gold>Kilnborn Sabatons</gold>"
+    set: kilnborn
+    slot: feet
+    rarity: legendary
+    item-level: 36
+    stats: {defense: 5}
+    lore:
+      - "<gray>They leave scorch marks on stone floors.</gray>"
+  kilnbreaker_maul:
+    material: mace
+    name: "<gold>Kilnbreaker Maul</gold>"
+    set: kilnborn
+    slot: main_hand
+    rarity: legendary
+    item-level: 36
+    stats: {damage: 10, damage-percent: 6}
+    lore:
+      - "<gray>Gorrak broke kilns with it. You'll find other uses.</gray>"
+  sovereigns_hammer:
+    material: mace
+    name: "<gradient:#ffeaa7:#ff7675:#d63031>Sovereign's Hammer</gradient>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 40
+    sockets: 3
+    stats: {damage: 12, damage-percent: 10}
+    unique-affix: hunters_mercy
+    lore:
+      - "<gray>The hammer Pyrrhax raised against the sky. It still remembers the swing.</gray>"
+  crown_of_embers:
+    material: netherite_helmet
+    name: "<gradient:#ffeaa7:#ff7675:#d63031>Crown of Embers</gradient>"
+    slot: head
+    rarity: mythic
+    item-level: 40
+    sockets: 3
+    stats: {defense: 7, life-steal-percent: 3}
+    unique-affix: second_dawn
+    lore:
+      - "<gray>The Ashen Sovereign's crown. It is never quite cool.</gray>"
+  steward_ashkars_mantle:
+    material: netherite_chestplate
+    name: "<gold>Steward Ashkar's Mantle</gold>"
+    slot: chest
+    rarity: legendary
+    item-level: 36
+    sockets: 3
+    stats: {defense: 9, damage-percent: 4}
+    lore:
+      - "<gray>The Steward served his lord in this. It served him poorly.</gray>"

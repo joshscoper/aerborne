@@ -46,6 +46,17 @@ mobs:
   "custom:thorn_sentinel": {role: normal, forces: 2}
   "custom:briar_matron": {role: miniboss, abilities: [web, summon, poison_cloud], forces: 10}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  hunters_cache: {at: [-8, 64, 62], kind: crate, title: "Hunter's Cache"}
+  sentinel_hoard: {at: [-20, 64, 62], kind: chest, title: "Sentinel's Hoard"}
+  hollow_trunk_stash: {at: [10, 64, 90], kind: secret, title: Hollow-Trunk Stash}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [8, 64, 112]
+  bonus: [12, 64, 112]
+
 rooms:
   bough_run:
     title: The Bough Run

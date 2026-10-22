@@ -41,6 +41,7 @@ final class AqueductTemplate {
         floodgate(b);
         pumphouse(b);
         basin(b);
+        SampleChests.place(b, "sunken_aqueduct");
         return b.freeze();
     }
 

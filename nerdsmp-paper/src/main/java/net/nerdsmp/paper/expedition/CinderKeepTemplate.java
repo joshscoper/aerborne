@@ -52,6 +52,7 @@ final class CinderKeepTemplate {
         bellows(b);
         steward(b);
         heart(b);
+        SampleChests.place(b, "cinder_keep");
         return b.freeze();
     }
 

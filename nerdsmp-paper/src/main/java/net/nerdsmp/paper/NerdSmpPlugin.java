@@ -636,6 +636,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(partyMenu, this);
         plugins.registerEvents(expeditionSetup, this);
         plugins.registerEvents(expeditionMenu, this);
+        plugins.registerEvents(expeditions.forge(), this);
         presentation.start();
         damageDisplays.start();
         mobHealthBars.start();

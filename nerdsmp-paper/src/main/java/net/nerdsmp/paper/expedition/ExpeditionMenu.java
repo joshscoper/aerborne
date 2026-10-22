@@ -86,6 +86,10 @@ public final class ExpeditionMenu implements Listener {
             "<gray>Deaths never cost your gear, but each</gray>",
             "<gray>one spends a shared party life.</gray>")), (who, click) -> { });
         board.set(42, status(player), (who, click) -> { who.closeInventory(); service.command(who, new String[]{"status"}); });
+        board.set(41, MenuKit.item(Material.SMITHING_TABLE, "<gold>Expedition Forge</gold>", MenuKit.withHint(List.of(
+            "<gray>Forge an expedition's set from the</gray>",
+            "<gray>materials its enemies and chests drop.</gray>"), "open the forge")),
+            (who, click) -> service.forge().open(who));
         board.set(38, keystone(player), (who, click) -> {
             who.closeInventory();
             service.command(who, click.isLeftClick() && service.key(who).isPresent() ? new String[]{"key", "start"} : new String[]{"key"});

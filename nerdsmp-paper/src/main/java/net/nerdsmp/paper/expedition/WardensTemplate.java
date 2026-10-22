@@ -28,6 +28,7 @@ final class WardensTemplate {
         embers(b);
         frost(b);
         stone(b);
+        SampleChests.place(b, "hall_of_wardens");
         return b.freeze();
     }
 

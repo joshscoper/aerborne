@@ -52,6 +52,7 @@ final class MinesTemplate {
         slagPits(b);
         rest(b);
         delve(b);
+        SampleChests.place(b, "gloomforge_mines");
         return b.freeze();
     }
 

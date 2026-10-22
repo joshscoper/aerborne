@@ -129,6 +129,15 @@ public final class RunProgress {
     public int lives() { return lives; }
     /** Every member death this run, wipes included. */
     public int deaths() { return deaths; }
+    /** Optional rooms on the map, and how many the party cleared: they count toward exploration. */
+    public int optionalTotal() { return (int) rooms.stream().filter(Room::optional).count(); }
+
+    public int optionalCleared() {
+        int cleared = 0;
+        for (int index = 0; index < rooms.size(); index++) if (rooms.get(index).optional() && states[index] == RoomState.CLEARED) cleared++;
+        return cleared;
+    }
+
     /** The run's limit, time bonuses included. */
     public long limitSeconds() { return limitSeconds; }
     public Tier tier() { return tier; }

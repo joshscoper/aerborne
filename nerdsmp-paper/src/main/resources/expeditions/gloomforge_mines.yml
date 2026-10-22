@@ -50,6 +50,17 @@ mobs:
   "custom:slag_hound": {role: miniboss, abilities: [charge, leap]}
   "vanilla:pillager": {role: elite, abilities: [barrage]}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  ore_crate: {at: [-8, 64, 36], kind: crate, title: Ore Crate}
+  grells_strongbox: {at: [7, 64, 57], kind: chest, title: "Grell's Strongbox"}
+  lost_miners_stash: {at: [-9, 64, 103], kind: secret, title: "Lost Miner's Stash"}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-6, 64, 136]
+  bonus: [6, 64, 136]
+
 rooms:
   ore_galleries:
     title: The Ore Galleries

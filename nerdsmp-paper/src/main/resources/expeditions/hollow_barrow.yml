@@ -50,6 +50,17 @@ mobs:
   "custom:veil_stalker": {role: elite, abilities: [blink]}
   "custom:barrow_warden": {role: miniboss, abilities: [shield, cleave]}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  sexton_crate: {at: [5, 64, 16], kind: crate, title: "Sexton's Crate"}
+  ossuary_reliquary: {at: [-7, 64, 52], kind: chest, title: Ossuary Reliquary}
+  forgotten_offering: {at: [8, 64, 73], kind: secret, title: Forgotten Offering}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-2, 64, 106]
+  bonus: [2, 64, 106]
+
 rooms:
   crypt_gallery:
     title: The Crypt Gallery

@@ -49,6 +49,17 @@ mobs:
   "vanilla:drowned": {role: normal}
   "custom:sluice_keeper": {role: elite, abilities: [tether, frost_nova]}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  sluice_crate: {at: [6, 64, 16], kind: crate, title: Sluice Crate}
+  cistern_strongbox: {at: [-9, 64, 64], kind: chest, title: Cistern Strongbox}
+  drowned_lockbox: {at: [8, 64, 86], kind: secret, title: Drowned Lockbox}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-2, 64, 120]
+  bonus: [2, 64, 120]
+
 rooms:
   sluice_hall:
     title: The Sluice Hall

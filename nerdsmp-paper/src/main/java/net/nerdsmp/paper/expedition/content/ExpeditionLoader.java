@@ -144,10 +144,28 @@ public final class ExpeditionLoader {
                 profile.contains("forces") ? integer(profile, "forces") : ExpeditionDefinition.MobProfile.defaultForces(role),
                 profile.getString("title")));
         }
+        Map<String, ExpeditionDefinition.LootChest> chests = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "chests").entrySet()) {
+            ConfigurationSection chest = entry.getValue();
+            Point at = point(chest, "at");
+            if (at == null) throw new IllegalArgumentException("chests." + entry.getKey() + ".at: where it stands, [x, y, z].");
+            ExpeditionDefinition.ChestKind kind = enumValue(ExpeditionDefinition.ChestKind.class, chest.getString("kind", "chest"),
+                "chests." + entry.getKey() + ".kind", "crate, chest or secret");
+            chests.put(entry.getKey(), new ExpeditionDefinition.LootChest(entry.getKey(), at, kind,
+                chest.getString("title", kind == ExpeditionDefinition.ChestKind.CRATE ? "Supply Crate"
+                    : kind == ExpeditionDefinition.ChestKind.SECRET ? "Hidden Cache" : "Treasure Chest")));
+        }
+        ExpeditionDefinition.RewardChests rewardChests = null;
+        ConfigurationSection rewards = yaml.getConfigurationSection("reward-chests");
+        if (rewards != null) {
+            Point free = point(rewards, "free"), bonus = point(rewards, "bonus");
+            if (free == null) throw new IllegalArgumentException("reward-chests.free: where the free reward chest appears, [x, y, z].");
+            rewardChests = new ExpeditionDefinition.RewardChests(free, bonus);
+        }
         return new ExpeditionDefinition.Story(goal, yaml.contains("forces") ? integer(yaml, "forces") : 0,
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
-            lower(yaml.getStringList("requires")));
+            lower(yaml.getStringList("requires")), chests, rewardChests);
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {

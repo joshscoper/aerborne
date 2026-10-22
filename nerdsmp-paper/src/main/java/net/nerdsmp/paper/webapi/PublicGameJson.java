@@ -12,6 +12,7 @@ import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.Tier;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -232,7 +233,29 @@ final class PublicGameJson {
         });
         json.add("items", items);
         json.addProperty("profileRolls", definition.loot().profile() != null);
+        // The expedition's own loot: materials, its set and its boss signatures.
+        var table = plugin.expeditions().lootTable(definition.id());
+        for (var group : new String[]{"materials", "gear", "signatures"}) {
+            JsonArray names = new JsonArray();
+            List<String> ids = switch (group) {
+                case "materials" -> table.materials();
+                case "gear" -> table.gear();
+                default -> table.signatures();
+            };
+            for (String id : ids) names.add(itemName(plugin, id));
+            json.add(group, names);
+        }
         return json;
+    }
+
+    private static String itemName(NerdSmpPlugin plugin, String id) {
+        try {
+            return plugin.items().itemName(new net.nerdsmp.api.model.ItemId(id))
+                .map(value -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(value))).orElse(words(id));
+        } catch (IllegalArgumentException invalid) {
+            return words(id);
+        }
     }
 
     static String campaign(NerdSmpPlugin plugin, String sampled) {

@@ -21,6 +21,8 @@ Code: `nerdsmp-paper/.../expedition/` (service, runs, setup, menu, worlds), with
 | `/expedition ready` / `decline` | Answer a ready check (also clickable in chat). |
 | `/expedition allies` | After a long wait in the finder: start now with hired NPC allies in the empty slots. |
 | `/expedition key [start]` | Show your Mythic keystone, or start it with your party. |
+| `/expedition forge` | The Expedition Forge: trade an expedition's materials for pieces of its set. |
+| `/expedition rewards` / `bonus` | Open your reward chest, or the bonus chest (for Marks), after a win. |
 | `/expedition leave` | Leave the queue, a ready check, or the run you're in. |
 | `/expedition list` / `info <id>` / `status` | Open expeditions, one expedition's tiers and records, your queue or run. |
 | `/expedition guide <id>` | The expedition's guide book: route, boss notes, every mob with its possible drops, and rewards. |
@@ -172,6 +174,55 @@ plan, and the template is stamped with the plan's fingerprint (`nerdsmp-plan.txt
 changes the plan, the next edit or run rebuilds the template from the new one. To build on a sample
 by hand, delete its `sample:` line first: templates without it are never rebuilt. Cinder Keep is sealed by the sample season until the
 **Ember Gate** milestone, and also needs a clear of the Hall of the Three Wardens.
+
+## Loot
+
+Every expedition has its own loot, listed in `content/expedition-loot.yml` (shipped in the plugin; an
+entry in the data folder's copy replaces the shipped one): three **materials** from common to rare,
+a five-piece **signature set** (four armour pieces and a weapon, with 2, 3 and 5-piece bonuses), and
+rare boss **signatures**. The items live in `content/relics.yml` (schema 13 adds them to existing
+servers without touching staff edits). The Cinder Keep raid's signatures are mythic, with signature
+affixes.
+
+| Source | What it gives |
+|---|---|
+| Regular enemy | 20% common material (1–2), rare chance of a sealed set piece or a bottle |
+| Elite | Common material (1–3), 20% uncommon, 5% set piece, 5% bottle |
+| Mini-boss | Common (2–4), 60% uncommon, 15% rare, 25% set piece (2 affixes), 10% Greater bottle |
+| Boss | Uncommon (1–3), 35% rare, 4% signature |
+| Crate | Common (2–4), 25% uncommon, 20% bottle |
+| Chest | Common (3–5), 50% uncommon, 8% rare, 10% set piece, bottles |
+| Hidden cache | Uncommon (1–2), 25% rare, 35% set piece, 25% Greater bottle, 1.5% signature |
+
+Heroic multiplies the odds of the better lines by 1.35, Mythic and keys by 1.7 (keys add 0.05 per
+level), and raids by a further 1.1. Expedition enemies still drop coin purses and their relic, but no
+vanilla loot, no worn gear and none of the overworld drop tables. Set pieces come out sealed half the
+time; players identify them as usual.
+
+**Crates and chests.** `chests:` places loot containers: `{at: [x, y, z], kind: crate|chest|secret,
+title: ...}`. The template needs a barrel (crate) or chest there. Every player loots each container
+once, with their own roll, in a window whose leftovers go to their inventory when closed. Secrets
+are announced to the party and count toward the score.
+
+**Reward chests and the score.** When a run is won, it's scored out of 300: speed (full within half
+the time limit, 40 at the limit), survival (25 lost per death per player) and exploration (40, plus
+the share of secrets found and optional rooms cleared; full on maps with neither). The total grades
+the run D (under 140), C, B (180), A (220), S (255) or S+ (285). Each player gets a free **reward
+chest** with 2 rolls at D up to 7 at S+, better odds at better grades, plus the expedition's fixed
+`loot:` items and profile rolls. A **bonus chest** costs `(60 + 12 × level) × the tier's Marks
+multiplier` Marks, holds two more rolls and always a set piece with three affixes. With
+`reward-chests: {free: [x, y, z], bonus: [x, y, z]}` they appear as a chest and an ender chest at
+those (empty) spots; `/expedition rewards` and `/expedition bonus` open them anywhere in the run. An
+unopened free chest goes home with its player. Marks are credited at the finish as before. A raid's
+weekly finish lockout withholds both chests.
+
+**The Expedition Forge** (`/expedition forge`, or the board's anvil button) trades materials and
+Marks for set pieces, once the player has cleared that expedition: 16 common and 4 uncommon
+materials for most pieces; 24 common, 6 uncommon and a rare for the chest piece and the weapon; and
+`(40 + 6 × level)` Marks (half again for the big pieces). Forged pieces are sealed with two affixes.
+
+The guide book's **Expedition loot** page and each mob's drops show the same odds, and the web API's
+`rewards` adds `materials`, `gear` and `signatures` (item names).
 
 ## Raids
 

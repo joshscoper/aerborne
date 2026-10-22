@@ -71,8 +71,15 @@ public record ExpeditionDefinition(
     public record Story(Goal goal, int forces, int timeBonusSeconds, boolean raid,
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
-                        List<String> requires) {
-        public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of());
+                        List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
+        public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
+            Map.of(), null);
+
+        public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
+                     Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
+                     Integer time, List<String> requires) {
+            this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null);
+        }
 
         public Story {
             goal = goal == null ? Goal.ROOMS : goal;
@@ -83,7 +90,11 @@ public record ExpeditionDefinition(
             npcs = ordered(npcs);
             mobs = ordered(mobs);
             requires = requires == null ? List.of() : List.copyOf(requires);
+            chests = ordered(chests);
         }
+
+        /** How many secret caches the map hides, for the run's exploration score. */
+        public int secrets() { return (int) chests.values().stream().filter(chest -> chest.kind() == ChestKind.SECRET).count(); }
 
         /** The profile for a wave mob id, or a plain one. */
         public MobProfile mob(String id) {
@@ -94,6 +105,15 @@ public record ExpeditionDefinition(
             return map == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(map));
         }
     }
+
+    /** Crates (barrels) hold a little, chests more, and secret caches the best; each counts as found for the score. */
+    public enum ChestKind { CRATE, CHEST, SECRET }
+
+    /** A loot container in the map. Every player loots it once, with their own roll. */
+    public record LootChest(String id, Point at, ChestKind kind, String title) { }
+
+    /** Where the end-of-run reward chests appear: the free chest and the Marks-bought bonus chest. */
+    public record RewardChests(Point free, Point bonus) { }
 
     /** A rest point. Lit campfires heal nearby players out of combat and become the respawn point. */
     public record Campfire(String id, Point at, boolean lit, String title) { }

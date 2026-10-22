@@ -101,6 +101,9 @@ final class ExpeditionRun {
     /** True once the key's result (upgrade or deplete) has been written. */
     boolean keySettled;
     private final Set<UUID> raging = new HashSet<>();
+    /** Each encounter mob's role, for its drops. */
+    private final Map<UUID, ExpeditionDefinition.Role> roles = new HashMap<>();
+    final RunLoot loot;
     /** While the room's boss is submerged: when it surfaces again (-1 when it isn't). */
     private long surfaceAt = -1;
     private long submergedAt;
@@ -133,6 +136,9 @@ final class ExpeditionRun {
                   Set<Modifier> modifiers, List<UUID> members, boolean test, BuildCanvas.Plan plan, List<Allies.Role> hired, KeyRun key) {
         this.service = service;
         this.key = key;
+        double luck = net.nerdsmp.paper.expedition.content.ExpeditionLoot.luck(tier.id(), key == null ? 0 : key.key().level())
+            * (expedition.story().raid() ? 1.1 : 1);
+        this.loot = new RunLoot(plugin, this, service.lootTable(expedition.id()), luck);
         this.plugin = plugin;
         this.expedition = expedition;
         this.tier = tier;
@@ -397,6 +403,8 @@ final class ExpeditionRun {
         UUID uuid = entity.getUniqueId();
         Integer bossSlot = bosses.remove(uuid);
         damage.remove(uuid);
+        ExpeditionDefinition.Role role = roles.remove(uuid);
+        if (role != null && state == State.ACTIVE) loot.enemyDied(role, entity.getLocation());
         casters.remove(uuid);
         mobs.values().forEach(set -> set.remove(uuid));
         shields.values().forEach(helpers -> helpers.remove(uuid));
@@ -588,25 +596,36 @@ final class ExpeditionRun {
         closeAt = now + service.lingerAfterFinish().toMillis();
         int rolls = tier.lootRolls() + (underPar ? 1 : 0);
         Map<String, String> party = new LinkedHashMap<>();
+        Map<UUID, List<ItemStack>> fixed = new LinkedHashMap<>();
+        Set<UUID> lockedOut = new HashSet<>();
         for (UUID member : progress.present()) {
             Player player = Bukkit.getPlayer(member);
             Optional<AccountId> account = plugin.sessions().account(member);
             if (player == null || account.isEmpty()) continue;
             party.put(account.get().toString(), player.getName());
             if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), key != null ? "mythic" : tier.id());
-            player.showTitle(Title.title(Chat.render("<gold><bold>Expedition complete</bold></gold>"),
-                Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
             // A raid's finish pays once per tier per week, like its bosses.
             if (expedition.story().raid() && !test
                 && !service.lockouts().claim(account.get().toString(), expedition.id(), tier.id(), RaidLockouts.FINISH, service.raidWeek())) {
                 Chat.notice(player, "You've already claimed this raid's finishing reward on " + Chat.escape(tier.title()) + " this week. It resets on Monday.");
+                lockedOut.add(member);
                 continue;
             }
-            Reward reward = pay(player, account.get(), expedition.loot(), rolls, "complete");
-            Chat.success(player, "Loot: <white>" + reward.items() + " items</white>"
-                + (reward.marks() > 0 ? " and " + Chat.marks(reward.marks()) : "") + (underPar ? " <yellow>(+1 timed roll)</yellow>" : "") + ".");
+            long marks = payMarks(account.get(), expedition.loot(), "complete");
+            fixed.put(member, fixedRewards(expedition.loot(), rolls));
+            if (marks > 0) Chat.success(player, "Reward: " + Chat.marks(marks) + (underPar ? " <yellow>(+1 timed roll in your chest)</yellow>" : "") + ".");
         }
+        int findable = expedition.story().secrets() + progress.optionalTotal();
+        var score = net.nerdsmp.paper.expedition.content.ExpeditionLoot.Score.of(seconds, progress.limitSeconds(), progress.deaths(),
+            Math.max(1, members.size()), loot.secretsFound() + progress.optionalCleared(), findable);
+        var grade = score.grade();
+        broadcast("<gold>Score:</gold> <white>" + score.total() + "</white> <dark_gray>·</dark_gray> " + gradeColor(grade) + "<bold>" + grade.title()
+            + "</bold>" + "</" + gradeColor(grade).substring(1) + " <gray>(Speed " + score.speed() + " · Survival " + score.survival()
+            + " · Exploration " + score.exploration() + ")</gray>");
+        for (Player player : online()) player.showTitle(Title.title(Chat.render(gradeColor(grade) + "<bold>" + grade.title() + "</bold>"),
+            Chat.render("<gray>" + Chat.escape(expedition.title()) + " · " + Chat.duration(Duration.ofSeconds(seconds)) + "</gray>")));
+        loot.finish(fixed, grade, lockedOut, net.nerdsmp.paper.expedition.content.ExpeditionLoot.bonusPrice(expedition.level(), tier.marks()));
         boolean record = key == null && !test && !assisted() && !party.isEmpty() && service.records().record(expedition.id(), tier.id(), seconds, party);
         if (key != null && !test) service.settleKey(this, keyClock(now), party);
         else if (tier.id().equals("mythic") && !test && !assisted()) service.grantFirstKeys(party.keySet());
@@ -619,6 +638,33 @@ final class ExpeditionRun {
     }
 
     private record Reward(int items, long marks) { }
+
+    private static String gradeColor(net.nerdsmp.paper.expedition.content.ExpeditionLoot.Grade grade) {
+        return switch (grade) {
+            case S_PLUS -> "<light_purple>";
+            case S -> "<gold>";
+            case A -> "<green>";
+            case B -> "<aqua>";
+            case C -> "<yellow>";
+            case D -> "<red>";
+        };
+    }
+
+    /** The expedition's fixed finish rewards for one player: its loot-profile rolls and items. */
+    private List<ItemStack> fixedRewards(ExpeditionDefinition.Loot rewards, int rolls) {
+        List<ItemStack> items = new ArrayList<>();
+        for (int roll = 0; roll < rolls && rewards.profile() != null; roll++) items.addAll(plugin.rewardDrops().rollProfile(rewards.profile()));
+        rewards.items().forEach((item, amount) -> items.add(item(item, amount)));
+        return items;
+    }
+
+    /** Credits a loot table's Marks (scaled by the tier); returns the amount. */
+    private long payMarks(AccountId account, ExpeditionDefinition.Loot rewards, String slot) {
+        long marks = Math.round(rewards.marks() * tier.marks());
+        if (marks > 0 && !test) plugin.economy().credit(account, marks,
+            new EconomyService.TransactionReason("expedition.reward", expedition.id() + ":" + tier.id()), "expedition:" + id + ":" + slot + ":" + account);
+        return marks;
+    }
 
     /** Gives one player a loot table: profile rolls, fixed items and Marks. Overflow waits until they leave. */
     private Reward pay(Player player, AccountId account, ExpeditionDefinition.Loot loot, int rolls, String slot) {
@@ -655,8 +701,10 @@ final class ExpeditionRun {
     }
 
     List<ItemStack> takePendingLoot(UUID member) {
-        List<ItemStack> loot = pendingLoot.remove(member);
-        return loot == null ? List.of() : loot;
+        List<ItemStack> waiting = new ArrayList<>(pendingLoot.getOrDefault(member, List.of()));
+        pendingLoot.remove(member);
+        waiting.addAll(loot.unclaimed(member)); // An unopened reward chest goes home with its owner.
+        return waiting;
     }
 
     private ItemStack item(String id, int amount) {
@@ -889,10 +937,20 @@ final class ExpeditionRun {
     void combat(Player player) { combat.put(player.getUniqueId(), System.currentTimeMillis()); }
 
     /** A player right-clicked a block in the run: campfires, then puzzle blocks. */
+    /** A right-clicked block: loot and reward chests (also after the finish), then campfires, crates and puzzles. */
     void interact(Player player, Block block) {
-        if (state != State.ACTIVE || stage.interact(player, block)) return;
+        if (state != State.ACTIVE && state != State.ENDING) return;
+        if (loot.interact(player, block) || state != State.ACTIVE || stage.interact(player, block)) return;
         if (supplies(player, block)) return;
         puzzles.used(player, block);
+    }
+
+    /** Gives items, keeping what doesn't fit until the player leaves. */
+    void give(Player player, List<ItemStack> items) {
+        List<ItemStack> overflow = new ArrayList<>(player.getInventory().addItem(items.toArray(ItemStack[]::new)).values());
+        if (overflow.isEmpty()) return;
+        pendingLoot.computeIfAbsent(player.getUniqueId(), uuid -> new ArrayList<>()).addAll(overflow);
+        Chat.notice(player, "Your bags are full. The rest waits until you leave the expedition.");
     }
 
     /** A puzzle supply crate in the active room: hands out the puzzle's kit to anyone without one. */
@@ -957,6 +1015,7 @@ final class ExpeditionRun {
             }
         });
         damage.put(entity.getUniqueId(), tier.damage() * Modifier.damageMultiplier(modifiers, boss) * (asBoss ? room.encounter().bossDamage() : 1) * roleDamage);
+        if (asBoss) roles.put(entity.getUniqueId(), ExpeditionDefinition.Role.BOSS);
         if (!asBoss) {
             mobs.computeIfAbsent(room.id(), key -> new HashSet<>()).add(entity.getUniqueId());
             // Smaller groups meet fewer enemies, so each one counts for more toward the forces goal.
@@ -964,6 +1023,7 @@ final class ExpeditionRun {
             forcesOf.put(entity.getUniqueId(), profile.forces() <= 0 ? 0 : (int) Math.ceil(profile.forces() / fewer - 1e-9));
             ExpeditionDefinition.Role role = profile.role() == ExpeditionDefinition.Role.NORMAL && plugin.mobs().isElite(entity)
                 ? ExpeditionDefinition.Role.ELITE : profile.role();
+            roles.put(entity.getUniqueId(), role);
             List<String> abilities = profile.abilities();
             var random = java.util.concurrent.ThreadLocalRandom.current();
             if (abilities.isEmpty() && (role == ExpeditionDefinition.Role.ELITE || role == ExpeditionDefinition.Role.MINIBOSS)) {

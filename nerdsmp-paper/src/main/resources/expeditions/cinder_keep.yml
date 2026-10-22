@@ -68,6 +68,18 @@ mobs:
   "custom:son_of_flame": {role: elite, abilities: [slam]}
   "vanilla:wither_skeleton": {role: normal}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  forgewright_crate: {at: [-8, 64, -100], kind: crate, title: "Forgewright's Crate"}
+  kennel_strongbox: {at: [-7, 64, 12], kind: chest, title: Kennel Strongbox}
+  runekeepers_hoard: {at: [14, 64, 44], kind: secret, title: "Runekeeper's Hoard"}
+  bellows_crate: {at: [-10, 64, 98], kind: crate, title: Bellows Crate}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-3, 64, 135]
+  bonus: [3, 64, 135]
+
 rooms:
   descent:
     title: The Scorched Descent

@@ -5,6 +5,19 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Expedition loot overhaul (October 22)
+- Every expedition now has its own loot: three **materials**, a five-piece **signature set** with set
+  bonuses (Barrowguard, Thornwarden, Tidebound, Gloomforged, Wardensworn and the raid's Kilnborn),
+  and rare boss **signatures** such as the Huntsman's Longbow and the raid's mythic Sovereign's
+  Hammer and Crown of Embers.
+- Enemies drop the expedition's materials by role, and elites, mini-bosses and bosses drop more.
+- **Crates, chests and hidden caches** stand in every expedition. Each player loots each once, with
+  their own roll; finding hidden caches raises the run's score.
+- Winning grades the run from **D to S+** by speed, survival and exploration. Every player gets a free
+  **reward chest** that grows with the grade, and can open a **bonus chest** for Marks.
+- The **Expedition Forge** (`/expedition forge`) turns an expedition's materials into pieces of its set.
+- The guide book, the bestiary, the web API and the website show the new loot.
+
 ### Fair puzzles, clean drops and skill lamps (October 22)
 - Right-clicking an **experience bottle** now opens a skill picker instead of throwing it: the bottle
   grants that skill 10% of the XP it needs for its next level (at least 40). **Greater** (25%, at least

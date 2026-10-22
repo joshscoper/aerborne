@@ -23,6 +23,7 @@ final class FirstFlightTemplate {
         landing(b);
         yard(b);
         sentinel(b);
+        SampleChests.place(b, "first_flight");
         return b.freeze();
     }
 

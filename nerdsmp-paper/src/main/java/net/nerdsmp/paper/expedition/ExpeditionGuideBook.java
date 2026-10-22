@@ -91,7 +91,20 @@ final class ExpeditionGuideBook {
         if (loot.marks() > 0) book.text("black", loot.marks() + " Marks (more on harder tiers)");
         loot.items().forEach((item, amount) -> book.text("black", "• " + amount + "× " + itemName(plugin, item)));
         if (loot.profile() != null) book.text("black", "• Loot rolls from " + Chat.humanize(loot.profile()) + ", once per tier roll");
-        book.gap();
+        var table = service.lootTable(expedition.id());
+        if (!table.materials().isEmpty()) {
+            book.newPage();
+            book.heading("Expedition loot");
+            book.text("dark_green", "Materials:");
+            for (String material : table.materials()) book.text("black", "• " + ExpeditionBestiary.name(plugin, material));
+            if (!table.gear().isEmpty()) {
+                book.text("dark_green", "Set: " + table.gear().size() + " pieces, sealed until identified. Forge them from the materials with /expedition forge.");
+            }
+            if (!table.signatures().isEmpty())
+                book.text("dark_purple", "Rare: " + String.join(", ", table.signatures().stream().map(id -> ExpeditionBestiary.name(plugin, id)).toList()));
+            book.text("dark_gray", "Crates, chests and hidden caches pay every player once. Win for a reward chest graded D to S+ by speed, survival and secrets, and a bonus chest for Marks.");
+        }
+        book.newPage();
         for (Tier tier : service.tiersFor(expedition))
             book.text("dark_gray", tier.title() + ": level " + (expedition.level() + tier.levelBonus()) + ", " + tier.lives() + " lives, "
                 + tier.lootRolls() + (tier.lootRolls() == 1 ? " roll" : " rolls"));

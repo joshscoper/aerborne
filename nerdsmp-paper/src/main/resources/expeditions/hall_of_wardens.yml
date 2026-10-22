@@ -49,6 +49,17 @@ mobs:
   "vanilla:vindicator": {role: elite, abilities: [charge]}
   "custom:frostmarked": {role: elite, abilities: [frost_nova]}
 
+# Loot containers: every player loots each once with their own roll. Secrets count toward the score.
+chests:
+  ember_crate: {at: [-25, 64, 4], kind: crate, title: Ember Crate}
+  frost_locked_chest: {at: [30, 64, 6], kind: chest, title: Frost-Locked Chest}
+  archive_cache: {at: [-5, 64, 34], kind: secret, title: Archive Cache}
+
+# Where the reward chests appear when the run is won.
+reward-chests:
+  free: [-2, 64, 6]
+  bonus: [2, 64, 6]
+
 rooms:
   ember_antechamber:
     title: The Ember Antechamber

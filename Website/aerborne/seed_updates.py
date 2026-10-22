@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 24
+LATEST = 25
 C = "static:img/companions/"
 
 
@@ -70,6 +70,8 @@ def apply(conn):
         _rev23(conn)
     if current < 24:
         _rev24(conn)
+    if current < 25:
+        _rev25(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -197,6 +199,24 @@ def _rev24(conn):
         fresh = REGIONS['expeditions']
         conn.execute('UPDATE regions SET points_of_interest = ?, activities = ?, updated_at = ? WHERE id = ?',
                      (fresh['points_of_interest'], fresh['activities'], now_str(), region['id']))
+
+
+# The expeditions and skills guides as revision 24 shipped them, before expedition loot and skill lamps.
+REV24_GUIDES = {
+    'expeditions': '81bc8e537564b7ab194bfe699aa04d29f3b9f8b4b100eead0db6ac783d4c2f63',
+    'skills-and-talents': '55fdca943373ab9c1897e66e2f0cd43710c2d2823b2cb219c5194c658a3b6a10',
+}
+
+
+def _rev25(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED
+    for slug, fingerprint in REV24_GUIDES.items():
+        guide = next(g for g in REVIEWED if g['slug'] == slug)
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
+        if (row and row['updated_by'] == 'starter content'
+                and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == fingerprint):
+            conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
 
 
 def _rev18(conn):

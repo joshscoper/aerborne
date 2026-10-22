@@ -115,6 +115,12 @@ public final class RewardDropService implements Listener {
      * coin purses. Chances are at base reward scaling; looting and level add a little.
      */
     public List<DropLine> possibleDrops(EntityType type, boolean hostile, boolean boss, boolean elite, String lootProfile, long namedMarks) {
+        return possibleDrops(type, hostile, boss, elite, lootProfile, namedMarks, false);
+    }
+
+    /** As above; an expedition enemy rolls only its profile and coin purse here (its loot is the expedition's). */
+    public List<DropLine> possibleDrops(EntityType type, boolean hostile, boolean boss, boolean elite, String lootProfile, long namedMarks,
+                                        boolean expedition) {
         List<DropLine> lines = new ArrayList<>();
         LootProfileDefinition profile = lootProfile == null ? null : profiles.find(lootProfile).orElse(null);
         if (profile != null) {
@@ -128,7 +134,7 @@ public final class RewardDropService implements Listener {
             }
             if (profile.mode() == LootProfileDefinition.Mode.REPLACE) return List.copyOf(lines);
         }
-        for (DropDefinition definition : tables.getOrDefault(type, List.of())) {
+        for (DropDefinition definition : expedition ? List.<DropDefinition>of() : tables.getOrDefault(type, List.of())) {
             String item = definition.itemId != null ? itemName(definition.itemId)
                 : definition.special != SpecialDrop.NONE || definition.material == null ? words(definition.special.name())
                 : words(definition.material.name());
@@ -139,7 +145,7 @@ public final class RewardDropService implements Listener {
             GearBand gear = hostileGear.bands.get(band);
             List<ItemId> pool = hostileGear.pools.getOrDefault(type, hostileGear.defaultItems);
             String examples = String.join(", ", pool.stream().limit(3).map(this::itemName).toList());
-            lines.add(new DropLine("Sealed gear (" + examples + (pool.size() > 3 ? "…" : "") + ")", Math.min(1, gear.chance), gear.rolls, gear.rolls));
+            if (!expedition) lines.add(new DropLine("Sealed gear (" + examples + (pool.size() > 3 ? "…" : "") + ")", Math.min(1, gear.chance), gear.rolls, gear.rolls));
             PurseBand purse = coinPurses.bands.get(band);
             int most = (int) Math.max(purse.maximumMarks, Math.min(LootProfileDefinition.MAX_MARKS, namedMarks));
             lines.add(new DropLine("Coin purse (Marks)", Math.min(1, purse.chance), purse.minimumMarks, most));
@@ -207,14 +213,17 @@ public final class RewardDropService implements Listener {
         }
         if (authored != null) rollProfile(authored).forEach(event.getDrops()::add);
         double scaledReward = Math.max(1.0D, mobs.rewardMultiplier(event.getEntity()));
+        // Expedition enemies carry the expedition's own loot; here they only add their coin purse.
+        boolean expedition = net.nerdsmp.paper.expedition.InstanceWorlds.isRunWorld(event.getEntity().getWorld());
         if (hostile) {
-            rollHostileGear(event.getEntityType(), scaledReward,
+            if (!expedition) rollHostileGear(event.getEntityType(), scaledReward,
                 mobs.isBoss(event.getEntity()), mobs.isElite(event.getEntity()))
                 .forEach(event.getDrops()::add);
             rollCoinPurse(scaledReward, mobs.markReward(event.getEntity()),
                 mobs.isBoss(event.getEntity()), mobs.isElite(event.getEntity()))
                 .ifPresent(event.getDrops()::add);
         }
+        if (expedition) return;
         List<DropDefinition> definitions = tables.get(event.getEntityType());
         if (definitions == null) {
             return;

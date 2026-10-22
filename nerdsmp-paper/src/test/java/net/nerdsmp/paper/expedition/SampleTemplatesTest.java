@@ -83,6 +83,24 @@ class SampleTemplatesTest {
                 if (blocks.get(new Cell(fire.at().x(), fire.at().y(), fire.at().z())) != Material.CAMPFIRE)
                     problems.add(id + " campfire " + fire.id() + " is " + blocks.get(new Cell(fire.at().x(), fire.at().y(), fire.at().z())));
             for (var npc : expedition.story().npcs().values()) spots.add(npc.at());
+            // Loot containers stand on the floor as barrels (crates) or chests, each with room to open it.
+            for (var chest : expedition.story().chests().values()) {
+                var at = chest.at();
+                Material expected = chest.kind() == ExpeditionDefinition.ChestKind.CRATE ? Material.BARREL : Material.CHEST;
+                if (blocks.get(new Cell(at.x(), at.y(), at.z())) != expected)
+                    problems.add(id + " chest " + chest.id() + " is " + blocks.get(new Cell(at.x(), at.y(), at.z())) + ", not " + expected);
+                if (!solid(blocks, at.x(), at.y() - 1, at.z())) problems.add(id + " chest " + chest.id() + " floats");
+                if (solid(blocks, at.x(), at.y() + 1, at.z())) problems.add(id + " chest " + chest.id() + " can't open (blocked above)");
+            }
+            // Reward chests appear at the finish, so their spots are empty floor.
+            var rewards = expedition.story().rewardChests();
+            if (expedition.sample() != null && rewards == null) problems.add(id + " has no reward-chests");
+            if (rewards != null) for (var at : java.util.Arrays.asList(rewards.free(), rewards.bonus())) {
+                if (at == null) continue;
+                if (solid(blocks, at.x(), at.y(), at.z()) || solid(blocks, at.x(), at.y() + 1, at.z()))
+                    problems.add(id + " reward chest spot " + at.x() + "," + at.y() + "," + at.z() + " is blocked");
+                if (!solid(blocks, at.x(), at.y() - 1, at.z())) problems.add(id + " reward chest spot " + at.x() + "," + at.y() + "," + at.z() + " has no floor");
+            }
             for (var spot : spots) {
                 String where = id + " " + spot.x() + "," + spot.y() + "," + spot.z();
                 if (!solid(blocks, spot.x(), spot.y() - 1, spot.z())) problems.add("no floor under " + where);

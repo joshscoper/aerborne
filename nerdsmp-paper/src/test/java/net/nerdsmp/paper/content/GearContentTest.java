@@ -24,13 +24,13 @@ final class GearContentTest {
     @Test
     void sixRelicCollectionsShipExactlyThreePiecesEach() throws IOException {
         String content = resource("/content/relics.yml");
-        assertTrue(content.startsWith("schema-version: 12"));
+        assertTrue(content.startsWith("schema-version: 13"));
         for (String set : RELIC_SETS) {
             long pieces = Pattern.compile("(?m)^    set: " + Pattern.quote(set) + "$").matcher(content).results().count();
             assertEquals(3L, pieces, set + " must contain exactly three items");
         }
-        assertEquals(38L, Pattern.compile("(?m)^      '[2345]':$").matcher(content).results().count(),
-            "Relic and crafted sets should expose their configured threshold bonuses");
+        assertEquals(56L, Pattern.compile("(?m)^      '[2345]':$").matcher(content).results().count(),
+            "Relic, crafted and expedition sets should expose their configured threshold bonuses");
     }
 
     @Test

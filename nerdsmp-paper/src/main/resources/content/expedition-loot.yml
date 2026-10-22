@@ -1,0 +1,30 @@
+# Expedition loot: each expedition's materials (common, uncommon, rare), signature set pieces
+# and boss signatures. Ships inside the plugin; a server can override an expedition here by
+# copying its entry into the data folder's content/expedition-loot.yml.
+expeditions:
+  first_flight:
+    materials: [skyward_feather]
+  hollow_barrow:
+    materials: [grave_dust, barrow_wax, huntsmans_antler]
+    gear: [barrowguard_helm, barrowguard_cuirass, barrowguard_greaves, barrowguard_boots, sextons_edge]
+    signatures: [huntsmans_longbow]
+  thornwood_canopy:
+    materials: [briar_silk, thornheart_sap, matrons_fang]
+    gear: [thornwarden_hood, thornwarden_jerkin, thornwarden_leggings, thornwarden_boots, briarshot_crossbow]
+    signatures: [thornheart_rapier]
+  sunken_aqueduct:
+    materials: [tidepearl, sluice_cog, tidewardens_scale]
+    gear: [tidebound_helm, tidebound_cuirass, tidebound_greaves, tidebound_boots, sluicebreaker_trident]
+    signatures: [tidewardens_trident]
+  gloomforge_mines:
+    materials: [gloomsteel_ore, blasting_powder, foremans_lamp]
+    gear: [gloomforged_helm, gloomforged_plate, gloomforged_greaves, gloomforged_boots, gloomforged_pick]
+    signatures: [deep_foremans_pick]
+  hall_of_wardens:
+    materials: [sigil_shard, wardens_seal, archive_key]
+    gear: [wardensworn_helm, wardensworn_plate, wardensworn_greaves, wardensworn_boots, tri_seal_blade]
+    signatures: [wardens_aegis]
+  cinder_keep:
+    materials: [cinder_shard, smoldering_core, sovereigns_ember]
+    gear: [kilnborn_crown, kilnborn_cuirass, kilnborn_greaves, kilnborn_sabatons, kilnbreaker_maul]
+    signatures: [sovereigns_hammer, crown_of_embers, steward_ashkars_mantle]

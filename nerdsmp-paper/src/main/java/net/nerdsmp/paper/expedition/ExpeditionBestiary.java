@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.expedition.content.ExpeditionLoot;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Room;
 import net.nerdsmp.paper.expedition.content.ScriptAction;
 import net.nerdsmp.paper.loot.RewardDropService;
@@ -66,11 +67,52 @@ public final class ExpeditionBestiary {
                     .map(ExpeditionBestiary::plain).orElse(sheet.relicDrop());
                 drops.add(new RewardDropService.DropLine(relic + " (relic)", sheet.relicChance(), 1, 1));
             }
-            drops.addAll(plugin.rewardDrops().possibleDrops(sheet.type(), hostile, boss, sheet.elite(), profile, sheet.markReward()));
+            // The expedition's own loot by the mob's role, then its coin purse.
+            var role = boss ? ExpeditionDefinition.Role.BOSS : expedition.story().mob(id).role();
+            if (role == ExpeditionDefinition.Role.NORMAL && sheet.elite()) role = ExpeditionDefinition.Role.ELITE;
+            var source = switch (role) {
+                case BOSS -> ExpeditionLoot.Source.BOSS;
+                case MINIBOSS -> ExpeditionLoot.Source.MINIBOSS;
+                case ELITE -> ExpeditionLoot.Source.ELITE;
+                default -> ExpeditionLoot.Source.NORMAL;
+            };
+            var table = plugin.expeditions() == null ? ExpeditionLoot.Table.EMPTY : plugin.expeditions().lootTable(expedition.id());
+            for (var line : ExpeditionLoot.lines(table, source, 1))
+                drops.add(new RewardDropService.DropLine(lineName(plugin, table, line), line.chance(), line.minimum(), line.maximum()));
+            drops.addAll(plugin.rewardDrops().possibleDrops(sheet.type(), hostile, boss, sheet.elite(), profile, sheet.markReward(), true));
             entries.add(new Entry(id, plain(sheet.name()), sheet.name(), boss ? "Boss" : sheet.elite() ? "Elite" : "Enemy",
                 List.copyOf(rooms.get(id)), sheet.health(), sheet.attackDamage(), ability(sheet), drops));
         }
         return List.copyOf(entries);
+    }
+
+    /** A loot line's name for guides: the item, a set piece, a signature, or an experience bottle. */
+    static String lineName(NerdSmpPlugin plugin, ExpeditionLoot.Table table, ExpeditionLoot.Line line) {
+        return switch (line.kind()) {
+            case LAMP -> switch (line.item()) {
+                case "greater" -> "Greater Experience Bottle";
+                case "grand" -> "Grand Experience Bottle";
+                default -> "Experience Bottle";
+            };
+            case GEAR -> table.gear().isEmpty() ? "Set piece" : "A " + setName(plugin, table) + " piece (sealed)";
+            case ITEM -> line.item().equals(ExpeditionLoot.SIGNATURE)
+                ? (table.signatures().isEmpty() ? "Signature item" : String.join(" or ", table.signatures().stream().map(id -> name(plugin, id)).toList()))
+                : name(plugin, line.item());
+        };
+    }
+
+    private static String setName(NerdSmpPlugin plugin, ExpeditionLoot.Table table) {
+        String first = name(plugin, table.gear().getFirst());
+        int space = first.indexOf(' ');
+        return space > 0 ? first.substring(0, space) : first;
+    }
+
+    static String name(NerdSmpPlugin plugin, String id) {
+        try {
+            return plugin.items().itemName(new net.nerdsmp.api.model.ItemId(id)).map(ExpeditionBestiary::plain).orElse(id);
+        } catch (IllegalArgumentException invalid) {
+            return id;
+        }
     }
 
     static String ability(CustomMobManager.MobSheet sheet) {

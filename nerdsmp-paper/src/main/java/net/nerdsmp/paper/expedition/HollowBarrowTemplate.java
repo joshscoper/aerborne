@@ -34,6 +34,7 @@ final class HollowBarrowTemplate {
         vault(b);
         antechamber(b);
         kingsRest(b);
+        SampleChests.place(b, "hollow_barrow");
         return b.freeze();
     }
 
