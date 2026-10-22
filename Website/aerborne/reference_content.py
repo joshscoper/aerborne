@@ -54,7 +54,7 @@ Visit **Nyra**, the identifier. Sealed gear hides its bonuses until identificati
 
 The preview shows compatibility, available sockets and the bonus. Moving an input or waiting too long requires a fresh review. Remote `/forge` access needs a separate permission; visiting an anvil works without it.
 
-Two matching gems of the same tier merge into the next tier, up to **IV**. Gems can also be recovered for Arcane Dust. Keep inventory space when using or closing the forge.
+Each socket takes certain gems: combat gems in weapons, defensive gems in armour, gathering gems in tools, and any gem in the **Universal** socket that legendary and better gear ends with. Two matching gems of the same grade merge into the next grade, from **Rough** up to **Perfect**. Gems can also be recovered for Arcane Dust. Keep inventory space when using or closing the forge.
 
 Craft **4 Arcane Dust** from **1 lapis lazuli + 1 amethyst shard**.
 """, 'getting-started', 'Gear and sockets | /guide/gear-and-sockets\nGem recovery costs | /guide/gem-merging'),
@@ -408,17 +408,40 @@ Right-click an anvil. Put identified equipment on the left and a compatible sock
 
 Gem types have their own bonuses. Their **Aspect** is a classification used by research; the Aspect name alone does not add another stat. A Prismatic gem is a research catalyst and carries no Aspect.
 
+## Socket types
+Gear tooltips list their sockets under **Gemstone Slots**, and the forge names the next one before you confirm.
+
+| Socket | Found on | Takes |
+|---|---|---|
+| `[C]` Combat | Weapons | Ruby, Amethyst |
+| `[D]` Defensive | Armour and shields | Sapphire, Onyx |
+| `[G]` Gathering | Tools, rods and other gathering gear | Topaz, Aquamarine, Jade, Citrine |
+| `[U]` Universal | The last socket of legendary, mythic and relic gear | Any gem |
+
+Emerald and Moonstone fit any socket. Prismatic gems fit only a Universal socket.
+
+Gems and geodes can't be smelted, crafted, placed or traded as the vanilla item they look like. Merging is the only way to change a gem.
+
 ## Keep a safe working inventory
-Merge matching gems up to tier IV, or recover installed gems for Arcane Dust. Leave room for results and returned inputs. Closing the forge with no storage space can drop returned inputs at your feet.
+Merge matching gems up to Perfect, or recover installed gems for Arcane Dust. Leave room for results and returned inputs. Closing the forge with no storage space can drop returned inputs at your feet.
 """, 'equipment', 'Gem merging and recovery | /guide/gem-merging\nArcane Capacity | /guide/capacity-and-corruption'),
     _guide('gem-merging', 'Gem merging and recovery',
            'Combine matching gems or remove one without destroying it.', """
 ## Merge two matching gems
 1. Right-click an **anvil** to open **Forge & Sockets**.
-2. Put a gem in each input. Both must have the **same gem type and the same tier**.
+2. Put a gem in each input. Both must have the **same gem type and the same grade**.
 3. Review the result, then choose **Confirm Change**.
 
-One gem from each input is consumed to make **one gem of the next tier**. For example, two matching tier-I gems become one tier-II gem. **Tier IV is the maximum**; two tier-IV gems cannot make a tier V.
+One gem from each input is consumed to make **one gem of the next grade**. Gems climb five grades: **Rough, Flawed, Fine, Flawless and Perfect**. For example, two Rough Rubies become one Flawed Ruby. **Perfect is the highest grade.** Each grade adds the gem's bonus once more: a Perfect gem gives five times a Rough one.
+
+## Where gems come from
+Geodes found while mining and digging crack into Rough or Flawed gems; merging climbs the rest of the ladder.
+
+| Geode | Rough | Flawed | Fine |
+|---|---|---|---|
+| Rough Geode | 85% | 15% | — |
+| Resonant Geode | 50% | 50% | — |
+| Luminous Geode | 15% | 70% | 15% |
 
 ## Recover an installed gem
 Recovering means **taking one gem back out of your equipment**. It does not upgrade that gem or replace it with Dust.
@@ -427,16 +450,17 @@ Recovering means **taking one gem back out of your equipment**. It does not upgr
 2. Select the **filled socket** you want to empty.
 3. Review the selected gem and Dust cost, then confirm.
 
-The cost depends on the tier of **that one installed gem**, not the rarity or level of the equipment:
+The cost depends on the grade of **that one installed gem**, not the rarity or level of the equipment:
 
-| Installed gem tier | Dust needed for one gem |
+| Installed gem grade | Dust needed for one gem |
 |---|---|
-| I | 8 Arcane Dust |
-| II | 12 Arcane Dust |
-| III | 16 Arcane Dust |
-| IV | 20 Arcane Dust |
+| Rough | 8 Arcane Dust |
+| Flawed | 12 Arcane Dust |
+| Fine | 16 Arcane Dust |
+| Flawless | 20 Arcane Dust |
+| Perfect | 24 Arcane Dust |
 
-You get the selected gem back with its **original type and tier**. Your other installed gems stay in place. Each recovery is a separate change. A review expires after **15 seconds**, an input change or choosing another socket; review again before confirming.
+You get the selected gem back with its **original type and grade**. Your other installed gems stay in place. Each recovery is a separate change. A review expires after **15 seconds**, an input change or choosing another socket; review again before confirming.
 
 ## Prepare Dust and inventory space
 Craft **4 Arcane Dust** from **1 lapis lazuli + 1 amethyst shard**. The amounts above are Dust items, not recipe batches.
@@ -477,7 +501,7 @@ Run `/arcane research` beside an enchanting table in Survival. The default minim
 | 2 Aspects | Specialized | 2 |
 | 3 Aspects | Arcane Signature preview | 4 |
 
-These are recipe sizes, not the hidden Aspect combinations. The counts assume a matching recipe, tier-I reagents and default tuning. Higher-tier gems, talents and a Prismatic catalyst can accelerate progress. Signature research also needs its feature unlocks; it is not made available merely by collecting three gems.
+These are recipe sizes, not the hidden Aspect combinations. The counts assume a matching recipe, Rough reagents and default tuning. Higher-grade gems, talents and a Prismatic catalyst can accelerate progress. Signature research also needs its feature unlocks; it is not made available merely by collecting three gems.
 
 ## Review before spending
 An experiment consumes its selected gems, optional catalyst and Dust. Default Dust cost is **4 per reagent**. Partial combinations can build clues toward a larger recipe, but partial progress alone cannot finish that recipe.

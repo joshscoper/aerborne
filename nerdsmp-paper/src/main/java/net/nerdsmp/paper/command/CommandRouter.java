@@ -836,8 +836,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             Player target = Bukkit.getPlayerExact(args[1]);
             net.nerdsmp.paper.forge.GemType type = net.nerdsmp.paper.forge.GemType.fromId(args[2]);
             Integer tier = positiveInt(args[3]);
-            if (target == null || type == null || tier == null || tier > 4) {
-                Chat.usage(sender, "/nerdadmin gem <online-player> <type> <1-4>");
+            if (target == null || type == null || tier == null || tier > net.nerdsmp.paper.item.SocketRules.MAXIMUM_TIER) {
+                Chat.usage(sender, "/nerdadmin gem <online-player> <type> <1-5> (Rough to Perfect)");
                 return true;
             }
             target.getInventory().addItem(plugin.forge().createGem(type, tier)).values()

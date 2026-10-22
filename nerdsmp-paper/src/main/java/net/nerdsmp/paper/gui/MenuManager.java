@@ -981,8 +981,12 @@ public final class MenuManager implements Listener, AutoCloseable {
             if (index >= capacity) {
                 menu.inventory().setItem(slot, icon(Material.GRAY_STAINED_GLASS_PANE, "<dark_gray> </dark_gray>", List.of()));
             } else if (index >= sockets.size()) {
-                button(menu, slot, Material.LIGHT_GRAY_STAINED_GLASS_PANE, "<gray>Socket " + (index + 1) + " - Empty</gray>",
-                    List.of("<gray>A gem in the catalyst input fills the next empty socket.</gray>"), ignored -> { });
+                var types = plugin.items().slotTypes(gear);
+                var type = index < types.size() ? types.get(index) : net.nerdsmp.paper.item.SocketRules.SlotType.UNIVERSAL;
+                button(menu, slot, Material.LIGHT_GRAY_STAINED_GLASS_PANE, type.color() + "[" + type.symbol() + "] " + type.title() + " Slot - Empty",
+                    List.of("<gray>A gem in the catalyst input fills the next empty socket.</gray>",
+                        "<gray>Takes " + type.title().toLowerCase(java.util.Locale.ROOT) + " gems"
+                            + (type == net.nerdsmp.paper.item.SocketRules.SlotType.UNIVERSAL ? " of any kind" : ", utility gems and nothing else") + ".</gray>"), ignored -> { });
             } else {
                 var gem = sockets.get(index);
                 List<String> lore = new ArrayList<>();
@@ -991,7 +995,7 @@ public final class MenuManager implements Listener, AutoCloseable {
                 lore.add("<gray>Recovery</gray> <light_purple>" + plugin.forge().unsocketDustCost(gear, index) + " Arcane Dust</light_purple>");
                 lore.add(index == holder.socketIndex ? "<aqua>Selected for recovery.</aqua>" : "<yellow>Click to select this gem.</yellow>");
                 button(menu, slot, gem.type().material(), gem.type().color() + "Socket " + (index + 1) + " - "
-                    + gem.type().displayName() + " " + roman(gem.tier()), lore, target -> {
+                    + net.nerdsmp.paper.item.SocketRules.grade(gem.tier()) + " " + gem.type().displayName(), lore, target -> {
                         holder.socketIndex = index; clearForgeReview(holder); renderForge(holder, target);
                     });
             }
@@ -1032,8 +1036,8 @@ public final class MenuManager implements Listener, AutoCloseable {
                     case MERGED -> "<green>Gems merged. The result was moved to your inventory.</green>";
                     case NEED_TWO_GEMS -> "<red>Place two gems in the forge.</red>";
                     case DIFFERENT_TYPE -> "<red>Those gems are different types.</red>";
-                    case DIFFERENT_TIER -> "<red>Those gems are different tiers.</red>";
-                    case MAXIMUM_TIER -> "<red>Tier IV gems cannot be merged.</red>";
+                    case DIFFERENT_TIER -> "<red>Those gems are different grades.</red>";
+                    case MAXIMUM_TIER -> "<red>Perfect gems are as good as they get.</red>";
                     case INVENTORY_FULL -> "<red>Make room for the gem, then try again. Nothing was spent.</red>";
                     case INVALID_SESSION -> "<red>Reopen the forge after your profile has loaded.</red>";
                     case INPUT_CHANGED -> "<yellow>The gems changed. Review them again.</yellow>";
@@ -1046,6 +1050,7 @@ public final class MenuManager implements Listener, AutoCloseable {
                     case NO_CATALYST -> "<red>Place a gem or tome in the catalyst slot.</red>";
                     case NOT_GEAR -> "<red>Place gear in the primary slot.</red>";
                     case NO_CAPACITY -> "<red>That item has no empty sockets.</red>";
+                    case WRONG_SOCKET -> "<red>That gem doesn't fit this item's next socket. Check the slot types under the inputs.</red>";
                     case INCOMPATIBLE -> "<red>That enchantment does not work on this item.</red>";
                     case UNIDENTIFIED -> "<red>Identify that item before upgrading it.</red>";
                     case CORRUPTED -> "<red>Cleanse this item's corruption before enchanting it.</red>";
@@ -1236,8 +1241,8 @@ public final class MenuManager implements Listener, AutoCloseable {
                 );
                 case NEED_TWO_GEMS -> List.of("<gray>Place the second gem in the catalyst slot.</gray>");
                 case DIFFERENT_TYPE -> List.of("<gray>Gem types must match.</gray>");
-                case DIFFERENT_TIER -> List.of("<gray>Gem tiers must match.</gray>");
-                case MAXIMUM_TIER -> List.of("<gold>This gem is already Tier IV.</gold>");
+                case DIFFERENT_TIER -> List.of("<gray>Both gems must be the same grade.</gray>");
+                case MAXIMUM_TIER -> List.of("<gold>This gem is already Perfect.</gold>");
                 case INVENTORY_FULL -> List.of("<red>Make room in your inventory for the merged gem.</red>");
                 case INVALID_SESSION -> List.of("<red>Reopen the forge after your profile has loaded.</red>");
                 case INPUT_CHANGED -> List.of("<yellow>The gems changed. Review them again.</yellow>");

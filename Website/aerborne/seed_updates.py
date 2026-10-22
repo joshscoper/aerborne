@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 25
+LATEST = 26
 C = "static:img/companions/"
 
 
@@ -72,6 +72,8 @@ def apply(conn):
         _rev24(conn)
     if current < 25:
         _rev25(conn)
+    if current < 26:
+        _rev26(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -216,6 +218,29 @@ def _rev25(conn):
         row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
         if (row and row['updated_by'] == 'starter content'
                 and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == fingerprint):
+            conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
+
+
+# The gemstone ladder (Rough to Perfect) and typed sockets: untouched copies of these guides, as the
+# starter seed or the reviewed Handbook last wrote them, take the new text.
+REV26_GUIDES = {
+    'first-gear': ('e5854642c515885317f8edaeec7ac2aa7425993a6871e98db1ea14890ebc3f8e',
+                   '7d13d2c345a4f760e4f562f783b677fde60087377780c9b0fb6d1e7da906927a'),
+    'gear-and-sockets': ('42861bc1b9e44f97f89ffa82ac6de7a5fcffb0b0ecdbd138f598987416a96425',
+                         'fe0a8d408eda64f54a9c3190d72856efee5fb6d62bf5f603dee91b8183893399'),
+    'gem-merging': ('b0aeadeceea6675f0c8fd3a838b2ec30d51ab28167e487b44af7916f0da48185',),
+    'aspects-and-research': ('3a4d7c9555ff2a51bc30ef366ac49c2a7207d7de5f9d2288b9378f3adb13eadf',),
+}
+
+
+def _rev26(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED
+    for slug, fingerprints in REV26_GUIDES.items():
+        guide = next(g for g in REVIEWED if g['slug'] == slug)
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
+        if (row and row['updated_by'] == 'starter content'
+                and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() in fingerprints):
             conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
 
 

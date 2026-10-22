@@ -214,7 +214,8 @@ public final class BankService implements Listener, AutoCloseable {
             if (index < 0 || index >= Math.max(maximumSlots, vault.unlocked)) {
                 inventory.setItem(slot, unavailable);
             } else if (index < vault.unlocked) {
-                inventory.setItem(slot, clone(vault.items[index]));
+                // Stored items come out in today's form; closing the vault saves them that way.
+                inventory.setItem(slot, net.nerdsmp.paper.item.ItemUpdater.current(clone(vault.items[index])));
             } else {
                 inventory.setItem(slot, locked);
             }

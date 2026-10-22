@@ -15,7 +15,14 @@ public final class MarketItems {
         return Base64.getEncoder().encodeToString(data);
     }
 
+    /** A stored item in today's form ({@link net.nerdsmp.paper.item.ItemUpdater}). */
     public static ItemStack decode(String encoded) {
+        // Listings made before an item overhaul come back in today's form.
+        return net.nerdsmp.paper.item.ItemUpdater.current(decodeStored(encoded));
+    }
+
+    /** A stored item exactly as it was saved, for comparisons against snapshots. */
+    public static ItemStack decodeStored(String encoded) {
         if (encoded == null || encoded.length() > (MAX_BYTES * 4L / 3L + 8)) {
             throw new IllegalArgumentException("Invalid market item snapshot size");
         }

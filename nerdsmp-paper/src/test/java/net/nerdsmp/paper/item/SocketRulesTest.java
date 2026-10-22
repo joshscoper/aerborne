@@ -40,7 +40,38 @@ final class SocketRulesTest {
         assertEquals(12, SocketRules.dustCost(2));
         assertEquals(16, SocketRules.dustCost(3));
         assertEquals(20, SocketRules.dustCost(4));
+        assertEquals(24, SocketRules.dustCost(5));
         assertThrows(IllegalArgumentException.class, () -> SocketRules.dustCost(0));
-        assertThrows(IllegalArgumentException.class, () -> SocketRules.dustCost(5));
+        assertThrows(IllegalArgumentException.class, () -> SocketRules.dustCost(6));
+    }
+
+    @Test void gradesClimbFromRoughToPerfect() {
+        assertEquals(List.of("Rough", "Flawed", "Fine", "Flawless", "Perfect"),
+            java.util.stream.IntStream.rangeClosed(1, 5).mapToObj(SocketRules::grade).toList());
+        assertTrue(SocketRules.validTier(5));
+        assertFalse(SocketRules.validTier(6));
+    }
+
+    @Test void socketsAreTypedByTheGearAndRareGearEndsWithAUniversalOne() {
+        var sword = java.util.Map.of("damage", 7.0);
+        var pick = java.util.Map.of("damage", 6.0, "mining-power", 3.0);
+        assertEquals(SocketRules.SlotType.COMBAT, SocketRules.slot(sword, false, "RARE", 0, 2));
+        assertEquals(SocketRules.SlotType.COMBAT, SocketRules.slot(sword, false, "RARE", 1, 2));
+        assertEquals(SocketRules.SlotType.UNIVERSAL, SocketRules.slot(sword, false, "LEGENDARY", 1, 2));
+        assertEquals(SocketRules.SlotType.DEFENSIVE, SocketRules.slot(java.util.Map.of("defense", 5.0), true, "EPIC", 0, 2));
+        assertEquals(SocketRules.SlotType.GATHERING, SocketRules.slot(pick, false, "MYTHIC", 0, 3));
+        assertEquals(SocketRules.SlotType.DEFENSIVE, SocketRules.slot(java.util.Map.of("defense", 5.0), true, "MYTHIC", 0, 1),
+            "A single socket is never the universal one");
+    }
+
+    @Test void gemsFitTheirOwnSlotsUtilityFitsAllAndPrismaticOnlyUniversal() {
+        assertTrue(SocketRules.fits(GemType.RUBY.category(), SocketRules.SlotType.COMBAT));
+        assertFalse(SocketRules.fits(GemType.RUBY.category(), SocketRules.SlotType.DEFENSIVE));
+        assertTrue(SocketRules.fits(GemType.RUBY.category(), SocketRules.SlotType.UNIVERSAL));
+        assertTrue(SocketRules.fits(GemType.SAPPHIRE.category(), SocketRules.SlotType.DEFENSIVE));
+        assertFalse(SocketRules.fits(GemType.TOPAZ.category(), SocketRules.SlotType.COMBAT));
+        for (var slot : SocketRules.SlotType.values()) assertTrue(SocketRules.fits(GemType.EMERALD.category(), slot));
+        assertFalse(SocketRules.fits(GemType.PRISMATIC.category(), SocketRules.SlotType.COMBAT));
+        assertTrue(SocketRules.fits(GemType.PRISMATIC.category(), SocketRules.SlotType.UNIVERSAL));
     }
 }

@@ -24,7 +24,7 @@ public final class SocketCodec {
         for (String part : parts) {
             String[] fields = part.split(":", -1);
             if (fields.length != 2 || !fields[0].matches("[a-z_]+")
-                || !fields[1].matches("[1-4]")) return Decoded.invalid();
+                || !fields[1].matches("[1-9]") || !SocketRules.validTier(Integer.parseInt(fields[1]))) return Decoded.invalid();
             GemType type = GemType.fromId(fields[0]);
             if (type == null) return Decoded.invalid();
             sockets.add(new PaperItemService.SocketedGem(type, Integer.parseInt(fields[1])));

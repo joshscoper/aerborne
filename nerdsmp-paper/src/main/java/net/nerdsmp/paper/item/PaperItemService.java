@@ -45,8 +45,19 @@ import java.util.UUID;
 public final class PaperItemService implements ItemService<ItemStack> {
     private static final int SCHEMA_VERSION = 5;
     private static final int CONTENT_SCHEMA_VERSION = 13;
+    /**
+     * Bump when the tooltip layout changes. Each catalog item carries a stamp of this and its catalog
+     * entry, and the item updater re-renders any item whose stamp no longer matches.
+     */
+    private static final int RENDER_VERSION = 1;
     private final JavaPlugin plugin;
-    static final String TOOLTIP_DIVIDER = "<dark_gray>----------------------------</dark_gray>";
+    /** A blank line between tooltip sections, compared by identity. */
+    private static final Component SECTION_BREAK = Component.empty();
+    private static final java.util.Set<String> OFFENSIVE_STATS = java.util.Set.of(
+        "damage", "projectile-damage", "damage-flat", "damage-percent", "projectile-damage-percent",
+        "execute-damage-percent", "life-steal-percent", "critical-chance-percent", "critical-damage-percent",
+        "bleed-percent", "poison-potency-percent"
+    );
     private static final List<String> STAT_ORDER = List.of(
         "damage", "projectile-damage", "defense", "damage-flat", "damage-percent",
         "projectile-damage-percent", "execute-damage-percent", "life-steal-percent", "mining-power",
@@ -74,6 +85,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
     private final NamespacedKey arcaneInstabilityKey;
     private final NamespacedKey arcaneCorruptionKey;
     private final NamespacedKey arcaneAttunementKey;
+    private final NamespacedKey renderKey;
     private final Map<ItemId, Definition> baseDefinitions;
     private final Map<String, SetDefinition> baseSets;
     private final Map<ItemId, ExpansionEntry> expansionEntries;
@@ -84,6 +96,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         this.plugin=plugin;
         itemIdKey = new NamespacedKey(plugin, "item_id");
         schemaKey = new NamespacedKey(plugin, "item_schema");
+        renderKey = new NamespacedKey(plugin, "item_render");
         originKey = new NamespacedKey(plugin, "item_origin");
         socketCapacityKey = new NamespacedKey(plugin, "socket_capacity");
         socketsKey = new NamespacedKey(plugin, "sockets");
@@ -215,6 +228,52 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return true;
     }
 
+    /**
+     * Whether a catalog item was rendered by an older layout, an older catalog entry or an older item
+     * schema, and so needs {@link #upgrade}.
+     */
+    public boolean needsUpdate(ItemStack item) {
+        Optional<ItemDescriptor> descriptor = describe(item);
+        if (descriptor.isEmpty() || !descriptor.get().origin().equals("nerdsmp")) return false;
+        Definition definition = catalog.items().get(descriptor.get().itemId());
+        if (definition == null) return false;
+        Integer stamp = item.getItemMeta().getPersistentDataContainer().get(renderKey, PersistentDataType.INTEGER);
+        return stamp == null || stamp != renderStamp(definition) || descriptor.get().schemaVersion() != SCHEMA_VERSION
+            || item.getType() != definition.material();
+    }
+
+    /**
+     * The current form of an out-of-date catalog item: today's base item, name and tooltip, keeping its
+     * rolls, sockets, quality, enchantments and every other stored property. Empty when it is current.
+     */
+    public Optional<ItemStack> upgrade(ItemStack item) {
+        if (!needsUpdate(item)) return Optional.empty();
+        Definition definition = catalog.items().get(describe(item).orElseThrow().itemId());
+        ItemStack current = item.getType() == definition.material() ? item.clone() : item.withType(definition.material());
+        refresh(current);
+        return Optional.of(current);
+    }
+
+    /** A stable fingerprint of what an item's presentation is built from. */
+    private int renderStamp(Definition definition) {
+        StringBuilder key = new StringBuilder().append(RENDER_VERSION)
+            .append('|').append(definition.material().name()).append('|').append(definition.name())
+            .append('|').append(definition.setId()).append('|').append(definition.slot().name())
+            .append('|').append(definition.category()).append('|').append(definition.rarity())
+            .append('|').append(definition.model()).append('|').append(definition.sockets())
+            .append('|').append(definition.lore()).append('|').append(new TreeMap<>(definition.stats()))
+            .append('|').append(definition.itemLevel()).append('|').append(VanillaTextures.customModels(plugin));
+        SignatureAffix signature = definition.signatureAffix();
+        if (signature != null) key.append('|').append(signature.name()).append(signature.displayName())
+            .append(signature.description()).append(new TreeMap<>(signature.stats()));
+        SetDefinition set = definition.setId() == null ? null : catalog.sets().get(definition.setId());
+        if (set != null) {
+            key.append('|').append(set.name()).append(set.pieceCount());
+            set.bonuses().forEach((pieces, bonus) -> key.append(pieces).append(bonus.description()));
+        }
+        return key.toString().hashCode();
+    }
+
     public Optional<GearDescriptor> gear(ItemStack item) {
         if (!isAuthentic(item) || isUnidentified(item)) {
             return Optional.empty();
@@ -230,6 +289,22 @@ public final class PaperItemService implements ItemService<ItemStack> {
             definition.rarity(),
             combinedStats
         ));
+    }
+
+    /** Each socket's type, in order, for a piece of catalog gear (empty for anything else). */
+    public List<SocketRules.SlotType> slotTypes(ItemStack item) {
+        Optional<ItemDescriptor> descriptor = describe(item);
+        Definition definition = descriptor.map(found -> catalog.items().get(found.itemId())).orElse(null);
+        if (definition == null) return List.of();
+        return slotTypes(definition, socketCapacity(item));
+    }
+
+    private static List<SocketRules.SlotType> slotTypes(Definition definition, int capacity) {
+        boolean armour = EquipmentMaterials.isArmor(definition.material()) || definition.material() == Material.SHIELD;
+        List<SocketRules.SlotType> types = new ArrayList<>();
+        for (int index = 0; index < capacity; index++)
+            types.add(SocketRules.slot(definition.stats(), armour, definition.rarity(), index, capacity));
+        return List.copyOf(types);
     }
 
     public int socketCapacity(ItemStack item) {
@@ -426,6 +501,9 @@ public final class PaperItemService implements ItemService<ItemStack> {
         if (current.size() >= socketCapacity(item)) {
             return UpgradeResult.NO_CAPACITY;
         }
+        // The next socket's type decides which gems it takes.
+        List<SocketRules.SlotType> types = slotTypes(item);
+        if (current.size() < types.size() && !SocketRules.fits(type.category(), types.get(current.size()))) return UpgradeResult.WRONG_SOCKET;
         current.add(new SocketedGem(type, tier));
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(socketsKey, PersistentDataType.STRING, SocketCodec.encode(current));
@@ -743,6 +821,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         meta.getPersistentDataContainer().set(itemIdKey, PersistentDataType.STRING, itemId.value());
         meta.getPersistentDataContainer().set(schemaKey, PersistentDataType.INTEGER, SCHEMA_VERSION);
         meta.getPersistentDataContainer().set(originKey, PersistentDataType.STRING, origin);
+        meta.getPersistentDataContainer().set(renderKey, PersistentDataType.INTEGER, renderStamp(definition));
         if (definition.signatureAffix() == null) meta.getPersistentDataContainer().remove(signatureAffixKey);
         else meta.getPersistentDataContainer().set(signatureAffixKey, PersistentDataType.STRING, definition.signatureAffix().id());
         meta.removeEnchantments();
@@ -753,12 +832,12 @@ public final class PaperItemService implements ItemService<ItemStack> {
             meta.itemName(tooltipLine("<yellow><bold>Unidentified " + classification(definition)
                 + "</bold></yellow>"));
             meta.lore(List.of(
-                tooltipLine(TOOLTIP_DIVIDER),
-                tooltipLine("<yellow><bold>[ SEALED ITEM ]</bold></yellow>"),
-                tooltipLine("<gray>Take this sealed item to an Identifier.</gray>"),
-                tooltipLine(TOOLTIP_DIVIDER),
-                tooltipLine("<dark_gray>> </dark_gray><gray>Reveal its stats, affixes and sockets.</gray>"),
-                tooltipLine("<dark_gray>No bonuses until identified.</dark_gray>")
+                tooltipLine("<gray>Take this sealed item to an Identifier</gray>"),
+                tooltipLine("<gray>to reveal its stats, affixes and sockets.</gray>"),
+                SECTION_BREAK,
+                tooltipLine("<dark_gray>No bonuses until identified.</dark_gray>"),
+                SECTION_BREAK,
+                tooltipLine("<yellow><bold>SEALED " + classification(definition).toUpperCase(Locale.ROOT) + "</bold></yellow>")
             ));
             meta.setEnchantmentGlintOverride(true);
             meta.setItemModel(null);
@@ -766,8 +845,9 @@ public final class PaperItemService implements ItemService<ItemStack> {
             return;
         }
         GearQuality quality = quality(meta);
-        meta.itemName(tooltipLine(quality == GearQuality.WROUGHT ? definition.name()
-            : quality.color() + "<bold>" + quality.displayName() + "</bold> " + definition.name()));
+        String name = colored(rarityColor(definition.rarity()), miniMessage.escapeTags(miniMessage.stripTags(definition.name())));
+        meta.itemName(tooltipLine(quality == GearQuality.WROUGHT ? name
+            : quality.color() + "<bold>" + quality.displayName() + "</bold> " + name));
         meta.lore(renderTooltip(definition, meta));
         meta.setEnchantmentGlintOverride(!enchantments(meta).isEmpty()
             || meta.getPersistentDataContainer().has(arcaneSignatureKey));
@@ -784,18 +864,21 @@ public final class PaperItemService implements ItemService<ItemStack> {
 
     private List<Component> renderTooltip(Definition definition, ItemMeta meta) {
         List<Component> tooltip = new ArrayList<>();
-        definition.lore().stream().map(this::tooltipLine).forEach(tooltip::add);
-        if (!definition.lore().isEmpty()) {
-            appendDivider(tooltip);
+        List<AffixRoll> rolledAffixes = affixes(meta);
+        // WoW-style header: item level, and (Wynncraft) how well the item rolled overall.
+        StringBuilder header = new StringBuilder();
+        if (definition.itemLevel() > 0) header.append("<yellow>Item Level ").append(definition.itemLevel()).append("</yellow>");
+        if (!rolledAffixes.isEmpty()) {
+            int overall = (int) Math.round(rolledAffixes.stream()
+                .mapToInt(affix -> affix.type().rollPercent(affix.value())).average().orElse(0.0D));
+            if (!header.isEmpty()) header.append(" <dark_gray>|</dark_gray> ");
+            header.append("<gray>Roll</gray> ").append(rollTag(overall));
         }
-        tooltip.add(tooltipLine(rarityLine(definition.rarity(), classification(definition))));
-        if (definition.itemLevel() > 0) {
-            tooltip.add(tooltipLine("<dark_gray>Item Level </dark_gray><gray>" + definition.itemLevel() + "</gray>"));
-        }
+        if (!header.isEmpty()) tooltip.add(tooltipLine(header.toString()));
         GearQuality quality = quality(meta);
         if (quality != GearQuality.WROUGHT) {
-            tooltip.add(tooltipLine(quality.color() + "<bold>[ " + quality.displayName().toUpperCase(Locale.ROOT)
-                + " QUALITY ]</bold> <gray>+" + formatNumber(quality.bonusPercent()) + "% base stats</gray>"));
+            tooltip.add(tooltipLine(colored(quality.color(), quality.displayName() + " Quality")
+                + " <gray>+" + formatNumber(quality.bonusPercent()) + "% base stats</gray>"));
         }
 
         Map<String, Double> presentationStats = new HashMap<>(combinedStats(definition, meta));
@@ -816,38 +899,35 @@ public final class PaperItemService implements ItemService<ItemStack> {
         }
         orderedStats.forEach((stat, value) -> tooltip.add(tooltipLine(statLine(stat, value))));
 
-        List<AffixRoll> rolledAffixes = affixes(meta);
+        // Wynncraft-style identifications: each rolled affix and where it landed in its range.
         if (!rolledAffixes.isEmpty()) {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<yellow><bold>[ AFFIXES ]</bold></yellow>"));
-            rolledAffixes.forEach(affix -> tooltip.add(tooltipLine("<yellow>+ "
-                + affix.type().displayName() + "</yellow> <dark_gray>|</dark_gray> <white>"
-                + affix.type().effect(affix.value()) + "</white>")));
-        }
-
-        if (definition.signatureAffix() != null) {
-            SignatureAffix signature = definition.signatureAffix();
-            appendDivider(tooltip);
-            tooltip.add(tooltipLine("<light_purple><bold>[ SIGNATURE AFFIX ]</bold></light_purple>"));
-            tooltip.add(tooltipLine("<light_purple>+ " + miniMessage.escapeTags(signature.displayName()) + "</light_purple>"));
-            tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(signature.description()) + "</gray>"));
+            rolledAffixes.forEach(affix -> tooltip.add(tooltipLine("<green>" + affix.type().effect(affix.value())
+                + "</green> <dark_gray>" + affix.type().displayName() + "</dark_gray> "
+                + rollTag(affix.type().rollPercent(affix.value())))));
         }
 
         List<SocketedGem> socketed = sockets(meta);
         if (definition.sockets() > 0) {
+            List<SocketRules.SlotType> types = slotTypes(definition, definition.sockets());
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<aqua><bold>[ SOCKETS " + socketed.size() + "/"
-                + definition.sockets() + " ]</bold></aqua>"));
+            StringBuilder row = new StringBuilder();
+            for (int index = 0; index < definition.sockets(); index++) {
+                SocketRules.SlotType type = types.get(index);
+                if (!row.isEmpty()) row.append(" ");
+                row.append(index < socketed.size()
+                    ? colored(socketed.get(index).type().color(), "[" + type.symbol() + "]")
+                    : "<dark_gray>[" + type.symbol() + "]</dark_gray>");
+            }
+            tooltip.add(tooltipLine("<gray>Gemstone Slots:</gray> " + row));
             for (int index = 0; index < socketed.size(); index++) {
                 SocketedGem socket = socketed.get(index);
-                tooltip.add(tooltipLine(colored(socket.type().color(), "[" + (index + 1) + "] "
-                    + socket.type().displayName() + " " + roman(socket.tier()))));
-                for (String effect : socket.type().effect(socket.tier()).split(", ")) {
-                    tooltip.add(tooltipLine("<dark_gray>  > </dark_gray><gray>" + effect + "</gray>"));
-                }
+                tooltip.add(tooltipLine(colored(socket.type().color(), SocketRules.grade(socket.tier()) + " " + socket.type().displayName())
+                    + " <dark_gray>|</dark_gray> <gray>" + socket.type().effect(socket.tier()) + "</gray>"));
             }
             for (int empty = socketed.size(); empty < definition.sockets(); empty++) {
-                tooltip.add(tooltipLine("<dark_gray>[" + (empty + 1) + "] Empty Socket</dark_gray>"));
+                SocketRules.SlotType type = types.get(empty);
+                tooltip.add(tooltipLine("<dark_gray>Empty " + type.title() + " Slot</dark_gray>"));
             }
             if ((meta.getPersistentDataContainer().has(socketsKey)
                 && !meta.getPersistentDataContainer().has(socketsKey, PersistentDataType.STRING))
@@ -857,21 +937,28 @@ public final class PaperItemService implements ItemService<ItemStack> {
             }
         }
 
+        // Hypixel-style ability: the signature affix, in gold.
+        if (definition.signatureAffix() != null) {
+            SignatureAffix signature = definition.signatureAffix();
+            appendDivider(tooltip);
+            tooltip.add(tooltipLine("<gold>Ability: " + miniMessage.escapeTags(signature.displayName()) + "</gold>"));
+            tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(signature.description()) + "</gray>"));
+        }
+
         Map<ArcaneEnchantment, Integer> customEnchantments = enchantments(meta);
         if (!customEnchantments.isEmpty()) {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<light_purple><bold>[ ENCHANTMENTS ]</bold></light_purple>"));
             customEnchantments.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> tooltip.add(tooltipLine("<light_purple>+ "
-                    + entry.getKey().displayName() + " " + roman(entry.getValue()) + "</light_purple>"
+                .forEach(entry -> tooltip.add(tooltipLine("<blue>"
+                    + entry.getKey().displayName() + " " + roman(entry.getValue()) + "</blue>"
                     + " <dark_gray>|</dark_gray> <gray>" + entry.getKey().description() + "</gray>")));
         }
 
         String arcaneSignature = meta.getPersistentDataContainer().get(arcaneSignatureKey, PersistentDataType.STRING);
         if (arcaneSignature != null) {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<gradient:#ff70f6:#67e8f9><bold>[ ARCANE SIGNATURE ]</bold></gradient>"));
+            tooltip.add(tooltipLine("<gradient:#ff70f6:#67e8f9><bold>Arcane Signature</bold></gradient>"));
             ArcaneSignature known = ArcaneSignature.fromId(arcaneSignature).orElse(null);
             if (known == null) {
                 tooltip.add(tooltipLine("<gray>Dormant signature. A newer build of the server can read it.</gray>"));
@@ -889,7 +976,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         String corruptionId = meta.getPersistentDataContainer().get(arcaneCorruptionKey, PersistentDataType.STRING);
         if (corruptionId != null) {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<dark_red><bold>[ CORRUPTION ]</bold></dark_red>"));
+            tooltip.add(tooltipLine("<dark_red><bold>Corrupted</bold></dark_red>"));
             ArcaneCorruption corruption = ArcaneCorruption.fromId(corruptionId).orElse(null);
             if (corruption == null) {
                 tooltip.add(tooltipLine("<gray>Dormant corruption from a newer build. Cleanse it at an enchanting table.</gray>"));
@@ -902,7 +989,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         ArcaneAspect attunement = ArcaneAspect.fromId(meta.getPersistentDataContainer().get(arcaneAttunementKey, PersistentDataType.STRING)).orElse(null);
         if (attunement != null) {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<aqua><bold>[ ATTUNEMENT ]</bold></aqua>"));
+            tooltip.add(tooltipLine("<aqua><bold>Attunement</bold></aqua>"));
             tooltip.add(tooltipLine("<gray>Attuned to</gray> " + attunement.colored() + " <dark_gray>|</dark_gray> <gray>"
                 + attunement.displayName() + " enchantments here are " + ArcaneItemEffects.attunementBonusPercent() + "% stronger.</gray>"));
             if (!ArcaneItemEffects.attunementActive()) tooltip.add(tooltipLine("<dark_gray>Dormant: attunement is off on this server.</dark_gray>"));
@@ -910,7 +997,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
 
         coating(meta).ifPresent(coating -> {
             appendDivider(tooltip);
-            tooltip.add(tooltipLine("<green><bold>[ WEAPON COATING ]</bold></green>"));
+            tooltip.add(tooltipLine("<green><bold>Weapon Coating</bold></green>"));
             tooltip.add(tooltipLine("<green>[!] " + titleCase(coating.type()) + " "
                 + roman(coating.potency()) + "</green> <dark_gray>|</dark_gray> <gray>"
                 + coating.charges() + " strikes left</gray>"));
@@ -920,19 +1007,56 @@ public final class PaperItemService implements ItemService<ItemStack> {
             SetDefinition set = catalog.sets().get(definition.setId());
             if (set != null) {
                 appendDivider(tooltip);
-                tooltip.add(tooltipLine("<gold><bold>[ SET: " + miniMessage.escapeTags(set.name().toUpperCase(Locale.ROOT))
-                    + " ]</bold></gold> <dark_gray>" + set.pieceCount() + " pieces</dark_gray>"));
+                tooltip.add(tooltipLine("<gold>Set: " + miniMessage.escapeTags(set.name())
+                    + "</gold> <dark_gray>(" + set.pieceCount() + " pieces)</dark_gray>"));
                 set.bonuses().forEach((pieces, bonus) -> tooltip.add(tooltipLine(
                     "<dark_gray>[" + pieces + "]</dark_gray> <gray>" + miniMessage.escapeTags(bonus.description()) + "</gray>"
                 )));
             }
         }
 
+        // Flavour text, then the Hypixel-style rarity and type line in the WoW quality colour.
+        if (!definition.lore().isEmpty()) {
+            appendDivider(tooltip);
+            definition.lore().stream().map(this::tooltipLine).forEach(tooltip::add);
+        }
+        appendDivider(tooltip);
+        tooltip.add(tooltipLine(rarityFooter(definition.rarity(), classification(definition))));
         return List.copyOf(tooltip);
     }
 
+    /** Starts a new tooltip section with one blank line (never at the top, never two in a row). */
     private void appendDivider(List<Component> tooltip) {
-        tooltip.add(tooltipLine(TOOLTIP_DIVIDER));
+        if (!tooltip.isEmpty() && tooltip.getLast() != SECTION_BREAK) tooltip.add(SECTION_BREAK);
+    }
+
+    /** A Wynncraft roll percentage, coloured from red (a poor roll) to aqua (a near-perfect one). */
+    static String rollTag(int percent) {
+        int shown = Math.max(0, Math.min(100, percent));
+        String color = shown >= 95 ? "aqua" : shown >= 70 ? "green" : shown >= 30 ? "yellow" : "red";
+        return "<" + color + ">[" + shown + "%]</" + color + ">";
+    }
+
+    /** The WoW quality colour of a rarity, as an opening MiniMessage tag. */
+    static String rarityColor(String rarity) {
+        return switch (rarity == null ? "" : rarity.toUpperCase(Locale.ROOT)) {
+            case "STARTER" -> "<color:#9d9d9d>";
+            case "COMMON" -> "<white>";
+            case "CRAFTED" -> "<color:#e6cc80>";
+            case "CURRENCY" -> "<color:#ffd700>";
+            case "UNCOMMON" -> "<color:#1eff00>";
+            case "RARE" -> "<color:#0070dd>";
+            case "EPIC" -> "<color:#a335ee>";
+            case "LEGENDARY" -> "<color:#ff8000>";
+            case "MYTHIC" -> "<gradient:#ff4fd8:#ffb347>";
+            default -> "<gradient:#9b7bff:#67e8f9>";
+        };
+    }
+
+    /** The bottom line of a tooltip: rarity and item type, bold, in the rarity's colour. */
+    static String rarityFooter(String rarity, String classification) {
+        String known = rarity == null || rarity.isBlank() ? "RELIC" : rarity.toUpperCase(Locale.ROOT);
+        return colored(rarityColor(rarity), "<bold>" + known + " " + classification.toUpperCase(Locale.ROOT) + "</bold>");
     }
 
     private Component tooltipLine(String markup) {
@@ -1040,6 +1164,27 @@ public final class PaperItemService implements ItemService<ItemStack> {
         if (definition.category() != null && !definition.category().isBlank()) {
             return titleCase(definition.category());
         }
+        String material = definition.material().name();
+        String specific = material.endsWith("_SWORD") ? "Sword"
+            : material.endsWith("_PICKAXE") ? "Pickaxe"
+            : material.endsWith("_AXE") ? "Axe"
+            : material.endsWith("_SHOVEL") ? "Shovel"
+            : material.endsWith("_HOE") ? "Hoe"
+            : material.endsWith("_HELMET") ? "Helmet"
+            : material.endsWith("_CHESTPLATE") ? "Chestplate"
+            : material.endsWith("_LEGGINGS") ? "Leggings"
+            : material.endsWith("_BOOTS") ? "Boots"
+            : switch (definition.material()) {
+                case BOW -> "Bow";
+                case CROSSBOW -> "Crossbow";
+                case TRIDENT -> "Trident";
+                case MACE -> "Mace";
+                case FISHING_ROD -> "Fishing Rod";
+                case SHIELD -> "Shield";
+                case ELYTRA -> "Cloak";
+                default -> null;
+            };
+        if (specific != null && definition.slot() != GearSlot.NONE) return specific;
         return switch (definition.slot()) {
             case MAIN_HAND -> definition.stats().containsKey("mining-power")
                 || definition.stats().containsKey("gathering-power")
@@ -1059,22 +1204,6 @@ public final class PaperItemService implements ItemService<ItemStack> {
             case 4 -> "IV";
             case 5 -> "V";
             default -> Integer.toString(value);
-        };
-    }
-
-    private String rarityLine(String rarity, String classification) {
-        String label = "[ " + rarity + " " + classification.toUpperCase(Locale.ROOT) + " ]";
-        return switch (rarity) {
-            case "COMMON" -> "<white><bold>" + label + "</bold></white>";
-            case "STARTER" -> "<gray><bold>" + label + "</bold></gray>";
-            case "CRAFTED" -> "<gold><bold>" + label + "</bold></gold>";
-            case "UNCOMMON" -> "<green><bold>" + label + "</bold></green>";
-            case "RARE" -> "<aqua><bold>" + label + "</bold></aqua>";
-            case "EPIC" -> "<light_purple><bold>" + label + "</bold></light_purple>";
-            case "LEGENDARY" -> "<gradient:#ffd166:#b38cff><bold>" + label + "</bold></gradient>";
-              case "MYTHIC" -> "<light_purple><bold>" + label + "</bold></light_purple>";
-            default -> "<gradient:#9b7bff:#67e8f9><bold>[ RELIC "
-                + classification.toUpperCase(Locale.ROOT) + " ]</bold></gradient>";
         };
     }
 
@@ -1102,9 +1231,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
             default -> titleCase(stat.endsWith("-percent") ? stat.substring(0, stat.length() - 8) : stat);
         };
         String suffix = stat.endsWith("-percent") ? "%" : "";
-        String prefix = value > 0.0D && !stat.equals("damage") && !stat.equals("defense") ? "+" : "";
-        return "<dark_gray>> </dark_gray><gray>" + label + ":</gray> <white>"
-            + prefix + formatNumber(value) + suffix + "</white>";
+        String prefix = value > 0.0D ? "+" : "";
+        // Hypixel colours: red for offence, green for everything else.
+        String color = OFFENSIVE_STATS.contains(stat) ? "red" : "green";
+        return "<gray>" + label + ":</gray> <" + color + ">" + prefix + formatNumber(value) + suffix + "</" + color + ">";
     }
 
     private static String formatNumber(double value) {
@@ -1415,6 +1545,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         APPLIED,
         NOT_GEAR,
         NO_CAPACITY,
+        WRONG_SOCKET,
         INCOMPATIBLE,
         UNIDENTIFIED,
         ALREADY_PRESENT,

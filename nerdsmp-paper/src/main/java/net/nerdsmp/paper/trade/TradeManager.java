@@ -269,7 +269,7 @@ public final class TradeManager implements Listener, AutoCloseable {
         return item == null || item.getType().isAir() ? null : new TradeInventoryCapacity.Stack<>(item.clone(), item.getAmount(), item.getMaxStackSize());
     }
     private static List<String> encode(ItemStack[] items) { return Arrays.stream(items).map(i -> i == null || i.getType().isAir() ? "" : MarketItems.encode(i)).toList(); }
-    private static ItemStack[] decode(List<String> items) { return items.stream().map(i -> i.isEmpty() ? null : MarketItems.decode(i)).toArray(ItemStack[]::new); }
+    private static ItemStack[] decode(List<String> items) { return items.stream().map(i -> i.isEmpty() ? null : MarketItems.decodeStored(i)).toArray(ItemStack[]::new); }
     private static boolean same(ItemStack[] left, ItemStack[] right) {
         if (left.length != right.length) return false;
         for (int i = 0; i < left.length; i++) {

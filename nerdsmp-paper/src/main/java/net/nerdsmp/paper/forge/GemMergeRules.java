@@ -3,7 +3,7 @@ package net.nerdsmp.paper.forge;
 import java.util.Objects;
 
 public final class GemMergeRules {
-    public static final int MAXIMUM_TIER = 4;
+    public static final int MAXIMUM_TIER = net.nerdsmp.paper.item.SocketRules.MAXIMUM_TIER;
 
     private GemMergeRules() {
     }

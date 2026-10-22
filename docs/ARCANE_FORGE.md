@@ -214,8 +214,8 @@ III, IV and V. The table's random offers stay at 4, 8 and 12 Dust, so luck remai
 route and choice the reliable one.
 
 **Research.** 4 Dust per gem plus the gems. Progress per experiment: Fundamental 100,
-Specialized 50, Signature 25, times the average gem-tier multiplier (1.0, 1.25, 1.5, 2.0) and
-1.5 with a Prismatic catalyst. Partial progress is 10 × multiplier ÷ (1 + repeats), capped at 60,
+Specialized 50, Signature 25, times the average gem-grade multiplier (Rough 1.0, Flawed 1.25,
+Fine 1.5, Flawless and Perfect 2.0) and 1.5 with a Prismatic catalyst. Partial progress is 10 × multiplier ÷ (1 + repeats), capped at 60,
 with a clue at 30. Unlocks: research at Arcane level 5, two Aspects at 10, three at 30 plus one
 mastered related enchantment. XP: 40, 80 and 200 Enchanting for discoveries, 10 for a clue. Keen
 Insight raises progress by up to 25%.

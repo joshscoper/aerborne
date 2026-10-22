@@ -5,6 +5,21 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Gemstone ladder, new tooltips and the item updater (October 22)
+- Gems climb five grades: **Rough, Flawed, Fine, Flawless and Perfect**. Geodes crack into Rough or
+  Flawed gems (Luminous geodes sometimes Fine), and merging two of a grade makes the next.
+- Sockets are typed: weapons take combat gems, armour and shields defensive gems, gathering gear
+  gathering gems, and legendary and better gear ends with a Universal socket that takes anything.
+  Emerald and Moonstone fit any socket. See [Gem sockets](GEM_SOCKETS.md).
+- Gems and geodes are now an inert item that only wears the gem's look, so they can't be smelted,
+  crafted, placed, traded or fed to anything. Merging is the only way to change a gem.
+- Gear tooltips are rebuilt: item level at the top, stats in red and green, each rolled affix with
+  where it landed in its range (and the item's overall roll), gemstone slots, abilities, set bonuses,
+  flavour text, and a bold rarity and type line at the bottom. Names wear their rarity colour.
+- An **item updater** brings every older item up to date the first time it's seen: on join, in any
+  chest or other storage, in shulker boxes and bundles, on dropped items, item frames and armour
+  stands, and in market, auction and bank listings. Rolls, sockets, quality and enchantments are kept.
+
 ### Expedition story and cinematics (October 22)
 - One story now runs through the campaign: the Wardens bound Pyrrhax beneath Cinder Keep and lifted
   Aerborne into the sky, and his Steward, Ashkar, is behind every expedition's trouble. Each

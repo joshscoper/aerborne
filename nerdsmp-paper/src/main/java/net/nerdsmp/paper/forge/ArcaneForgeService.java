@@ -58,6 +58,9 @@ public final class ArcaneForgeService implements Listener {
     private final double miningGeodeChance;
     private final double excavationGeodeChance;
     private final double customMobTomeChance;
+    /** Bump when gem, geode or tome text or base items change, so the item updater rebuilds each one once. */
+    private static final int RENDER_VERSION = 1;
+    private final NamespacedKey renderKey;
     private final double bossTomeChance;
 
     public ArcaneForgeService(
@@ -80,6 +83,7 @@ public final class ArcaneForgeService implements Listener {
         gemTierKey = new NamespacedKey(plugin, "gem_tier");
         enchantmentKey = new NamespacedKey(plugin, "arcane_enchantment");
         enchantmentLevelKey = new NamespacedKey(plugin, "arcane_enchantment_level");
+        renderKey = new NamespacedKey(plugin, "forge_render");
         miningGeodeChance = chance("forge.geodes.mining-chance", 0.018D);
         excavationGeodeChance = chance("forge.geodes.excavation-chance", 0.003D);
         customMobTomeChance = chance("forge.enchantments.custom-mob-tome-chance", 0.04D);
@@ -88,11 +92,17 @@ public final class ArcaneForgeService implements Listener {
 
     public ItemStack createGeode(GeodeGrade grade) {
         ItemStack item = baseItem(
+            GemType.BASE,
             geodeMaterial(grade),
             grade.color() + "<bold>" + grade.displayName() + "</bold>",
             List.of(
-                "<gray>Crack it open to find a random gem.</gray>",
-                "<dark_gray>" + grade.rarity() + " geode</dark_gray>"
+                "",
+                "<gray>Right-click to crack it open for one</gray>",
+                "<gray>" + (grade == GeodeGrade.LUMINOUS ? "Rough, Flawed or (rarely) Fine" : "Rough or Flawed") + " gemstone.</gray>",
+                "<gray>Merge two gems of a grade at the forge</gray>",
+                "<gray>to climb towards Perfect.</gray>",
+                "",
+                grade.color() + "<bold>" + grade.rarity().toUpperCase(java.util.Locale.ROOT) + " GEODE</bold>"
             ),
             "nerdsmp:geode_" + grade.id(),
             false
@@ -109,24 +119,25 @@ public final class ArcaneForgeService implements Listener {
             throw new IllegalArgumentException("Gem type and tier must be valid");
         }
         int tier = rawTier;
+        String grade = SocketRules.grade(tier);
         List<String> lore = new ArrayList<>();
-        lore.add("<dark_gray>----------------------------</dark_gray>");
-        lore.add(type.color() + "<bold>[ SOCKET GEM - TIER " + roman(tier) + " ]</bold>");
-        for (String effect : type.effect(tier).split(", ")) {
-            lore.add("<dark_gray>> </dark_gray><white>" + effect + "</white>");
-        }
-        lore.add("<dark_gray>----------------------------</dark_gray>");
-        lore.add("<gray>Place gear and this gem in a forge to socket it.</gray>");
+        for (String effect : type.effect(tier).split(", ")) lore.add("<white>" + effect + "</white>");
+        lore.add("");
+        lore.add("<gray>Fits:</gray> " + fits(type));
+        lore.add("<gray>Socket it into gear at a forge.</gray>");
         if (tier < GemMergeRules.MAXIMUM_TIER) {
-            lore.add("<gray>Merge two matching gems to reach Tier " + roman(tier + 1) + ".</gray>");
+            lore.add("<gray>Merge two " + grade + " " + plural(type.displayName()) + " for a " + SocketRules.grade(tier + 1) + " one.</gray>");
         } else {
-            lore.add("<gray>Highest gem tier.</gray>");
+            lore.add("<gray>The highest grade a gem can reach.</gray>");
         }
         lore.add("<gray>Recover intact for <light_purple>" + SocketRules.dustCost(tier)
             + " Arcane Dust</light_purple>.</gray>");
+        lore.add("");
+        lore.add(type.color() + "<bold>" + grade.toUpperCase(java.util.Locale.ROOT) + " " + type.category().name() + " GEMSTONE</bold>");
         ItemStack item = baseItem(
+            GemType.BASE,
             type.material(),
-            type.color() + "<bold>" + type.displayName() + " " + roman(tier) + "</bold>",
+            type.color() + "<bold>" + grade + " " + type.displayName() + "</bold>",
             lore,
             "nerdsmp:gem_" + type.id(),
             true
@@ -137,6 +148,45 @@ public final class ArcaneForgeService implements Listener {
         meta.getPersistentDataContainer().set(gemTierKey, PersistentDataType.INTEGER, tier);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Rubies, Topazes, Onyxes, Amethysts. */
+    static String plural(String name) {
+        if (name.endsWith("y") && name.length() > 1 && "aeiou".indexOf(name.charAt(name.length() - 2)) < 0)
+            return name.substring(0, name.length() - 1) + "ies";
+        return name.endsWith("z") || name.endsWith("x") || name.endsWith("s") ? name + "es" : name + "s";
+    }
+
+    /** The sockets a gem fits, for its lore. */
+    private static String fits(GemType type) {
+        return switch (type.category()) {
+            case PRISMATIC -> "<light_purple>[U] Universal</light_purple> <gray>sockets only</gray>";
+            case UTILITY -> "<white>any socket</white>";
+            case COMBAT -> "<red>[C] Combat</red> <gray>and</gray> <light_purple>[U] Universal</light_purple>";
+            case DEFENSIVE -> "<blue>[D] Defensive</blue> <gray>and</gray> <light_purple>[U] Universal</light_purple>";
+            case GATHERING -> "<gold>[G] Gathering</gold> <gray>and</gray> <light_purple>[U] Universal</light_purple>";
+        };
+    }
+
+    /**
+     * The current form of a gem, geode or tome made by an older version: same type, grade and amount,
+     * on the inert base with today's text. Empty when the item is already current or isn't one.
+     */
+    public Optional<ItemStack> upgrade(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return Optional.empty();
+        Integer stamp = item.getItemMeta().getPersistentDataContainer().get(renderKey, PersistentDataType.INTEGER);
+        if (stamp != null && stamp == RENDER_VERSION) return Optional.empty();
+        ItemStack current;
+        Optional<Gem> gem = gem(item);
+        Optional<GeodeGrade> geode = geode(item);
+        Optional<Tome> tome = tome(item);
+        if (gem.isPresent()) current = createGem(gem.get().type(), gem.get().tier());
+        else if (geode.isPresent()) current = createGeode(geode.get());
+        else if (tome.isPresent()) current = createTome(tome.get().enchantment(), tome.get().level());
+        else return Optional.empty();
+        current.setAmount(item.getAmount());
+        if (current.isSimilar(item)) return Optional.empty();
+        return Optional.of(current);
     }
 
     public ItemStack createTome(ArcaneEnchantment enchantment, int rawLevel) {
@@ -179,7 +229,7 @@ public final class ArcaneForgeService implements Listener {
         Integer tier = meta.getPersistentDataContainer().get(gemTierKey, PersistentDataType.INTEGER);
         GemType type = id == null ? null : GemType.fromId(id);
         return type == null || tier == null || !SocketRules.validTier(tier)
-            || item.getType() != type.material() || item.getAmount() <= 0
+            || item.getType() != GemType.BASE && item.getType() != type.material() || item.getAmount() <= 0
             ? Optional.empty() : Optional.of(new Gem(type, tier));
     }
 
@@ -217,6 +267,7 @@ public final class ArcaneForgeService implements Listener {
             case APPLIED -> ApplyResult.APPLIED;
             case NOT_GEAR -> ApplyResult.NOT_GEAR;
             case NO_CAPACITY -> ApplyResult.NO_CAPACITY;
+            case WRONG_SOCKET -> ApplyResult.WRONG_SOCKET;
             case INCOMPATIBLE -> ApplyResult.INCOMPATIBLE;
             case UNIDENTIFIED -> ApplyResult.UNIDENTIFIED;
             case ALREADY_PRESENT -> ApplyResult.ALREADY_PRESENT;
@@ -549,8 +600,7 @@ public final class ArcaneForgeService implements Listener {
         giveOrDrop(event.getPlayer(), gem);
         event.getPlayer().playSound(event.getPlayer().getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_HIT, 1.0F,
             0.9F + tier * 0.12F);
-        event.getPlayer().sendRichMessage(type.color() + "The geode held a " + type.displayName()
-            + " " + roman(tier) + ".");
+        event.getPlayer().sendRichMessage(type.color() + "The geode held a " + SocketRules.grade(tier) + " " + type.displayName() + ".");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -634,11 +684,25 @@ public final class ArcaneForgeService implements Listener {
         String model,
         boolean glint
     ) {
+        return baseItem(material, null, name, lore, model, glint);
+    }
+
+    /** {@code look}: the vanilla item it shows as when the server has no resource pack for {@code model}. */
+    private ItemStack baseItem(
+        Material material,
+        Material look,
+        String name,
+        List<String> lore,
+        String model,
+        boolean glint
+    ) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.itemName(miniMessage.deserialize(name));
+        meta.itemName(miniMessage.deserialize(name).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
         meta.displayName(null);
-        meta.lore(lore.stream().map(miniMessage::deserialize).toList());
+        meta.lore(lore.stream().map(line -> miniMessage.deserialize(line)
+            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)).toList());
+        meta.getPersistentDataContainer().set(renderKey, PersistentDataType.INTEGER, RENDER_VERSION);
         meta.removeEnchantments();
         meta.setAttributeModifiers(HashMultimap.create());
         meta.addItemFlags(ItemFlag.values());
@@ -646,6 +710,8 @@ public final class ArcaneForgeService implements Listener {
         NamespacedKey modelKey = NamespacedKey.fromString(model);
         if (modelKey != null && net.nerdsmp.paper.item.VanillaTextures.customModels(plugin)) {
             meta.setItemModel(modelKey);
+        } else if (look != null) {
+            meta.setItemModel(look.getKey());
         }
         item.setItemMeta(meta);
         return item;
@@ -689,6 +755,7 @@ public final class ArcaneForgeService implements Listener {
         NO_CATALYST,
         NOT_GEAR,
         NO_CAPACITY,
+        WRONG_SOCKET,
         INCOMPATIBLE,
         UNIDENTIFIED,
         CORRUPTED,

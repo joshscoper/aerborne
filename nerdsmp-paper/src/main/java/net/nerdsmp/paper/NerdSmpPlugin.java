@@ -159,6 +159,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private org.bukkit.scheduler.BukkitTask contentRefreshTask;
     private SkillListener skillListener;
     private net.nerdsmp.paper.item.SkillLampService skillLamps;
+    private net.nerdsmp.paper.item.ItemUpdater itemUpdater;
     private net.nerdsmp.paper.gathering.HoeHarvestService hoeHarvest;
     private net.nerdsmp.paper.gathering.OreSmeltingService oreSmelting;
     private net.nerdsmp.paper.gathering.AutoSmeltService autoSmelt;
@@ -261,6 +262,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (itemUpdater != null) itemUpdater.close();
         if (websiteRewards != null) websiteRewards.close();
         if (websiteSocial != null) websiteSocial.close();
         if (webApi != null) webApi.close();
@@ -635,6 +637,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(new net.nerdsmp.paper.gathering.LivestockService(this), this);
         skillLamps = new net.nerdsmp.paper.item.SkillLampService(this);
         plugins.registerEvents(skillLamps, this);
+        itemUpdater = new net.nerdsmp.paper.item.ItemUpdater(items, forge);
+        plugins.registerEvents(itemUpdater, this);
         plugins.registerEvents(hoeHarvest, this);
         plugins.registerEvents(oreSmelting, this);
         plugins.registerEvents(autoSmelt, this);

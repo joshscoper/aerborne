@@ -899,11 +899,11 @@ public final class ArcaneMenus implements Listener {
             boolean selected = chosen.contains(choice);
             List<String> lore = new ArrayList<>(List.of(
                 "<gray>Aspect</gray> " + aspect.colored(),
-                "<gray>Tier</gray> <white>" + ArcaneForge.roman(choice.tier()) + "</white> <gray>· research ×"
+                "<gray>Grade</gray> <white>" + net.nerdsmp.paper.item.SocketRules.grade(choice.tier()) + "</white> <gray>· research ×"
                     + String.format(java.util.Locale.ROOT, "%.2f", settings.research().gemMultiplier(choice.tier())) + "</gray>",
                 "<gray>You carry</gray> <white>" + entry.getValue() + "</white>"));
-            ItemStack icon = MenuKit.item(choice.type().material(), choice.type().color() + choice.type().displayName() + " "
-                + ArcaneForge.roman(choice.tier()), MenuKit.withHint(lore, selected ? "remove it" : "add it"));
+            ItemStack icon = MenuKit.item(choice.type().material(), choice.type().color() + net.nerdsmp.paper.item.SocketRules.grade(choice.tier())
+                + " " + choice.type().displayName(), MenuKit.withHint(lore, selected ? "remove it" : "add it"));
             if (selected) glint(icon);
             holder.inventory.setItem(GRID[index], icon);
             holder.actions.put(GRID[index], target -> {
@@ -951,8 +951,8 @@ public final class ArcaneMenus implements Listener {
         ArcaneResearch.Plan plan = forge.researchPlan(player, profile, chosen, prismatic);
         List<String> lore = new ArrayList<>();
         lore.add("<gray>Aspects</gray> " + ArcaneAspect.names(plan.aspects()));
-        chosen.forEach(choice -> lore.add("<dark_gray>  </dark_gray><gray>1 × " + choice.type().displayName() + " "
-            + ArcaneForge.roman(choice.tier()) + "</gray>"));
+        chosen.forEach(choice -> lore.add("<dark_gray>  </dark_gray><gray>1 × " + net.nerdsmp.paper.item.SocketRules.grade(choice.tier())
+            + " " + choice.type().displayName() + "</gray>"));
         if (prismatic) lore.add("<dark_gray>  </dark_gray><gray>1 × Prismatic Gem</gray>");
         lore.add("<gray>Cost</gray> <light_purple>" + plan.dustCost() + " Arcane Dust</light_purple>"
             + (dust < plan.dustCost() ? " <red>(you have " + dust + ")</red>" : ""));

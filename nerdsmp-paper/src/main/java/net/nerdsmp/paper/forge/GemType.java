@@ -18,6 +18,7 @@ public enum GemType {
     JADE("Jade", "<dark_green>", Material.SLIME_BALL, "gathering-power", 1.0D),
     ONYX("Onyx", "<dark_gray>", Material.ECHO_SHARD, "durability-save-percent", 6.0D),
     MOONSTONE("Moonstone", "<white>", Material.QUARTZ, "treasure-find-percent", 3.0D),
+    // The material is the gem's look only: gem items are an inert base wearing this item's model.
     PRISMATIC("Prismatic Gem", "<gradient:#ff70f6:#67e8f9>", Material.NETHER_STAR, Map.of(
         "damage-percent", 2.0D,
         "defense", 2.0D,
@@ -57,8 +58,28 @@ public enum GemType {
         return color;
     }
 
+    /** The vanilla item whose look the gem wears. Gem items themselves are an inert base ({@link #BASE}). */
     public Material material() {
         return material;
+    }
+
+    /**
+     * The base item gems and geodes are made of. Vanilla never smelts, brews, burns, trades, places or
+     * uses it; its only recipes (rockets and star fading) refuse NerdSMP items through CraftingGuard.
+     */
+    public static final Material BASE = Material.FIREWORK_STAR;
+
+    /** Which sockets a gem fits; see {@link net.nerdsmp.paper.item.SocketRules#fits}. */
+    public enum Category { COMBAT, DEFENSIVE, GATHERING, UTILITY, PRISMATIC }
+
+    public Category category() {
+        return switch (this) {
+            case RUBY, AMETHYST -> Category.COMBAT;
+            case SAPPHIRE, ONYX -> Category.DEFENSIVE;
+            case TOPAZ, AQUAMARINE, JADE, CITRINE -> Category.GATHERING;
+            case EMERALD, MOONSTONE -> Category.UTILITY;
+            case PRISMATIC -> Category.PRISMATIC;
+        };
     }
 
     public Map<String, Double> stats(int tier) {
@@ -106,6 +127,6 @@ public enum GemType {
     }
 
     public static int clampTier(int tier) {
-        return Math.max(1, Math.min(4, tier));
+        return Math.max(1, Math.min(net.nerdsmp.paper.item.SocketRules.MAXIMUM_TIER, tier));
     }
 }

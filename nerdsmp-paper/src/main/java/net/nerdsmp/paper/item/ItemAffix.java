@@ -59,6 +59,12 @@ public enum ItemAffix {
         return Math.round((minimum + (maximum - minimum) * roll) * 10.0D) / 10.0D;
     }
 
+    /** Where a rolled value sits in this affix's range, 0 (the minimum) to 100 (the maximum). */
+    public int rollPercent(double value) {
+        double share = (value - minimum) / (maximum - minimum);
+        return (int) Math.round(Math.max(0.0D, Math.min(1.0D, share)) * 100.0D);
+    }
+
     public String effect(double value) {
         String shown = Math.rint(value) == value ? Long.toString((long) value)
             : String.format(Locale.ROOT, "%.1f", value);

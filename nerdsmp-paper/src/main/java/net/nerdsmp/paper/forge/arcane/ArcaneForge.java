@@ -889,7 +889,7 @@ public final class ArcaneForge {
     private boolean takeGems(ItemStack[] storage, Set<ArcaneAspect> aspects, int minimumTier, int skipSlot) {
         for (ArcaneAspect aspect : EnumSet.copyOf(aspects)) {
             boolean taken = false;
-            for (int tier = minimumTier; tier <= 4 && !taken; tier++) {
+            for (int tier = minimumTier; tier <= net.nerdsmp.paper.item.SocketRules.MAXIMUM_TIER && !taken; tier++) {
                 int wantedTier = tier;
                 taken = takeGem(storage, gem -> ArcaneAspect.ofGem(gem.type()).filter(aspect::equals).isPresent()
                     && gem.tier() == wantedTier, skipSlot);
