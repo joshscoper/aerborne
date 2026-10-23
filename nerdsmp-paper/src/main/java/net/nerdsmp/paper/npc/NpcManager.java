@@ -2411,6 +2411,21 @@ public final class NpcManager implements Listener, AutoCloseable {
         return instances.containsKey(id);
     }
 
+    /** Spawns the body of a placed NPC again if it is gone (removed by another plugin, say). True when it was respawned. */
+    public boolean respawnIfMissing(UUID id) {
+        NpcInstance instance = instances.get(id);
+        if (instance == null || Bukkit.getWorld(instance.worldId()) == null) return false;
+        LivingEntity body = liveByInstance.get(id);
+        if (body != null && body.isValid()) return false;
+        removeLive(id);
+        return spawnLive(instance);
+    }
+
+    public boolean hasAnchorIn(UUID id, World world) {
+        NpcInstance instance = instances.get(id);
+        return instance != null && instance.worldId().equals(world.getUID());
+    }
+
     public void removeAnchor(UUID id) {
         if (instances.remove(id) == null) return;
         removeLive(id);
@@ -2563,7 +2578,15 @@ public final class NpcManager implements Listener, AutoCloseable {
 
     public void respawnAll() {
         removeAllLive();
-        instances.values().forEach(this::spawnLive);
+        int missingWorld = 0, failed = 0;
+        for (NpcInstance instance : instances.values()) {
+            if (Bukkit.getWorld(instance.worldId()) == null) { missingWorld++; continue; }
+            try { if (!spawnLive(instance)) failed++; }
+            catch (RuntimeException failure) { failed++; }
+        }
+        if (missingWorld > 0) plugin.getLogger().warning(missingWorld + " NPC anchors belong to a world that is not loaded"
+            + " (npc-instances.yml lists its world id); they stay hidden until that world loads or /worldpack apply force moves them.");
+        if (failed > 0) plugin.getLogger().warning(failed + " NPC bodies could not be spawned; another plugin may be cancelling their spawn.");
     }
 
     private boolean spawnLive(NpcInstance instance) {

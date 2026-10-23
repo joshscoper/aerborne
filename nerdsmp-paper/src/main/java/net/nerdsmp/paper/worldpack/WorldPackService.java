@@ -62,6 +62,47 @@ public final class WorldPackService implements org.bukkit.event.Listener {
         if (!plugin.getConfig().getBoolean("world-packs.enabled", true)) return;
         Bukkit.getPluginManager().registerEvents(fence, plugin);
         Bukkit.getScheduler().runTaskLater(plugin, () -> applyAll(false, null), 40L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::respawnMissingBodies, 640L, 600L);
+    }
+
+    private boolean alwaysPlaceNpcs(World world) {
+        return plugin.getConfig().getStringList("world-packs.always-place-npcs").stream().anyMatch(world.getName()::equalsIgnoreCase);
+    }
+
+    private UUID anchorId(WorldPack pack, WorldPack.Anchor anchor) {
+        return UUID.nameUUIDFromBytes(("worldpack:" + pack.id() + ":" + anchor.key()).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** Puts every pack NPC back at its pack position in an always-place world, whatever staff or old files did. */
+    private void restoreNpcs(WorldPack pack, World world, CommandSender reporter) {
+        int restored = 0, failed = 0;
+        for (WorldPack.Anchor anchor : pack.npcs().values()) {
+            Location location = location(world, anchor.point());
+            world.getChunkAt(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+            switch (plugin.npcs().ensureAnchor(anchorId(pack, anchor), anchor.npc(), location)) {
+                case PLACED, MOVED -> restored++;
+                case FAILED -> { failed++; plugin.getLogger().warning("NPC " + anchor.key() + " (" + anchor.npc() + ") could not be placed at " + anchor.point()); }
+                case UNCHANGED -> { }
+            }
+        }
+        if (restored == 0 && failed == 0) return;
+        String summary = restored + " NPCs restored" + (failed > 0 ? ", " + failed + " could not be placed (see log)" : "");
+        plugin.getLogger().info(pack.title() + " on " + world.getName() + ": " + summary);
+        if (reporter != null) Chat.success(reporter, Chat.escape(pack.title()) + ": " + Chat.escape(summary));
+    }
+
+    /** Another plugin can clear NPC bodies; in always-place worlds they come back. */
+    private void respawnMissingBodies() {
+        int respawned = 0;
+        for (WorldPack pack : packs) {
+            String name = matched.get(pack.id());
+            World world = name == null ? null : Bukkit.getWorld(name);
+            if (world == null || !alwaysPlaceNpcs(world)) continue;
+            for (WorldPack.Anchor anchor : pack.npcs().values())
+                if (plugin.npcs().respawnIfMissing(anchorId(pack, anchor))) respawned++;
+        }
+        if (respawned > 0) plugin.getLogger().warning(respawned + " world pack NPC bodies had disappeared and were respawned;"
+            + " another plugin may be removing entities.");
     }
 
     public void applyAll(boolean force, CommandSender reporter) {
@@ -88,6 +129,7 @@ public final class WorldPackService implements org.bukkit.event.Listener {
                 String summary = report == null ? "already applied" : report.toString();
                 plugin.getLogger().info("World pack " + pack.id() + " v" + pack.version() + " on " + world.getName() + ": " + summary);
                 if (reporter != null) Chat.success(reporter, Chat.escape(pack.title()) + ": " + Chat.escape(summary));
+                if (alwaysPlaceNpcs(world)) restoreNpcs(pack, world, reporter);
             } catch (RuntimeException | IOException failure) {
                 plugin.getLogger().log(Level.SEVERE, "World pack " + pack.id() + " could not be applied to " + world.getName(), failure);
                 if (reporter != null) Chat.error(reporter, "World pack " + Chat.escape(pack.id()) + " failed: " + Chat.escape(String.valueOf(failure.getMessage())));
@@ -241,7 +283,8 @@ public final class WorldPackService implements org.bukkit.event.Listener {
             UUID id = UUID.nameUUIDFromBytes(("worldpack:" + pack.id() + ":" + anchor.key()).getBytes(StandardCharsets.UTF_8));
             String print = anchor.npc() + "@" + anchor.point() + "/" + anchor.point().yaw();
             if (before.containsKey(key) && !plugin.npcs().hasAnchor(id)) { after.put(key, before.get(key)); kept++; continue; }
-            if (print.equals(before.get(key)) && plugin.npcs().hasAnchor(id)) { after.put(key, print); continue; }
+            // An anchor tied to another world (a copied npc-instances.yml, a re-created world) is moved here below.
+            if (print.equals(before.get(key)) && plugin.npcs().hasAnchorIn(id, world)) { after.put(key, print); continue; }
             Location location = location(world, anchor.point());
             world.getChunkAt(location.getBlockX() >> 4, location.getBlockZ() >> 4);
             NpcManager.AnchorResult result = plugin.npcs().ensureAnchor(id, anchor.npc(), location);

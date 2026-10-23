@@ -568,6 +568,9 @@ tips:
 # applies to a world whose seed and landmark blocks match it; staff edits are kept. /worldpack shows status.
 world-packs:
   enabled: true
+  # Worlds (by folder name) whose pack NPCs are always restored: on every start each pack NPC is put back at its
+  # pack position, even one staff removed or moved, and a missing NPC body is respawned within 30 seconds.
+  always-place-npcs: [MMORPG]
 
 npcs:
   maximum-instances: 100

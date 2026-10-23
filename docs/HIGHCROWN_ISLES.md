@@ -38,6 +38,11 @@ Staff commands (`nerdsmp.zone.admin`):
 
 Turn the whole feature off with `world-packs.enabled: false` in `config.yml`.
 
+Worlds listed in `world-packs.always-place-npcs` (default `[MMORPG]`, by folder name) always get their NPCs
+back: on every start each pack NPC is put back at its pack position, even one staff removed or moved, and
+every 30 seconds any NPC body that has disappeared (another plugin clearing entities, say) is respawned. Remove
+the world from the list to let staff edits to its NPCs stick.
+
 ## Map border
 
 Beyond the built island the world is raw generated land: a southern continent from about z 600, a few islets
