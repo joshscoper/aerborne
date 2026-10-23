@@ -1,7 +1,7 @@
 # The Highcrown Isles (spawn map content)
 
 The spawn map from `MMORPG - 1.19.zip` ships with everything it needs to play as a small MMORPG: levelled
-mob zones, 94 NPCs (with patrolling guards), 58 story quests, quest markers and a guided quest trail,
+mob zones, 94 NPCs (with patrolling guards), 58 story quests and 9 daily quests, quest markers and a guided quest trail,
 renewable dig sites and ore veins, and 16 warps. Load the
 plugin on a server whose main world is this map and the content appears on its own; no staff setup is needed.
 
@@ -122,7 +122,9 @@ at the hub only.
 ## Quests
 
 `content/world-quests.yml` holds the story quests: the 31 main-chain quests, a personal quest for 19 of the
-original residents, and 8 side quests from the new townsfolk. Each has a giver, an optional turn-in NPC, prerequisite
+original residents, 8 side quests from the new townsfolk, and 9 daily bounties (`repeat: daily`) that reset at
+midnight UTC: a gnawer cull, a Kingsroad patrol, a wolfhound bounty, peat, a gold quota, an oasis survey, a
+scorpion bounty, arena bouts and a Frostwatch sweep. Each unlocks after its giver's story quest. Each has a giver, an optional turn-in NPC, prerequisite
 quests, a minimum adventurer level, up to six objectives and rewards (Marks, skill XP, faction reputation,
 items).
 
@@ -141,8 +143,17 @@ Sunscorch colosseum (2); Frostveil watch (3); Stormcrag storms (2).
 
 ### Markers, tracker and trail
 
-- A gold **!** floats over an NPC with a quest you can take, a gold **?** over one you can hand a quest in to,
-  and a grey **?** over one whose quest you're still working on. Each player sees only their own markers.
+- Markers float over quest NPCs, and each player sees only their own:
+
+  | Marker | Meaning |
+  | --- | --- |
+  | gold **!** | a story quest you can take now |
+  | gold **?** | a story quest you can hand in here |
+  | blue **!** / blue **?** | a daily quest to take / to hand in |
+  | grey **?** | a quest you're still working on (hand it in here) |
+  | grey **!** | a quest this NPC will offer later (level too low or an earlier quest unfinished) |
+
+  When an NPC has several, the most useful shows: hand-ins first, then new quests, then progress, then locked.
 - The tracked quest (the newest one you accepted, or `/journal track <quest>`) shows on the sidebar under
   the normal HUD with its objectives and counts.
 - A trail of gold dust on the ground leads toward its next objective (the zone, the NPC to talk to, the

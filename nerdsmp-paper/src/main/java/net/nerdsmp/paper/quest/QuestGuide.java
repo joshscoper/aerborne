@@ -36,7 +36,8 @@ import java.util.UUID;
  * trail with a light column leading to the tracked quest's next objective. Everything is per player.
  */
 final class QuestGuide implements AutoCloseable {
-    enum Mark { NONE, AVAILABLE, READY, ACTIVE }
+    /** Gold for story quests, blue for daily ones, grey for in progress (?) and not yet unlocked (!). */
+    enum Mark { NONE, AVAILABLE, READY, ACTIVE, LOCKED, DAILY_AVAILABLE, DAILY_READY }
 
     private static final double MARKER_RANGE = 64.0D;
     private static final Particle.DustOptions TRAIL = new Particle.DustOptions(Color.fromRGB(255, 196, 0), 1.1F);
@@ -92,6 +93,9 @@ final class QuestGuide implements AutoCloseable {
             display(Mark.AVAILABLE, "<gold><bold>!</bold></gold>");
             display(Mark.READY, "<gold><bold>?</bold></gold>");
             display(Mark.ACTIVE, "<gray><bold>?</bold></gray>");
+            display(Mark.LOCKED, "<gray><bold>!</bold></gray>");
+            display(Mark.DAILY_AVAILABLE, "<blue><bold>!</bold></blue>");
+            display(Mark.DAILY_READY, "<blue><bold>?</bold></blue>");
         }
 
         private void display(Mark mark, String text) {

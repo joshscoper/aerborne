@@ -47,8 +47,10 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
                 throw new IllegalArgumentException("Quest " + id + ": " + failure.getMessage(), failure);
             }
         }
-        for (QuestDefinition quest : quests.values()) for (String required : quest.requires())
+        for (QuestDefinition quest : quests.values()) for (String required : quest.requires()) {
             if (!quests.containsKey(required)) throw new IllegalArgumentException("Quest " + quest.id() + " requires unknown quest " + required);
+            if (quests.get(required).daily()) throw new IllegalArgumentException("Quest " + quest.id() + " cannot require the daily quest " + required);
+        }
         for (QuestDefinition quest : quests.values()) cycle(quest.id(), quests, new HashSet<>(), new HashSet<>());
         return new QuestCatalog(schema, quests);
     }
@@ -61,7 +63,7 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
         done.add(id);
     }
 
-    private static final Set<String> QUEST_KEYS = Set.of("chain", "title", "giver", "turn-in", "level", "requires", "offer", "complete", "objectives", "rewards");
+    private static final Set<String> QUEST_KEYS = Set.of("chain", "title", "giver", "turn-in", "level", "requires", "offer", "complete", "objectives", "rewards", "repeat");
 
     private static QuestDefinition quest(String id, Map<?, ?> node) {
         keys(node, QUEST_KEYS, Set.of("chain", "title", "giver", "offer", "complete", "objectives"), id);
@@ -73,7 +75,15 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
             node.containsKey("level") ? integer(node.get("level"), "level") : 1,
             node.containsKey("requires") ? strings(node.get("requires"), "requires") : List.of(),
             lines(node.get("offer"), "offer"), lines(node.get("complete"), "complete"),
-            objectives, node.containsKey("rewards") ? rewards(map(node.get("rewards"), "rewards")) : new QuestDefinition.Rewards(0, Map.of(), Map.of(), List.of()));
+            objectives, node.containsKey("rewards") ? rewards(map(node.get("rewards"), "rewards")) : new QuestDefinition.Rewards(0, Map.of(), Map.of(), List.of()),
+            repeat(node));
+    }
+
+    private static boolean repeat(Map<?, ?> node) {
+        if (!node.containsKey("repeat")) return false;
+        String repeat = string(node.get("repeat"), "repeat");
+        if (!repeat.equals("daily")) throw new IllegalArgumentException("repeat must be daily");
+        return true;
     }
 
     private static QuestDefinition.Objective objective(Map<?, ?> node) {

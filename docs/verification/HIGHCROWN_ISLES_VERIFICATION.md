@@ -74,6 +74,14 @@ built from this tree, and mineflayer bots (ViaBackwards). The original zip was n
 - The Lantern Route (Cassia's new personal quest): accepted from the gold reply, three talk objectives
   (lighthouse keeper, gardener, patrolling sergeant), turned in for 50 Marks and +10 Frontier Wardens.
 
+## Marker colours and daily quests
+
+- Grey `!` showed over Warden Halvard and Scout Yrsa, whose quests the bot couldn't take yet.
+- Jory showed a gold `!` for his side quest; once that was completed his marker turned blue `!` for the daily
+  Gnawer Cull. The bot accepted it, culled 10 gnawers, saw a blue `?`, and handed it in for 35 Marks and 120
+  Hunting XP. The marker then cleared and the board read "Done for today. Back tomorrow."; the hand-in date
+  was saved under `daily:` in `quest-progress.yml`. The next-day reset is covered by `QuestRulesTest`.
+
 ## Tests
 
 `./gradlew :nerdsmp-paper:build` passed, including `HighcrownContentTest` (every zone, creature, NPC, quest

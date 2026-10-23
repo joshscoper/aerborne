@@ -71,6 +71,38 @@ final class QuestRulesTest {
     }
 
     @Test
+    void dailyQuestsComeBackEachUtcDay() {
+        QuestCatalog catalog = QuestCatalog.parse(CHAIN + """
+              cull:
+                chain: farm
+                title: Cull
+                giver: odo
+                repeat: daily
+                requires: [first]
+                offer: ["Again."]
+                complete: ["Again tomorrow."]
+                objectives:
+                  - {type: kill, targets: ["custom:gnawer"], count: 2, description: Cull gnawers}
+            """);
+        QuestDefinition first = catalog.quests().get("first"), cull = catalog.quests().get("cull");
+        assertTrue(cull.daily());
+        assertFalse(first.daily());
+        java.time.LocalDate monday = java.time.LocalDate.of(2026, 10, 19), tuesday = monday.plusDays(1);
+        QuestProgress log = new QuestProgress();
+        assertEquals(QuestProgress.Status.LOCKED, log.status(cull, 1, monday), "it still needs its story quest");
+        log.accept(first);
+        log.complete(first);
+        assertTrue(log.accept(cull, monday));
+        log.advance(cull, 0, 2);
+        log.complete(cull, monday);
+        assertEquals(QuestProgress.Status.COMPLETED, log.status(cull, 1, monday));
+        assertFalse(log.accept(cull, monday), "once per day");
+        assertEquals(QuestProgress.Status.AVAILABLE, log.status(cull, 1, tuesday));
+        assertTrue(log.accept(cull, tuesday));
+        assertFalse(log.completed().contains("cull"), "dailies never join the permanent record");
+    }
+
+    @Test
     void rejectsBrokenContent() {
         assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("requires: [first]", "requires: [missing]")));
         assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("type: visit", "type: teleport")));
@@ -78,5 +110,8 @@ final class QuestRulesTest {
         assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("xp: {hunting: 5}", "xp: {juggling: 5}")));
         assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("    chain: farm\n    title: First", "    chain: farm\n    title: First\n    requires: [second]")));
         assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("description: Reach the fields", "description: Reach the fields, colour: red")));
+        assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("    chain: farm\n    title: First", "    chain: farm\n    title: First\n    repeat: weekly")));
+        assertThrows(IllegalArgumentException.class, () -> QuestCatalog.parse(CHAIN.replace("    chain: farm\n    title: First", "    chain: farm\n    title: First\n    repeat: daily")),
+            "a story quest can't require a daily one");
     }
 }

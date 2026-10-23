@@ -199,11 +199,25 @@ public final class QuestService implements Listener, AutoCloseable {
     QuestGuide.Mark mark(Player player, String npc) {
         QuestProgress log = log(player);
         if (log == null) return QuestGuide.Mark.NONE;
-        Counts counts = counts(player, npc);
-        if (counts.ready() > 0) return QuestGuide.Mark.READY;
-        if (counts.available() > 0) return QuestGuide.Mark.AVAILABLE;
-        for (QuestDefinition quest : catalog.offeredBy(npc))
-            if (quest.turnIn().equals(npc) && log.status(quest, level(player)) == QuestProgress.Status.ACTIVE) return QuestGuide.Mark.ACTIVE;
+        int level = level(player);
+        boolean ready = false, dailyReady = false, available = false, dailyAvailable = false, active = false, locked = false;
+        for (QuestDefinition quest : catalog.offeredBy(npc)) {
+            QuestProgress.Status status = log.status(quest, level);
+            boolean turnIn = quest.turnIn().equals(npc), giver = quest.giver().equals(npc);
+            switch (status) {
+                case READY -> { if (turnIn) { if (quest.daily()) dailyReady = true; else ready = true; } }
+                case AVAILABLE -> { if (giver) { if (quest.daily()) dailyAvailable = true; else available = true; } }
+                case ACTIVE -> { if (turnIn) active = true; }
+                case LOCKED -> { if (giver) locked = true; }
+                default -> { }
+            }
+        }
+        if (ready) return QuestGuide.Mark.READY;
+        if (dailyReady) return QuestGuide.Mark.DAILY_READY;
+        if (available) return QuestGuide.Mark.AVAILABLE;
+        if (dailyAvailable) return QuestGuide.Mark.DAILY_AVAILABLE;
+        if (active) return QuestGuide.Mark.ACTIVE;
+        if (locked) return QuestGuide.Mark.LOCKED;
         return QuestGuide.Mark.NONE;
     }
 
@@ -321,7 +335,8 @@ public final class QuestService implements Listener, AutoCloseable {
 
     private ItemStack questIcon(Player player, QuestDefinition quest, QuestProgress.Status status, String npc, QuestProgress log, int level) {
         List<String> lore = new ArrayList<>();
-        lore.add("<dark_gray>" + Chat.escape(chainTitle(quest)) + " · Level " + quest.minimumLevel() + "+</dark_gray>");
+        lore.add(quest.daily() ? "<blue>Daily quest · resets at midnight UTC</blue>"
+            : "<dark_gray>" + Chat.escape(chainTitle(quest)) + " · Level " + quest.minimumLevel() + "+</dark_gray>");
         lore.add("");
         int[] counts = log.counts(quest);
         for (int i = 0; i < quest.objectives().size(); i++) {
@@ -340,7 +355,8 @@ public final class QuestService implements Listener, AutoCloseable {
         String name;
         switch (status) {
             case AVAILABLE -> {
-                material = Material.WRITABLE_BOOK; name = "<yellow>! " + Chat.escape(quest.title()) + "</yellow>";
+                material = Material.WRITABLE_BOOK;
+                name = quest.daily() ? "<blue>! " + Chat.escape(quest.title()) + "</blue>" : "<yellow>! " + Chat.escape(quest.title()) + "</yellow>";
                 lore.add(quest.giver().equals(npc) ? "<green>Click to accept</green>" : "<gray>Offered by " + Chat.escape(npcName(quest.giver())) + "</gray>");
             }
             case ACTIVE -> {
@@ -348,12 +364,13 @@ public final class QuestService implements Listener, AutoCloseable {
                 lore.add("<gray>In progress.</gray>");
             }
             case READY -> {
-                material = Material.EMERALD; name = "<green>? " + Chat.escape(quest.title()) + "</green>";
+                material = Material.EMERALD;
+                name = quest.daily() ? "<blue>? " + Chat.escape(quest.title()) + "</blue>" : "<green>? " + Chat.escape(quest.title()) + "</green>";
                 lore.add(quest.turnIn().equals(npc) ? "<green>Click to turn in</green>" : "<gray>Return to " + Chat.escape(npcName(quest.turnIn())) + "</gray>");
             }
             case COMPLETED -> {
                 material = Material.LIME_DYE; name = "<dark_green>" + Chat.escape(quest.title()) + "</dark_green>";
-                lore.add("<dark_green>Completed</dark_green>");
+                lore.add(quest.daily() ? "<dark_green>Done for today. Back tomorrow.</dark_green>" : "<dark_green>Completed</dark_green>");
             }
             default -> {
                 material = Material.BOOK; name = "<dark_gray>" + Chat.escape(quest.title()) + "</dark_gray>";
@@ -413,7 +430,7 @@ public final class QuestService implements Listener, AutoCloseable {
                 Chat.error(player, "Bring " + objective.count() + " for: " + Chat.escape(objective.description()));
                 return;
             }
-        String operation = "story-quest:" + account + ":" + quest.id();
+        String operation = "story-quest:" + account + ":" + quest.id() + (quest.daily() ? ":" + QuestProgress.today() : "");
         if (!paying.add(operation)) return;
         for (QuestDefinition.Objective objective : quest.objectives())
             if (objective.type() == QuestDefinition.Type.DELIVER) take(player, objective);
@@ -556,13 +573,12 @@ public final class QuestService implements Listener, AutoCloseable {
             }
             case "complete" -> {
                 if (quest == null) { Chat.error(sender, "Unknown quest."); return true; }
-                log.active().remove(quest.id());
-                log.completed().add(quest.id());
+                log.complete(quest);
             }
             case "reset" -> {
                 if (args.length >= 4 && quest == null) { Chat.error(sender, "Unknown quest."); return true; }
-                if (quest == null) { log.active().clear(); log.completed().clear(); }
-                else { log.active().remove(quest.id()); log.completed().remove(quest.id()); }
+                if (quest == null) { log.active().clear(); log.completed().clear(); log.dailyDone().clear(); }
+                else { log.active().remove(quest.id()); log.completed().remove(quest.id()); log.dailyDone().remove(quest.id()); }
             }
             default -> { Chat.usage(sender, "/journal admin <online player> info|complete <quest>|reset [quest]"); return true; }
         }
@@ -686,6 +702,11 @@ public final class QuestService implements Listener, AutoCloseable {
                 if (active != null) for (String quest : active.getKeys(false))
                     log.active().put(quest, active.getIntegerList(quest).stream().mapToInt(Integer::intValue).toArray());
                 log.completed().addAll(accounts.getStringList(key + ".completed"));
+                ConfigurationSection daily = accounts.getConfigurationSection(key + ".daily");
+                if (daily != null) for (String quest : daily.getKeys(false)) {
+                    try { log.dailyDone().put(quest, java.time.LocalDate.parse(daily.getString(quest, ""))); }
+                    catch (java.time.format.DateTimeParseException ignored) { }
+                }
                 AccountId account = AccountId.parse(key);
                 progress.put(account, log);
                 String following = accounts.getString(key + ".tracked");
@@ -700,10 +721,11 @@ public final class QuestService implements Listener, AutoCloseable {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("schema-version", 1);
         progress.forEach((account, log) -> {
-            if (log.active().isEmpty() && log.completed().isEmpty()) return;
+            if (log.active().isEmpty() && log.completed().isEmpty() && log.dailyDone().isEmpty()) return;
             String path = "accounts." + account;
             log.active().forEach((quest, counts) -> yaml.set(path + ".active." + quest, java.util.Arrays.stream(counts).boxed().toList()));
             yaml.set(path + ".completed", List.copyOf(log.completed()));
+            log.dailyDone().forEach((quest, day) -> yaml.set(path + ".daily." + quest, day.toString()));
             if (tracked.containsKey(account)) yaml.set(path + ".tracked", tracked.get(account));
         });
         if (writer == null) writer = new OrderedYamlWriter(plugin, progressFile, "quest progress");

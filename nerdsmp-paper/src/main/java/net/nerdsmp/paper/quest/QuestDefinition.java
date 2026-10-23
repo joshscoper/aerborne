@@ -7,7 +7,8 @@ import java.util.Set;
 
 /**
  * One story quest offered by an NPC. Quests chain through {@code requires}; a quest is offered once its
- * prerequisites are complete and the player's adventurer level reaches {@code minimumLevel}.
+ * prerequisites are complete and the player's adventurer level reaches {@code minimumLevel}. A
+ * {@code daily} quest can be done again every UTC day.
  */
 public record QuestDefinition(
     String id,
@@ -20,7 +21,8 @@ public record QuestDefinition(
     List<String> offer,
     List<String> complete,
     List<Objective> objectives,
-    Rewards rewards
+    Rewards rewards,
+    boolean daily
 ) {
     public static final int MAX_OBJECTIVES = 6;
 

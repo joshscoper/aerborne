@@ -1068,3 +1068,162 @@ quests:
       marks: 420
       xp: {hunting: 1000}
       reputation: {frontier_wardens: 30}
+
+  # ================================================================== Daily bounties (repeat: daily, reset at midnight UTC)
+  daily_gnawer_cull:
+    chain: daily_bounties
+    title: Gnawer Cull
+    giver: farmhand_jory
+    level: 1
+    repeat: daily
+    requires: [pests_in_the_wheat]
+    offer:
+      - "They breed faster than we can stamp on them. Same deal as yesterday: thin them out and I'll pay you in coin and pie."
+    complete:
+      - "Quiet fields for another night. Same time tomorrow?"
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: goldenreach_fields, count: 10, description: Cull Field Gnawers}
+    rewards:
+      marks: 35
+      xp: {hunting: 120}
+
+  daily_kingsroad_patrol:
+    chain: daily_bounties
+    title: Kingsroad Patrol
+    giver: waywarden_garet
+    level: 3
+    repeat: daily
+    requires: [trouble_on_the_road]
+    offer:
+      - "The brigands come back every morning like bad weather. Walk the Wildwood and send a few of them home."
+    complete:
+      - "The road's yours again, for today at least."
+    objectives:
+      - {type: kill, targets: ["custom:vale_brigand", "custom:brigand_crossbow"], zone: wildwood_vale, count: 8, description: Defeat brigands in the Wildwood Vale}
+    rewards:
+      marks: 60
+      xp: {hunting: 220}
+      reputation: {frontier_wardens: 5}
+
+  daily_wolfhound_bounty:
+    chain: daily_bounties
+    title: Wolfhound Bounty
+    giver: ranger_ilsa
+    level: 3
+    repeat: daily
+    requires: [howls_in_the_pines]
+    offer:
+      - "The pack's back near the lumber camp. Bounty's the same as always."
+    complete:
+      - "Clean work. The camp can cut timber in peace today."
+    objectives:
+      - {type: kill, targets: ["custom:gloom_wolfhound"], count: 8, description: Hunt Gloomroot Wolfhounds}
+    rewards:
+      marks: 70
+      xp: {hunting: 260}
+      reputation: {free_delvers: 5}
+
+  daily_tending_the_peat:
+    chain: daily_bounties
+    title: Tending the Peat
+    giver: elder_moss
+    level: 4
+    repeat: daily
+    requires: [peat_for_the_grove]
+    offer:
+      - "The grove's beds need turning every day. The soil grows back; the work never quite ends."
+    complete:
+      - "The grove thanks you, as it does each day."
+    objectives:
+      - {type: dig, zone: druids_ward, count: 12, description: Dig peat in the Druid's Ward}
+    rewards:
+      marks: 55
+      xp: {excavation: 260}
+
+  daily_ore_quota:
+    chain: daily_bounties
+    title: Daily Ore Quota
+    giver: prospector_hale
+    level: 6
+    repeat: daily
+    requires: [gold_fever]
+    offer:
+      - "The buyers want their gold by sundown. Fill the quota and the share's yours."
+    complete:
+      - "Quota met. Same again tomorrow, the buyers are never full."
+    objectives:
+      - {type: harvest, targets: [GOLD_ORE], zone: gilded_hollow, count: 16, description: Mine gold ore in the Gilded Hollow}
+    rewards:
+      marks: 90
+      xp: {mining: 350}
+
+  daily_oasis_survey:
+    chain: daily_bounties
+    title: Oasis Survey
+    giver: nadira_oasis
+    level: 6
+    repeat: daily
+    requires: [the_oasis_finds]
+    offer:
+      - "The sand settles back every night and buries new finds near the surface. Dig the banks again?"
+    complete:
+      - "Two more shards for the archive. The old city is patient, and so am I."
+    objectives:
+      - {type: dig, targets: [SAND], zone: sandmere, count: 15, description: Dig the sand around the oasis}
+    rewards:
+      marks: 80
+      xp: {excavation: 320}
+      reputation: {rift_scholars: 5}
+
+  daily_scorpion_bounty:
+    chain: daily_bounties
+    title: Scorpion Bounty
+    giver: samar_vizier
+    level: 8
+    repeat: daily
+    requires: [scorpions_at_the_well]
+    offer:
+      - "The wells are crawling again. My caravans leave at dawn; clear the way and I pay the bounty."
+    complete:
+      - "The caravans thank you. My purse, less so, but a bounty is a bounty."
+    objectives:
+      - {type: kill, targets: ["custom:dune_scorpion"], count: 10, description: Defeat Dune Scorpions in the Amberdune}
+    rewards:
+      marks: 110
+      xp: {hunting: 400}
+      reputation: {free_delvers: 5}
+
+  daily_arena_bouts:
+    chain: daily_bounties
+    title: Arena Bouts
+    giver: arena_master_tavros
+    level: 8
+    repeat: daily
+    requires: [trial_of_the_sands]
+    offer:
+      - "The crowd wants blood. Well, it wants a good show. Win five bouts and I'll pay you like a star."
+    complete:
+      - "Hear them cheer! Come back tomorrow, they'll want you again."
+    objectives:
+      - {type: kill, targets: ["custom:arena_gladiator"], zone: sunscorch_colosseum, count: 5, description: Win five bouts against Pit Gladiators}
+    rewards:
+      marks: 130
+      xp: {hunting: 450}
+
+  daily_frostwatch_sweep:
+    chain: daily_bounties
+    title: Frostwatch Sweep
+    giver: warden_halvard
+    level: 8
+    repeat: daily
+    requires: [into_the_frostveil]
+    offer:
+      - "The frost-marked walk the glacier's edge every night. Sweep them back before the next watch."
+    complete:
+      - "The edge holds another day. Get warm, then come back tomorrow."
+    objectives:
+      - {type: kill, targets: ["custom:frostmarked"], zone: frostveil_glacier, count: 8, description: Defeat the Frostmarked on the glacier}
+    rewards:
+      marks: 150
+      xp: {hunting: 550}
+      reputation: {frontier_wardens: 5}
