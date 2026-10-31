@@ -34,7 +34,7 @@ class SampleTemplatesTest {
 
     private static boolean solid(Map<Cell, Material> blocks, int x, int y, int z) {
         Material material = blocks.getOrDefault(new Cell(x, y, z), Material.AIR);
-        return material != Material.AIR && material != Material.CANDLE && material != Material.COBWEB;
+        return material != Material.AIR && material != Material.CANDLE && material != Material.COBWEB && material != Material.MOSS_CARPET;
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
@@ -288,7 +288,7 @@ class SampleTemplatesTest {
                 if (solid(blocks, x, y + 2, z)) break;
                 open++;
             }
-            assertTrue(open >= 12, id + " lane " + lane + " stops after " + open);
+            assertTrue(open >= Math.min(12, steps + 1), id + " lane " + lane + " stops after " + open);
         }
     }
 

@@ -9,6 +9,9 @@ date are placed where the README had them. Each linked doc has the detail.
 - **A climb with a long way down.** The canopy is rebuilt the way the Barrow was: Rootgate, the Low Boughs,
   the Fork as a hub, a wing either side, and a long stair to the Heart Gate, with 16 standing packs. Enemy
   forces are still the goal. Anyone who falls is caught and put back, for a little damage.
+- **A ranger village in the trees.** Lumpy mossy trunks, ring decks with vines and glow berries under them,
+  round huts with cone roofs and amber windows, sagging rope bridges, a stair wound round a trunk and
+  lanterns on long chains, over a sea of leaves. The pieces are in `CanopyKit`, ready for other maps.
 - **Three bosses with rooms that fight back.** The Briar Matron comes down on a thread in a hollow trunk,
   with web lanes, brood sacs to burst and cocoons to break. Verrin, an optional boss, fights on a railless
   perch where gusts throw anyone without cover. The Thornheart Shaman bursts out of a cage of roots, and

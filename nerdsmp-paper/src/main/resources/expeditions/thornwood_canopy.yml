@@ -15,7 +15,7 @@ time-limit-minutes: 40
 records-version: 1
 time: 18000
 spawn: [0, 64, 4, 0]
-exit: [0, 78, 146]
+exit: [0, 78, 144]
 modifiers: []
 requires: [hollow_barrow]
 goal: forces
@@ -41,7 +41,7 @@ npcs:
 campfires:
   rootgate_fire: {at: [-3, 64, 7], lit: true, title: Rootgate Fire}
   fork_fire: {at: [0, 64, 65], lit: false, title: The Fork}
-  heartgate_fire: {at: [5, 78, 105], lit: false, title: Heart Gate}
+  heartgate_fire: {at: [6, 78, 110], lit: false, title: Heart Gate}
 
 setpieces:
   heart_span: {box: [-2, 63, 80, 2, 63, 83], block: spruce_planks, style: rise}
@@ -92,7 +92,7 @@ hazards:
     count: 2
     damage: 7
     burn: 5
-    lanes: [[0, 146, 0, 118], [-5, 148, -19, 127], [5, 148, 19, 127], [-8, 150, -21, 150], [8, 150, 21, 150]]
+    lanes: [[0, 143, 0, 118], [-6, 142, -19, 127], [6, 142, 19, 127], [-11, 148, -17, 150], [11, 148, 17, 150]]
   # A burndown lights one section each pulse. It falls away unless someone uses its device, which works once.
   heart_deck:
     type: burndown
@@ -167,7 +167,7 @@ packs:
     mobs: {"custom:sporeback": 2, "custom:canopy_stalker": 1}
     aggro: 7
     patrol: [[0, 64, 31], [0, 64, 44]]
-  low_far: {at: [-13, 64, 44], mobs: {"custom:rotbark_acolyte": 1, "custom:canopy_stalker": 2}}
+  low_far: {at: [14, 64, 44], mobs: {"custom:rotbark_acolyte": 1, "custom:canopy_stalker": 2}}
   # The Fork.
   fork_north: {at: [-6, 64, 59], mobs: {"custom:canopy_stalker": 2, "custom:rotbark_acolyte": 1}}
   fork_south: {at: [6, 64, 71], mobs: {"custom:thorn_sentinel": 2, "custom:bough_sniper": 1}}
@@ -181,18 +181,18 @@ packs:
   west_weavers: {at: [-32, 64, 59], mobs: {"custom:mire_weaver": 2, "custom:thornling": 2}}
   west_brood: {at: [-32, 64, 72], mobs: {"custom:sporeback": 2, "custom:rotbark_acolyte": 1}}
   west_walkers:
-    at: [-37, 64, 65]
+    at: [-36, 64, 65]
     mobs: {"custom:canopy_stalker": 3}
     aggro: 7
-    patrol: [[-37, 64, 65], [-28, 64, 65]]
+    patrol: [[-36, 64, 65], [-27, 64, 65]]
   # The guard at the Heart Gate, last before the grove.
-  heart_guard: {at: [0, 78, 108], mobs: {"custom:thorn_sentinel": 2, "custom:rotbark_acolyte": 1, "custom:sporeback": 1}, aggro: 7}
+  heart_guard: {at: [0, 78, 111], mobs: {"custom:thorn_sentinel": 2, "custom:rotbark_acolyte": 1, "custom:sporeback": 1}, aggro: 7}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  hunters_cache: {at: [13, 64, 19], kind: crate, title: "Hunter's Cache"}
-  sentinel_hoard: {at: [47, 64, 74], kind: chest, title: "Sentinel's Hoard"}
-  hollow_trunk_stash: {at: [-34, 66, 29], kind: secret, title: Hollow-Trunk Stash}
+  hunters_cache: {at: [-18, 64, 33], kind: crate, title: "Hunter's Cache"}
+  sentinel_hoard: {at: [47, 64, 68], kind: chest, title: "Sentinel's Hoard"}
+  hollow_trunk_stash: {at: [-41, 66, 26], kind: secret, title: Hollow-Trunk Stash}
 
 # Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
 # Heroic and Mythic raise it.
@@ -203,8 +203,8 @@ companion-drops:
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-4, 78, 146]
-  bonus: [4, 78, 146]
+  free: [-4, 78, 143]
+  bonus: [4, 78, 143]
 
 rooms:
   signal_boughs:
@@ -217,7 +217,7 @@ rooms:
         type: targets
         title: Shoot the four signal boards
         blocks: [[27, 66, 58], [45, 66, 58], [27, 66, 72], [45, 66, 72]]
-        supply: [25, 64, 56]
+        supply: [26, 64, 57]
         seconds: 30
     encounter:
       type: puzzle
