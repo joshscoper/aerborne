@@ -49,6 +49,28 @@ website, so these work straight away:
    change it straight away. This only affects the test site.
 3. Create a player account on the website, then link it with `/weblink`.
 
+## Developer commands
+
+Ops can use `/dev` (`nerdsmp.dev`) to test without playing up to something. Run it alone for the list.
+
+| Command | What it does |
+|---|---|
+| `/dev god [player]` | Take no damage and never go hungry, until you leave |
+| `/dev heal [player]` | Full health and food, no fire or effects |
+| `/dev fly [player]` | Toggle flight |
+| `/dev speed <1-10> [player]` | Walk and fly speed; 1 is normal |
+| `/dev item <id> [amount] [player]` | Any catalog item or vanilla item; `lesson`, `lifetime` and `legend` are the bottles |
+| `/dev gear <id> [item levels] [affixes] [player]` | A rolled piece of loot, above its catalog level if you like |
+| `/dev charm <companion> [player]` | A companion charm |
+| `/dev level <skill\|all> <level> [player]` | Set a skill's level, up or down |
+| `/dev marks <amount> [player]` | Add Marks |
+| `/dev mob <id> [count]` | Spawn a creature where you stand |
+| `/dev kill [radius]` | Kill nearby enemies, with credit for quests and room progress |
+| `/dev goto <room>` | Jump to a room of the expedition you're in |
+
+Mobs ignore creative mode, so use `/dev god` in survival to test a fight. Every use is written to the
+server log.
+
 ## Test checklist
 
 **Website and linking**

@@ -65,6 +65,17 @@ public final class InMemoryProgressionService implements ProgressionService {
     }
 
     @Override
+    public synchronized CompletionStage<SkillProgress> setExperience(AccountId accountId, Skill skill, long experience) {
+        ensureLoaded(accountId);
+        PlayerProgress player = progress.computeIfAbsent(accountId, ignored -> new PlayerProgress());
+        long capped = Math.clamp(experience, 0L, experienceForLevel(MAX_LEVEL));
+        SkillProgress next = new SkillProgress(capped, levelForExperience(capped));
+        player.skills.put(skill, next);
+        persist(accountId, player);
+        return CompletableFuture.completedFuture(next);
+    }
+
+    @Override
     public synchronized CompletionStage<MasteryResult> selectMastery(AccountId accountId, Skill skill) {
         ensureLoaded(accountId);
         PlayerProgress player = progress.computeIfAbsent(accountId, ignored -> new PlayerProgress());

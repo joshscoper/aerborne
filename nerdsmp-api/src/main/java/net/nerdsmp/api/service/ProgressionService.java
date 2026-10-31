@@ -25,6 +25,11 @@ public interface ProgressionService {
         String activityFingerprint
     );
 
+    /** Sets a skill's experience outright, up or down, for staff tools. Rewards go through {@link #awardExperience}. */
+    default CompletionStage<SkillProgress> setExperience(AccountId accountId, Skill skill, long experience) {
+        return java.util.concurrent.CompletableFuture.failedFuture(new UnsupportedOperationException("This progression store can't set experience."));
+    }
+
     CompletionStage<MasteryResult> selectMastery(AccountId accountId, Skill skill);
 
     CompletionStage<MasteryResult> removeMastery(AccountId accountId, Skill skill, Instant now);

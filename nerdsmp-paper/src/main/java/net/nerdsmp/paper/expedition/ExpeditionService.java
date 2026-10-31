@@ -201,6 +201,21 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         }
     }
 
+    /** The rooms of the run this player is in, for staff tools. */
+    public List<String> rooms(Player player) {
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        return run == null ? List.of() : run.expedition.roomList().stream().map(ExpeditionDefinition.Room::id).toList();
+    }
+
+    /** Staff testing: jumps to a room of the run this player is in. False when there's no such room. */
+    public boolean jump(Player player, String room) {
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        Location spot = run == null ? null : run.roomSpot(room);
+        if (spot == null) return false;
+        teleport(player, spot);
+        return true;
+    }
+
     /** Characters inside expeditions who give quests, by quest-giver id, with their names. */
     public Map<String, String> questGivers() {
         Map<String, String> givers = new HashMap<>();

@@ -1543,6 +1543,19 @@ final class ExpeditionRun {
         return new Location(world, point.x() + .5, point.y(), point.z() + .5, point.yaw(), 0);
     }
 
+    /** Somewhere to stand in a room: its checkpoint, else one of its points, else its middle. */
+    Location roomSpot(String id) {
+        Room room = expedition.rooms().get(id);
+        if (room == null) return null;
+        if (room.checkpoint() != null) return location(room.checkpoint());
+        if (!room.points().isEmpty()) return location(room.points().get(room.points().size() - 1));
+        if (room.region() == null) return null;
+        var box = room.region();
+        Location middle = new Location(world, (box.minX() + box.maxX()) / 2 + .5, box.minY(), (box.minZ() + box.maxZ()) / 2 + .5);
+        while (!middle.getBlock().isPassable() && middle.getY() < box.maxY()) middle.add(0, 1, 0);
+        return middle;
+    }
+
     Location respawnLocation() {
         String checkpoint = progress == null ? null : progress.checkpoint();
         if (checkpoint != null && checkpoint.startsWith(RunProgress.CAMPFIRE)) {

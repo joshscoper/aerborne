@@ -39,15 +39,20 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         "relic", "set", "starter", "mob", "geode", "gem", "tome", "entitlement");
     static final String NERDADMIN_USAGE = "/nerdadmin <" + String.join("|", ADMIN_SUBCOMMANDS) + "> [arguments]";
     private final ClaimExpansionPurchase claimExpansions = new ClaimExpansionPurchase();
+    private final DevCommands dev;
 
     public CommandRouter(NerdSmpPlugin plugin) {
         this.plugin = plugin;
+        dev = new DevCommands(plugin);
     }
+
+    public org.bukkit.event.Listener devListener() { return dev; }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         return switch (command.getName().toLowerCase(Locale.ROOT)) {
             case "permissions" -> plugin.staffPermissions().command(sender, args);
+            case "dev" -> dev.command(sender, args);
             case "zone" -> plugin.zoneCommands().command(sender,args);
             case "digsite" -> plugin.digSiteCommands().command(sender,args);
             case "journal" -> plugin.quests().command(sender,args);
@@ -992,6 +997,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> choices = switch (command.getName().toLowerCase(Locale.ROOT)) {
             case "permissions" -> plugin.staffPermissions().complete(sender, args);
+            case "dev" -> dev.complete(sender, args);
             case "expedition" -> plugin.expeditions().complete(sender, args);
             case "zone" -> plugin.zoneCommands().tabComplete(sender,args);
             case "digsite" -> plugin.digSiteCommands().complete(sender,args);

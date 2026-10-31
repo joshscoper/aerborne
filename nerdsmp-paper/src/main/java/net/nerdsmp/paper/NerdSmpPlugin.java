@@ -721,7 +721,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
             "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
-            "companion", "trail", "emote", "journal", "worldpack"
+            "companion", "trail", "emote", "journal", "worldpack", "dev"
         );
         for (String name : names) {
             PluginCommand command = getCommand(name);
@@ -732,6 +732,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             command.setTabCompleter(router);
         }
         getServer().getPluginManager().registerEvents(router, this);
+        getServer().getPluginManager().registerEvents(router.devListener(), this);
         for (String name : List.of("arcane", "forgeadmin")) {
             PluginCommand command = getCommand(name);
             if (command == null) throw new IllegalStateException("Command missing from plugin.yml: " + name);

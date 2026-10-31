@@ -82,6 +82,10 @@ commands:
     description: View your active story quests and their objectives.
     usage: /journal [abandon <quest>|admin <player> info|complete <quest>|reset [quest]]
     aliases: [questlog, storyquests]
+  dev:
+    description: Developer tools for testing, such as god mode, items and levels.
+    usage: /dev <god|heal|fly|speed|item|gear|charm|level|marks|mob|kill|goto> [arguments]
+    permission: nerdsmp.dev
   worldpack:
     description: Show or re-apply the shipped content for a known world map.
     usage: /worldpack [status|apply [force]]
@@ -340,6 +344,9 @@ commands:
     permission: nerdsmp.admin
 
 permissions:
+  nerdsmp.dev:
+    description: Developer tools for testing, such as god mode, items and levels. Every use is logged.
+    default: op
   nerdsmp.permissions.manage:
     description: Full permission ownership, including assigning other owners. Never grant to ordinary administrators.
     default: op

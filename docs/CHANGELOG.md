@@ -5,6 +5,11 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Developer commands (October 31)
+- **`/dev`** gives ops god mode, healing, flight, speed, any item, rolled gear, companion charms, skill
+  levels up or down, Marks, mob spawning, a nearby kill and a jump to any room of a run. Every use is
+  logged. The list is in `testing/aerborne/README.md`.
+
 ### Hollow Barrow polish from the first playtest (October 31)
 - **Levers show where they stand.** A right lever lights the brazier on its pedestal and a wrong one
   flips them all back up. The niches in the Processional and the Widow's Cell are backed with stone,

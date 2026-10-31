@@ -134,6 +134,29 @@ public final class JdbcProgressionService implements ProgressionService {
     }
 
     @Override
+    public CompletionStage<SkillProgress> setExperience(AccountId accountId, Skill skill, long experience) {
+        return CompletableFuture.supplyAsync(() -> inTransaction(connection -> {
+            ensureAccount(connection, accountId);
+            lockAccount(connection, accountId);
+            long capped = Math.clamp(experience, 0L, ProgressionService.experienceForLevel(MAX_LEVEL));
+            int level = ProgressionService.levelForExperience(capped);
+            try (PreparedStatement update = connection.prepareStatement(
+                "INSERT INTO skill_progress(account_id, season_id, skill, experience, level) VALUES (?, ?, ?, ?, ?) "
+                    + "ON CONFLICT (account_id, season_id, skill) DO UPDATE SET "
+                    + "experience = EXCLUDED.experience, level = EXCLUDED.level, updated_at = now()"
+            )) {
+                update.setObject(1, accountId.value());
+                update.setString(2, seasonId);
+                update.setString(3, skill.name());
+                update.setLong(4, capped);
+                update.setInt(5, level);
+                update.executeUpdate();
+            }
+            return new SkillProgress(capped, level);
+        }), executor);
+    }
+
+    @Override
     public CompletionStage<MasteryResult> selectMastery(AccountId accountId, Skill skill) {
         return CompletableFuture.supplyAsync(() -> inTransaction(connection -> {
             ensureAccount(connection, accountId);
