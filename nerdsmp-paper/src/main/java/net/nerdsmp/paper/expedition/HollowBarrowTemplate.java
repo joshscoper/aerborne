@@ -160,6 +160,7 @@ final class HollowBarrowTemplate {
             b.block(x, 66, z, Material.AIR);
             b.block(x, 65, z, Material.SKELETON_SKULL, x < 0 ? "rotation=12" : "rotation=4");
             b.block(x, 67, z, Material.SOUL_LANTERN, "hanging=true");
+            b.box(x < 0 ? x - 1 : x + 1, 64, z, x < 0 ? x - 1 : x + 1, 67, z, WALL);
         }
         // The hidden offering: a niche that goes further back than the others.
         for (int y = 64; y <= 66; y++) b.block(-16, y, 30, Material.AIR);
@@ -200,6 +201,7 @@ final class HollowBarrowTemplate {
         for (int[] lever : new int[][]{{30, 60}, {48, 60}, {30, 76}, {48, 76}}) {
             int post = lever[0] == 30 ? 29 : 49;
             for (int y = 64; y <= 66; y++) b.block(post, y, lever[1], Material.CHISELED_STONE_BRICKS);
+            b.block(post, 67, lever[1], Material.SOUL_CAMPFIRE, "lit=false,signal_fire=false,facing=north");
             b.block(lever[0], 65, lever[1], Material.LEVER, "face=wall,facing=" + (lever[0] == 30 ? "east" : "west") + ",powered=false");
             b.block(lever[0] + (lever[0] == 30 ? 1 : -1), 64, lever[1], Material.CANDLE, "candles=4,lit=true");
         }
@@ -247,7 +249,10 @@ final class HollowBarrowTemplate {
         sarcophagus(b, -39, 33, false);
         for (int[] column : new int[][]{{-42, 42}, {-34, 42}}) for (int y = 64; y <= 70; y++) b.block(column[0], y, column[1], Material.POLISHED_DEEPSLATE);
         candles(b, new int[][]{{-40, 36}, {-36, 36}, {-44, 34}, {-32, 34}, {-44, 46}, {-32, 46}});
-        for (int z = 34; z <= 46; z += 6) for (int x : new int[]{-47, -29}) b.block(x, 66, z, Material.SOUL_LANTERN);
+        for (int z = 34; z <= 46; z += 6) for (int x : new int[]{-47, -29}) {
+            b.block(x, 66, z, Material.SOUL_LANTERN);
+            b.block(x < 0 ? x - 1 : x + 1, 66, z, WALL);
+        }
     }
 
     /** The shortcut: dug from the Warden's hall to the antechamber, sealed by the cracked wall. */

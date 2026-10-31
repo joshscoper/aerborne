@@ -638,6 +638,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         skillLamps = new net.nerdsmp.paper.item.SkillLampService(this);
         plugins.registerEvents(skillLamps, this);
         itemUpdater = new net.nerdsmp.paper.item.ItemUpdater(items, forge);
+        itemUpdater.lamps(skillLamps);
         plugins.registerEvents(itemUpdater, this);
         plugins.registerEvents(hoeHarvest, this);
         plugins.registerEvents(oreSmelting, this);

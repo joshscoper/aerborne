@@ -13,8 +13,11 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.AnaloguePowerable;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Lightable;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Switch;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -44,7 +47,11 @@ final class RunPuzzles {
     private final Map<String, Integer> sequenceStep = new HashMap<>();
     private final Map<String, Set<Integer>> targetHits = new HashMap<>();
     private final Map<String, Long> targetWindow = new HashMap<>();
+    private final Set<String> solved = new HashSet<>();
     private final Map<java.util.UUID, Long> slipNotices = new HashMap<>();
+    /** Where each puzzle's set blocks show it: the top of the pedestal the switch is fixed to. */
+    private final Map<String, Set<Block>> beacons = new HashMap<>();
+    private final List<Room> rooms = new java.util.ArrayList<>();
 
     RunPuzzles(Plugin plugin, Host host) {
         this.plugin = plugin;
@@ -55,6 +62,7 @@ final class RunPuzzles {
 
     /** Remembers every puzzle block as the template had it, for resets. */
     void begin(List<Room> rooms) {
+        this.rooms.addAll(rooms);
         for (Room room : rooms) for (Puzzle puzzle : room.puzzles().values()) {
             Map<Point, BlockData> blocks = new HashMap<>();
             for (Point point : puzzle.blocks()) blocks.put(point, block(point).getBlockData().clone());
@@ -65,23 +73,30 @@ final class RunPuzzles {
     /** A room just started: flash any sequences it shows. */
     void started(Room room) {
         for (Puzzle puzzle : room.puzzles().values()) {
-            if (puzzle.type() == PuzzleType.SEQUENCE && puzzle.show()) flash(puzzle);
             sequenceStep.remove(key(room, puzzle));
             targetHits.remove(key(room, puzzle));
+            targetWindow.remove(key(room, puzzle));
+            solved.remove(key(room, puzzle));
+            rewind(room, puzzle);
+            if (puzzle.type() == PuzzleType.SEQUENCE && puzzle.show()) flash(puzzle);
         }
     }
 
     /** Once a second: levers, plates, jump goals and target windows. */
     void tick(long now) {
+        glow();
         Room room = host.activeRoom();
         if (room == null) return;
         for (Puzzle puzzle : room.puzzles().values()) {
+            if (solved.contains(key(room, puzzle))) continue;
             switch (puzzle.type()) {
-                case LEVERS -> { if (puzzle.blocks().stream().allMatch(point -> powered(block(point)))) host.solved(room.id(), puzzle.id()); }
-                case PLATES -> { if (puzzle.blocks().stream().allMatch(point -> powered(block(point)))) host.solved(room.id(), puzzle.id()); }
+                case LEVERS, PLATES -> {
+                    for (Point point : puzzle.blocks()) beacon(room, puzzle, block(point), powered(block(point)));
+                    if (puzzle.blocks().stream().allMatch(point -> powered(block(point)))) solve(room, puzzle);
+                }
                 case REACH -> {
                     if (puzzle.area() != null && host.online().stream().anyMatch(player -> !player.isDead()
-                        && puzzle.area().contains(player.getX(), player.getY(), player.getZ()))) host.solved(room.id(), puzzle.id());
+                        && puzzle.area().contains(player.getX(), player.getY(), player.getZ()))) solve(room, puzzle);
                 }
                 case TARGETS -> {
                     Long opened = targetWindow.get(key(room, puzzle));
@@ -100,26 +115,32 @@ final class RunPuzzles {
     /** A player used a block (button, lever, any block in a sequence). */
     void used(Player player, Block block) {
         Room room = host.activeRoom();
-        if (room == null) return;
+        if (room == null) { settle(block); return; }
         for (Puzzle puzzle : room.puzzles().values()) {
             if (puzzle.type() != PuzzleType.SEQUENCE) continue;
             int index = indexOf(puzzle, block);
             if (index < 0) continue;
             String key = key(room, puzzle);
+            if (solved.contains(key)) { settle(block); continue; }
             List<Integer> order = puzzle.sequence();
             int step = sequenceStep.getOrDefault(key, 0);
+            if (step < 0 || step >= order.size()) continue;
             if (order.get(step) == index) {
                 step++;
                 sequenceStep.put(key, step);
                 player.getWorld().playSound(block.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 1F, .7F + step * .15F);
                 player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(.5, .8, .5), 6, .2, .2, .2, 0);
-                if (step >= order.size()) host.solved(room.id(), puzzle.id());
+                beacon(room, puzzle, block, true);
+                if (step >= order.size()) solve(room, puzzle);
             } else {
                 sequenceStep.remove(key);
+                rewind(room, puzzle);
                 player.getWorld().playSound(block.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1F, .5F);
                 player.getWorld().spawnParticle(Particle.SMOKE, block.getLocation().add(.5, .8, .5), 10, .2, .2, .2, .01);
                 for (Player member : host.online()) Chat.notice(member, "Wrong order. The sequence resets" + (puzzle.show() ? "; watch it again." : "."));
-                if (puzzle.show()) Bukkit.getScheduler().runTaskLater(plugin, () -> flash(puzzle), 30L);
+                if (puzzle.show()) Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (host.activeRoom() == room && !solved.contains(key)) flash(puzzle);
+                }, 30L);
             }
         }
     }
@@ -133,13 +154,14 @@ final class RunPuzzles {
             int index = indexOf(puzzle, block);
             if (index < 0) continue;
             String key = key(room, puzzle);
+            if (solved.contains(key)) continue;
             targetWindow.putIfAbsent(key, now);
             Set<Integer> hits = targetHits.computeIfAbsent(key, ignored -> new HashSet<>());
             if (hits.add(index)) {
                 block.getWorld().playSound(block.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1F, .8F + hits.size() * .1F);
                 block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(.5, .5, .5), 8, .4, .4, .4, 0);
             }
-            if (hits.size() >= puzzle.blocks().size()) host.solved(room.id(), puzzle.id());
+            if (hits.size() >= puzzle.blocks().size()) solve(room, puzzle);
         }
     }
 
@@ -171,16 +193,88 @@ final class RunPuzzles {
             sequenceStep.remove(key);
             targetHits.remove(key);
             targetWindow.remove(key);
-            Map<Point, BlockData> blocks = snapshots.get(key);
-            if (blocks != null) blocks.forEach((point, data) -> block(point).setBlockData(data, false));
+            solved.remove(key);
+            rewind(room, puzzle);
+        }
+    }
+
+    /** Flips the puzzle's switches back to how the template had them and puts its beacons out. */
+    private void rewind(Room room, Puzzle puzzle) {
+        String key = key(room, puzzle);
+        Map<Point, BlockData> blocks = snapshots.get(key);
+        if (blocks != null) blocks.forEach((point, data) -> block(point).setBlockData(data, false));
+        Set<Block> lit = beacons.remove(key);
+        if (lit != null) lit.forEach(beacon -> light(beacon, false));
+    }
+
+    /** A puzzle switch was used when it does nothing: it goes straight back to how it should sit. */
+    private void settle(Block block) {
+        for (Room room : rooms) for (Puzzle puzzle : room.puzzles().values()) {
+            if (!(block.getBlockData() instanceof Powerable powerable) || indexOf(puzzle, block) < 0) continue;
+            powerable.setPowered(solved.contains(key(room, puzzle)));
+            block.setBlockData(powerable, false);
+        }
+    }
+
+    private void beacon(Room room, Puzzle puzzle, Block block, boolean on) {
+        Block spot = pedestalTop(block);
+        Set<Block> lit = beacons.computeIfAbsent(key(room, puzzle), ignored -> new HashSet<>());
+        if (on ? !lit.add(spot) : !lit.remove(spot)) return;
+        light(spot, on);
+        if (on) host.world().spawnParticle(Particle.SOUL_FIRE_FLAME, spot.getLocation().add(.5, .6, .5), 16, .15, .3, .15, .03);
+    }
+
+    /** The air, or the unlit brazier, on top of whatever this switch is fixed to. */
+    private static Block pedestalTop(Block block) {
+        Block spot = block;
+        if (block.getBlockData() instanceof Switch fixed) spot = switch (fixed.getAttachedFace()) {
+            case WALL -> block.getRelative(fixed.getFacing().getOppositeFace());
+            case FLOOR -> block.getRelative(BlockFace.DOWN);
+            case CEILING -> block.getRelative(BlockFace.UP);
+        };
+        for (int step = 0; step < 6 && spot.getType().isSolid() && !(spot.getBlockData() instanceof Lightable); step++) spot = spot.getRelative(BlockFace.UP);
+        return spot;
+    }
+
+    private static void light(Block beacon, boolean on) {
+        if (!(beacon.getBlockData() instanceof Lightable lightable)) return;
+        lightable.setLit(on);
+        beacon.setBlockData(lightable, false);
+    }
+
+    /** Set switches burn on their pedestals, so the party can see where a puzzle stands. */
+    private void glow() {
+        for (Set<Block> lit : beacons.values()) for (Block beacon : lit) {
+            Location at = beacon.getLocation().add(.5, .7, .5);
+            host.world().spawnParticle(Particle.SOUL_FIRE_FLAME, at, 8, .12, .25, .12, .012);
+            host.world().spawnParticle(Particle.END_ROD, at.add(0, .4, 0), 2, .1, .2, .1, .01);
         }
     }
 
     /** Puzzle blocks are part of the puzzle, not loot: true when this block belongs to one. */
     boolean puzzleBlock(Block block) {
+        if (!host.world().equals(block.getWorld())) return false;
         for (var blocks : snapshots.values()) for (Point point : blocks.keySet())
             if (point.x() == block.getX() && point.y() == block.getY() && point.z() == block.getZ()) return true;
         return false;
+    }
+
+    /** Only authored switches and plates in the current room may bypass land protection. */
+    boolean activeControl(Block block) {
+        Room room = host.activeRoom();
+        if (room == null || !host.world().equals(block.getWorld())) return false;
+        Material type = block.getType();
+        if (type != Material.LEVER && !type.name().endsWith("_BUTTON") && !type.name().endsWith("PRESSURE_PLATE")) return false;
+        return room.puzzles().values().stream().anyMatch(puzzle ->
+            (puzzle.type() == PuzzleType.LEVERS || puzzle.type() == PuzzleType.SEQUENCE || puzzle.type() == PuzzleType.PLATES)
+                && indexOf(puzzle, block) >= 0);
+    }
+
+    private void solve(Room room, Puzzle puzzle) {
+        String key = key(room, puzzle);
+        if (!solved.add(key)) return;
+        targetWindow.remove(key);
+        host.solved(room.id(), puzzle.id());
     }
 
     /** Text for a puzzle's progress, such as {@code 2/4}, for the sidebar. */
@@ -194,12 +288,14 @@ final class RunPuzzles {
     }
 
     private void flash(Puzzle puzzle) {
+        Room room = host.activeRoom();
+        if (room == null || solved.contains(key(room, puzzle))) return;
         List<Integer> order = puzzle.sequence();
         for (int step = 0; step < order.size(); step++) {
             Point point = puzzle.blocks().get(order.get(step));
             int note = step;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (host.activeRoom() == null) return;
+                if (host.activeRoom() != room || solved.contains(key(room, puzzle))) return;
                 Location at = new Location(host.world(), point.x() + .5, point.y() + .8, point.z() + .5);
                 host.world().spawnParticle(Particle.END_ROD, at, 14, .25, .25, .25, .02);
                 host.world().playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, 1.2F, .7F + note * .15F);

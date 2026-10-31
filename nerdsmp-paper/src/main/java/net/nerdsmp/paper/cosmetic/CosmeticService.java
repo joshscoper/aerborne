@@ -669,7 +669,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
             ConfigurationSection s = section.getConfigurationSection("companions." + c.slug());
             companions.add(s == null ? c : new CosmeticCatalog.Companion(c.slug(), c.name(), c.species(),
                 s.getString("model", c.model()).toLowerCase(Locale.ROOT), Math.clamp(s.getDouble("scale", c.scale()), 0.25D, 3.0D),
-                s.getBoolean("flying", c.flying()), s.getString("particle", c.particle()), c.color(), s.getBoolean("free", c.free())));
+                s.getBoolean("flying", c.flying()), s.getString("particle", c.particle()), c.color(), s.getBoolean("free", c.free()), c.source()));
         }
         List<CosmeticCatalog.Trail> trails = new ArrayList<>();
         for (CosmeticCatalog.Trail t : defaults.trails()) {
@@ -718,6 +718,51 @@ public final class CosmeticService implements Listener, AutoCloseable {
                 + "; using the built-in one. Copy it into the file from the plugin jar to reshape it.");
         }
         return merged.models();
+    }
+
+    /** A rare drop: the companion's charm, which can be traded until someone binds it to their account. */
+    public Optional<org.bukkit.inventory.ItemStack> charm(String slug) {
+        return catalog.companion(slug).map(companion -> {
+            var item = new org.bukkit.inventory.ItemStack(Material.ECHO_SHARD);
+            var meta = item.getItemMeta();
+            meta.itemName(Chat.render("<gold>" + companion.name() + " Charm</gold>"));
+            meta.lore(List.of(
+                Chat.render("<gray>" + companion.species() + "</gray>").decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false),
+                Chat.render("<dark_gray>Something in it still wants to follow you.</dark_gray>"),
+                net.kyori.adventure.text.Component.empty(),
+                Chat.render("<yellow>Right-click</yellow> <gray>to bind this companion to you.</gray>").decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
+            meta.setEnchantmentGlintOverride(true);
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "companion_charm"), PersistentDataType.STRING, companion.slug());
+            item.setItemMeta(meta);
+            return item;
+        });
+    }
+
+    /** Binding a charm spends it and grants the companion, the same way the store does. */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onCharm(org.bukkit.event.player.PlayerInteractEvent event) {
+        var held = event.getItem();
+        if (held == null || held.getType() != Material.ECHO_SHARD || !held.hasItemMeta() || !event.getAction().isRightClick()) return;
+        String slug = held.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "companion_charm"), PersistentDataType.STRING);
+        if (slug == null) return;
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        var companion = catalog.companion(slug).orElse(null);
+        AccountId account = account(player);
+        if (companion == null || account == null) return;
+        if (ownership(player).companions().contains(slug)) {
+            Chat.notice(player, "You already have " + Chat.escape(companion.name()) + ". This charm could still find someone else.");
+            return;
+        }
+        var spent = held.asOne();
+        held.subtract();
+        plugin.entitlements().grant(account, companion.product(), "charm:" + UUID.randomUUID(), null).thenAccept(result -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (result == EntitlementService.GrantResult.APPLIED) refresh(player);
+            else {
+                player.getInventory().addItem(spent);
+                Chat.error(player, "The charm wouldn't bind. Try again in a moment.");
+            }
+        }));
     }
 
     /** The wardrobe icon for a companion: the main block of its sculpture. */

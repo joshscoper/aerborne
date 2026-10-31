@@ -170,7 +170,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
             "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf",
             "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a",
-            "3d9bd7d0ba9d95b03480111ce1647ccf19da0d2905c056a1e565b7a5cf8ff658"),
+            "3d9bd7d0ba9d95b03480111ce1647ccf19da0d2905c056a1e565b7a5cf8ff658",
+            "d302132dbe72606870496c166365aa9de3fffef02217ca09d9ee34c8a9096a99"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
             "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
@@ -198,6 +199,14 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         } catch (java.io.IOException | java.security.NoSuchAlgorithmException failure) {
             return "";
         }
+    }
+
+    /** Characters inside expeditions who give quests, by quest-giver id, with their names. */
+    public Map<String, String> questGivers() {
+        Map<String, String> givers = new HashMap<>();
+        for (ExpeditionDefinition definition : definitions.values()) for (var npc : definition.story().npcs().values())
+            if (npc.quests() != null) givers.put(npc.quests(), npc.name());
+        return givers;
     }
 
     /** Reloads tiers and every expedition file. A file that no longer parses keeps its last good version. */

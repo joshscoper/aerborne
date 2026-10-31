@@ -75,22 +75,22 @@ public record ExpeditionDefinition(
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
                         List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro,
-                        Map<String, Pack> packs, int recordsVersion) {
+                        Map<String, Pack> packs, int recordsVersion, Map<String, CompanionDrop> companionDrops) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null, null, List.of(), Map.of(), 0);
+            Map.of(), null, null, List.of(), Map.of(), 0, Map.of());
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
-                null, List.of(), Map.of(), 0);
+                null, List.of(), Map.of(), 0, Map.of());
         }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
-                null, List.of(), Map.of(), 0);
+                null, List.of(), Map.of(), 0, Map.of());
         }
 
         public Story {
@@ -105,6 +105,7 @@ public record ExpeditionDefinition(
             chests = ordered(chests);
             outro = outro == null ? List.of() : List.copyOf(outro);
             packs = ordered(packs);
+            companionDrops = ordered(companionDrops);
         }
 
         /** How many secret caches the map hides, for the run's exploration score. */
@@ -141,6 +142,9 @@ public record ExpeditionDefinition(
     /** A loot container in the map. Every player loots it once, with their own roll. */
     public record LootChest(String id, Point at, ChestKind kind, String title) { }
 
+    /** A rare companion a boss can drop: each player rolls {@code chance} (0-1) for themselves, raised on harder tiers. */
+    public record CompanionDrop(String companion, double chance) { }
+
     /** Where the end-of-run reward chests appear: the free chest and the Marks-bought bonus chest. */
     public record RewardChests(Point free, Point bonus) { }
 
@@ -167,16 +171,21 @@ public record ExpeditionDefinition(
      * starts (once for the party), so a scene can change the map.
      */
     public record Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text, String title,
-                       List<String> lines, String sound, List<ScriptAction> actions, boolean fade) {
+                       List<String> lines, String sound, List<ScriptAction> actions, boolean fade, Frame to) {
         public Shot {
             lines = lines == null ? List.of() : List.copyOf(lines);
             actions = actions == null ? List.of() : List.copyOf(actions);
         }
 
         public Shot(double x, double y, double z, float yaw, float pitch, int seconds, String text) {
-            this(x, y, z, yaw, pitch, seconds, text, null, List.of(), null, List.of(), false);
+            this(x, y, z, yaw, pitch, seconds, text, null, List.of(), null, List.of(), false, null);
         }
+
+        public Frame frame() { return new Frame(x, y, z, yaw, pitch); }
     }
+
+    /** A camera position; a shot with a {@code to} frame moves there over its own length. */
+    public record Frame(double x, double y, double z, float yaw, float pitch) { }
 
     public record Cutscene(String id, List<Shot> shots) {
         public Cutscene { shots = List.copyOf(shots); }
@@ -185,8 +194,9 @@ public record ExpeditionDefinition(
     }
 
     /** A talking character placed at run start. Right-click to hear the next line. */
-    public record Npc(String id, String name, String entity, Point at, List<String> lines) {
+    public record Npc(String id, String name, String entity, Point at, List<String> lines, String quests) {
         public Npc { lines = List.copyOf(lines); }
+        public Npc(String id, String name, String entity, Point at, List<String> lines) { this(id, name, entity, at, lines, null); }
     }
 
     /**
@@ -343,6 +353,12 @@ public record ExpeditionDefinition(
      */
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
+    /** A boss rising out of the floor, or its bones gathering first and then rising. */
+    public enum EntranceStyle { RISE, FORM }
+
+    /** How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds} into the fight. */
+    public record Entrance(EntranceStyle style, int delaySeconds, int seconds) { }
+
     /**
      * A boss phase: below {@code atHealth} percent the boss switches to these abilities. With
      * {@code submergeSeconds} it first withdraws, untouchable, for that long or until its adds are dead.
@@ -361,7 +377,7 @@ public record ExpeditionDefinition(
     public record Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus,
                             int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts,
                             double bossDamage, double bossHealth, List<String> bosses, List<String> abilities,
-                            List<Phase> phases, int enrageSeconds, int linkSeconds) {
+                            List<Phase> phases, int enrageSeconds, int linkSeconds, Entrance entrance) {
         public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1,
             List.of(), List.of(), List.of(), 0);
 
@@ -369,7 +385,7 @@ public record ExpeditionDefinition(
                          List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts, double bossDamage, double bossHealth,
                          List<String> bosses, List<String> abilities, List<Phase> phases, int enrageSeconds) {
             this(type, waves, boss, bossLevelBonus, surviveSeconds, addsAtHealth, scripts, bossDamage, bossHealth, bosses, abilities,
-                phases, enrageSeconds, 0);
+                phases, enrageSeconds, 0, null);
         }
 
         public Encounter {

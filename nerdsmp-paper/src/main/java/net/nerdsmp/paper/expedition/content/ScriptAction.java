@@ -52,7 +52,9 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         /** {@code hazard <start|stop|pulse> <id>} runs, stops or fires once one of the expedition's hazards. */
         HAZARD(2, false),
         /** {@code campfire <id>} lights a campfire for the party. */
-        CAMPFIRE(1, false);
+        CAMPFIRE(1, false),
+        /** {@code npc <id> <x> <y> <z> [yaw]} moves a character, say to meet the party at the end. */
+        NPC(4, false);
 
         final int minimumArgs;
         final boolean freeText;
@@ -74,7 +76,7 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         } catch (IllegalArgumentException unknown) {
             throw new IllegalArgumentException("Unknown script action '" + word.toLowerCase(Locale.ROOT)
                 + "'. Use message, title, say, sound, spawn, open, close, effect, checkpoint, wait, command, cutscene, "
-                + "build, break, restore, hazard or campfire.");
+                + "build, break, restore, hazard, campfire or npc.");
         }
         String rest = space < 0 ? "" : trimmed.substring(space + 1).strip();
         List<String> args = rest.isEmpty() ? List.of() : verb.freeText ? List.of(rest) : List.of(rest.split("\\s+"));
@@ -91,6 +93,12 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
             }
             case WAIT -> positive(args.get(0), "wait seconds", 300);
             case SOUND -> { if (args.size() > 1) Double.parseDouble(args.get(1)); }
+            case NPC -> {
+                number(args.get(1), "npc x");
+                number(args.get(2), "npc y");
+                number(args.get(3), "npc z");
+                if (args.size() > 4) number(args.get(4), "npc yaw");
+            }
             case SAY -> { if (!args.get(0).contains("|")) throw new IllegalArgumentException("say needs a speaker and a line: say <speaker>|<line>"); }
             case HAZARD -> {
                 if (!List.of("start", "stop", "pulse").contains(args.get(0).toLowerCase(Locale.ROOT)))

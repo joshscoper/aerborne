@@ -30,6 +30,17 @@ class DungeonGuideTests(unittest.TestCase):
             self.assertIn(text, html)
         self.assertNotIn("10 lives", html)
 
+    def test_revision_28_names_the_bottles_and_keeps_staff_edits(self):
+        conn = connect(self.app.config["DATABASE"])
+        conn.execute("UPDATE guides SET body = 'Our own words.', updated_by = 'j0sh' WHERE slug = 'skills-and-talents'")
+        conn.execute("UPDATE settings SET value = '27' WHERE key = 'seed_rev'")
+        conn.commit()
+        self.assertTrue(seed_updates.apply(conn))
+        rows = {r["slug"]: r["body"] for r in conn.execute("SELECT slug, body FROM guides")}
+        self.assertEqual(rows["skills-and-talents"], "Our own words.")
+        self.assertIn("Bottled Lessons", rows["expeditions"])
+        conn.close()
+
     def test_revision_27_keeps_staff_edits(self):
         conn = connect(self.app.config["DATABASE"])
         edited = "## Our own expedition notes\n"

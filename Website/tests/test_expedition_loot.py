@@ -54,7 +54,7 @@ class ExpeditionLootTest(unittest.TestCase):
             self.assertIn(text, guide)
         skills = self.client.get("/guide/skills-and-talents").get_data(as_text=True)
         self.assertIn("Experience bottles", skills)
-        self.assertIn("Grand", skills)
+        self.assertIn("Bottled Legend", skills)
 
     def test_revision_25_refreshes_untouched_guides_and_keeps_staff_edits(self):
         conn = connect(self.app.config["DATABASE"])

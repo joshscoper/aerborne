@@ -69,6 +69,10 @@ final class RunStage {
         void broadcast(String markup);
         /** Runs script actions from a cutscene shot, as the active room's script would. */
         void perform(List<ScriptAction> actions);
+        /** Opens this quest giver's board if it has anything for the player right now. */
+        boolean openQuests(Player player, String giver);
+        /** The mark this quest giver shows the player: {@code !} for a quest, {@code ?} for a hand-in, or null. */
+        String questMark(Player player, String giver);
     }
 
     /** Players out of combat this close to a lit campfire rest. */
@@ -86,6 +90,11 @@ final class RunStage {
     private final Map<UUID, Map<String, Integer>> npcLines = new HashMap<>();
     private final Map<UUID, CameraState> cameras = new HashMap<>();
     private final Set<UUID> fallingRocks = new HashSet<>();
+    /** Scenes already shown this run: a second attempt at a boss doesn't sit through its scene again. */
+    private final Set<String> played = new HashSet<>();
+    /** The blue marks over a quest-giving character, one per mark, shown only to the players they're for. */
+    private final Map<String, Map<String, org.bukkit.entity.TextDisplay>> marks = new HashMap<>();
+    private final Map<UUID, Map<String, String>> marksShown = new HashMap<>();
     private int restClock;
 
     private record CameraState(GameMode mode, Location from, UUID camera, BukkitTask task) { }
@@ -133,6 +142,8 @@ final class RunStage {
             if (entity != null) entity.remove();
         }
         npcByEntity.clear();
+        marks.values().forEach(displays -> displays.values().forEach(Entity::remove));
+        marks.clear();
         for (UUID uuid : fallingRocks) {
             Entity entity = Bukkit.getEntity(uuid);
             if (entity != null) entity.remove();
@@ -143,6 +154,7 @@ final class RunStage {
     /** Once a second: campfire rest, and expiring temporary blocks are handled by their own timers. */
     void tick(long now) {
         restClock++;
+        updateMarks();
         for (Campfire fire : host.expedition().story().campfires().values()) {
             Location at = new Location(host.world(), fire.at().x() + .5, fire.at().y(), fire.at().z() + .5);
             if (!lit.getOrDefault(fire.id(), false)) {
@@ -415,6 +427,48 @@ final class RunStage {
         });
         npcByEntity.put(entity.getUniqueId(), npc.id());
         npcEntities.put(npc.id(), entity.getUniqueId());
+        if (npc.quests() != null) marks.put(npc.id(), Map.of("!", mark(entity, "!"), "?", mark(entity, "?")));
+    }
+
+    private org.bukkit.entity.TextDisplay mark(Entity body, String text) {
+        return host.world().spawn(markSpot(body), org.bukkit.entity.TextDisplay.class, display -> {
+            display.text(Chat.render("<blue><bold>" + text + "</bold></blue>"));
+            display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+            display.setVisibleByDefault(false);
+            display.setPersistent(false);
+            display.setShadowed(true);
+            display.setDefaultBackground(false);
+            display.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+            display.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(), new org.joml.AxisAngle4f(),
+                new org.joml.Vector3f(2.4F, 2.4F, 2.4F), new org.joml.AxisAngle4f()));
+        });
+    }
+
+    private static Location markSpot(Entity body) { return body.getLocation().add(0, body.getHeight() + 1.25, 0); }
+
+    /** Each player sees the mark that's true for them: a daily to pick up, one to hand in, or nothing. */
+    private void updateMarks() {
+        for (var entry : marks.entrySet()) {
+            Npc npc = host.expedition().story().npcs().get(entry.getKey());
+            for (Player player : host.online()) {
+                Map<String, String> shown = marksShown.computeIfAbsent(player.getUniqueId(), ignored -> new HashMap<>());
+                String mark = host.questMark(player, npc.quests()), before = shown.get(npc.id());
+                if (java.util.Objects.equals(mark, before)) continue;
+                if (before != null) player.hideEntity(plugin, entry.getValue().get(before));
+                if (mark != null) player.showEntity(plugin, entry.getValue().get(mark));
+                shown.put(npc.id(), mark);
+            }
+        }
+    }
+
+    /** A character walks on to somewhere new, between scenes. */
+    void moveNpc(String id, ExpeditionDefinition.Point to) {
+        LivingEntity body = npcEntity(id);
+        if (body == null) return;
+        host.world().spawnParticle(Particle.SMOKE, body.getLocation().add(0, 1, 0), 12, .3, .5, .3, .01);
+        body.teleport(new Location(host.world(), to.x() + .5, to.y(), to.z() + .5, to.yaw(), 0));
+        var displays = marks.get(id);
+        if (displays != null) displays.values().forEach(display -> display.teleport(markSpot(body)));
     }
 
     boolean isNpc(Entity entity) { return entity != null && npcByEntity.containsKey(entity.getUniqueId()); }
@@ -423,7 +477,9 @@ final class RunStage {
     void talk(Player player, Entity entity) {
         String id = npcByEntity.get(entity.getUniqueId());
         Npc npc = id == null ? null : host.expedition().story().npcs().get(id);
-        if (npc == null || npc.lines().isEmpty()) return;
+        if (npc == null) return;
+        if (npc.quests() != null && host.openQuests(player, npc.quests())) return;
+        if (npc.lines().isEmpty()) return;
         Map<String, Integer> seen = npcLines.computeIfAbsent(player.getUniqueId(), ignored -> new HashMap<>());
         int line = seen.getOrDefault(id, 0);
         Chat.send(player, speech(npc.name(), npc.lines().get(line % npc.lines().size())));
@@ -454,7 +510,10 @@ final class RunStage {
 
     boolean inCutscene(Player player) { return cameras.containsKey(player.getUniqueId()); }
 
+    boolean cutsceneRunning() { return !cameras.isEmpty(); }
+
     void cutscene(String id) {
+        if (!played.add(id)) return;
         // A room can start mid-teleport (an ender pearl, a staff tp), before the player has arrived;
         // start next tick so the scene returns everyone to where they really are.
         Bukkit.getScheduler().runTask(plugin, () -> { if (host.live()) play(id); });
@@ -478,7 +537,7 @@ final class RunStage {
         for (Player player : host.online()) {
             if (player.isDead() || inCutscene(player)) continue;
             Shot first = cutscene.shots().getFirst();
-            ArmorStand camera = host.world().spawn(location(first), ArmorStand.class, stand -> {
+            ArmorStand camera = host.world().spawn(location(first.frame()), ArmorStand.class, stand -> {
                 stand.setInvisible(true);
                 stand.setMarker(true);
                 stand.setGravity(false);
@@ -495,10 +554,11 @@ final class RunStage {
             int total = cutscene.seconds() * 20;
             int[] tick = {0};
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-                if (!player.isOnline() || !camera.isValid() || tick[0] >= total) {
+                if (!player.isOnline() || !camera.isValid() || tick[0] >= total || tick[0] > 20 && player.isSneaking()) {
                     endCutscene(player);
                     return;
                 }
+                if (tick[0] == 30 && total > 100) player.sendActionBar(Chat.render("<dark_gray>Sneak to skip</dark_gray>"));
                 int elapsed = 0;
                 for (int shot = 0; shot < cutscene.shots().size(); shot++) {
                     Shot current = cutscene.shots().get(shot);
@@ -508,7 +568,7 @@ final class RunStage {
                         Shot next = shot + 1 < cutscene.shots().size() ? cutscene.shots().get(shot + 1) : current;
                         if (next.fade()) next = current; // A cut through black: hold this frame, then jump.
                         double t = (tick[0] - elapsed) / (double) length;
-                        camera.teleport(lerp(current, next, t));
+                        camera.teleport(lerp(current.frame(), current.to() != null ? current.to() : next.frame(), t));
                         break;
                     }
                     elapsed += length;
@@ -570,11 +630,11 @@ final class RunStage {
         }
     }
 
-    private Location location(Shot shot) {
-        return new Location(host.world(), shot.x(), shot.y(), shot.z(), shot.yaw(), shot.pitch());
+    private Location location(ExpeditionDefinition.Frame frame) {
+        return new Location(host.world(), frame.x(), frame.y(), frame.z(), frame.yaw(), frame.pitch());
     }
 
-    private Location lerp(Shot a, Shot b, double t) {
+    private Location lerp(ExpeditionDefinition.Frame a, ExpeditionDefinition.Frame b, double t) {
         double eased = t * t * (3 - 2 * t);
         float yaw = (float) (a.yaw() + wrap(b.yaw() - a.yaw()) * eased);
         return new Location(host.world(), a.x() + (b.x() - a.x()) * eased, a.y() + (b.y() - a.y()) * eased, a.z() + (b.z() - a.z()) * eased,

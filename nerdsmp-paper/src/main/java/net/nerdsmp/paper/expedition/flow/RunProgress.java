@@ -496,7 +496,7 @@ public final class RunProgress {
             String text = room.title() + (room.optional() ? " (optional)" : "");
             if (status == Objective.Status.ACTIVE) text += detail(room, now);
             else if (states[index] == RoomState.WAITING && !room.requiresPacks().isEmpty() && !packsClear(room))
-                text += " · " + packsLeft(room.id()) + " packs guard the way";
+                text += " · " + packsLeft(room.id()) + (packsLeft(room.id()) == 1 ? " pack left" : " packs left");
             lines.add(new Objective(text, status, 0));
             if (status == Objective.Status.ACTIVE) for (var puzzle : room.puzzles().values())
                 lines.add(new Objective(puzzle.title(), solved.contains(puzzle.id()) ? Objective.Status.DONE : Objective.Status.ACTIVE, 1));

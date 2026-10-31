@@ -1,6 +1,7 @@
 package net.nerdsmp.paper.expedition;
 
 import net.nerdsmp.api.model.AccountId;
+import net.nerdsmp.api.model.AdventurerProgression;
 import net.nerdsmp.api.model.ItemId;
 import net.nerdsmp.api.service.EconomyService;
 import net.nerdsmp.paper.NerdSmpPlugin;
@@ -17,9 +18,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Lidded;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -39,7 +38,9 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * A run's loot: what enemies drop by role, the crates, chests and secret caches every player loots
  * once with their own roll, and the end-of-run reward chests (a free one whose quality comes from
- * the run's grade, and a better bonus chest bought with Marks). Rules live in {@link ExpeditionLoot}.
+ * the run's grade, and a better bonus chest bought with Marks). Each chest is private: its roll, its
+ * window and the glimmer over it belong to one player, and gear and stacks grow with that player's
+ * level and the difficulty. Rules live in {@link ExpeditionLoot}.
  */
 final class RunLoot {
     /** A chest window: the items the player can take. Bonus windows show a price until bought. */
@@ -75,6 +76,8 @@ final class RunLoot {
     private final Map<UUID, List<ItemStack>> bonuses = new HashMap<>();
     private long bonusPrice;
     private boolean finished;
+    /** Adventurer levels, read as the run starts. */
+    private final Map<UUID, Integer> levels = new HashMap<>();
 
     RunLoot(NerdSmpPlugin plugin, ExpeditionRun run, ExpeditionLoot.Table table, double luck) {
         this.plugin = plugin;
@@ -85,17 +88,40 @@ final class RunLoot {
 
     int secretsFound() { return secretsFound.size(); }
 
+    /** Reads a member's adventurer level; rewards scale with it. */
+    void readLevel(UUID member) {
+        plugin.sessions().account(member).ifPresent(account -> plugin.progression().snapshot(account).whenComplete((snapshot, error) -> {
+            if (error == null && snapshot != null) Bukkit.getScheduler().runTask(plugin,
+                () -> levels.put(member, AdventurerProgression.fromSkills(snapshot.skills()).level()));
+        }));
+    }
+
+    /** One player's level, or for shared drops on the ground, the party's. */
+    private int level(UUID member) {
+        if (member != null) return levels.getOrDefault(member, run.expedition.level());
+        return (int) levels.values().stream().mapToInt(Integer::intValue).average().orElse(run.expedition.level());
+    }
+
+    private int levelBonus(UUID member) {
+        return ExpeditionLoot.itemLevelBonus(run.tier.id(), run.key == null ? 0 : run.key.key().level(), run.expedition.level(), level(member));
+    }
+
+    /** A reward stack for this player. */
+    int scaled(UUID member, int amount) {
+        return ExpeditionLoot.scaled(amount, luck, run.expedition.level(), level(member));
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Items
     // ---------------------------------------------------------------------------------------------
 
-    List<ItemStack> stacks(List<ExpeditionLoot.Drop> drops) {
+    List<ItemStack> stacks(List<ExpeditionLoot.Drop> drops, UUID owner) {
         List<ItemStack> stacks = new ArrayList<>();
-        for (ExpeditionLoot.Drop drop : drops) stack(drop).ifPresent(stacks::add);
+        for (ExpeditionLoot.Drop drop : drops) stack(drop, owner).ifPresent(stacks::add);
         return stacks;
     }
 
-    private Optional<ItemStack> stack(ExpeditionLoot.Drop drop) {
+    private Optional<ItemStack> stack(ExpeditionLoot.Drop drop, UUID owner) {
         try {
             return switch (drop.kind()) {
                 case LAMP -> {
@@ -104,10 +130,10 @@ final class RunLoot {
                         : plugin.skillLamps().bottle(grade, drop.amount()));
                 }
                 case GEAR -> Optional.of(plugin.items().createLoot(new ItemId(drop.item()), drop.affixes(), drop.unidentified(),
-                    ThreadLocalRandom.current().nextLong()));
+                    ThreadLocalRandom.current().nextLong(), levelBonus(owner)));
                 case ITEM -> {
                     ItemStack item = plugin.items().create(new ItemId(drop.item()));
-                    item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), drop.amount())));
+                    item.setAmount(Math.max(1, Math.min(item.getMaxStackSize(), scaled(owner, drop.amount()))));
                     yield Optional.of(item);
                 }
             };
@@ -129,10 +155,30 @@ final class RunLoot {
             case ELITE -> ExpeditionLoot.Source.ELITE;
             default -> ExpeditionLoot.Source.NORMAL;
         };
-        List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source, luck, ThreadLocalRandom.current()));
+        List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source, luck, ThreadLocalRandom.current()), null);
         for (ItemStack drop : drops) at.getWorld().dropItemNaturally(at, drop);
         if (role == ExpeditionDefinition.Role.BOSS && !drops.isEmpty())
             at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
+    }
+
+    /** A room with a rare companion was cleared: every player present rolls their own chance at its charm. */
+    void rollCompanion(ExpeditionDefinition.Room room) {
+        var drop = run.expedition.story().companionDrops().get(room.id());
+        if (drop == null || run.test || plugin.cosmetics() == null) return;
+        double chance = ExpeditionLoot.rareChance(drop.chance(), luck);
+        for (Player player : run.online()) {
+            if (ThreadLocalRandom.current().nextDouble() >= chance) continue;
+            Optional<ItemStack> charm = plugin.cosmetics().charm(drop.companion());
+            if (charm.isEmpty()) {
+                plugin.getLogger().warning(run.expedition.id() + " drops an unknown companion: " + drop.companion());
+                return;
+            }
+            run.give(player, List.of(charm.get()));
+            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1.6F);
+            player.spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, .5, .8, .5, .3);
+            run.broadcast("<gold>✦ " + Chat.escape(player.getName()) + " found something rare:</gold> <white>"
+                + Chat.escape(plugin.cosmetics().catalog().companion(drop.companion()).map(c -> c.name()).orElse(drop.companion())) + " Charm</white>");
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -158,6 +204,25 @@ final class RunLoot {
         return point != null && point.x() == block.getX() && point.y() == block.getY() && point.z() == block.getZ();
     }
 
+    /** Once a second, for each player alone: a glimmer over what they can still open. Secrets show only up close. */
+    void glimmer() {
+        var places = run.expedition.story().rewardChests();
+        for (Player player : run.online()) {
+            UUID id = player.getUniqueId();
+            for (LootChest chest : run.expedition.story().chests().values()) {
+                if (looted.getOrDefault(chest.id(), Set.of()).contains(id)) continue;
+                Location spot = spot(chest.at());
+                if (chest.kind() == ChestKind.SECRET && player.getLocation().distanceSquared(spot) > 36) continue;
+                player.spawnParticle(Particle.WAX_OFF, spot, 6, .22, .2, .22, .4);
+            }
+            if (!finished || places == null) continue;
+            if (rewards.containsKey(id)) player.spawnParticle(Particle.END_ROD, spot(places.free()), 5, .22, .2, .22, .01);
+            if (places.bonus() != null && bonuses.containsKey(id)) player.spawnParticle(Particle.WITCH, spot(places.bonus()), 6, .22, .2, .22, 0);
+        }
+    }
+
+    private Location spot(Point at) { return new Location(run.world, at.x() + .5, at.y() + 1.3, at.z() + .5); }
+
     private void openChest(Player player, LootChest chest, Block block) {
         if (!looted.computeIfAbsent(chest.id(), id -> new HashSet<>()).add(player.getUniqueId())) {
             Chat.notice(player, "You've already emptied this " + chest.title().toLowerCase(java.util.Locale.ROOT) + ".");
@@ -171,20 +236,8 @@ final class RunLoot {
         if (chest.kind() == ChestKind.SECRET && secretsFound.add(chest.id()))
             run.broadcast("<light_purple>✦ " + Chat.escape(player.getName()) + " found a secret:</light_purple> <gray>"
                 + Chat.escape(chest.title()) + " <dark_gray>(" + secretsFound.size() + "/" + run.expedition.story().secrets() + ")</dark_gray></gray>");
-        animate(block);
-        show(player, chest.title(), stacks(ExpeditionLoot.roll(table, source, luck, ThreadLocalRandom.current())), 0);
-    }
-
-    private void animate(Block block) {
-        if (block.getState() instanceof Lidded lidded) {
-            lidded.open();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (block.getState() instanceof Lidded again) again.close();
-            }, 40L);
-        }
-        World world = block.getWorld();
-        world.playSound(block.getLocation(), block.getType() == Material.BARREL ? Sound.BLOCK_BARREL_OPEN : Sound.BLOCK_CHEST_OPEN, 1F, 1F);
-        world.spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(.5, 1.1, .5), 6, .3, .2, .3, 0);
+        player.playSound(block.getLocation(), block.getType() == Material.BARREL ? Sound.BLOCK_BARREL_OPEN : Sound.BLOCK_CHEST_OPEN, 1F, 1F);
+        show(player, chest.title(), stacks(ExpeditionLoot.roll(table, source, luck, ThreadLocalRandom.current()), player.getUniqueId()), 0);
     }
 
     /** Opens a window with these items; whatever's left when it closes goes to the player. */
@@ -256,9 +309,9 @@ final class RunLoot {
         for (var entry : fixed.entrySet()) {
             if (lockedOut.contains(entry.getKey())) continue;
             List<ItemStack> free = new ArrayList<>(entry.getValue());
-            free.addAll(stacks(ExpeditionLoot.chest(table, false, grade, luck, random)));
+            free.addAll(stacks(ExpeditionLoot.chest(table, false, grade, luck, random), entry.getKey()));
             rewards.put(entry.getKey(), free);
-            bonuses.put(entry.getKey(), stacks(ExpeditionLoot.chest(table, true, grade, luck, random)));
+            bonuses.put(entry.getKey(), stacks(ExpeditionLoot.chest(table, true, grade, luck, random), entry.getKey()));
         }
         var places = run.expedition.story().rewardChests();
         if (places != null) {

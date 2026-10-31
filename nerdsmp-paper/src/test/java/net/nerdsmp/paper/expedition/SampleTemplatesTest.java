@@ -136,6 +136,29 @@ class SampleTemplatesTest {
         }
     }
 
+    /** Fills the Barrow from the spawn through everything a player can pass: nothing may lead out of the map. */
+    @Test void theBarrowIsSealed() {
+        var barrow = definition("hollow_barrow");
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        java.util.function.Predicate<Material> open = material -> material == Material.AIR || material == Material.COBWEB
+            || material == Material.HANGING_ROOTS || material == Material.LEVER || material == Material.IRON_CHAIN
+            || material.name().endsWith("CANDLE") || material.name().endsWith("LANTERN") || material.name().endsWith("SKULL")
+            || material.name().endsWith("CAMPFIRE") || material.name().endsWith("BUTTON");
+        int minX = blocks.keySet().stream().mapToInt(Cell::x).min().orElseThrow(), maxX = blocks.keySet().stream().mapToInt(Cell::x).max().orElseThrow();
+        int minZ = blocks.keySet().stream().mapToInt(Cell::z).min().orElseThrow(), maxZ = blocks.keySet().stream().mapToInt(Cell::z).max().orElseThrow();
+        int maxY = blocks.keySet().stream().mapToInt(Cell::y).max().orElseThrow();
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Cell> queue = new java.util.ArrayDeque<>();
+        queue.add(new Cell(barrow.spawn().x(), barrow.spawn().y(), barrow.spawn().z()));
+        while (!queue.isEmpty()) {
+            Cell at = queue.poll();
+            if (!open.test(blocks.getOrDefault(at, Material.AIR)) || !seen.add(at)) continue;
+            assertTrue(at.x() > minX && at.x() < maxX && at.z() > minZ && at.z() < maxZ && at.y() > 62 && at.y() < maxY, "The map leaks at " + at);
+            for (int[] step : new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}})
+                queue.add(new Cell(at.x() + step[0], at.y() + step[1], at.z() + step[2]));
+        }
+    }
+
     /** Walks the Barrow's floor from the spawn: everything a party must reach is connected, once gates and the tunnel open. */
     @Test void theBarrowsWingsAndTunnelConnect() {
         var barrow = definition("hollow_barrow");

@@ -130,7 +130,7 @@ public final class ExpeditionLoader {
             Point at = point(npc, "at");
             if (at == null) throw new IllegalArgumentException("npcs." + entry.getKey() + ".at: where they stand, [x, y, z, yaw].");
             npcs.put(entry.getKey(), new ExpeditionDefinition.Npc(entry.getKey(), npc.getString("name", titleCase(entry.getKey())),
-                npc.getString("entity", "villager").toLowerCase(Locale.ROOT), at, npc.getStringList("lines")));
+                npc.getString("entity", "villager").toLowerCase(Locale.ROOT), at, npc.getStringList("lines"), npc.getString("quests")));
         }
         Map<String, ExpeditionDefinition.MobProfile> mobs = new LinkedHashMap<>();
         ConfigurationSection mobSection = yaml.getConfigurationSection("mobs");
@@ -156,6 +156,13 @@ public final class ExpeditionLoader {
                 chest.getString("title", kind == ExpeditionDefinition.ChestKind.CRATE ? "Supply Crate"
                     : kind == ExpeditionDefinition.ChestKind.SECRET ? "Hidden Cache" : "Treasure Chest")));
         }
+        Map<String, ExpeditionDefinition.CompanionDrop> companionDrops = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "companion-drops").entrySet()) {
+            double chance = entry.getValue().getDouble("chance", 0);
+            if (entry.getValue().getString("companion") == null || chance <= 0 || chance > 1)
+                throw new IllegalArgumentException("companion-drops." + entry.getKey() + ": needs a companion and a chance above 0, up to 1.");
+            companionDrops.put(entry.getKey().toLowerCase(Locale.ROOT), new ExpeditionDefinition.CompanionDrop(entry.getValue().getString("companion"), chance));
+        }
         ExpeditionDefinition.RewardChests rewardChests = null;
         ConfigurationSection rewards = yaml.getConfigurationSection("reward-chests");
         if (rewards != null) {
@@ -167,7 +174,7 @@ public final class ExpeditionLoader {
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
             lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
-            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0);
+            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops);
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {
@@ -202,10 +209,26 @@ public final class ExpeditionLoader {
                 throw new IllegalArgumentException(path + ".actions[" + (index + 1) + "]: " + invalid.getMessage());
             }
         }
+        ExpeditionDefinition.Frame to = null;
+        if (map.get("to") != null) {
+            if (!(map.get("to") instanceof List<?> end) || end.size() != 5 || end.stream().anyMatch(value -> !(value instanceof Number)))
+                throw new IllegalArgumentException(path + ".to: where the camera ends up, [x, y, z, yaw, pitch].");
+            to = new ExpeditionDefinition.Frame(((Number) end.get(0)).doubleValue(), ((Number) end.get(1)).doubleValue(), ((Number) end.get(2)).doubleValue(),
+                ((Number) end.get(3)).floatValue(), ((Number) end.get(4)).floatValue());
+        }
         return new ExpeditionDefinition.Shot(((Number) at.get(0)).doubleValue(), ((Number) at.get(1)).doubleValue(), ((Number) at.get(2)).doubleValue(),
             ((Number) at.get(3)).floatValue(), ((Number) at.get(4)).floatValue(), number.intValue(),
             map.get("text") == null ? null : String.valueOf(map.get("text")), map.get("title") == null ? null : String.valueOf(map.get("title")),
-            lines, map.get("sound") == null ? null : String.valueOf(map.get("sound")), actions, Boolean.TRUE.equals(map.get("fade")));
+            lines, map.get("sound") == null ? null : String.valueOf(map.get("sound")), actions, Boolean.TRUE.equals(map.get("fade")), to);
+    }
+
+    private static ExpeditionDefinition.Entrance entrance(ConfigurationSection section, String path) {
+        ConfigurationSection entrance = section.getConfigurationSection("entrance");
+        if (entrance == null) return null;
+        int delay = entrance.getInt("delay", 0), seconds = entrance.getInt("seconds", 4);
+        if (delay < 0 || delay > 20 || seconds < 1 || seconds > 20) throw new IllegalArgumentException(path + ".entrance: delay 0-20 and seconds 1-20.");
+        return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
+            path + ".entrance.style", "rise or form"), delay, seconds);
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {
@@ -346,7 +369,7 @@ public final class ExpeditionLoader {
             multiplier(section, "boss-damage", path), multiplier(section, "boss-health", path), bosses,
             lower(section.getStringList("abilities")), phases(section, path),
             section.contains("enrage-seconds") ? integer(section, "enrage-seconds") : 0,
-            section.contains("link-seconds") ? integer(section, "link-seconds") : 0);
+            section.contains("link-seconds") ? integer(section, "link-seconds") : 0, entrance(section, path));
     }
 
     @SuppressWarnings("unchecked")

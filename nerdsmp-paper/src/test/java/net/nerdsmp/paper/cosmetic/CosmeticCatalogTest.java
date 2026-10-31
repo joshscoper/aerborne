@@ -12,7 +12,10 @@ class CosmeticCatalogTest {
     private final CosmeticCatalog catalog = CosmeticCatalog.defaults();
 
     @Test void matchesTheWebsiteCatalog() {
-        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip"), catalog.companionSlugs());
+        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip"),
+            catalog.companions().stream().filter(companion -> companion.source() == null).map(CosmeticCatalog.Companion::slug).toList());
+        assertEquals(List.of("rattlebones", "weepling", "hollow-hound"),
+            catalog.companions().stream().filter(companion -> companion.source() != null).map(CosmeticCatalog.Companion::slug).toList());
         assertEquals(List.of("cloudstep", "petal-skip", "firefly-drift", "rune-ripple", "bubblehop", "comet-tail",
             "dandelion-drift", "stardust-waltz"), catalog.trailSlugs());
         assertEquals(List.of("skyfarer", "cloudkeeper", "starweaver"), catalog.tiers().stream().map(CosmeticCatalog.Tier::slug).toList());

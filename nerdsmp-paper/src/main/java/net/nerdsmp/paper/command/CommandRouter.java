@@ -587,7 +587,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 Chat.send(player, (has ? "<click:run_command:'/companion " + companion.slug() + "'><hover:show_text:'<gray>Click to summon</gray>'><green>●</green> <white>"
                     : "<dark_gray>○ ") + companion.name() + (has ? "</white></hover></click>" : "</dark_gray>") + " <gray>" + companion.species() + "</gray>");
             }
-            if (own.companions().isEmpty()) Chat.info(player, "Companions come from the store at <white>aerborne.net/store</white>.");
+            if (own.companions().isEmpty()) Chat.info(player, "Companions come from the store at <white>aerborne.net/store</white>, and a few from very rare boss drops.");
             return true;
         }
         if (args[0].equalsIgnoreCase("dismiss") || args[0].equalsIgnoreCase("hide") || args[0].equalsIgnoreCase("off")) {

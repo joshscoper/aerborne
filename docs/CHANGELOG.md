@@ -5,6 +5,25 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Hollow Barrow polish from the first playtest (October 31)
+- **Levers show where they stand.** A right lever lights the brazier on its pedestal and a wrong one
+  flips them all back up. The niches in the Processional and the Widow's Cell are backed with stone,
+  so nobody can step out of the map.
+- **Bosses arrive.** The Huntsman and the Widow rise out of the floor and the Warden's bones gather
+  first, all with the camera on them. The intro is now a 20-second flyover of the dungeon. A scene
+  plays once a run, and sneaking skips it.
+- **A smaller sidebar.** It shows the clock, what's next and rooms cleared, the party only in a group,
+  and no red numbers. Boss phases announce themselves without listing abilities.
+- **Chests are private.** Each has a glimmer that only the players who haven't opened it can see.
+- **Rewards scale.** Set gear gains item levels from difficulty and the player's level, and stacks of
+  items grow with them.
+- **Old Sexton Pell** offers a daily, Sweeping the Halls, and meets the party at the far end to take
+  it back.
+- **Rare companions.** The Warden, the Widow and the Huntsman can each drop a charm that binds a new
+  companion: Rattlebones, Weepling and the Hollow Hound.
+- **Experience bottles** are now Bottled Lessons, Lifetimes and Legends, and every bottle in the game
+  updates to match.
+
 ### Dungeon rework begins: threat, packs and the new Hollow Barrow (October 31)
 - **The Hollow Barrow is rebuilt as a dungeon**: a pillared Processional, a Crossing hub, the Lever
   Vault and the Ossuary as wings, the Warden of Bones, the King's Rest, an optional fight with the

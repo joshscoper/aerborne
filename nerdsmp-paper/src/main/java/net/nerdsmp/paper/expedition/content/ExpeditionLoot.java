@@ -85,6 +85,35 @@ public final class ExpeditionLoot {
         return luck + (keyLevel > 0 ? .05 * keyLevel : 0);
     }
 
+    /** A rare drop's chance on this tier: harder tiers raise it with their luck. */
+    public static double rareChance(double chance, double luck) { return Math.min(1, chance * Math.max(1, luck)); }
+
+    /** The most item levels a reward can gain over its catalog level. */
+    public static final int MAX_ITEM_LEVEL_BONUS = 40;
+
+    /**
+     * Item levels a piece of gear gains over its catalog level: Heroic adds 6, Mythic 12 and each key
+     * level 2 more, and a player above the expedition's level gets 1 for every two levels (at most 15).
+     */
+    public static int itemLevelBonus(String tier, int keyLevel, int expeditionLevel, int playerLevel) {
+        int difficulty = switch (tier) {
+            case "heroic" -> 6;
+            case "mythic", "keystone" -> 12 + 2 * Math.max(0, keyLevel);
+            default -> 0;
+        };
+        return Math.min(MAX_ITEM_LEVEL_BONUS, difficulty + Math.clamp((playerLevel - expeditionLevel) / 2, 0, 15));
+    }
+
+    /**
+     * A stack of rewards for one player: more on harder tiers (by {@code luck}) and 1% more per level
+     * above the expedition, at most half again. A single item stays single, so gear and signatures never double.
+     */
+    public static int scaled(int amount, double luck, int expeditionLevel, int playerLevel) {
+        if (amount < 2) return amount;
+        double level = 1 + Math.clamp((playerLevel - expeditionLevel) * .01, 0D, .5D);
+        return Math.min(64, (int) Math.round(amount * Math.max(1, luck) * level));
+    }
+
     /**
      * One possible drop of a source: {@code chance} (0-1, already scaled by luck) of {@code minimum}
      * to {@code maximum} of an item. {@link #GEAR} stands for a random set piece and

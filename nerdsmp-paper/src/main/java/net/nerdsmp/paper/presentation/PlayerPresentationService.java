@@ -362,6 +362,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             miniMessage.deserialize(plugin.branding().sidebarTitleMarkup())
         );
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        objective.numberFormat(io.papermc.paper.scoreboard.numbers.NumberFormat.blank());
         for (int index = 0; index < SIDEBAR_LINES; index++) {
             String entry = entry(index);
             Team team = board.registerNewTeam("hud_" + index);

@@ -181,7 +181,7 @@ class RunProgressTest {
         assertTrue(run.enter("tomb", 0).isEmpty(), "The door is barred");
         assertTrue(run.packCleared("stray").isEmpty(), "Not one of the door's packs");
         assertTrue(run.packCleared("west").isEmpty());
-        assertTrue(run.objectives(0).getFirst().text().contains("1 packs guard"), run.objectives(0).toString());
+        assertTrue(run.objectives(0).getFirst().text().contains("1 pack left"), run.objectives(0).toString());
         assertEquals(List.of(new Effect.RoomUnlocked("tomb")), run.packCleared("east"));
         assertTrue(run.packCleared("east").isEmpty(), "Counted once");
         assertFalse(run.sealed("tomb"));

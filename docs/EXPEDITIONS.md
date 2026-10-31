@@ -200,9 +200,21 @@ vanilla loot, no worn gear and none of the overworld drop tables. Set pieces com
 time; players identify them as usual.
 
 **Crates and chests.** `chests:` places loot containers: `{at: [x, y, z], kind: crate|chest|secret,
-title: ...}`. The template needs a barrel (crate) or chest there. Every player loots each container
-once, with their own roll, in a window whose leftovers go to their inventory when closed. Secrets
-are announced to the party and count toward the score.
+title: ...}`. The template needs a barrel (crate) or chest there. Every chest is private: each player
+loots it once, with their own roll, in a window whose leftovers go to their inventory when closed,
+and sees a glimmer over it until they have. Hidden caches only glimmer from close by. Other barrels
+in a map are scenery and do nothing. Secrets are announced to the party and count toward the score.
+
+**Rewards grow with the player and the difficulty.** Set gear from a run gains item levels over its
+catalog level: 6 on Heroic, 12 on Mythic and 2 more per key level, plus 1 for every two adventurer
+levels the player has above the expedition's level (at most 15), up to 40 in all. Each item level
+adds 1% to the piece's base stats and shows in its tooltip. Stacks of items grow the same way, by the
+tier's luck and 1% per level above the expedition (at most half again); single items stay single.
+
+**Rare companions.** `companion-drops: {<room>: {companion: <slug>, chance: 0.005}}` gives each
+player present their own roll when that room is cleared, multiplied by the tier's luck. A win is a
+charm that can be traded until someone right-clicks it to bind the companion to their account. Test
+runs don't roll.
 
 **Reward chests and the score.** When a run is won, it's scored out of 300: speed (full within half
 the time limit, 40 at the limit), survival (25 lost per death per player) and exploration (40, plus
@@ -537,7 +549,9 @@ npcs:
 - **Hazards** always telegraph (a disc on the floor for about 1.5 s). About half of each strike aims
   at players inside the area. `rocks` drop falling rock, `fire` leaves brief fire, `eruption`
   launches players and `gas` leaves a poison cloud. Wipes stop every hazard.
-- **Cutscenes** glide the camera between shots (eased). Each shot can show a `title` card and a
+- **Cutscenes** glide the camera between shots (eased), or within one with `to: [x, y, z, yaw,
+  pitch]`, where the shot moves from `at` to `to` over its own length. Each plays once a run, so a
+  second try at a boss skips its scene, and sneaking skips one for that player. Each shot can show a `title` card and a
   subtitle (`text`), play a `sound` (`key [pitch]`), and speak `lines` spread across its length:
   `"Speaker|line"` (an NPC id or any name) or `"|line"` for narration. `fade: true` cuts to the shot
   through black instead of gliding to it. `actions` are script lines run as the shot starts, once for
@@ -548,8 +562,15 @@ npcs:
   after the overview, and the website shows it.
 - **Boss name cards.** A boss's name appears as a title when it spawns, with the `title` from its
   `mobs:` profile underneath, unless a cutscene is introducing it.
+- **Boss entrances.** `entrance: {style: rise|form, delay: 3, seconds: 5}` on a boss encounter holds
+  the boss under the floor, untouchable, and brings it up `delay` seconds into the fight: `rise`
+  climbs steadily through breaking floor, `form` gathers its bones first and comes up fast. It's let
+  loose once every camera is back, and a second attempt takes a second with no wait. Time a scene
+  around it.
 - **Characters** stand where placed, can't be hurt or traded with, and play their next line when
-  right-clicked. Scripts make them (or anyone) speak with `say`.
+  right-clicked. Scripts make them (or anyone) speak with `say`, and move them with `npc`. With
+  `quests: <giver id>` a character is a quest giver for `content/world-quests.yml`: it shows a blue
+  mark to each player it has a quest for, and opens its board instead of talking while it does.
 
 ### Scripts
 
@@ -573,6 +594,7 @@ after the room starts), `down-N` (the Nth council boss falls), `solved-<puzzle>`
 | `build <piece>` / `break <piece>` / `restore <piece>` | Change a set piece |
 | `hazard <start\|stop\|pulse> <id>` | Run, stop or fire once a hazard |
 | `campfire <id>` | Light a campfire for the party |
+| `npc <id> <x> <y> <z> [yaw]` | Move a character, say to meet the party at the end |
 
 Scripts are parsed on load, so `/expedition check` reports unknown actions, rooms, mobs, effects
 or sounds before anyone plays.

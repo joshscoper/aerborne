@@ -50,12 +50,16 @@ public final class ItemUpdater implements Listener {
 
     private final PaperItemService items;
     private final ArcaneForgeService forge;
+    private SkillLampService lamps;
 
     public ItemUpdater(PaperItemService items, ArcaneForgeService forge) {
         this.items = items;
         this.forge = forge;
         active = this;
     }
+
+    /** Experience bottles are updated too; the service comes up after this one's dependencies. */
+    public void lamps(SkillLampService lamps) { this.lamps = lamps; }
 
     /** The current form of an item read from storage, or the item itself when it's current (or no updater runs). */
     public static ItemStack current(ItemStack item) {
@@ -69,7 +73,9 @@ public final class ItemUpdater implements Listener {
 
     /** The current form of an item, or empty when it's already current or isn't a NerdSMP item. */
     public Optional<ItemStack> upgrade(ItemStack item) {
-        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return Optional.empty();
+        if (item == null || item.getType().isAir()) return Optional.empty();
+        if (lamps != null && item.getType() == org.bukkit.Material.EXPERIENCE_BOTTLE) return lamps.upgrade(item);
+        if (!item.hasItemMeta()) return Optional.empty();
         Optional<ItemStack> forged = forge.upgrade(item);
         if (forged.isPresent()) return forged;
         Optional<ItemStack> catalog = items.upgrade(item);

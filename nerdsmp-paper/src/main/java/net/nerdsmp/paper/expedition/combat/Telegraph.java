@@ -24,6 +24,11 @@ public final class Telegraph {
         world.spawnParticle(Particle.DUST, x, y, z, 1, 0, 0, 0, 0, new Particle.DustOptions(color, size));
     }
 
+    /** Shards of a block flying off, for floors breaking and bones gathering. */
+    public static void shards(Location at, int count, double spread, org.bukkit.Material block) {
+        at.getWorld().spawnParticle(Particle.BLOCK, at, count, spread, .1, spread, 0, block.createBlockData());
+    }
+
     /** A flat ring on the ground around {@code center}. */
     public static void ring(Location center, double radius, Color color) {
         World world = center.getWorld();

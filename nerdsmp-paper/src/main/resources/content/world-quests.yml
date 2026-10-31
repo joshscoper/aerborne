@@ -1070,6 +1070,24 @@ quests:
       reputation: {frontier_wardens: 30}
 
   # ================================================================== Daily bounties (repeat: daily, reset at midnight UTC)
+  daily_barrow_sweep:
+    chain: daily_bounties
+    title: Sweeping the Halls
+    giver: sexton_pell
+    level: 1
+    repeat: daily
+    offer:
+      - "Forty years I've swept these halls, and I've never had to sweep up after the sweepings. Put them back down for me, will you?"
+      - "Thralls, archers, lurchers, the lot. I'll be here. I'm always here."
+    complete:
+      - "That's a day's peace for them, and for my back. Here, for your trouble."
+    objectives:
+      - {type: kill, targets: ["custom:barrow_thrall", "custom:crypt_archer", "custom:bone_lurcher", "custom:barrow_keener", "custom:crypt_hexer"], count: 25, description: Lay the Barrow's dead to rest}
+    rewards:
+      marks: 180
+      xp: {hunting: 450}
+      items: ["material:experience_bottle 2"]
+
   daily_gnawer_cull:
     chain: daily_bounties
     title: Gnawer Cull

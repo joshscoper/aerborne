@@ -33,9 +33,15 @@ public final class CosmeticCatalog {
      * @param flying   hovers beside the owner instead of walking behind
      * @param particle ambient particle name, or empty
      * @param free     owned by everyone without a purchase
+     * @param source   where a companion that isn't sold comes from, or null for the store
      */
     public record Companion(String slug, String name, String species, String model, double scale,
-                            boolean flying, String particle, String color, boolean free) {
+                            boolean flying, String particle, String color, boolean free, String source) {
+        public Companion(String slug, String name, String species, String model, double scale,
+                         boolean flying, String particle, String color, boolean free) {
+            this(slug, name, species, model, scale, flying, particle, color, free, null);
+        }
+
         public String product() { return COMPANION + slug; }
     }
 
@@ -105,7 +111,10 @@ public final class CosmeticCatalog {
                 new Companion("cindlet", "Cindlet", "Ember sprite", "cindlet", 1.0D, true, "SMALL_FLAME", "gold", false),
                 new Companion("moonmoth", "Moonmoth", "Moon moth", "moonmoth", 1.0D, true, "END_ROD", "light_purple", false),
                 new Companion("starwhisk", "Starwhisk", "Star cat", "starwhisk", 1.0D, false, "WAX_OFF", "yellow", false),
-                new Companion("lilypip", "Lilypip", "Lily frog", "lilypip", 0.85D, false, "DRIPPING_WATER", "green", false)),
+                new Companion("lilypip", "Lilypip", "Lily frog", "lilypip", 0.85D, false, "DRIPPING_WATER", "green", false),
+                new Companion("rattlebones", "Rattlebones", "Barrow skeleton", "rattlebones", 0.9D, false, "", "gray", false, "The Warden of Bones, very rarely"),
+                new Companion("weepling", "Weepling", "Grieving wisp", "weepling", 0.9D, true, "SOUL", "dark_aqua", false, "The Keening Widow, very rarely"),
+                new Companion("hollow-hound", "Hollow Hound", "Huntsman's hound", "hollowhound", 1.0D, false, "SOUL_FIRE_FLAME", "dark_red", false, "The Hollow Huntsman, very rarely")),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),

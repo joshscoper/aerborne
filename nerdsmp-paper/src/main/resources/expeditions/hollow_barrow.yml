@@ -29,6 +29,8 @@ npcs:
     name: Old Sexton Pell
     entity: zombie_villager
     at: [-4, 64, 6, 270]
+    # He offers the daily in content/world-quests.yml, and takes it back at the far end of the run.
+    quests: sexton_pell
     lines:
       - "Forty years I've swept these halls. Never heard the bones so restless."
       - "They stand in the dark in their old ranks. Mind you don't wake more than you can bury."
@@ -43,6 +45,7 @@ campfires:
 
 setpieces:
   warden_tunnel: {box: [-64, 64, 81, -62, 67, 81], block: air, style: crumble}
+  king_lid: {box: [-1, 65, 119, 1, 65, 121], block: air, style: crumble}
 
 hazards:
   falling_masonry: {type: rocks, area: [-14, 63, 104, 14, 63, 131], every: 9, count: 3, damage: 5}
@@ -54,15 +57,25 @@ outro:
   - "Old Sexton Pell lays the longbow back across his chest. 'Rest now. You held the road long enough.'"
 
 cutscenes:
+  # A flyover of the dungeon, room by room, with cuts through black. `to` moves the camera over the shot.
   prologue:
-    - {at: [0.5, 67, 3, 0, 5], seconds: 5, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky.", "|They buried him here with honours, his longbow across his chest."]}
-    - {at: [0.5, 70, 16, 0, 12], seconds: 5, fade: true, lines: ["sexton|Something woke him. A voice from the deep, whispering of embers.", "sexton|Now his dead stand watch in the Processional, in the old ranks."]}
-    - {at: [0.5, 70, 58, 0, 20], seconds: 4, lines: ["|Beyond them lies the Crossing. East, the Lever Vault. West, the Warden, who keeps the way to the King."]}
+    - {at: [0.5, 66, 2, 0, 0], to: [0.5, 66, 11, 0, 4], seconds: 3, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky."]}
+    - {at: [3.5, 70, 16, 0, 12], to: [3.5, 67, 50, 0, 6], seconds: 4, fade: true, lines: ["sexton|Now his dead stand watch in the Processional, in the old ranks."]}
+    - {at: [-9, 69, 58, -42, 17], to: [9, 69, 58, 42, 17], seconds: 3, fade: true, lines: ["|The Crossing joins it all. East, the Lever Vault. West, the Ossuary."]}
+    - {at: [39, 70, 56, 0, 25], to: [39, 68, 66, 0, 18], seconds: 3, fade: true, lines: ["sexton|The Vault's levers lift the west portcullis."]}
+    - {at: [-56, 68, 68.5, 90, 6], to: [-61, 67, 68.5, 90, 0], seconds: 3, fade: true, lines: ["sexton|Past the bones, the Warden keeps the south gate."]}
+    - {at: [0.5, 71, 102, 0, 12], to: [0.5, 68, 112, 0, -2], seconds: 4, fade: true, lines: ["|And beyond him, the King's Rest. Something there is still awake."]}
   warden_wakes:
-    - {at: [-56.5, 68, 68.5, 90, 8], seconds: 3, title: "<dark_gray>The Warden of Bones</dark_gray>", text: "<gray>Keeper of the south gate</gray>", sound: "entity.wither_skeleton.ambient 0.5", lines: ["The Warden of Bones|None pass while I stand."]}
+    - {at: [-56.5, 69, 68.5, 90, 10], to: [-60.5, 68, 68.5, 90, 6], seconds: 2, sound: "entity.wither_skeleton.ambient 0.5", lines: ["|The bones heaped on the dais begin to stir."]}
+    - {at: [-61, 66.5, 63, 50, -4], to: [-61, 66.5, 73, 130, -4], seconds: 5}
+    - {at: [-60, 67, 68.5, 90, -4], seconds: 3, title: "<dark_gray>The Warden of Bones</dark_gray>", text: "<gray>Keeper of the south gate</gray>", lines: ["The Warden of Bones|None pass while I stand."]}
+  widow_wakes:
+    - {at: [-38, 67, 48, 180, 8], to: [-38, 66, 41, 180, 2], seconds: 3, sound: "ambient.cave 0.6", lines: ["|The candles lean, all at once, towards the sarcophagus."]}
+    - {at: [-38, 66, 40, 180, 0], to: [-38, 66, 38, 180, -6], seconds: 4, title: "<dark_aqua>The Keening Widow</dark_aqua>", text: "<gray>She waited at the door until the door fell</gray>", lines: ["The Keening Widow|He promised he would come home."]}
   king_wakes:
-    - {at: [0.5, 72, 103, 0, 22], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
-    - {at: [0.5, 68, 110, 0, 12], seconds: 4, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
+    - {at: [0.5, 71, 103, 0, 15], to: [0.5, 70, 110, 0, 12], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
+    - {at: [6, 66.5, 114, 45, -3], to: [-6, 66.5, 114, -45, -3], seconds: 5, actions: ["break king_lid"]}
+    - {at: [0.5, 66.5, 112, 0, -6], seconds: 3, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
 
 mobs:
   "custom:veil_stalker": {role: elite, abilities: [blink]}
@@ -110,6 +123,12 @@ chests:
   ossuary_reliquary: {at: [-51, 64, 84], kind: chest, title: Ossuary Reliquary}
   forgotten_offering: {at: [-16, 64, 30], kind: secret, title: Forgotten Offering}
 
+# Rare companions: each player present rolls this chance when the room falls. Heroic and Mythic raise it.
+companion-drops:
+  wardens_hall: {companion: rattlebones, chance: 0.005}
+  widows_cell: {companion: weepling, chance: 0.01}
+  kings_rest: {companion: hollow-hound, chance: 0.005}
+
 # Where the reward chests appear when the run is won.
 reward-chests:
   free: [-3, 64, 132]
@@ -148,6 +167,7 @@ rooms:
     encounter:
       type: boss
       boss: custom:warden_of_bones
+      entrance: {style: form, delay: 2, seconds: 5}
       boss-damage: 0.7
       abilities: [heavy_blow, shield]
       phases:
@@ -174,13 +194,14 @@ rooms:
     encounter:
       type: boss
       boss: custom:keening_widow
+      entrance: {style: rise, delay: 2, seconds: 4}
       boss-damage: 0.7
       abilities: [bolt, soul_rend]
       phases:
         - {at: 40, abilities: [bolt, soul_rend, volatile_mark], title: "Her grief turns outward"}
       enrage-seconds: 200
       scripts:
-        start: ["say The Keening Widow|He promised he would come home.", "say sexton|The Widow! When she draws breath for the long wail, hit her hard, all of you, or it'll tear you apart."]
+        start: ["cutscene widow_wakes", "wait 7", "say sexton|The Widow! When she draws breath for the long wail, hit her hard, all of you, or it'll tear you apart."]
         clear: ["say sexton|She's quiet at last. I never thought I'd hear that."]
   kings_rest:
     title: The King's Rest
@@ -193,6 +214,7 @@ rooms:
     encounter:
       type: boss
       boss: custom:the_hollow_huntsman
+      entrance: {style: rise, delay: 3, seconds: 5}
       boss-level-bonus: 3
       # The Huntsman is tuned down for a first expedition (1.0 = as authored).
       boss-damage: 0.6
@@ -207,13 +229,10 @@ rooms:
         - {"custom:crypt_archer": 3}
         - {"custom:veil_stalker": 2}
       scripts:
-        start:
-          - "cutscene king_wakes"
-          - "wait 7"
-          - "say The Hollow Huntsman|Who disturbs the King's rest?"
+        start: ["cutscene king_wakes"]
         health-50: ["say The Hollow Huntsman|The hunt is called! Bone answers bone!", "hazard start falling_masonry", "sound entity.wither_skeleton.ambient 0.6"]
         enrage: ["say The Hollow Huntsman|Enough! The King's patience ends!"]
-        clear: ["hazard stop falling_masonry", "say sexton|Rest now, old king. Walk into the light at the far wall to leave."]
+        clear: ["hazard stop falling_masonry", "npc sexton 0 64 129 180", "say sexton|Rest now, old king. Walk into the light at the far wall to leave."]
 
 # Shown in the guide book (/expedition guide hollow_barrow) and on the website.
 guide:

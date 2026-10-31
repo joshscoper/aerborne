@@ -34,33 +34,56 @@ import java.util.Optional;
 /**
  * Right-clicking an experience bottle opens a skill picker instead of throwing it; choosing a skill
  * spends the bottle for skill XP ({@link SkillLamps}). Shift-click spends the whole stack. Dispensers
- * still throw bottles as usual.
+ * still throw bottles as usual. Vanilla bottles become Bottled Lessons wherever the item updater meets them.
  */
 public final class SkillLampService implements Listener {
     private static final int[] SLOTS = {10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24};
     private final NerdSmpPlugin plugin;
+    private static final int TEXT_VERSION = 1;
     private final NamespacedKey gradeKey;
+    private final NamespacedKey textKey;
 
     public SkillLampService(NerdSmpPlugin plugin) {
         this.plugin = plugin;
         this.gradeKey = new NamespacedKey(plugin, "skill_lamp");
+        this.textKey = new NamespacedKey(plugin, "skill_lamp_text");
     }
 
-    /** A Greater or Grand bottle; a plain one is any vanilla experience bottle. */
+    /** A bottle of this grade, named and described for its place in the world. */
     public ItemStack bottle(SkillLamps.Grade grade, int amount) {
         ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE, Math.max(1, Math.min(64, amount)));
-        if (grade == SkillLamps.Grade.PLAIN) return item;
         var meta = item.getItemMeta();
-        String color = grade == SkillLamps.Grade.GRAND ? "gold" : "aqua";
+        String color = color(grade);
         meta.itemName(Chat.render("<" + color + ">" + grade.title() + "</" + color + ">").decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(
-            Chat.render("<gray>Right-click and choose a skill to gain</gray>").decoration(TextDecoration.ITALIC, false),
-            Chat.render("<white>" + Math.round(grade.share() * 100) + "%</white> <gray>of the XP it needs for its next level.</gray>").decoration(TextDecoration.ITALIC, false)));
-        meta.addEnchant(Enchantment.UNBREAKING, 1, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            Chat.render("<dark_gray>" + grade.flavor() + "</dark_gray>"),
+            net.kyori.adventure.text.Component.empty(),
+            Chat.render("<yellow>Right-click</yellow> <gray>to uncork. A skill of your choice</gray>").decoration(TextDecoration.ITALIC, false),
+            Chat.render("<gray>gains</gray> <white>" + Math.round(grade.share() * 100) + "%</white> <gray>of the way to its next level.</gray>").decoration(TextDecoration.ITALIC, false)));
+        if (grade != SkillLamps.Grade.PLAIN) {
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        }
         meta.getPersistentDataContainer().set(gradeKey, PersistentDataType.STRING, grade.key());
+        meta.getPersistentDataContainer().set(textKey, PersistentDataType.INTEGER, TEXT_VERSION);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private static String color(SkillLamps.Grade grade) {
+        return switch (grade) {
+            case PLAIN -> "green";
+            case GREATER -> "aqua";
+            case GRAND -> "gold";
+        };
+    }
+
+    /** An old or vanilla bottle in today's form, keeping its grade and count; empty when it's current. */
+    public Optional<ItemStack> upgrade(ItemStack item) {
+        if (item == null || item.getType() != Material.EXPERIENCE_BOTTLE) return Optional.empty();
+        if (item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().getOrDefault(textKey, PersistentDataType.INTEGER, 0) == TEXT_VERSION)
+            return Optional.empty();
+        return Optional.of(bottle(grade(item), item.getAmount()));
     }
 
     public SkillLamps.Grade grade(ItemStack item) {
@@ -82,7 +105,7 @@ public final class SkillLampService implements Listener {
         ItemStack held = player.getInventory().getItem(hand);
         SkillLamps.Grade grade = grade(held);
         Picker picker = new Picker(player, hand, grade);
-        picker.inventory = Bukkit.createInventory(picker, 36, Chat.render("<dark_green><bold>Choose a skill</bold></dark_green>"));
+        picker.inventory = Bukkit.createInventory(picker, 36, Chat.render("<dark_green><bold>What will it teach you?</bold></dark_green>"));
         MenuKit.frame(picker.inventory);
         ProgressionService.ProgressionSnapshot snapshot = plugin.presentation() == null ? null : plugin.presentation().progression(player);
         Skill[] skills = Skill.values();
@@ -95,14 +118,14 @@ public final class SkillLampService implements Listener {
             if (xp > 0) {
                 lore.add("<gray>One bottle:</gray> <green>+" + xp + " XP</green>");
                 lore.add("");
-                lore.add("<yellow>Click:</yellow> <gray>use one bottle</gray>");
-                lore.add("<yellow>Shift-click:</yellow> <gray>use the whole stack</gray>");
+                lore.add("<yellow>Click:</yellow> <gray>uncork one</gray>");
+                lore.add("<yellow>Shift-click:</yellow> <gray>uncork the whole stack</gray>");
             } else lore.add("<gold>Mastered: nothing left to learn.</gold>");
             picker.inventory.setItem(SLOTS[index], MenuKit.item(icon(skill), "<green>" + skill.displayName() + "</green>", lore));
             picker.skills.put(SLOTS[index], skill);
         }
-        picker.inventory.setItem(4, MenuKit.item(Material.EXPERIENCE_BOTTLE, "<aqua>" + grade.title() + "</aqua>", List.of(
-            "<gray>Pick the skill this bottle's experience goes to.</gray>")));
+        picker.inventory.setItem(4, MenuKit.item(Material.EXPERIENCE_BOTTLE, "<" + color(grade) + ">" + grade.title() + "</" + color(grade) + ">", List.of(
+            "<dark_gray>" + grade.flavor() + "</dark_gray>", "", "<gray>Choose the skill that learns from it.</gray>")));
         player.openInventory(picker.inventory);
     }
 
@@ -134,7 +157,7 @@ public final class SkillLampService implements Listener {
         ItemStack held = player.getInventory().getItem(picker.hand);
         // The bottle must still be in hand and the same grade the menu was opened for.
         if (held == null || held.getType() != Material.EXPERIENCE_BOTTLE || grade(held) != picker.grade) {
-            Chat.notice(player, "Hold the experience bottle in your hand to use it.");
+            Chat.notice(player, "Hold the bottle in your hand to uncork it.");
             return;
         }
         ProgressionService.ProgressionSnapshot snapshot = plugin.presentation() == null ? null : plugin.presentation().progression(player);
@@ -151,8 +174,8 @@ public final class SkillLampService implements Listener {
         if (plugin.skills() != null)
             plugin.skills().awardMilestone(player, skill, total, "lamp:" + player.getUniqueId() + ":" + System.nanoTime());
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .6F, 1.4F);
-        Chat.success(player, "You pour " + (count == 1 ? "the bottle" : count + " bottles") + " into <white>" + skill.displayName()
-            + "</white>: <green>+" + total + " XP</green>.");
+        Chat.success(player, "You uncork " + (count == 1 ? "the bottle" : count + " bottles") + " and <white>" + skill.displayName()
+            + "</white> takes it in: <green>+" + total + " XP</green>.");
     }
 
     private static Material icon(Skill skill) {
@@ -173,6 +196,7 @@ public final class SkillLampService implements Listener {
 
     public Optional<SkillLamps.Grade> parse(String id) {
         return switch (id) {
+            case "experience_bottle" -> Optional.of(SkillLamps.Grade.PLAIN);
             case "greater_experience_bottle" -> Optional.of(SkillLamps.Grade.GREATER);
             case "grand_experience_bottle" -> Optional.of(SkillLamps.Grade.GRAND);
             default -> Optional.empty();

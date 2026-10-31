@@ -299,7 +299,7 @@ Marks are earned through gameplay. The website store does not sell Marks, gear s
 | Enchanting | Eligible Arcane binds, discoveries and other rewarded actions. |
 
 ## Experience bottles
-Right-click an **experience bottle** to choose a skill: the bottle gives that skill 10% of the XP it needs for its next level. **Greater** bottles give 25% and **Grand** bottles 60%; they come from expedition chests. Shift-click a skill to use the whole stack. Bottles fired from a dispenser still shatter as usual.
+Experience bottles hold what someone else already learned. Right-click a **Bottled Lesson** to uncork it and choose a skill: that skill gains 10% of the XP it needs for its next level. A **Bottled Lifetime** gives 25% and a **Bottled Legend** 60%; they come from expedition chests. Shift-click a skill to use the whole stack. Bottles fired from a dispenser still shatter as usual.
 
 Open `/skills` for levels, talent requirements and bonuses. Repeating placed-resource loops, cancelled actions and machine output do not provide unrestricted XP. Rates depend on the activity, equipment, talents and server tuning.
 
@@ -697,10 +697,12 @@ A raid is a bigger, harder expedition for **up to eight players**, with no hired
 Every expedition has its own loot: **materials** from common to rare, a **signature set** of armour and a weapon, and rare boss **signatures**.
 
 - **Enemies** drop the expedition's materials, and elites, mini-bosses and bosses drop more. Nobody gets saddles or emeralds.
-- **Crates, chests and hidden caches** stand in the rooms. Each player loots each one once, with their own roll. Hidden caches count toward your score.
+- **Crates, chests and hidden caches** stand in the rooms. They're private: each player loots each one once with their own roll, and sees a glimmer over the ones they haven't opened. Hidden caches only glimmer from close by, and count toward your score.
 - **Reward chests.** Winning grades your run from D to S+ by speed, survival and the secrets you found. Each player opens a free reward chest whose contents grow with the grade, and can open a **bonus chest** for Marks, with better odds and always a set piece. Use the chests by the exit, or `/expedition rewards` and `/expedition bonus`.
 - **The Expedition Forge.** Bring materials home and forge the set from them with `/expedition forge`, once you've cleared the expedition. Pieces come out sealed; [identify](/guide/gear-and-sockets) them to reveal their affixes.
-- **Experience bottles** from chests are skill lamps: right-click one to choose the skill that gets its XP.
+- **Rewards grow with you.** Set gear gains item levels on harder difficulties and when you outlevel the dungeon, and stacks of items grow with them.
+- **Bottled Lessons** from chests are skill lamps: uncork one to choose the skill that gets its XP.
+- **Bosses can drop a rare charm.** Right-click it to bind a companion you can't buy, or trade it to someone who wants it more.
 
 Marks are paid as soon as you win, and items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
 """, 'world', 'Expedition board | /expeditions\nParties | /guide/parties\nSeason campaign | /guide/season-campaign'),

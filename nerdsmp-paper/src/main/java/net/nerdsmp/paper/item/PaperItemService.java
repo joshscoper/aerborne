@@ -50,6 +50,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
      * entry, and the item updater re-renders any item whose stamp no longer matches.
      */
     private static final int RENDER_VERSION = 1;
+    /** What one extra item level adds to a dropped item's base stats. */
+    public static final double LEVEL_BONUS_STEP = .01D;
     private final JavaPlugin plugin;
     /** A blank line between tooltip sections, compared by identity. */
     private static final Component SECTION_BREAK = Component.empty();
@@ -73,6 +75,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
     private final NamespacedKey socketCapacityKey;
     private final NamespacedKey socketsKey;
     private final NamespacedKey qualityKey;
+    private final NamespacedKey levelBonusKey;
     private final NamespacedKey enchantmentsKey;
     private final NamespacedKey coatingTypeKey;
     private final NamespacedKey coatingPotencyKey;
@@ -101,6 +104,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         socketCapacityKey = new NamespacedKey(plugin, "socket_capacity");
         socketsKey = new NamespacedKey(plugin, "sockets");
         qualityKey = new NamespacedKey(plugin, "gear_quality");
+        levelBonusKey = new NamespacedKey(plugin, "item_level_bonus");
         enchantmentsKey = new NamespacedKey(plugin, "custom_enchantments");
         coatingTypeKey = new NamespacedKey(plugin, "poison_coating");
         coatingPotencyKey = new NamespacedKey(plugin, "poison_potency");
@@ -156,6 +160,11 @@ public final class PaperItemService implements ItemService<ItemStack> {
     }
 
     public ItemStack createLoot(ItemId itemId, int affixCount, boolean unidentified, long seed) {
+        return createLoot(itemId, affixCount, unidentified, seed, 0);
+    }
+
+    /** Loot above its catalog level: each extra item level adds {@link #LEVEL_BONUS_STEP} to its base stats. */
+    public ItemStack createLoot(ItemId itemId, int affixCount, boolean unidentified, long seed, int levelBonus) {
         Definition definition = catalog.items().get(itemId);
         if (definition == null) {
             throw new IllegalArgumentException("Unknown NerdSMP item: " + itemId);
@@ -175,6 +184,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         meta.getPersistentDataContainer().set(unidentifiedKey, PersistentDataType.BYTE, unidentified ? (byte) 1 : (byte) 0);
         meta.getPersistentDataContainer().set(lootInstanceKey, PersistentDataType.STRING,
             new UUID(random.nextLong(), random.nextLong()).toString());
+        if (levelBonus > 0 && definition.itemLevel() > 0) meta.getPersistentDataContainer().set(levelBonusKey, PersistentDataType.INTEGER, levelBonus);
         item.setItemMeta(meta);
         refresh(item);
         return item;
@@ -658,11 +668,16 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return data.has(key, PersistentDataType.STRING) ? Optional.ofNullable(data.get(key, PersistentDataType.STRING)) : Optional.empty();
     }
 
+    /** Extra item levels this one item dropped with. */
+    private int levelBonus(ItemMeta meta) {
+        return Math.clamp(meta.getPersistentDataContainer().getOrDefault(levelBonusKey, PersistentDataType.INTEGER, 0), 0, 100);
+    }
+
     /** The catalog item level, 0 when the item has none. */
     public int itemLevel(ItemStack item) {
         if (!isAuthentic(item)) return 0;
         Definition definition = catalog.items().get(describe(item).orElseThrow().itemId());
-        return definition == null ? 0 : Math.max(0, definition.itemLevel());
+        return definition == null ? 0 : Math.max(0, definition.itemLevel()) + levelBonus(item.getItemMeta());
     }
 
     public boolean coat(ItemStack item, String type, int potency, int charges) {
@@ -867,7 +882,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         List<AffixRoll> rolledAffixes = affixes(meta);
         // WoW-style header: item level, and (Wynncraft) how well the item rolled overall.
         StringBuilder header = new StringBuilder();
-        if (definition.itemLevel() > 0) header.append("<yellow>Item Level ").append(definition.itemLevel()).append("</yellow>");
+        if (definition.itemLevel() > 0) header.append("<yellow>Item Level ").append(definition.itemLevel() + levelBonus(meta)).append("</yellow>");
         if (!rolledAffixes.isEmpty()) {
             int overall = (int) Math.round(rolledAffixes.stream()
                 .mapToInt(affix -> affix.type().rollPercent(affix.value())).average().orElse(0.0D));
@@ -1125,9 +1140,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
 
     private Map<String, Double> combinedStats(Definition definition, ItemMeta meta) {
         GearQuality quality = quality(meta);
+        double levelScale = 1 + levelBonus(meta) * LEVEL_BONUS_STEP;
         Map<String, Double> combined = new HashMap<>();
         definition.stats().forEach((stat, value) -> combined.put(stat,
-            quality.scales(stat) ? value * quality.multiplier() : value));
+            quality.scales(stat) ? value * quality.multiplier() * levelScale : value));
         sockets(meta).forEach(socket -> socket.type().stats(socket.tier()).forEach(
             (stat, value) -> combined.merge(stat, value, Double::sum)
         ));

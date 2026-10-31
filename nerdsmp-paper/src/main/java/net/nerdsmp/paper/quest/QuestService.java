@@ -108,7 +108,7 @@ public final class QuestService implements Listener, AutoCloseable {
         List<String> problems = new ArrayList<>();
         for (QuestDefinition quest : catalog.quests().values()) {
             for (String npc : List.of(quest.giver(), quest.turnIn()))
-                if (!plugin.npcs().definitionIds().contains(npc)) problems.add(quest.id() + " uses unknown NPC " + npc);
+                if (!plugin.npcs().definitionIds().contains(npc) && !expeditionGivers().containsKey(npc)) problems.add(quest.id() + " uses unknown NPC " + npc);
             for (QuestDefinition.Objective objective : quest.objectives()) {
                 for (String target : objective.targets()) if (objective.type() == QuestDefinition.Type.KILL && target.startsWith("custom:")
                     && !plugin.mobs().ids().contains(target.substring(7))) problems.add(quest.id() + " hunts unknown mob " + target);
@@ -646,7 +646,12 @@ public final class QuestService implements Listener, AutoCloseable {
 
     private String npcName(String npc) {
         var definition = plugin.npcs().content().npcs().get(npc);
-        return definition == null ? npc : definition.name();
+        return definition == null ? expeditionGivers().getOrDefault(npc, npc) : definition.name();
+    }
+
+    /** Quest givers who stand inside expeditions rather than the world's NPC list. */
+    private Map<String, String> expeditionGivers() {
+        return plugin.expeditions() == null ? Map.of() : plugin.expeditions().questGivers();
     }
 
     private String zoneTitle(String zone) {

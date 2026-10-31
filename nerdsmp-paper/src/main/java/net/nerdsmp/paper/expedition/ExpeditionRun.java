@@ -83,6 +83,9 @@ final class ExpeditionRun {
     private final Map<UUID, Integer> bosses = new LinkedHashMap<>();
     /** The run's one boss bar: the active boss (or council), else a living mini-boss. */
     private BossBar bossBar;
+    /** Rooms whose boss has already made its entrance this run. */
+    private final Set<String> entered = new HashSet<>();
+    private static final double ENTRANCE_DEPTH = 3;
     private UUID barMiniboss;
     private final Map<UUID, Caster> casters = new HashMap<>();
     private final Map<UUID, Integer> forcesOf = new HashMap<>();
@@ -183,6 +186,18 @@ final class ExpeditionRun {
             @Override public void perform(List<ScriptAction> actions) {
                 Room active = run.progress == null ? null : run.progress.activeRoom();
                 run.runScript(active != null ? active.id() : run.expedition.roomList().getFirst().id(), actions, 0);
+            }
+            @Override public boolean openQuests(Player player, String giver) {
+                if (plugin.quests() == null) return false;
+                var counts = plugin.quests().counts(player, giver);
+                if (counts.available() + counts.ready() == 0) return false;
+                plugin.quests().open(player, giver);
+                return true;
+            }
+            @Override public String questMark(Player player, String giver) {
+                if (plugin.quests() == null) return null;
+                var counts = plugin.quests().counts(player, giver);
+                return counts.ready() > 0 ? "?" : counts.available() > 0 ? "!" : null;
             }
         });
         this.fight = new RunCombat(plugin, new RunCombat.Host() {
@@ -344,6 +359,7 @@ final class ExpeditionRun {
             }
             service.returns().remember(member, player.getLocation());
             service.teleport(player, spawn);
+            loot.readLevel(member);
             player.showTitle(Title.title(Chat.render("<gold>" + Chat.escape(expedition.title()) + "</gold>"),
                 Chat.render("<gray>" + Chat.escape(tier.title()) + (modifiers.isEmpty() ? "" : " · " + modifierNames()) + "</gray>"),
                 Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(600))));
@@ -380,7 +396,10 @@ final class ExpeditionRun {
     }
 
     void tick(long now) {
-        if (state == State.ACTIVE || state == State.ENDING) tickAllies(now);
+        if (state == State.ACTIVE || state == State.ENDING) {
+            tickAllies(now);
+            loot.glimmer();
+        }
         if (state == State.ENDING) {
             if (completed) exitBeacon();
             updateStatus(now);
@@ -671,6 +690,7 @@ final class ExpeditionRun {
                     for (Player player : online()) player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, .5F, 1.4F);
                 }
                 if (!test) service.roomCleared(this, room);
+                loot.rollCompanion(room);
             }
             case Effect.Lives lives -> {
                 Player died = Bukkit.getPlayer(lives.died());
@@ -746,7 +766,7 @@ final class ExpeditionRun {
                 continue;
             }
             long marks = payMarks(account.get(), expedition.loot(), "complete");
-            fixed.put(member, fixedRewards(expedition.loot(), rolls));
+            fixed.put(member, fixedRewards(expedition.loot(), rolls, member));
             if (marks > 0) Chat.success(player, "Reward: " + Chat.marks(marks) + (underPar ? " <yellow>(+1 timed roll in your chest)</yellow>" : "") + ".");
         }
         int findable = expedition.story().secrets() + progress.optionalTotal();
@@ -792,10 +812,10 @@ final class ExpeditionRun {
     }
 
     /** The expedition's fixed finish rewards for one player: its loot-profile rolls and items. */
-    private List<ItemStack> fixedRewards(ExpeditionDefinition.Loot rewards, int rolls) {
+    private List<ItemStack> fixedRewards(ExpeditionDefinition.Loot rewards, int rolls, UUID member) {
         List<ItemStack> items = new ArrayList<>();
         for (int roll = 0; roll < rolls && rewards.profile() != null; roll++) items.addAll(plugin.rewardDrops().rollProfile(rewards.profile()));
-        rewards.items().forEach((item, amount) -> items.add(item(item, amount)));
+        rewards.items().forEach((item, amount) -> items.add(item(item, this.loot.scaled(member, amount))));
         return items;
     }
 
@@ -811,7 +831,7 @@ final class ExpeditionRun {
     private Reward pay(Player player, AccountId account, ExpeditionDefinition.Loot loot, int rolls, String slot) {
         List<ItemStack> rewards = new ArrayList<>();
         for (int roll = 0; roll < rolls && loot.profile() != null; roll++) rewards.addAll(plugin.rewardDrops().rollProfile(loot.profile()));
-        loot.items().forEach((item, amount) -> rewards.add(item(item, amount)));
+        loot.items().forEach((item, amount) -> rewards.add(item(item, this.loot.scaled(player.getUniqueId(), amount))));
         List<ItemStack> overflow = new ArrayList<>(player.getInventory().addItem(rewards.toArray(ItemStack[]::new)).values());
         if (!overflow.isEmpty()) {
             pendingLoot.computeIfAbsent(player.getUniqueId(), uuid -> new ArrayList<>()).addAll(overflow);
@@ -886,6 +906,67 @@ final class ExpeditionRun {
         if (entity == null) return;
         bosses.put(entity.getUniqueId(), index);
         casters.put(entity.getUniqueId(), new Caster(ExpeditionDefinition.Role.BOSS, bossAbilities(room, 0), 1.4));
+        if (room.encounter().entrance() != null) enter(room, id, entity, room.encounter().entrance());
+        else announceBoss(room, id, entity);
+    }
+
+    /**
+     * A boss's arrival: held under the floor, brought up with its effects, and let loose once every
+     * camera is back. A second attempt at the fight gets a short version with no wait.
+     */
+    private void enter(Room room, String id, LivingEntity boss, ExpeditionDefinition.Entrance entrance) {
+        boolean first = entered.add(room.id());
+        int delay = first ? entrance.delaySeconds() * 20 : 0, length = first ? entrance.seconds() * 20 : 20;
+        Location home = boss.getLocation();
+        Caster caster = casters.get(boss.getUniqueId());
+        if (caster != null) caster.nextCast = System.currentTimeMillis() + (delay + length) * 50L + 3_000;
+        boss.setInvulnerable(true);
+        if (boss instanceof Mob mob) mob.setAI(false);
+        boss.teleport(home.clone().subtract(0, ENTRANCE_DEPTH, 0));
+        logAbility(id + " entering");
+        int[] clock = {-delay};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (state != State.ACTIVE || !boss.isValid()) { task.cancel(); return; }
+            int tick = clock[0]++;
+            if (tick < 0) return;
+            if (tick < length) entering(boss, home, entrance.style(), tick, length);
+            if (tick == length) {
+                boss.teleport(home);
+                world.spawnParticle(Particle.SOUL, home.clone().add(0, 1, 0), 45, .7, .9, .7, .06);
+                world.spawnParticle(Particle.EXPLOSION, home.clone().add(0, 1, 0), 2, .3, .3, .3, 0);
+                world.playSound(home, Sound.ENTITY_WITHER_SKELETON_DEATH, 1.2F, .5F);
+            }
+            if (tick < length || stage.cutsceneRunning() && tick < length + 400) return;
+            task.cancel();
+            boss.setInvulnerable(false);
+            if (boss instanceof Mob mob) mob.setAI(true);
+            logAbility(id + " loose");
+            announceBoss(room, id, boss);
+        }, 0L, 1L);
+    }
+
+    /** One tick of a boss coming up: {@code RISE} climbs steadily, {@code FORM} gathers its bones first and comes up fast. */
+    private void entering(LivingEntity boss, Location home, ExpeditionDefinition.EntranceStyle style, int tick, int length) {
+        double done = tick / (double) length;
+        boolean forming = style == ExpeditionDefinition.EntranceStyle.FORM;
+        double rise = forming ? Math.max(0, (done - .7) / .3) : done;
+        boss.teleport(home.clone().subtract(0, ENTRANCE_DEPTH * (1 - rise * rise * (3 - 2 * rise)), 0));
+        Location floor = home.clone().add(0, .15, 0);
+        if (forming && done < .8) {
+            double radius = 3.2 * (1 - done);
+            for (int arm = 0; arm < 3; arm++) {
+                double angle = tick * .3 + arm * 2.094;
+                net.nerdsmp.paper.expedition.combat.Telegraph.shards(floor.clone().add(Math.cos(angle) * radius, .4 + done * 1.6, Math.sin(angle) * radius), 3, .1, Material.BONE_BLOCK);
+            }
+        } else {
+            net.nerdsmp.paper.expedition.combat.Telegraph.shards(floor, 10, .7, Material.DEEPSLATE_BRICKS);
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, floor, 6, .6, .1, .6, .02);
+        }
+        if (tick % 12 == 0) world.playSound(home, forming ? Sound.ENTITY_SKELETON_STEP : Sound.BLOCK_DEEPSLATE_BREAK, 1F, .5F + (float) done * .4F);
+    }
+
+    /** The bar and the name card, once a boss is really in the fight. */
+    private void announceBoss(Room room, String id, LivingEntity entity) {
         if (barMiniboss != null) {
             hideBar();
             barMiniboss = null;
@@ -933,8 +1014,7 @@ final class ExpeditionRun {
                 Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))));
             player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, .5F, 1.2F);
         }
-        if (!abilities.isEmpty()) broadcast("<red>" + Chat.escape(title) + ":</red> <gray>" + String.join(", ",
-            abilities.stream().map(id -> Abilities.info(id).map(Abilities.Info::title).orElse(id)).toList()) + "</gray>");
+        if (definition.title() != null) broadcast("<red>" + Chat.escape(title) + ".</red>");
     }
 
     /** The boss withdraws, untouchable and unseen, while its adds fight; see {@link #surface()}. */
@@ -1305,6 +1385,7 @@ final class ExpeditionRun {
             case RESTORE -> stage.restore(action.arg(0));
             case HAZARD -> stage.hazard(action.arg(0).toLowerCase(Locale.ROOT), action.arg(1));
             case CAMPFIRE -> stage.light(action.arg(0));
+            case NPC -> stage.moveNpc(action.arg(0), new Point(action.intArg(1, 0), action.intArg(2, 0), action.intArg(3, 0), action.intArg(4, 0)));
             case WAIT -> { }
         }
     }
@@ -1523,7 +1604,6 @@ final class ExpeditionRun {
         if (progress == null || plugin.presentation() == null) return;
         long left = state == State.ENDING ? 0 : progress.secondsLeft(now);
         List<String> lines = new ArrayList<>();
-        lines.add("<gray>" + Chat.escape(tier.title()) + (modifiers.isEmpty() ? "" : " <dark_gray>·</dark_gray> " + Chat.escape(modifierNames())) + "</gray>");
         String clock = String.format(Locale.ROOT, "%d:%02d", left / 60, left % 60);
         if (key != null) {
             long keyLeft = keyTimer() - keyClock(now);
@@ -1531,20 +1611,25 @@ final class ExpeditionRun {
             String keyClock = String.format(Locale.ROOT, "%d:%02d", shown / 60, shown % 60);
             lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
                 : keyLeft >= 0 ? "<light_purple>Key</light_purple> " + (keyLeft <= 60 ? "<yellow>" : "<white>") + keyClock + "</white>"
-                    + "   <gray>Deaths</gray> <red>" + progress.deaths() + "</red>"
-                : "<red>Over by " + keyClock + "</red>   <gray>Deaths</gray> <red>" + progress.deaths() + "</red>");
+                    + "  <red>☠ " + progress.deaths() + "</red>"
+                : "<red>Over by " + keyClock + "  ☠ " + progress.deaths() + "</red>");
         } else if (!progress.clockRuns()) {
             long elapsed = progress.elapsedSeconds(now);
             lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
-                : "<gray>Time</gray> <white>" + String.format(Locale.ROOT, "%d:%02d", elapsed / 60, elapsed % 60) + "</white>"
-                    + "   <gray>Deaths</gray> <red>" + progress.deaths() + "</red>");
+                : "<gray>" + Chat.escape(tier.title()) + "</gray>  <white>" + String.format(Locale.ROOT, "%d:%02d", elapsed / 60, elapsed % 60) + "</white>"
+                    + "  <red>☠ " + progress.deaths() + "</red>");
         } else lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
-            : "<gray>Time</gray> " + (left <= 60 ? "<red>" : left <= 300 ? "<yellow>" : "<white>") + clock + "</white>"
-                + "   <gray>Lives</gray> <red>❤ " + Math.max(0, progress.lives()) + "</red>");
-        lines.add("<dark_gray>────────────</dark_gray>");
-        List<String> objectives = new ArrayList<>();
+            : "<gray>" + Chat.escape(tier.title()) + "</gray>  " + (left <= 60 ? "<red>" : left <= 300 ? "<yellow>" : "<white>") + clock + "</white>"
+                + "  <red>❤ " + Math.max(0, progress.lives()) + "</red>");
         Room active = progress.activeRoom();
-        for (RunProgress.Objective objective : progress.objectives(now)) {
+        List<RunProgress.Objective> all = progress.objectives(now);
+        // Only what's in hand: the room running now, else what's open next, and how far along the party is.
+        long done = all.stream().filter(line -> line.depth() == 0 && line.status() == RunProgress.Objective.Status.DONE).count();
+        long total = all.stream().filter(line -> line.depth() == 0).count();
+        List<RunProgress.Objective> shown = all.stream().filter(line -> line.status() == RunProgress.Objective.Status.ACTIVE).toList();
+        if (shown.isEmpty()) shown = all.stream().filter(line -> line.status() == RunProgress.Objective.Status.OPEN).limit(2).toList();
+        if (shown.isEmpty()) shown = all.stream().filter(line -> line.status() == RunProgress.Objective.Status.LOCKED).limit(1).toList();
+        for (RunProgress.Objective objective : shown) {
             String mark = switch (objective.status()) {
                 case DONE -> "<green>✔</green> <dark_gray>";
                 case ACTIVE -> "<gold>▶</gold> <white>";
@@ -1559,18 +1644,9 @@ final class ExpeditionRun {
                         if (!count.isEmpty() && objective.status() != RunProgress.Objective.Status.DONE) text += " " + count;
                     }
             }
-            objectives.add((objective.depth() > 0 ? "  " : "") + mark + Chat.escape(text));
+            lines.add((objective.depth() > 0 ? "  " : "") + mark + Chat.escape(text));
         }
-        // Keep the panel on screen: completed rooms collapse first when there are many.
-        int room = 15 - lines.size() - 2;
-        while (objectives.size() > room) {
-            int done = -1;
-            for (int index = 0; index < objectives.size(); index++) if (objectives.get(index).startsWith("<green>✔")) { done = index; break; }
-            if (done < 0) break;
-            objectives.remove(done);
-        }
-        lines.addAll(objectives.subList(0, Math.min(objectives.size(), room)));
-        lines.add("<dark_gray>────────────</dark_gray>");
+        if (done > 0) lines.add("<dark_gray>" + done + " of " + total + " cleared</dark_gray>");
         StringBuilder party = new StringBuilder();
         for (UUID member : members) {
             Player player = Bukkit.getPlayer(member);
@@ -1580,7 +1656,7 @@ final class ExpeditionRun {
             if (!party.isEmpty()) party.append(" ");
             party.append("<").append(color).append(">").append(Chat.escape(shortName(player.getName()))).append(" ").append((int) Math.ceil(health)).append("</").append(color).append(">");
         }
-        lines.add(party.toString());
+        if (members.size() > 1) lines.add(party.toString());
         String title = "<gold><bold>" + Chat.escape(expedition.title()) + "</bold></gold>";
         for (Player player : online()) plugin.presentation().showOverlay(player, title, lines);
     }

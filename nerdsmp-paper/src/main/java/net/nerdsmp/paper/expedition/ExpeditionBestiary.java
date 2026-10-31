@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
+import net.nerdsmp.paper.item.SkillLamps;
 import net.nerdsmp.paper.expedition.content.ExpeditionLoot;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Room;
 import net.nerdsmp.paper.expedition.content.ScriptAction;
@@ -92,9 +93,9 @@ public final class ExpeditionBestiary {
     static String lineName(NerdSmpPlugin plugin, ExpeditionLoot.Table table, ExpeditionLoot.Line line) {
         return switch (line.kind()) {
             case LAMP -> switch (line.item()) {
-                case "greater" -> "Greater Experience Bottle";
-                case "grand" -> "Grand Experience Bottle";
-                default -> "Experience Bottle";
+                case "greater" -> SkillLamps.Grade.GREATER.title();
+                case "grand" -> SkillLamps.Grade.GRAND.title();
+                default -> SkillLamps.Grade.PLAIN.title();
             };
             case GEAR -> table.gear().isEmpty() ? "Set piece" : "A " + setName(plugin, table) + " piece (sealed)";
             case ITEM -> line.item().equals(ExpeditionLoot.SIGNATURE)

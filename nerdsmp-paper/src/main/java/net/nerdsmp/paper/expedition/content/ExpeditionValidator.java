@@ -355,6 +355,7 @@ public final class ExpeditionValidator {
             case BUILD, BREAK, RESTORE -> { if (!story.setpieces().containsKey(action.arg(0))) error(issues, room + " script names unknown set piece '" + action.arg(0) + "'.", action.text()); }
             case HAZARD -> { if (!story.hazards().containsKey(action.arg(1))) error(issues, room + " script names unknown hazard '" + action.arg(1) + "'.", action.text()); }
             case CAMPFIRE -> { if (!story.campfires().containsKey(action.arg(0))) error(issues, room + " script lights unknown campfire '" + action.arg(0) + "'.", action.text()); }
+            case NPC -> { if (!story.npcs().containsKey(action.arg(0))) error(issues, room + " script moves unknown character '" + action.arg(0) + "'.", action.text()); }
             case SPAWN -> { if (!catalog.mob(action.arg(0))) error(issues, room + " script spawns unknown mob '" + action.arg(0) + "'.", action.text()); }
             case OPEN, CLOSE -> {
                 Room target = expedition.rooms().get(action.arg(0));
