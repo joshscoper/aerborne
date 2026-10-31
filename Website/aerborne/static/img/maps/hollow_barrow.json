@@ -1,0 +1,16 @@
+{
+  "version": "cf80c78f1b7d887a",
+  "width": 1071,
+  "height": 1127,
+  "entrance": {"x": 57.8, "y": 10.2},
+  "pins": [
+    {"name": "The Warden of Bones", "room": "", "icon": "skull", "color": "#c65642", "optional": false, "x": 14.1, "y": 50.0},
+    {"name": "The Keening Widow", "room": "", "icon": "skull", "color": "#e2a030", "optional": true, "x": 33.0, "y": 28.9},
+    {"name": "The Hollow Huntsman", "room": "The King's Rest", "icon": "skull", "color": "#9668b6", "optional": false, "x": 57.8, "y": 82.3}
+  ],
+  "places": [
+    {"name": "The Lever Vault", "kind": "room", "x": 83.3, "y": 50.0},
+    {"name": "The Crossing", "kind": "fire", "x": 57.8, "y": 50.0},
+    {"name": "Antechamber Brazier", "kind": "fire", "x": 59.8, "y": 60.6}
+  ]
+}

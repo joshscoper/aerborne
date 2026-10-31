@@ -1,0 +1,16 @@
+{
+  "version": "31d1f01949ed80e6",
+  "width": 1113,
+  "height": 735,
+  "entrance": {"x": 50.0, "y": 15.7},
+  "pins": [
+    {"name": "The Ember Warden", "room": "The Ember Throne", "icon": "flame", "color": "#c65642", "optional": false, "x": 13.5, "y": 24.3},
+    {"name": "The Frost Warden", "room": "The Frost Hall", "icon": "skull", "color": "#e2a030", "optional": false, "x": 86.5, "y": 24.3},
+    {"name": "The Stone Warden", "room": "The Stone Court", "icon": "staff", "color": "#9668b6", "optional": false, "x": 50.0, "y": 79.5}
+  ],
+  "places": [
+    {"name": "The Ember Antechamber", "kind": "room", "x": 32.5, "y": 24.4},
+    {"name": "The Frost Antechamber", "kind": "room", "x": 67.5, "y": 24.2},
+    {"name": "The Stone Antechamber", "kind": "room", "x": 50.0, "y": 51.0}
+  ]
+}

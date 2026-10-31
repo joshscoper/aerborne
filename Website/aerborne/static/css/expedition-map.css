@@ -1,0 +1,53 @@
+/* A dungeon's parchment map. The sheet keeps its own colours in both themes: it's a drawn object, not page chrome. */
+.dungeon-map-section { margin:2.5rem 0 0; scroll-margin-top:7rem; display:grid; grid-template-columns:minmax(0,1fr) 15rem; gap:1.75rem; align-items:start; }
+.dungeon-map { position:relative; margin:0; padding-top:1.4rem; min-width:0; max-width:760px; justify-self:center; width:100%; }
+.dungeon-map-banner { position:absolute; z-index:3; top:0; left:50%; transform:translateX(-50%); max-width:calc(100% - 2rem); padding:.5rem 2.4rem; color:#f7e3a8; font:800 clamp(1rem,2.4vw,1.5rem)/1.2 var(--display,Georgia,serif); letter-spacing:.14em; text-transform:uppercase; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:linear-gradient(#6d4a22,#4c3115); border:2px solid #c9a154; border-radius:4px; box-shadow:0 3px 0 #2c1b0b,0 8px 18px #0007; }
+.dungeon-map-banner::before,.dungeon-map-banner::after { content:''; position:absolute; top:50%; width:.5rem; height:.5rem; margin-top:-.25rem; background:#c9a154; transform:rotate(45deg); }
+.dungeon-map-banner::before { left:.9rem; }
+.dungeon-map-banner::after { right:.9rem; }
+.dungeon-map-sheet { position:relative; overflow:hidden; border:3px solid #2e1e0e; border-radius:6px; background:#c6a56a; box-shadow:0 0 0 2px #8a6a34,0 16px 34px #0008; }
+.dungeon-map-sheet > img { display:block; width:100%; height:auto; }
+.dungeon-map-marks { position:absolute; inset:0; width:100%; height:100%; font-family:var(--display,Georgia,serif); }
+.dungeon-map-marks text { text-anchor:middle; paint-order:stroke; stroke-linejoin:round; }
+
+.dungeon-map-marks .compass { opacity:.72; fill:#4a3115; }
+.dungeon-map-marks .compass .dim { fill:#c6a56a; }
+.dungeon-map-marks .compass text { font-size:20px; font-weight:800; }
+
+.dungeon-map-marks .entrance path { fill:none; stroke:#7a4d12; stroke-width:4; stroke-linecap:round; }
+.dungeon-map-marks .entrance text { fill:#4a2f10; font-size:16px; font-weight:700; letter-spacing:.06em; stroke:#f3e3b6; stroke-width:4px; }
+
+.dungeon-map-marks .place text { fill:#56391a; font-size:17px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; stroke:#f3e3b6; stroke-width:4px; }
+.dungeon-map-marks .ember { fill:#ee8a2a; stroke:#ffe29a; stroke-width:3; }
+
+.dungeon-map-marks .pin { cursor:pointer; }
+.dungeon-map-marks .body { transition:transform .15s ease; }
+.dungeon-map-marks .pin:hover .body,.dungeon-map-marks .pin:focus-visible .body { transform:scale(1.14); }
+.dungeon-map-marks .pin:focus-visible { outline:none; }
+.dungeon-map-marks .pin:focus-visible .rim { stroke:#fff; stroke-width:4; }
+.dungeon-map-marks .rim { fill:#1d130a; stroke:#d8b873; stroke-width:2; }
+.dungeon-map-marks .core { fill:#23202c; }
+.dungeon-map-marks .glyph { fill:#f1e4c4; }
+.dungeon-map-marks .number { display:none; fill:#f1e4c4; font-size:26px; font-weight:800; }
+.dungeon-map-marks .name { fill:#160d05; font-size:22px; font-weight:800; stroke:#f6e9c6; stroke-width:5px; }
+.dungeon-map-marks .room { fill:#56391a; font-size:15px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; stroke:#f6e9c6; stroke-width:4px; }
+
+.dungeon-map-legend { list-style:none; margin:1.4rem 0 0; padding:0; display:grid; gap:.6rem; min-width:0; }
+.dungeon-map-legend li { display:flex; align-items:center; gap:.7rem; padding:.7rem .85rem; border:1px solid var(--j-line,#9fb9da35); border-radius:8px; background:var(--j-panel,#20314b); }
+.dungeon-map-legend .swatch { flex:none; width:1.7rem; height:1.7rem; }
+.dungeon-map-legend .swatch text { fill:#160d05; font:800 15px var(--body,sans-serif); text-anchor:middle; }
+.dungeon-map-legend strong { display:block; font-size:.88rem; line-height:1.3; }
+.dungeon-map-legend small { display:block; color:var(--j-muted,#c1d1e5); font-size:.74rem; line-height:1.4; }
+
+@media(max-width:900px) {
+  .dungeon-map-section { grid-template-columns:minmax(0,1fr); gap:0; }
+  .dungeon-map-legend { grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr)); }
+}
+/* On a phone the names would be too small to read, so the medallions become the legend's numbers. */
+@media(max-width:620px) {
+  .dungeon-map-marks .place,.dungeon-map-marks .entrance text,.dungeon-map-marks .name,.dungeon-map-marks .room,.dungeon-map-marks .glyph { display:none; }
+  .dungeon-map-marks .number { display:block; }
+  .dungeon-map-marks .body { transform:scale(1.6); }
+  .dungeon-map-marks .pin:hover .body { transform:scale(1.7); }
+}
+@media(prefers-reduced-motion:reduce) { .dungeon-map-marks .body { transition:none; } }

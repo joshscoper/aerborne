@@ -1,0 +1,21 @@
+{
+  "version": "ee4da2f1903ac267",
+  "width": 1038,
+  "height": 1400,
+  "entrance": {"x": 50.0, "y": 5.2},
+  "pins": [
+    {"name": "Gorrak the Kilnbreaker", "room": "Gorrak's Kiln", "icon": "shield", "color": "#c65642", "optional": false, "x": 50.0, "y": 24.1},
+    {"name": "Skarn, the Ash Hound & Vesh, the Ember Hound", "room": "The Hound Pens", "icon": "flame", "color": "#e2a030", "optional": false, "x": 47.9, "y": 42.1},
+    {"name": "Vael, the Slag Priest", "room": "The Slag Chapel", "icon": "staff", "color": "#9668b6", "optional": false, "x": 50.0, "y": 61.4},
+    {"name": "Steward Ashkar", "room": "The Steward's Hall", "icon": "flame", "color": "#5482a8", "optional": false, "x": 50.0, "y": 78.4},
+    {"name": "Pyrrhax, the Ashen Sovereign", "room": "The Molten Heart", "icon": "skull", "color": "#589660", "optional": false, "x": 50.0, "y": 90.7}
+  ],
+  "places": [
+    {"name": "The Scorched Descent", "kind": "room", "x": 49.9, "y": 12.9},
+    {"name": "The Slagfalls", "kind": "room", "x": 49.8, "y": 32.0},
+    {"name": "The Rune Galleries", "kind": "room", "x": 50.2, "y": 50.4},
+    {"name": "The Great Bellows", "kind": "room", "x": 50.2, "y": 68.3},
+    {"name": "Slagfall Rest", "kind": "fire", "x": 52.1, "y": 35.5},
+    {"name": "Heartgate Fire", "kind": "fire", "x": 47.9, "y": 71.5}
+  ]
+}

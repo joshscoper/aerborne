@@ -5,6 +5,10 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Dungeon maps on the website (October 31)
+- **Every expedition page has a parchment map.** Each is drawn from the dungeon's real template, with its boss
+  rooms in colour, a medallion for each boss, its fires and rooms, and a legend. A test fails if one goes stale.
+
 ### Thornwood Canopy rebuilt (October 31)
 - **A climb with a long way down.** The canopy is rebuilt the way the Barrow was: Rootgate, the Low Boughs,
   the Fork as a hub, a wing either side, and a long stair to the Heart Gate, with 16 standing packs. Enemy

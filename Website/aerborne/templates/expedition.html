@@ -18,6 +18,7 @@
 {% if problem %}
 <div class="notice notice-warn" role="status"><strong>This guide is offline right now.</strong> The game server's API can't be reached. Use <code>/expedition guide {{ slug }}</code> in game.</div>
 {% else %}
+{% include "partials/expedition_map.html" %}
 {% if e.guide and e.guide.tips %}<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Before you go</p><h2>Tips.</h2></div></div>
 <ul class="expedition-tips">{% for tip in e.guide.tips %}<li>{{ tip }}</li>{% endfor %}</ul></section>{% endif %}
 

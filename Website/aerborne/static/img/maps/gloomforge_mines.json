@@ -1,0 +1,16 @@
+{
+  "version": "4be2591cb2c22608",
+  "width": 861,
+  "height": 1155,
+  "entrance": {"x": 50.0, "y": 10.6},
+  "pins": [
+    {"name": "The Deep Foreman", "room": "The Foreman's Delve", "icon": "skull", "color": "#c65642", "optional": false, "x": 50.0, "y": 84.5}
+  ],
+  "places": [
+    {"name": "The Ore Galleries", "kind": "room", "x": 50.0, "y": 23.3},
+    {"name": "Grell's Shaft", "kind": "room", "x": 48.9, "y": 37.7},
+    {"name": "The Blasting Hall", "kind": "room", "x": 50.0, "y": 50.9},
+    {"name": "The Slag Pits", "kind": "room", "x": 50.0, "y": 64.9},
+    {"name": "Miners' Rest", "kind": "fire", "x": 52.4, "y": 73.6}
+  ]
+}

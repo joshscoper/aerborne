@@ -596,6 +596,11 @@ npcs:
   them back where they last stood, or at the room's checkpoint in a boss fight. It never kills. Enemies
   that go over are put back too.
 - **Motes.** `motes: firefly` drifts that particle round each player. It has to be one that needs no data.
+- **Website maps.** Each sample dungeon's guide page shows a parchment map drawn from its real template:
+  floor plan, boss rooms in colour, a medallion per boss, its fires and its rooms. `ExpeditionMapsTest` fails
+  when a map goes stale. Redraw them by running that test with the environment variable `WRITE_MAPS=1`, then
+  commit `Website/aerborne/static/img/maps`. Secret caches stay off, because the walk over the floor only
+  jumps on `reach` puzzles.
 - **Devices** are blocks players right-click in a fight: campfires, candles, sacs, cisterns.
 - **Ambience** plays each sound to each player from a spot off in the dark, about once every `every`
   seconds, and only inside `area` if it has one. A boss fight also has a heartbeat, which quickens as the

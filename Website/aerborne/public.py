@@ -1,6 +1,9 @@
 """Public pages. Everything shown here is published content or verified configuration."""
+import json
+import re
 import sqlite3
 import hashlib
+from pathlib import Path
 
 from flask import (Blueprint, Response, abort, current_app, g, redirect, render_template, request,
                    send_from_directory, url_for, jsonify)
@@ -126,6 +129,21 @@ def _names(values):
     return [str(v) for v in (values or []) if gameapi.NAME_RE.match(str(v))][:5]
 
 
+def _dungeon_map_file(folder, slug):
+    """Where a dungeon's map notes live, for slugs that can only name a file in that folder."""
+    return folder / (slug + ".json") if re.fullmatch(r"[a-z0-9_]+", slug or "") else None
+
+
+def _dungeon_map(slug):
+    """A dungeon's drawn map and what to lay over it, if it has one."""
+    path = _dungeon_map_file(Path(current_app.static_folder) / "img" / "maps", slug)
+    try:
+        notes = json.loads(path.read_text(encoding="utf-8")) if path else None
+    except (OSError, ValueError):
+        return None
+    return notes if isinstance(notes, dict) and notes.get("pins") and notes.get("width") else None
+
+
 GEAR_SLOTS = (("head", "Head"), ("shoulders", "Shoulders"), ("chest", "Chest"), ("back", "Back"), ("wrists", "Wrists"),
               ("hands", "Hands"), ("waist", "Waist"), ("legs", "Legs"), ("feet", "Feet"), ("neck", "Neck"), ("ring", "Ring"),
               ("trinket", "Trinket"), ("main_hand", "Main hand"), ("off_hand", "Off hand"))
@@ -174,7 +192,8 @@ def expedition(slug):
             weekly = (data.get("keystones") or {}) if isinstance(data.get("keystones"), dict) else {}
             affixes = [row for row in weekly.get("affixes") or [] if isinstance(row, dict) and row.get("modifiers")]
             return render_template("expedition.html", e=dict(raw, tiers=tiers, bestiary=bestiary, keystone=keystone), affixes=affixes,
-                                   gear_slots=_gear_by_slot(raw.get("rewards")), slot_titles=dict(GEAR_SLOTS), problem=None, slug=slug)
+                                   gear_slots=_gear_by_slot(raw.get("rewards")), slot_titles=dict(GEAR_SLOTS), dungeon_map=_dungeon_map(slug),
+                                   problem=None, slug=slug)
     abort(404)
 
 
