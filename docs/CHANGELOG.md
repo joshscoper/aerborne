@@ -5,6 +5,20 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Fourth Barrow playtest (October 31)
+- **Tooltips stay narrow.** Long lines wrap at 38 characters and keep their colours, ability text is
+  shorter, and a row of empty gem slots takes one line. Existing items pick this up on their own.
+- **The Warden is hidden properly.** Bosses waiting for their entrance aren't sent to players at all,
+  because an invisible mob still shows its armour. His helmet no longer floats through the cutscene.
+- **No upgrade arrows on the hotbar.** Swords and shields there are already to hand. Armour and
+  accessories on the hotbar are still marked, because they aren't being worn.
+- **Barrow gear for every slot.** Nine common pieces turn up anywhere in a run, and each boss now has
+  seven or eight pieces of its own, so all 14 equipment slots have something to find.
+- **Companions are a secret.** A charm now sits in a boss's chest, rolled as each player opens it. Drop
+  companions stay out of the wardrobe and `/companion list` until someone owns one.
+- **The expedition page lists the spoils.** Each boss's pieces with stats and abilities, the odds on each
+  tier, and all of the dungeon's gear by slot. The bestiary shows what each enemy actually does.
+
 ### Third Barrow playtest (October 31)
 - **Boss rooms fight back.** Soul fires throw lances down the Warden's hall, and a ring of bone rolls out
   that you have to jump. The Widow snuffs her vigil candles, and grief spreads from each until someone

@@ -193,11 +193,14 @@ final class RunEntrance {
         display.setTransformation(to);
     }
 
-    /** Hides a boss as it's created: without this it stands on its post, in plain sight, until {@link #enter} can move it. */
+    /**
+     * Hides a boss as it's created: without this it stands on its post, in plain sight, until {@link #enter}
+     * can move it. It isn't sent to anyone at all, because an invisible mob still shows what it's wearing.
+     */
     void hold(LivingEntity boss) {
         if (boss.isCustomNameVisible()) named.add(boss.getUniqueId());
         boss.setCustomNameVisible(false);
-        boss.setInvisible(true);
+        boss.setVisibleByDefault(false);
     }
 
     /** Starts a boss's arrival; returns how many ticks it takes, at least. */
@@ -232,7 +235,7 @@ final class RunEntrance {
                 else rise(boss, home, tick, length);
             }
             if (tick == length) {
-                boss.setInvisible(false);
+                boss.setVisibleByDefault(true);
                 boss.teleport(home);
                 if (ritual) slam(home);
                 else arrive(home);
@@ -254,7 +257,7 @@ final class RunEntrance {
     private void rise(LivingEntity boss, Location home, int tick, int length) {
         double done = tick / (double) length;
         // Seen only once it's under the floor.
-        if (tick == 1) boss.setInvisible(false);
+        if (tick == 1) boss.setVisibleByDefault(true);
         boss.teleport(home.clone().subtract(0, DEPTH * (1 - eased(done)), 0));
         Location floor = home.clone().add(0, .15, 0);
         Telegraph.shards(floor, 10, .7, Material.DEEPSLATE_BRICKS);
@@ -438,7 +441,7 @@ final class RunEntrance {
         int seen = (int) (length * BOSS_SEEN);
         if (tick == (int) (length * CIRCLE_DONE)) column(ritual, center);
         if (tick == seen) {
-            boss.setInvisible(false);
+            boss.setVisibleByDefault(true);
             world.playSound(center, Sound.ENTITY_WITHER_SPAWN, 1.1F, .7F);
         }
         if (tick >= seen) {

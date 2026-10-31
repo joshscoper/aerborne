@@ -1,5 +1,6 @@
 # Expedition loot: each expedition's materials (common, uncommon, rare), signature set pieces
-# and boss signatures. `bosses` lists what each boss room can give from its chest, likeliest first.
+# and boss signatures. `bosses` lists what each boss room can give from its chest, likeliest first, and
+# `finds` is gear for the slots a set doesn't cover: it drops wherever set pieces do, but can't be forged.
 # Ships inside the plugin; a server can override an expedition here by copying its entry into the
 # data folder's content/expedition-loot.yml.
 expeditions:
@@ -9,10 +10,11 @@ expeditions:
     materials: [grave_dust, barrow_wax, huntsmans_antler]
     gear: [barrowguard_helm, barrowguard_cuirass, barrowguard_greaves, barrowguard_boots, sextons_edge]
     signatures: [huntsmans_longbow]
+    finds: [pallbearers_buckler, sextons_rosary, gravecloth_mantle, processional_shroud, ossuary_wraps, diggers_gloves, bonetie_belt, funeral_band, vigil_stub]
     bosses:
-      wardens_hall: [ossuary_cleaver, gravewall_bulwark, wardens_soulblade]
-      widows_cell: [keening_dirk, mourning_veil, widows_requiem]
-      kings_rest: [hollow_crown, pyre_greatsword, huntsmans_longbow]
+      wardens_hall: [gatewardens_pauldrons, wardens_girdle, ossuary_cleaver, gravewall_bulwark, ribcage_hauberk, south_gate_key, wardens_soulblade]
+      widows_cell: [widows_wristlets, weeping_shawl, funeral_skirts, keening_dirk, widows_band, mourning_veil, locket_of_the_last_letter, widows_requiem]
+      kings_rest: [ember_scarred_gauntlets, ashen_tassets, hill_road_treads, pyrebound_signet, horn_of_the_last_cart, hollow_crown, pyre_greatsword, huntsmans_longbow]
   thornwood_canopy:
     materials: [briar_silk, thornheart_sap, matrons_fang]
     gear: [thornwarden_hood, thornwarden_jerkin, thornwarden_leggings, thornwarden_boots, briarshot_crossbow]

@@ -31,8 +31,9 @@ import java.util.function.BiFunction;
 
 /**
  * Marks the gear in a player's bags that beats what they're wearing: a green arrow on its name, a glint
- * so it shows in the grid, and what it would gain in the tooltip. An upgrade depends on who's looking,
- * so marks are redone as a player's gear changes and come off whenever an item leaves their hands.
+ * so it shows in the grid, and what it would gain in the tooltip. Swords and shields on the hotbar are
+ * already to hand, so they aren't marked. An upgrade depends on who's looking, so marks are redone as a
+ * player's gear changes and come off whenever an item leaves their hands.
  */
 public final class GearUpgradeMarks implements Listener {
     private static final int HOTBAR = 9, BAGS = 36, WORN_END = 41;
@@ -148,8 +149,8 @@ public final class GearUpgradeMarks implements Listener {
     /** What this item would gain over what it replaces, or null when it isn't an upgrade. */
     private String note(Player player, ItemStack item, int slot) {
         GearDescriptor gear = items.gear(item).orElse(null);
-        if (gear == null || item.getAmount() != 1) return null;
-        Map<String, Double> current = current(player, gear, slot);
+        if (gear == null || item.getAmount() != 1 || inHandReach(gear, slot)) return null;
+        Map<String, Double> current = current(player, gear);
         if (current == null || !GearComparison.upgrade(gear.stats(), current)) return null;
         List<String> gains = new ArrayList<>();
         for (String stat : GearComparison.gains(gear.stats(), current, 3))
@@ -157,9 +158,13 @@ public final class GearUpgradeMarks implements Listener {
         return String.join(", ", gains);
     }
 
+    private static boolean inHandReach(GearDescriptor gear, int slot) {
+        return slot >= 0 && slot < HOTBAR && (gear.slot() == GearSlot.MAIN_HAND || gear.slot() == GearSlot.OFF_HAND);
+    }
+
     /** The stats of what this item would replace: the weakest ring or trinket, or the best weapon to hand. Null when it can't be compared. */
-    private Map<String, Double> current(Player player, GearDescriptor gear, int slot) {
-        if (gear.slot() == GearSlot.MAIN_HAND) return weapon(player, gear, slot);
+    private Map<String, Double> current(Player player, GearDescriptor gear) {
+        if (gear.slot() == GearSlot.MAIN_HAND) return weapon(player, gear);
         Map<String, Double> weakest = null;
         for (ItemStack place : worn.apply(player, gear.slot())) {
             Map<String, Double> stats = stats(place);
@@ -169,15 +174,13 @@ public final class GearUpgradeMarks implements Listener {
     }
 
     /** Tools don't compete with swords: only weapons are marked, against the one in hand or the best on the hotbar. */
-    private Map<String, Double> weapon(Player player, GearDescriptor gear, int slot) {
+    private Map<String, Double> weapon(Player player, GearDescriptor gear) {
         if (gear.stat("damage") <= 0 && gear.stat("projectile-damage") <= 0) return null;
-        int held = player.getInventory().getHeldItemSlot();
-        if (slot == held) return null;
-        Map<String, Double> inHand = weaponStats(player.getInventory().getItem(held));
+        Map<String, Double> inHand = weaponStats(player.getInventory().getItemInMainHand());
         if (inHand != null) return inHand;
         Map<String, Double> best = Map.of();
         for (int hotbar = 0; hotbar < HOTBAR; hotbar++) {
-            Map<String, Double> other = hotbar == slot ? null : weaponStats(player.getInventory().getItem(hotbar));
+            Map<String, Double> other = weaponStats(player.getInventory().getItem(hotbar));
             if (other != null && GearComparison.score(other) > GearComparison.score(best)) best = other;
         }
         return best;

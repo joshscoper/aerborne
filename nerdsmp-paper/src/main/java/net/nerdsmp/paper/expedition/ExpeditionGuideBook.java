@@ -107,6 +107,7 @@ final class ExpeditionGuideBook {
             }
             if (!table.signatures().isEmpty())
                 book.text("dark_purple", "Rare: " + String.join(", ", table.signatures().stream().map(id -> ExpeditionBestiary.name(plugin, id)).toList()));
+            if (!table.bossLoot().isEmpty()) book.text("dark_green", "Each boss leaves a chest with a private share for each of you, and its own gear.");
             book.text("dark_gray", "Crates, chests and hidden caches pay every player once. Win for a reward chest graded D to S+ by speed, survival and secrets, and a bonus chest for Marks.");
         }
         book.newPage();

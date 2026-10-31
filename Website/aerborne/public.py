@@ -126,6 +126,26 @@ def _names(values):
     return [str(v) for v in (values or []) if gameapi.NAME_RE.match(str(v))][:5]
 
 
+GEAR_SLOTS = (("head", "Head"), ("shoulders", "Shoulders"), ("chest", "Chest"), ("back", "Back"), ("wrists", "Wrists"),
+              ("hands", "Hands"), ("waist", "Waist"), ("legs", "Legs"), ("feet", "Feet"), ("neck", "Neck"), ("ring", "Ring"),
+              ("trinket", "Trinket"), ("main_hand", "Main hand"), ("off_hand", "Off hand"))
+
+
+def _gear_list(rewards, key):
+    rows = rewards.get(key) if isinstance(rewards, dict) else None
+    return [row for row in rows or [] if isinstance(row, dict)]
+
+
+def _gear_by_slot(rewards):
+    """Every piece of a dungeon's gear by the slot it goes in, with where it comes from."""
+    pieces = [dict(row, source="Set") for row in _gear_list(rewards, "setGear")]
+    pieces += [dict(row, source="Found") for row in _gear_list(rewards, "finds")]
+    for boss in _gear_list(rewards, "bosses"):
+        pieces += [dict(row, source=boss.get("boss")) for row in boss.get("items") or [] if isinstance(row, dict)]
+    return [{"title": title, "items": [row for row in pieces if row.get("slot") == slot]}
+            for slot, title in GEAR_SLOTS if any(row.get("slot") == slot for row in pieces)]
+
+
 @bp.route("/expeditions")
 def expeditions():
     data, problem = gameapi.expeditions()
@@ -154,7 +174,7 @@ def expedition(slug):
             weekly = (data.get("keystones") or {}) if isinstance(data.get("keystones"), dict) else {}
             affixes = [row for row in weekly.get("affixes") or [] if isinstance(row, dict) and row.get("modifiers")]
             return render_template("expedition.html", e=dict(raw, tiers=tiers, bestiary=bestiary, keystone=keystone), affixes=affixes,
-                                   problem=None, slug=slug)
+                                   gear_slots=_gear_by_slot(raw.get("rewards")), slot_titles=dict(GEAR_SLOTS), problem=None, slug=slug)
     abort(404)
 
 

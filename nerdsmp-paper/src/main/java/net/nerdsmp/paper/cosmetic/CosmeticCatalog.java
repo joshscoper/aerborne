@@ -45,6 +45,11 @@ public final class CosmeticCatalog {
         public String product() { return COMPANION + slug; }
     }
 
+    /** A companion that isn't sold stays a secret until someone has it. */
+    public static boolean hidden(Companion companion, Ownership own) {
+        return companion.source() != null && !own.companions().contains(companion.slug());
+    }
+
     /** A particle trail. {@code pattern} picks the shape; see {@link TrailPatterns}. */
     public record Trail(String slug, String name, String summary, String pattern, String particle, String color, boolean free) {
         public String product() { return TRAIL + slug; }

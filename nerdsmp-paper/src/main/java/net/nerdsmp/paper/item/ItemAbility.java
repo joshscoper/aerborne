@@ -12,20 +12,20 @@ import java.util.Set;
  * makes them happen.
  */
 public enum ItemAbility {
-    SOUL_SIPHON("soul_siphon", "Soul Siphon", Trigger.HIT, "A chance to draw back 6% of your health as you strike.", 25, 4),
-    BONE_SHARDS("bone_shards", "Bone Shards", Trigger.HIT, "A chance to burst shards into enemies around your target for 40% of the hit.", 20, 5),
-    EMBER_BRAND("ember_brand", "Ember Brand", Trigger.HIT, "A chance to set your target alight for 4 seconds.", 30, 6),
-    GRAVE_CHILL("grave_chill", "Grave Chill", Trigger.HIT, "A chance to slow your target for 3 seconds.", 30, 8),
-    THUNDERCLAP("thunderclap", "Thunderclap", Trigger.HIT, "A chance to call a strike on your target that shocks everything close by for 60% of the hit.", 15, 10),
-    HUNTERS_MARK("hunters_mark", "Hunter's Mark", Trigger.HIT, "Marks what you hit for 6 seconds. It glows, and takes 15% more from you.", 100, 10),
-    EMBER_SWEEP("ember_sweep", "Ember Sweep", Trigger.USE, "Sweep a wave of flame in front of you for 150% of your weapon's damage, setting enemies alight.", 100, 12),
-    SOUL_NOVA("soul_nova", "Soul Nova", Trigger.USE, "A ring of soul fire bursts from you for 120% of your weapon's damage and slows what it hits.", 100, 16),
-    SHADOW_STEP("shadow_step", "Shadow Step", Trigger.USE, "Step up to 8 blocks forward through the air, stopping short of walls.", 100, 14),
-    BULWARK("bulwark", "Bulwark", Trigger.USE, "Raise a ward that soaks up hits for 8 seconds.", 100, 30),
-    EMBER_AURA("ember_aura", "Ember Aura", Trigger.EQUIP, "Enemies within 3 blocks of you burn.", 100, 2),
+    SOUL_SIPHON("soul_siphon", "Soul Siphon", Trigger.HIT, "Heals 6% of your health.", 25, 4),
+    BONE_SHARDS("bone_shards", "Bone Shards", Trigger.HIT, "Shards hit nearby enemies for 40% of the hit.", 20, 5),
+    EMBER_BRAND("ember_brand", "Ember Brand", Trigger.HIT, "Burns your target for 4s.", 30, 6),
+    GRAVE_CHILL("grave_chill", "Grave Chill", Trigger.HIT, "Slows your target for 3s.", 30, 8),
+    THUNDERCLAP("thunderclap", "Thunderclap", Trigger.HIT, "Lightning shocks nearby enemies for 60% of the hit.", 15, 10),
+    HUNTERS_MARK("hunters_mark", "Hunter's Mark", Trigger.HIT, "Your target glows and takes 15% more from you for 6s.", 100, 10),
+    EMBER_SWEEP("ember_sweep", "Ember Sweep", Trigger.USE, "Flame sweeps ahead for 150% weapon damage.", 100, 12),
+    SOUL_NOVA("soul_nova", "Soul Nova", Trigger.USE, "Soul fire bursts around you for 120% weapon damage and slows.", 100, 16),
+    SHADOW_STEP("shadow_step", "Shadow Step", Trigger.USE, "Step up to 8 blocks forward.", 100, 14),
+    BULWARK("bulwark", "Bulwark", Trigger.USE, "A ward soaks up hits for 8s.", 100, 30),
+    EMBER_AURA("ember_aura", "Ember Aura", Trigger.EQUIP, "Enemies within 3 blocks burn.", 100, 2),
     GRAVE_SIGHT("grave_sight", "Grave Sight", Trigger.EQUIP, "You see in the dark.", 100, 0),
     FLEET_STRIDE("fleet_stride", "Fleet Stride", Trigger.EQUIP, "You move faster.", 100, 0),
-    LAST_STAND("last_stand", "Last Stand", Trigger.EQUIP, "Falling below 30% health hardens you against hits for 5 seconds.", 100, 60);
+    LAST_STAND("last_stand", "Last Stand", Trigger.EQUIP, "Below 30% health, you harden against hits for 5s.", 100, 60);
 
     /** When an ability goes off. */
     public enum Trigger {
@@ -66,8 +66,9 @@ public enum ItemAbility {
 
     /** The tooltip's line: what it does and how often. */
     public String description() {
-        String odds = chance < 100 ? " " + chance + "% chance." : "";
-        return cooldownSeconds > 2 ? description + odds + " Cooldown " + cooldownSeconds + "s." : description + odds;
+        String often = chance < 100 && cooldownSeconds > 2 ? chance + "% chance, " + cooldownSeconds + "s cooldown."
+            : chance < 100 ? chance + "% chance." : cooldownSeconds > 2 ? cooldownSeconds + "s cooldown." : "";
+        return often.isEmpty() ? description : description + " " + often;
     }
 
     public static Optional<ItemAbility> fromId(String id) {

@@ -40,7 +40,10 @@ class ItemAbilityTest {
             ConfigurationSection item = item(id);
             assertNotNull(item, id + " isn't in the catalog");
             Material material = Material.matchMaterial(item.getString("material"));
-            var slot = PaperItemService.GearSlot.valueOf(item.getString("slot", "NONE").toUpperCase(Locale.ROOT));
+            String slotName = item.getString("slot", "NONE").toUpperCase(Locale.ROOT);
+            // The catalog leaves out an item whose slot this build doesn't have.
+            if (java.util.Arrays.stream(PaperItemService.GearSlot.values()).noneMatch(known -> known.name().equals(slotName))) continue;
+            var slot = PaperItemService.GearSlot.valueOf(slotName);
             String rarity = item.getString("rarity", "RELIC").toUpperCase(Locale.ROOT);
             for (String ability : bindings.getStringList(id)) {
                 var bound = ItemAbility.fromId(ability);
@@ -50,10 +53,17 @@ class ItemAbilityTest {
         }
     }
 
-    @Test void everyAddedItemHasAnAbility() {
+    @Test void everyAddedEpicHasAnAbility() {
         YamlConfiguration file = resource("/content/item-abilities.yml");
         for (String id : file.getConfigurationSection("items").getKeys(false))
-            assertFalse(file.getStringList("abilities." + id).isEmpty(), id);
+            if ("epic".equals(file.getString("items." + id + ".rarity"))) assertFalse(file.getStringList("abilities." + id).isEmpty(), id);
+    }
+
+    @Test void noAddedItemTalksTheTooltipLong() {
+        ConfigurationSection items = resource("/content/item-abilities.yml").getConfigurationSection("items");
+        for (String id : items.getKeys(false)) for (String line : items.getStringList(id + ".lore"))
+            assertTrue(TooltipWrap.wrap(line).size() <= 2, id);
+        for (ItemAbility ability : ItemAbility.values()) assertTrue(TooltipWrap.wrap(ability.description()).size() <= 3, ability.id());
     }
 
     @Test void onlyRarerGearCarriesAbilities() {
@@ -80,7 +90,7 @@ class ItemAbilityTest {
     @Test void theTooltipSaysHowOftenAndHowLong() {
         assertEquals("On Hit", ItemAbility.SOUL_SIPHON.trigger().label());
         assertTrue(ItemAbility.SOUL_SIPHON.description().contains("25% chance"));
-        assertTrue(ItemAbility.EMBER_SWEEP.description().contains("Cooldown 12s"));
-        assertFalse(ItemAbility.EMBER_AURA.description().contains("Cooldown"), "A two-second pulse isn't a cooldown anyone plans around");
+        assertTrue(ItemAbility.EMBER_SWEEP.description().contains("12s cooldown"));
+        assertFalse(ItemAbility.EMBER_AURA.description().contains("cooldown"), "A two-second pulse isn't a cooldown anyone plans around");
     }
 }

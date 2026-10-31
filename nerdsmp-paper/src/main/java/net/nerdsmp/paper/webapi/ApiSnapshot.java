@@ -9,7 +9,7 @@ public record ApiSnapshot(long sampledAtMillis, String status, String telemetry,
                           String leaderboards, Map<String, String> players, String expeditions, String campaign) {
     static final int MAX_RESPONSE_BYTES = 32_768;
     /** The expedition list carries guides and bestiaries; the website reads up to 64 KB. */
-    static final int MAX_EXPEDITIONS_BYTES = 60_000;
+    static final int MAX_EXPEDITIONS_BYTES = 120_000;
     static final int MAX_PROFILE_BYTES = 4_096;
     static final int MAX_PROFILES = 20_000;
     static final String NO_LEADERBOARDS = "{\"apiVersion\":1,\"ready\":false,\"boards\":{}}";

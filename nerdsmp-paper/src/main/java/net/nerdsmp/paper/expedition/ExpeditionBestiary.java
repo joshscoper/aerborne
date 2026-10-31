@@ -3,6 +3,7 @@ package net.nerdsmp.paper.expedition;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.expedition.content.Abilities;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
 import net.nerdsmp.paper.item.SkillLamps;
 import net.nerdsmp.paper.expedition.content.ExpeditionLoot;
@@ -84,7 +85,7 @@ public final class ExpeditionBestiary {
                 drops.add(new RewardDropService.DropLine(lineName(plugin, table, line), line.chance(), line.minimum(), line.maximum()));
             drops.addAll(plugin.rewardDrops().possibleDrops(sheet.type(), hostile, boss, sheet.elite(), profile, sheet.markReward(), true));
             entries.add(new Entry(id, plain(sheet.name()), sheet.name(), boss ? "Boss" : sheet.elite() ? "Elite" : "Enemy",
-                List.copyOf(rooms.get(id)), sheet.health(), sheet.attackDamage(), ability(sheet), drops));
+                List.copyOf(rooms.get(id)), sheet.health(), sheet.attackDamage(), abilities(sheet, expedition.story().mob(id)), drops));
         }
         return List.copyOf(entries);
     }
@@ -97,7 +98,7 @@ public final class ExpeditionBestiary {
                 case "grand" -> SkillLamps.Grade.GRAND.title();
                 default -> SkillLamps.Grade.PLAIN.title();
             };
-            case GEAR -> table.gear().isEmpty() ? "Set piece" : "A " + setName(plugin, table) + " piece (sealed)";
+            case GEAR -> table.gear().isEmpty() ? "Set piece" : !table.finds().isEmpty() ? "A piece of gear (may be sealed)" : "A " + setName(plugin, table) + " piece (sealed)";
             case ITEM -> line.item().equals(ExpeditionLoot.SIGNATURE)
                 ? (table.signatures().isEmpty() ? "Signature item" : String.join(" or ", table.signatures().stream().map(id -> name(plugin, id)).toList()))
                 : name(plugin, line.item());
@@ -116,6 +117,15 @@ public final class ExpeditionBestiary {
         } catch (IllegalArgumentException invalid) {
             return id;
         }
+    }
+
+    /** What a mob does: its own ability, then what this expedition gives it, one sentence each. */
+    private static String abilities(CustomMobManager.MobSheet sheet, ExpeditionDefinition.MobProfile profile) {
+        List<String> lines = new ArrayList<>();
+        if (!ability(sheet).isBlank()) lines.add(ability(sheet));
+        for (String id : profile.abilities()) Abilities.info(id).ifPresent(info -> lines.add(info.title() + ": " + info.description()));
+        if (profile.deathAbility() != null) Abilities.info(profile.deathAbility()).ifPresent(info -> lines.add(info.title() + " (as it falls): " + info.description()));
+        return String.join(" ", lines);
     }
 
     static String ability(CustomMobManager.MobSheet sheet) {

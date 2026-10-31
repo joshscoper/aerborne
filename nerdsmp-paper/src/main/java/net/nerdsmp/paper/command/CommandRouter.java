@@ -586,13 +586,14 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         var cosmetics = plugin.cosmetics();
         if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
             var own = cosmetics.ownership(player);
-            Chat.info(player, "Companions <white>" + own.companions().size() + "/" + cosmetics.catalog().companions().size() + "</white>");
-            for (var companion : cosmetics.catalog().companions()) {
+            var shown = cosmetics.catalog().companions().stream().filter(companion -> !net.nerdsmp.paper.cosmetic.CosmeticCatalog.hidden(companion, own)).toList();
+            Chat.info(player, "Companions <white>" + own.companions().size() + "/" + shown.size() + "</white>");
+            for (var companion : shown) {
                 boolean has = own.companions().contains(companion.slug());
                 Chat.send(player, (has ? "<click:run_command:'/companion " + companion.slug() + "'><hover:show_text:'<gray>Click to summon</gray>'><green>●</green> <white>"
                     : "<dark_gray>○ ") + companion.name() + (has ? "</white></hover></click>" : "</dark_gray>") + " <gray>" + companion.species() + "</gray>");
             }
-            if (own.companions().isEmpty()) Chat.info(player, "Companions come from the store at <white>aerborne.net/store</white>, and a few from very rare boss drops.");
+            if (own.companions().isEmpty()) Chat.info(player, "Companions come from the store at <white>aerborne.net/store</white>.");
             return true;
         }
         if (args[0].equalsIgnoreCase("dismiss") || args[0].equalsIgnoreCase("hide") || args[0].equalsIgnoreCase("off")) {

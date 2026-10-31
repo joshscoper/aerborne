@@ -166,7 +166,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9",
             "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31",
             "434cacf4dc64073543d4cd3ee72faac553495b06ab4c423cc240669e7016c0c3"),
-        "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
+        "hollow_barrow", Set.of("a506c7500ee46650bb94e5e29bef7cdb2ae1c0607a30e5daf296dfab1d504db9",
+            "e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
             "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf",
             "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a",
@@ -283,7 +284,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             if (section == null) continue;
             for (String id : section.getKeys(false))
                 tables.put(id.toLowerCase(Locale.ROOT), new net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table(
-                    section.getStringList(id + ".materials"), section.getStringList(id + ".gear"), section.getStringList(id + ".signatures"), bossLoot(section, id)));
+                    section.getStringList(id + ".materials"), section.getStringList(id + ".gear"), section.getStringList(id + ".signatures"), bossLoot(section, id), section.getStringList(id + ".finds")));
         }
         return Map.copyOf(tables);
     }

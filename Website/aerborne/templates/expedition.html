@@ -33,6 +33,7 @@
 
 {% if e.guide and e.guide.boss %}<div class="reference-callout expedition-boss"><div><h2>The boss</h2><p>{{ e.guide.boss }}</p></div></div>{% endif %}
 
+{% include "partials/expedition_spoils.html" %}
 {% if e.bestiary %}<section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Bestiary</p><h2>What you'll face, and what it drops.</h2></div></div>
 <p class="fine">Health and damage are base values. Level, difficulty tier and party size change them in a run. Drop chances are per kill by a player.</p>
 <div class="expedition-grid">{% for mob in e.bestiary %}<article class="expedition-card{% if mob.role == 'Boss' %} is-boss{% endif %}">

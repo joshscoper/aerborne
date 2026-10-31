@@ -196,7 +196,12 @@ affixes.
 
 A boss's chest stands where it fell, and each player opens their own share once. `bosses:` in
 `content/expedition-loot.yml` lists what each boss room can give, likeliest first: with three items,
-about 64%, 29% and 7% of the time.
+50%, 33% and 17% of the time. `finds:` lists gear for the slots a set doesn't cover. It drops wherever
+set pieces do, each piece as likely as a set piece, but can't be forged.
+
+`companion-drops:` puts a rare companion's charm in a boss's chest, on each player's own roll as they
+open it. Keep these out of `guide:`: the website doesn't list them, and a drop companion stays out of the
+wardrobe and `/companion list` until a player owns it.
 
 Rarer gear can carry abilities: **on hit** (a chance, with a cooldown), **right-click** (a cooldown),
 or **equipped** (for as long as it's worn or held). `content/item-abilities.yml` binds them to items

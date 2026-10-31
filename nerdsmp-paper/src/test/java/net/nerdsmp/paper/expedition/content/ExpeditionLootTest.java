@@ -125,10 +125,41 @@ class ExpeditionLootTest {
             rarest += (int) chest.stream().filter(drop -> drop.item().equals("rarest")).count();
             gear += (int) chest.stream().filter(drop -> BARROW.gear().contains(drop.item())).count();
         }
-        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE * 9 / 14, common / (double) runs, .02);
-        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE / 14, rarest / (double) runs, .01);
+        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE / 2, common / (double) runs, .02);
+        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE / 6, rarest / (double) runs, .01);
         assertEquals(.5, gear / (double) runs, .02);
         assertTrue(ExpeditionLoot.bossChest(table, "no_such_room", 1, random).stream().noneMatch(drop -> drop.item().equals("common")));
+    }
+
+    @Test void findsTurnUpWithSetPiecesButTheBonusChestStaysSetGearAndTheForgeIgnoresThem() {
+        var table = new ExpeditionLoot.Table(BARROW.materials(), BARROW.gear(), BARROW.signatures(), java.util.Map.of(), List.of("found_ring"));
+        Random random = new Random(13);
+        int finds = 0, sets = 0;
+        for (int i = 0; i < 4000; i++) for (var drop : ExpeditionLoot.roll(table, ExpeditionLoot.Source.SECRET, 2, random)) {
+            if (drop.item().equals("found_ring")) finds++;
+            if (BARROW.gear().contains(drop.item())) sets++;
+        }
+        assertTrue(finds > 0 && sets > finds, sets + " vs " + finds);
+        assertEquals(sets / 2.0, finds, sets * .2, "One find among two set pieces is a third of the gear");
+        for (int i = 0; i < 300; i++)
+            assertTrue(BARROW.gear().contains(ExpeditionLoot.chest(table, true, ExpeditionLoot.Grade.D, 1, random).getFirst().item()));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> ExpeditionLoot.forgeCost(table, "found_ring", 8));
+    }
+
+    @Test void theBarrowHasGearForEverySlot() {
+        YamlConfiguration loot = resource("/content/expedition-loot.yml"), abilities = resource("/content/item-abilities.yml");
+        var barrow = loot.getConfigurationSection("expeditions.hollow_barrow");
+        var relics = resource("/content/relics.yml").getConfigurationSection("relics");
+        var added = abilities.getConfigurationSection("items");
+        java.util.Set<String> slots = new java.util.TreeSet<>(), items = new java.util.LinkedHashSet<>(barrow.getStringList("gear"));
+        items.addAll(barrow.getStringList("finds"));
+        for (String room : barrow.getConfigurationSection("bosses").getKeys(false)) items.addAll(barrow.getStringList("bosses." + room));
+        for (String item : items) {
+            var section = added.contains(item) ? added : relics;
+            assertTrue(section.contains(item), item);
+            slots.add(section.getString(item + ".slot").toLowerCase(java.util.Locale.ROOT));
+        }
+        assertEquals(new java.util.TreeSet<>(Set.of("main_hand", "off_hand", "head", "chest", "legs", "feet", "neck", "shoulders", "back", "wrists", "hands", "waist", "ring", "trinket")), slots);
     }
 
     @Test void harderTiersGetTheirBossItemsMoreOften() {

@@ -13,10 +13,11 @@ import java.util.Random;
  */
 public final class ExpeditionLoot {
     /**
-     * One expedition's loot: materials from common to rare, its set pieces, its boss signatures, and what
-     * each boss room can give besides, listed from likeliest to rarest.
+     * One expedition's loot: materials from common to rare, its set pieces, its boss signatures, what each
+     * boss room can give besides, listed from likeliest to rarest, and {@code finds}: gear for the slots a set
+     * doesn't cover, which turns up wherever set pieces do but can't be forged.
      */
-    public record Table(List<String> materials, List<String> gear, List<String> signatures, Map<String, List<String>> bossLoot) {
+    public record Table(List<String> materials, List<String> gear, List<String> signatures, Map<String, List<String>> bossLoot, List<String> finds) {
         public static final Table EMPTY = new Table(List.of(), List.of(), List.of());
 
         public Table {
@@ -24,6 +25,11 @@ public final class ExpeditionLoot {
             gear = List.copyOf(gear);
             signatures = List.copyOf(signatures);
             bossLoot = Map.copyOf(bossLoot);
+            finds = List.copyOf(finds);
+        }
+
+        public Table(List<String> materials, List<String> gear, List<String> signatures, Map<String, List<String>> bossLoot) {
+            this(materials, gear, signatures, bossLoot, List.of());
         }
 
         public Table(List<String> materials, List<String> gear, List<String> signatures) {
@@ -227,7 +233,7 @@ public final class ExpeditionLoot {
 
     /**
      * What a player finds in a fallen boss's chest: the boss's materials and signature odds, a good
-     * chance at a piece of set gear, and a chance at something of that boss's own.
+     * chance at a piece of the dungeon's gear, and a chance at something of that boss's own.
      */
     public static List<Drop> bossChest(Table table, String room, double luck, Random random) {
         List<Drop> drops = new ArrayList<>(roll(table, Source.BOSS, luck, random));
@@ -238,13 +244,11 @@ public final class ExpeditionLoot {
         return merge(drops);
     }
 
-    /** Earlier items are likelier: with three, about 64%, 29% and 7%. */
+    /** Earlier items are likelier: with three, 50%, 33% and 17%. */
     private static String bossItem(List<String> items, Random random) {
-        int total = 0, size = items.size();
-        for (int index = 0; index < size; index++) total += (size - index) * (size - index);
-        int pick = random.nextInt(total);
+        int size = items.size(), pick = random.nextInt(size * (size + 1) / 2);
         for (int index = 0; index < size; index++) {
-            pick -= (size - index) * (size - index);
+            pick -= size - index;
             if (pick < 0) return items.get(index);
         }
         return items.getLast();
@@ -259,7 +263,7 @@ public final class ExpeditionLoot {
         int rolls = 2 + grade.ordinal() + (bonus ? 2 : 0);
         double rare = luck * (1 + rank * .25);
         List<Drop> drops = new ArrayList<>();
-        if (bonus) drops.add(gear(table, random, 3, .5));
+        if (bonus) drops.add(setPiece(table, random, 3, .5));
         for (int roll = 0; roll < rolls; roll++) {
             double[] weights = {40, 22, 6 * rare, 12 * rare, 10, 4 * rare, rare, .4 * rare};
             double pick = random.nextDouble() * sum(weights);
@@ -305,9 +309,16 @@ public final class ExpeditionLoot {
         return Math.round((60 + level * 12) * Math.max(1, tierMarks));
     }
 
-    private static Drop gear(Table table, Random random, int affixes, double unidentified) {
+    private static Drop setPiece(Table table, Random random, int affixes, double unidentified) {
         if (table.gear().isEmpty()) return Drop.item(table.material(1), 1); // No set: more materials instead.
         return new Drop(Kind.GEAR, table.gear().get(random.nextInt(table.gear().size())), 1, affixes, random.nextDouble() < unidentified);
+    }
+
+    /** A set piece, or a find for another slot, each as likely as the rest. */
+    private static Drop gear(Table table, Random random, int affixes, double unidentified) {
+        int size = table.gear().size() + table.finds().size();
+        if (table.gear().isEmpty() || random.nextInt(size) < table.gear().size()) return setPiece(table, random, affixes, unidentified);
+        return new Drop(Kind.GEAR, table.finds().get(random.nextInt(table.finds().size())), 1, affixes, random.nextDouble() < unidentified);
     }
 
     private static Drop signature(Table table, Random random) {

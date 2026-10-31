@@ -99,6 +99,9 @@ final class PublicGameJson {
                 row.addProperty("lives", tier.lives());
                 row.addProperty("runBack", tier.runBack());
                 row.addProperty("lootRolls", tier.lootRolls());
+                row.addProperty("bossItemChance", net.nerdsmp.paper.expedition.content.ExpeditionLoot.rareChance(
+                    net.nerdsmp.paper.expedition.content.ExpeditionLoot.BOSS_ITEM_CHANCE, net.nerdsmp.paper.expedition.content.ExpeditionLoot.luck(tier.id(), 0)));
+                row.addProperty("itemLevelBonus", net.nerdsmp.paper.expedition.content.ExpeditionLoot.itemLevelBonus(tier.id(), 0, definition.level(), definition.level()));
                 if (tier.requires() != null) row.addProperty("requires", tier.requires());
                 JsonArray modifiers = new JsonArray();
                 for (Modifier modifier : service.modifiers(definition, tier)) {
@@ -178,6 +181,7 @@ final class PublicGameJson {
             row.addProperty("type", room.encounter().type().name().toLowerCase(Locale.ROOT));
             if (room.encounter().type() == ExpeditionDefinition.EncounterType.SURVIVE) row.addProperty("seconds", room.encounter().surviveSeconds());
             if (room.encounter().type() == ExpeditionDefinition.EncounterType.WAVES) row.addProperty("waves", room.encounter().waves().size());
+            if (room.optional()) row.addProperty("optional", true);
             row.addProperty("tip", guide.rooms().getOrDefault(room.id(), ""));
             rooms.add(row);
         }
@@ -247,7 +251,52 @@ final class PublicGameJson {
             for (String id : ids) names.add(itemName(plugin, id));
             json.add(group, names);
         }
+        // The dungeon's gear in detail. A companion is never listed: those are for players to find.
+        JsonArray bosses = new JsonArray();
+        for (var room : definition.roomList()) {
+            List<String> own = table.bossLoot().get(room.id());
+            if (own == null) continue;
+            JsonObject row = new JsonObject();
+            row.addProperty("boss", plugin.mobs().sheet(room.encounter().boss()).map(sheet -> plainText(sheet.name())).orElse(room.title()));
+            row.addProperty("room", room.title());
+            row.addProperty("optional", room.optional());
+            row.add("items", gearRows(plugin, own));
+            bosses.add(row);
+        }
+        json.add("bosses", bosses);
+        json.add("setGear", gearRows(plugin, table.gear()));
+        json.add("finds", gearRows(plugin, table.finds()));
         return json;
+    }
+
+    private static JsonArray gearRows(NerdSmpPlugin plugin, List<String> ids) {
+        JsonArray rows = new JsonArray();
+        for (String id : ids) plugin.items().gearSheet(new net.nerdsmp.api.model.ItemId(id)).ifPresent(gear -> {
+            JsonObject row = new JsonObject();
+            row.addProperty("name", plainText(gear.name()));
+            row.addProperty("slot", gear.slot().name().toLowerCase(Locale.ROOT));
+            row.addProperty("rarity", gear.rarity().toLowerCase(Locale.ROOT));
+            row.addProperty("itemLevel", gear.itemLevel());
+            JsonArray stats = new JsonArray();
+            gear.stats().forEach(stats::add);
+            row.add("stats", stats);
+            JsonArray abilities = new JsonArray();
+            for (var ability : gear.abilities()) {
+                JsonObject line = new JsonObject();
+                line.addProperty("trigger", ability.trigger().label());
+                line.addProperty("name", ability.displayName());
+                line.addProperty("description", ability.description());
+                abilities.add(line);
+            }
+            row.add("abilities", abilities);
+            rows.add(row);
+        });
+        return rows;
+    }
+
+    private static String plainText(String markup) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+            .serialize(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(markup));
     }
 
     private static String itemName(NerdSmpPlugin plugin, String id) {

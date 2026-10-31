@@ -1386,6 +1386,7 @@ public final class MenuManager implements Listener, AutoCloseable {
             ), ignored -> { });
         int slot = 10;
         for (var companion : catalog.companions()) {
+            if (net.nerdsmp.paper.cosmetic.CosmeticCatalog.hidden(companion, own)) continue;
             boolean has = own.companions().contains(companion.slug());
             boolean out = companion.slug().equals(look.companion());
             button(menu, slot++, has ? cosmetics.icon(companion) : Material.GRAY_DYE,

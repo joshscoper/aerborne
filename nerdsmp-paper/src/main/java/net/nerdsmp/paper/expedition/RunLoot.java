@@ -177,7 +177,9 @@ final class RunLoot {
             return;
         }
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
-        show(player, "Spoils: " + room.title(), stacks(ExpeditionLoot.bossChest(table, room.id(), luck, ThreadLocalRandom.current()), player.getUniqueId()), 0);
+        List<ItemStack> share = stacks(ExpeditionLoot.bossChest(table, room.id(), luck, ThreadLocalRandom.current()), player.getUniqueId());
+        companionCharm(player, room).ifPresent(share::add);
+        show(player, "Spoils: " + room.title(), share, 0);
     }
 
     /** Everyone present learns from a kill, not only whoever landed the last hit. */
@@ -204,24 +206,21 @@ final class RunLoot {
         };
     }
 
-    /** A room with a rare companion was cleared: every player present rolls their own chance at its charm. */
-    void rollCompanion(ExpeditionDefinition.Room room) {
+    /** The secret in a boss's chest: each player's own roll, as they open it, at the charm of that boss's companion. */
+    private Optional<ItemStack> companionCharm(Player player, ExpeditionDefinition.Room room) {
         var drop = run.expedition.story().companionDrops().get(room.id());
-        if (drop == null || run.test || plugin.cosmetics() == null) return;
-        double chance = ExpeditionLoot.rareChance(drop.chance(), luck);
-        for (Player player : run.online()) {
-            if (ThreadLocalRandom.current().nextDouble() >= chance) continue;
-            Optional<ItemStack> charm = plugin.cosmetics().charm(drop.companion());
-            if (charm.isEmpty()) {
-                plugin.getLogger().warning(run.expedition.id() + " drops an unknown companion: " + drop.companion());
-                return;
-            }
-            run.give(player, List.of(charm.get()));
-            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1.6F);
-            player.spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, .5, .8, .5, .3);
-            run.broadcast("<gold>✦ " + Chat.escape(player.getName()) + " found something rare:</gold> <white>"
-                + Chat.escape(plugin.cosmetics().catalog().companion(drop.companion()).map(c -> c.name()).orElse(drop.companion())) + " Charm</white>");
+        if (drop == null || run.test || plugin.cosmetics() == null) return Optional.empty();
+        if (ThreadLocalRandom.current().nextDouble() >= ExpeditionLoot.rareChance(drop.chance(), luck)) return Optional.empty();
+        Optional<ItemStack> charm = plugin.cosmetics().charm(drop.companion());
+        if (charm.isEmpty()) {
+            plugin.getLogger().warning(run.expedition.id() + " drops an unknown companion: " + drop.companion());
+            return charm;
         }
+        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1.6F);
+        player.spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 40, .5, .8, .5, .3);
+        run.broadcast("<gold>✦ " + Chat.escape(player.getName()) + " found something rare:</gold> <white>"
+            + Chat.escape(plugin.cosmetics().catalog().companion(drop.companion()).map(c -> c.name()).orElse(drop.companion())) + " Charm</white>");
+        return charm;
     }
 
     // ---------------------------------------------------------------------------------------------

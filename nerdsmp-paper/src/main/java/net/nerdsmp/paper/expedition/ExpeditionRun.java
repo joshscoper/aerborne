@@ -752,7 +752,6 @@ final class ExpeditionRun {
                     for (Player player : online()) player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, .5F, 1.4F);
                 }
                 if (!test) service.roomCleared(this, room);
-                loot.rollCompanion(room);
             }
             case Effect.Lives lives -> {
                 Player died = Bukkit.getPlayer(lives.died());
@@ -1042,7 +1041,7 @@ final class ExpeditionRun {
             world.spawnParticle(Particle.LAVA, boss.getLocation(), 40, 1, .5, 1, 0);
             world.playSound(boss.getLocation(), Sound.BLOCK_LAVA_EXTINGUISH, 1.2F, .6F);
             boss.setInvulnerable(true);
-            boss.setInvisible(true);
+            boss.setVisibleByDefault(false);
             if (boss instanceof Mob mob) mob.setAware(false);
             Caster caster = casters.get(uuid);
             if (caster != null) caster.nextCast = surfaceAt + 2_000;
@@ -1056,7 +1055,7 @@ final class ExpeditionRun {
         for (UUID uuid : bosses.keySet()) {
             if (!(Bukkit.getEntity(uuid) instanceof LivingEntity boss)) continue;
             boss.setInvulnerable(false);
-            boss.setInvisible(false);
+            boss.setVisibleByDefault(true);
             if (boss instanceof Mob mob) mob.setAware(true);
             world.spawnParticle(Particle.LAVA, boss.getLocation(), 60, 1.2, .8, 1.2, 0);
             world.spawnParticle(Particle.EXPLOSION, boss.getLocation(), 2, .6, .4, .6, 0);

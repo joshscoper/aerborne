@@ -49,7 +49,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
      * Bump when the tooltip layout changes. Each catalog item carries a stamp of this and its catalog
      * entry, and the item updater re-renders any item whose stamp no longer matches.
      */
-    private static final int RENDER_VERSION = 1;
+    private static final int RENDER_VERSION = 3;
     /** What one extra item level adds to a dropped item's base stats. */
     public static final double LEVEL_BONUS_STEP = .01D;
     private final JavaPlugin plugin;
@@ -774,6 +774,20 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return definition == null ? Optional.empty() : Optional.of(definition.name());
     }
 
+    /** What a guide says about a piece of gear: its slot, rarity, level, stat lines and abilities. */
+    public record GearSheet(String name, GearSlot slot, String rarity, int itemLevel, List<String> stats, List<ItemAbility> abilities) { }
+
+    public Optional<GearSheet> gearSheet(ItemId itemId) {
+        Definition definition = catalog.items().get(itemId);
+        if (definition == null) return Optional.empty();
+        Map<String, Double> stats = new LinkedHashMap<>();
+        STAT_ORDER.forEach(stat -> { if (definition.stats().containsKey(stat)) stats.put(stat, definition.stats().get(stat)); });
+        definition.stats().forEach(stats::putIfAbsent);
+        List<String> lines = new ArrayList<>();
+        stats.forEach((stat, value) -> lines.add(miniMessage.stripTags(statLine(stat, value))));
+        return Optional.of(new GearSheet(definition.name(), definition.slot(), definition.rarity(), definition.itemLevel(), List.copyOf(lines), definition.abilities()));
+    }
+
     public List<ItemId> itemIds() {
         return catalog.items().keySet().stream().sorted((left, right) -> left.value().compareTo(right.value())).toList();
     }
@@ -913,7 +927,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
     private List<Component> renderTooltip(Definition definition, ItemMeta meta) {
         List<Component> tooltip = new ArrayList<>();
         String upgrade = meta.getPersistentDataContainer().get(upgradeKey, PersistentDataType.STRING);
-        if (upgrade != null) tooltip.add(tooltipLine("<green><bold>▲ Upgrade</bold></green>" + (upgrade.isEmpty() ? "" : " <green>" + miniMessage.escapeTags(upgrade) + "</green>")));
+        if (upgrade != null) wrapped(tooltip, "<green><bold>▲ Upgrade</bold></green>" + (upgrade.isEmpty() ? "" : " <green>" + miniMessage.escapeTags(upgrade) + "</green>"));
         List<AffixRoll> rolledAffixes = affixes(meta);
         // WoW-style header: item level, and (Wynncraft) how well the item rolled overall.
         StringBuilder header = new StringBuilder();
@@ -952,9 +966,9 @@ public final class PaperItemService implements ItemService<ItemStack> {
         // Wynncraft-style identifications: each rolled affix and where it landed in its range.
         if (!rolledAffixes.isEmpty()) {
             appendDivider(tooltip);
-            rolledAffixes.forEach(affix -> tooltip.add(tooltipLine("<green>" + affix.type().effect(affix.value())
+            rolledAffixes.forEach(affix -> wrapped(tooltip, "<green>" + affix.type().effect(affix.value())
                 + "</green> <dark_gray>" + affix.type().displayName() + "</dark_gray> "
-                + rollTag(affix.type().rollPercent(affix.value())))));
+                + rollTag(affix.type().rollPercent(affix.value()))));
         }
 
         List<SocketedGem> socketed = sockets(meta);
@@ -972,13 +986,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
             tooltip.add(tooltipLine("<gray>Gemstone Slots:</gray> " + row));
             for (int index = 0; index < socketed.size(); index++) {
                 SocketedGem socket = socketed.get(index);
-                tooltip.add(tooltipLine(colored(socket.type().color(), SocketRules.grade(socket.tier()) + " " + socket.type().displayName())
-                    + " <dark_gray>|</dark_gray> <gray>" + socket.type().effect(socket.tier()) + "</gray>"));
+                wrapped(tooltip, colored(socket.type().color(), SocketRules.grade(socket.tier()) + " " + socket.type().displayName())
+                    + " <dark_gray>|</dark_gray> <gray>" + socket.type().effect(socket.tier()) + "</gray>");
             }
-            for (int empty = socketed.size(); empty < definition.sockets(); empty++) {
-                SocketRules.SlotType type = types.get(empty);
-                tooltip.add(tooltipLine("<dark_gray>Empty " + type.title() + " Slot</dark_gray>"));
-            }
+            emptySockets(types.subList(socketed.size(), definition.sockets())).ifPresent(line -> wrapped(tooltip, line));
             if ((meta.getPersistentDataContainer().has(socketsKey)
                 && !meta.getPersistentDataContainer().has(socketsKey, PersistentDataType.STRING))
                 || !SocketCodec.decode(meta.getPersistentDataContainer().get(socketsKey, PersistentDataType.STRING),
@@ -992,13 +1003,13 @@ public final class PaperItemService implements ItemService<ItemStack> {
             SignatureAffix signature = definition.signatureAffix();
             appendDivider(tooltip);
             tooltip.add(tooltipLine("<gold>Ability: " + miniMessage.escapeTags(signature.displayName()) + "</gold>"));
-            tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(signature.description()) + "</gray>"));
+            wrapped(tooltip, "<gray>" + miniMessage.escapeTags(signature.description()) + "</gray>");
         }
         if (!definition.abilities().isEmpty()) {
             appendDivider(tooltip);
             for (ItemAbility ability : definition.abilities()) {
                 tooltip.add(tooltipLine("<gold>" + ability.trigger().label() + ": " + miniMessage.escapeTags(ability.displayName()) + "</gold>"));
-                tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(ability.description()) + "</gray>"));
+                wrapped(tooltip, "<gray>" + miniMessage.escapeTags(ability.description()) + "</gray>");
             }
         }
 
@@ -1007,9 +1018,9 @@ public final class PaperItemService implements ItemService<ItemStack> {
             appendDivider(tooltip);
             customEnchantments.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> tooltip.add(tooltipLine("<blue>"
+                .forEach(entry -> wrapped(tooltip, "<blue>"
                     + entry.getKey().displayName() + " " + roman(entry.getValue()) + "</blue>"
-                    + " <dark_gray>|</dark_gray> <gray>" + entry.getKey().description() + "</gray>")));
+                    + " <dark_gray>|</dark_gray> <gray>" + entry.getKey().description() + "</gray>"));
         }
 
         String arcaneSignature = meta.getPersistentDataContainer().get(arcaneSignatureKey, PersistentDataType.STRING);
@@ -1018,15 +1029,15 @@ public final class PaperItemService implements ItemService<ItemStack> {
             tooltip.add(tooltipLine("<gradient:#ff70f6:#67e8f9><bold>Arcane Signature</bold></gradient>"));
             ArcaneSignature known = ArcaneSignature.fromId(arcaneSignature).orElse(null);
             if (known == null) {
-                tooltip.add(tooltipLine("<gray>Dormant signature. A newer build of the server can read it.</gray>"));
+                wrapped(tooltip, "<gray>Dormant signature. A newer build of the server can read it.</gray>");
             } else {
                 tooltip.add(tooltipLine("<light_purple>+ " + known.displayName() + "</light_purple>"));
-                tooltip.add(tooltipLine("<gray>" + known.summary() + "</gray>"));
+                wrapped(tooltip, "<gray>" + known.summary() + "</gray>");
             }
             Integer instability = meta.getPersistentDataContainer().get(arcaneInstabilityKey, PersistentDataType.INTEGER);
             if (instability != null && instability > 0) {
-                tooltip.add(tooltipLine("<yellow>Unstable " + instability + "</yellow> <dark_gray>|</dark_gray> "
-                    + "<gray>Stabilize at an enchanting table.</gray>"));
+                wrapped(tooltip, "<yellow>Unstable " + instability + "</yellow> <dark_gray>|</dark_gray> "
+                    + "<gray>Stabilize at an enchanting table.</gray>");
             }
         }
 
@@ -1036,20 +1047,20 @@ public final class PaperItemService implements ItemService<ItemStack> {
             tooltip.add(tooltipLine("<dark_red><bold>Corrupted</bold></dark_red>"));
             ArcaneCorruption corruption = ArcaneCorruption.fromId(corruptionId).orElse(null);
             if (corruption == null) {
-                tooltip.add(tooltipLine("<gray>Dormant corruption from a newer build. Cleanse it at an enchanting table.</gray>"));
+                wrapped(tooltip, "<gray>Dormant corruption from a newer build. Cleanse it at an enchanting table.</gray>");
             } else {
-                tooltip.add(tooltipLine("<red>+ " + corruption.displayName() + "</red> <dark_gray>|</dark_gray> <white>" + corruption.bonusText() + "</white>"));
-                tooltip.add(tooltipLine("<gray>Wears " + ArcaneItemEffects.durabilityMultiplier() + "x faster. No new Arcane work until cleansed.</gray>"));
-                if (!ArcaneItemEffects.corruptionActive()) tooltip.add(tooltipLine("<dark_gray>Dormant: corruption is off on this server.</dark_gray>"));
+                wrapped(tooltip, "<red>+ " + corruption.displayName() + "</red> <dark_gray>|</dark_gray> <white>" + corruption.bonusText() + "</white>");
+                wrapped(tooltip, "<gray>Wears " + ArcaneItemEffects.durabilityMultiplier() + "x faster. No new Arcane work until cleansed.</gray>");
+                if (!ArcaneItemEffects.corruptionActive()) wrapped(tooltip, "<dark_gray>Dormant: corruption is off on this server.</dark_gray>");
             }
         }
         ArcaneAspect attunement = ArcaneAspect.fromId(meta.getPersistentDataContainer().get(arcaneAttunementKey, PersistentDataType.STRING)).orElse(null);
         if (attunement != null) {
             appendDivider(tooltip);
             tooltip.add(tooltipLine("<aqua><bold>Attunement</bold></aqua>"));
-            tooltip.add(tooltipLine("<gray>Attuned to</gray> " + attunement.colored() + " <dark_gray>|</dark_gray> <gray>"
-                + attunement.displayName() + " enchantments here are " + ArcaneItemEffects.attunementBonusPercent() + "% stronger.</gray>"));
-            if (!ArcaneItemEffects.attunementActive()) tooltip.add(tooltipLine("<dark_gray>Dormant: attunement is off on this server.</dark_gray>"));
+            wrapped(tooltip, "<gray>Attuned to</gray> " + attunement.colored() + " <dark_gray>|</dark_gray> <gray>"
+                + attunement.displayName() + " enchantments here are " + ArcaneItemEffects.attunementBonusPercent() + "% stronger.</gray>");
+            if (!ArcaneItemEffects.attunementActive()) wrapped(tooltip, "<dark_gray>Dormant: attunement is off on this server.</dark_gray>");
         }
 
         coating(meta).ifPresent(coating -> {
@@ -1066,20 +1077,35 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 appendDivider(tooltip);
                 tooltip.add(tooltipLine("<gold>Set: " + miniMessage.escapeTags(set.name())
                     + "</gold> <dark_gray>(" + set.pieceCount() + " pieces)</dark_gray>"));
-                set.bonuses().forEach((pieces, bonus) -> tooltip.add(tooltipLine(
+                set.bonuses().forEach((pieces, bonus) -> wrapped(tooltip,
                     "<dark_gray>[" + pieces + "]</dark_gray> <gray>" + miniMessage.escapeTags(bonus.description()) + "</gray>"
-                )));
+                ));
             }
         }
 
         // Flavour text, then the Hypixel-style rarity and type line in the WoW quality colour.
         if (!definition.lore().isEmpty()) {
             appendDivider(tooltip);
-            definition.lore().stream().map(this::tooltipLine).forEach(tooltip::add);
+            definition.lore().forEach(line -> wrapped(tooltip, line));
         }
         appendDivider(tooltip);
         tooltip.add(tooltipLine(rarityFooter(definition.rarity(), classification(definition))));
         return List.copyOf(tooltip);
+    }
+
+    /** Adds a line that may be long, broken so it can't stretch the tooltip across the screen. */
+    private void wrapped(List<Component> tooltip, String markup) {
+        TooltipWrap.wrap(markup).stream().map(this::tooltipLine).forEach(tooltip::add);
+    }
+
+    /** The empty slots in one line: "Empty: 2 Weapon, 1 Armor". */
+    private static Optional<String> emptySockets(List<SocketRules.SlotType> types) {
+        if (types.isEmpty()) return Optional.empty();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        types.forEach(type -> counts.merge(type.title(), 1, Integer::sum));
+        List<String> parts = new ArrayList<>();
+        counts.forEach((title, count) -> parts.add(count + " " + title));
+        return Optional.of("<dark_gray>Empty: " + String.join(", ", parts) + "</dark_gray>");
     }
 
     /** Starts a new tooltip section with one blank line (never at the top, never two in a row). */
@@ -1334,12 +1360,16 @@ public final class PaperItemService implements ItemService<ItemStack> {
             file.load(reader);
             ConfigurationSection added = file.getConfigurationSection("items");
             if (added != null) for (String id : added.getKeys(false))
-                if (!catalog.contains("relics." + id)) catalog.set("relics." + id, added.getConfigurationSection(id));
+                if (!catalog.contains("relics." + id) && slotExists(added.getString(id + ".slot", "NONE"))) catalog.set("relics." + id, added.getConfigurationSection(id));
             Map<String, List<String>> bound = new HashMap<>();
             ConfigurationSection abilities = file.getConfigurationSection("abilities");
             if (abilities != null) for (String id : abilities.getKeys(false)) bound.put(id, abilities.getStringList(id));
             return Map.copyOf(bound);
         }
+    }
+
+    private static boolean slotExists(String slot) {
+        return java.util.Arrays.stream(GearSlot.values()).anyMatch(known -> known.name().equalsIgnoreCase(slot));
     }
 
     private LoadedCatalog loadContent(JavaPlugin plugin) {

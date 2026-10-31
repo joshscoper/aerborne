@@ -184,7 +184,8 @@ chests:
   ossuary_reliquary: {at: [-51, 64, 84], kind: chest, title: Ossuary Reliquary}
   forgotten_offering: {at: [-16, 64, 30], kind: secret, title: Forgotten Offering}
 
-# Rare companions: each player present rolls this chance when the room falls. Heroic and Mythic raise it.
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
 companion-drops:
   wardens_hall: {companion: rattlebones, chance: 0.005}
   widows_cell: {companion: weepling, chance: 0.01}
@@ -325,10 +326,10 @@ guide:
     - Light the fires at the Crossing and the antechamber. If you fall, that's where you run back from, and everything you've killed stays dead.
     - Thralls come apart when they fall, and the shards fly out a moment later. Step off the red ring around the body.
   rooms:
-    lever_vault: Clear the room, then pull the four levers in the order the candles flash. A wrong lever resets them. Solving it lifts the west portcullis at the Crossing.
+    lever_vault: Fight down the Processional to the Crossing, then turn east. Clear the room, then pull the four levers in the order the candles flash. A wrong lever resets them. Solving it lifts the west portcullis at the Crossing.
     wardens_hall: The door opens once the Ossuary is clear. The Warden shields himself while his helpers live, and the fires on the back wall throw lances down the strips in the floor; step between them. Below half health he sends rings of bone across the room, so jump as they reach you, and the fires throw two lances at once. Killing him lifts the south gate and opens a tunnel to the antechamber.
     widows_cell: Optional. The Widow keeps her distance and throws bolts. Her Soul Rend takes three charged hits to break, and it hurts everyone if it finishes. She snuffs her vigil candles one at a time, and a pool of grief spreads from each until someone right-clicks it to light it again. Below 40% she marks players; move away from the others when you're marked.
-    kings_rest: The rite's six fires summon the Huntsman. Light the antechamber brazier first so the party runs back from close by.
+    kings_rest: The tunnel behind the Warden leads to the antechamber, and its guard is the last thing between you and the door. Light the brazier first so the party runs back from close by. The rite's six fires then summon the Huntsman.
   boss: The Hollow Huntsman winds up heavy blows on whoever he's fighting, cleaves in front of him, sets the floor alight under you and calls skeletons, while flame runs down the channels in the floor and leaves them burning. The chandeliers come down as he weakens; lure him under one and it staggers him. At half health the fires lift him out of reach. Right-click the burning rite fires to douse them and he falls, staggered. If they're still burning after 30 seconds, he blasts the room. After that he marks players to burst on the group, chains one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead.
 loot:
   marks: 120

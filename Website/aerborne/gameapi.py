@@ -33,7 +33,7 @@ _cache = {}
 _lock = threading.Lock()
 _FAILURE_SECONDS = 15
 _MAX_CACHE = 500
-_MAX_BYTES = 64 * 1024
+_MAX_BYTES = 128 * 1024
 
 
 def _request(path, token=None):

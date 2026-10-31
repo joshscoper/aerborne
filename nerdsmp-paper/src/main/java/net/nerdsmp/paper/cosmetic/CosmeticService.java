@@ -194,7 +194,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
 
     public void summon(Player player, String slug) {
         Optional<CosmeticCatalog.Companion> companion = catalog.companion(slug);
-        if (companion.isEmpty()) {
+        if (companion.isEmpty() || CosmeticCatalog.hidden(companion.get(), ownership(player))) {
             Chat.error(player, "No companion is called that. Choose one with <white>/companion</white>.");
             return;
         }

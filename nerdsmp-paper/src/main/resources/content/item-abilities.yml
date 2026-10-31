@@ -6,6 +6,11 @@ abilities:
   ossuary_cleaver: [bone_shards]
   wardens_soulblade: [soul_siphon, soul_nova]
   gravewall_bulwark: [last_stand]
+  south_gate_key: [last_stand]
+  hill_road_treads: [fleet_stride]
+  locket_of_the_last_letter: [grave_sight]
+  pyrebound_signet: [ember_aura]
+  horn_of_the_last_cart: [fleet_stride]
   mourning_veil: [grave_sight]
   keening_dirk: [grave_chill, shadow_step]
   widows_requiem: [soul_siphon]
@@ -31,6 +36,235 @@ abilities:
   astral_covenant_blade: [shadow_step]
 
 items:
+  pallbearers_buckler:
+    material: shield
+    name: "<green>Pallbearer's Buckler</green>"
+    slot: off_hand
+    rarity: uncommon
+    item-level: 9
+    stats: {defense: 3}
+    lore:
+      - "<gray>Carried at the head of the procession, and never set down.</gray>"
+  sextons_rosary:
+    material: bone
+    name: "<green>Sexton's Rosary</green>"
+    slot: neck
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>A bead for every grave he's filled.</gray>"
+  gravecloth_mantle:
+    material: leather
+    name: "<green>Gravecloth Mantle</green>"
+    slot: shoulders
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Burial linen, doubled and waxed.</gray>"
+  processional_shroud:
+    material: phantom_membrane
+    name: "<green>Processional Shroud</green>"
+    slot: back
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>It still moves as if someone were walking in it.</gray>"
+  ossuary_wraps:
+    material: iron_nugget
+    name: "<green>Ossuary Wraps</green>"
+    slot: wrists
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Bound on tight, to keep the hands from shaking.</gray>"
+  diggers_gloves:
+    material: rabbit_hide
+    name: "<green>Digger's Gloves</green>"
+    slot: hands
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {defense: 1, damage-flat: 1}
+    lore:
+      - "<gray>The grave dirt never quite washes out.</gray>"
+  bonetie_belt:
+    material: leather
+    name: "<green>Bonetie Belt</green>"
+    slot: waist
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Buckled with a knucklebone.</gray>"
+  funeral_band:
+    material: gold_nugget
+    name: "<green>Funeral Band</green>"
+    slot: ring
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {max-health: 2}
+    lore:
+      - "<gray>Cold, even on a warm finger.</gray>"
+  vigil_stub:
+    material: honeycomb
+    name: "<green>Vigil Stub</green>"
+    slot: trinket
+    rarity: uncommon
+    item-level: 9
+    sockets: 1
+    stats: {life-steal-percent: 1}
+    lore:
+      - "<gray>The end of a candle that burned for forty years.</gray>"
+  gatewardens_pauldrons:
+    material: iron_ingot
+    name: "<blue>Gatewarden's Pauldrons</blue>"
+    slot: shoulders
+    rarity: rare
+    item-level: 12
+    sockets: 1
+    stats: {defense: 3, max-health: 2}
+    lore:
+      - "<gray>Each one is the shoulder of someone who tried the gate.</gray>"
+  ribcage_hauberk:
+    material: chainmail_chestplate
+    name: "<blue>Ribcage Hauberk</blue>"
+    slot: chest
+    rarity: rare
+    item-level: 12
+    sockets: 2
+    stats: {defense: 7}
+    lore:
+      - "<gray>Mail on the outside. You don't want to know about the inside.</gray>"
+  wardens_girdle:
+    material: leather
+    name: "<blue>Warden's Girdle</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 12
+    sockets: 1
+    stats: {defense: 3, damage-flat: 1}
+    lore:
+      - "<gray>It holds the rest of him together.</gray>"
+  south_gate_key:
+    material: trial_key
+    name: "<light_purple>South Gate Key</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 13
+    sockets: 2
+    stats: {defense: 3, max-health: 3}
+    lore:
+      - "<gray>There's no gate left for it to open. It doesn't know that.</gray>"
+  widows_wristlets:
+    material: amethyst_shard
+    name: "<blue>Widow's Wristlets</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 12
+    sockets: 1
+    stats: {defense: 2, life-steal-percent: 1}
+    lore:
+      - "<gray>Lace and amethyst, gone grey together.</gray>"
+  weeping_shawl:
+    material: phantom_membrane
+    name: "<blue>Weeping Shawl</blue>"
+    slot: back
+    rarity: rare
+    item-level: 12
+    sockets: 1
+    stats: {max-health: 4}
+    lore:
+      - "<gray>Damp to the touch, however long it hangs.</gray>"
+  funeral_skirts:
+    material: leather_leggings
+    name: "<blue>Funeral Skirts</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 12
+    sockets: 2
+    stats: {defense: 6}
+    lore:
+      - "<gray>They trail. Nothing has ever stepped on them twice.</gray>"
+  widows_band:
+    material: gold_nugget
+    name: "<blue>Widow's Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 12
+    sockets: 1
+    stats: {damage-percent: 3}
+    lore:
+      - "<gray>He promised he would come home.</gray>"
+  locket_of_the_last_letter:
+    material: nautilus_shell
+    name: "<light_purple>Locket of the Last Letter</light_purple>"
+    slot: neck
+    rarity: epic
+    item-level: 13
+    sockets: 2
+    stats: {max-health: 4, damage-percent: 3}
+    lore:
+      - "<gray>A letter, folded very small. It's in his hand.</gray>"
+  ember_scarred_gauntlets:
+    material: rabbit_hide
+    name: "<blue>Ember-Scarred Gauntlets</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 13
+    sockets: 1
+    stats: {defense: 3, damage-flat: 1}
+    lore:
+      - "<gray>Burned through, and worn anyway.</gray>"
+  hill_road_treads:
+    material: iron_boots
+    name: "<blue>Hill Road Treads</blue>"
+    slot: feet
+    rarity: rare
+    item-level: 13
+    sockets: 2
+    stats: {defense: 5}
+    lore:
+      - "<gray>They know the way, and they're in a hurry.</gray>"
+  ashen_tassets:
+    material: iron_leggings
+    name: "<blue>Ashen Tassets</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 13
+    sockets: 2
+    stats: {defense: 6}
+    lore:
+      - "<gray>Ash falls from them with every step.</gray>"
+  pyrebound_signet:
+    material: gold_nugget
+    name: "<light_purple>Pyrebound Signet</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 14
+    sockets: 2
+    stats: {damage-percent: 4}
+    lore:
+      - "<gray>The king's seal, melted and cast again.</gray>"
+  horn_of_the_last_cart:
+    material: goat_horn
+    name: "<light_purple>Horn of the Last Cart</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 14
+    sockets: 2
+    stats: {max-health: 3, damage-percent: 3}
+    lore:
+      - "<gray>He blew it once, and every cart still on the road ran.</gray>"
   ossuary_cleaver:
     material: iron_axe
     name: "<blue>Ossuary Cleaver</blue>"
