@@ -54,6 +54,10 @@ public final class Abilities {
         add("ambush", "Ambush", "Melts out of sight, then steps out behind its target and strikes.", 12);
         add("bone_throw", "Hurled Bones", "Heaves a mass of bone at a marked spot.", 10);
         add("bone_wave", "Bone Wave", "A ring of bone rolls out across the floor. Jump as it reaches you.", 14);
+        add("venom_spit", "Venom Spit", "A green line marks the shot, then venom flies down it and poisons whoever it hits. Sidestep.", 8);
+        add("root_snare", "Root Snare", "Roots burst from the deck under a player. Step off the ring or be held.", 11);
+        add("web_wrap", "Web Wrap", "Wraps a player in silk, poisoning them until the cocoon at their feet is broken. Anyone can break it, the player included.", 18);
+        add("spore_burst", "Spore Burst", "It bursts as it dies, and a cloud of spores hangs where it fell. Step away from the body.", 0);
     }
 
     /** Abilities an elite can roll when it has none listed. */

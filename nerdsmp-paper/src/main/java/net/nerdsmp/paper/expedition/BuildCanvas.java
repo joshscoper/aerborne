@@ -22,6 +22,11 @@ public final class BuildCanvas {
         if(Math.abs(x)>1024 || Math.abs(z)>1024 || y<-64 || y>=320) throw new IllegalArgumentException("Architecture outside reviewed bounds");
         blocks.put(new Cell(x,y,z),new BlockSpec(material,properties));
     }
+    /** What's been placed at a spot so far, or null. */
+    public Material get(int x,int y,int z) {
+        BlockSpec spec=blocks.get(new Cell(x,y,z));
+        return spec==null?null:spec.material();
+    }
     public void box(int x1,int y1,int z1,int x2,int y2,int z2,Material material) {
         if(x2<x1 || y2<y1 || z2<z1) throw new IllegalArgumentException("Reversed architecture box");
         for(int x=x1;x<=x2;x++) for(int z=z1;z<=z2;z++) for(int y=y1;y<=y2;y++) block(x,y,z,material);

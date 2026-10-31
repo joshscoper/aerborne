@@ -41,6 +41,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * the feet up. Fire kindles in the ribs, the bones blacken, the skull lifts, and only then does the
  * real boss take the figure's place. {@code SUMMON} is a ritual: the room's braziers catch one by one, their
  * flames run along the floor to a turning circle, and the boss rises in a column of fire and slams down.
+ * {@code DESCEND} lowers the boss on a single thread from high overhead. {@code BLOOM} sends fire from the
+ * room's sources to a cage of roots that grows up around the spot and bursts open with the boss inside.
  */
 final class RunEntrance {
     interface Host {
@@ -56,6 +58,9 @@ final class RunEntrance {
     private static final int LOOSE_BONES = 14, WISP_TICKS = 24, FLIGHT_TICKS = 8, CIRCLE_PLATES = 18;
     private static final double SNUFFED = .28, ASSEMBLED = .72, KINDLED = .78, RAISED = .9;
     private static final double RING_LIT = .35, CIRCLE_DONE = .62, BOSS_SEEN = .68, BOSS_RAISED = .94, CIRCLE_RADIUS = 4.6;
+    private static final double THREAD_SEEN = .2, THREAD_HEIGHT = 15;
+    private static final double VEINS_LIT = .3, CAGE_GROWN = .75, CAGE_OPENS = .86, CAGE_RADIUS = 3.2, CAGE_ROD = 1.25;
+    private static final int CAGE_RIBS = 9, CAGE_SEGMENTS = 6;
     private static final List<Material> DEBRIS = List.of(Material.BONE, Material.BONE, Material.BONE_BLOCK, Material.SKELETON_SKULL);
 
     /** Each bone of a standing body, feet first: across, up, ahead, then width, height, depth, all as shares of its height. */
@@ -210,6 +215,7 @@ final class RunEntrance {
         int delay = first ? entrance.delaySeconds() * 20 : 0, length = first ? entrance.seconds() * 20 : 20;
         Figure figure = first && entrance.style() == EntranceStyle.REANIMATE ? figures.get(room.id()) : null;
         boolean ritual = first && entrance.style() == EntranceStyle.SUMMON;
+        boolean thread = first && entrance.style() == EntranceStyle.DESCEND, bloom = first && entrance.style() == EntranceStyle.BLOOM;
         Location home = boss.getLocation();
         boolean showName = named.remove(boss.getUniqueId());
         boss.setInvulnerable(true);
@@ -232,13 +238,16 @@ final class RunEntrance {
             if (tick < length) {
                 if (figure != null) reanimate(figure, entrance, tick, length, wisps);
                 else if (ritual) summon(room, entrance, boss, home, tick, length, wisps);
+                else if (thread) descend(room, boss, home, tick, length);
+                else if (bloom) bloom(room, entrance, boss, home, tick, length, wisps);
                 else rise(boss, home, tick, length);
             }
             if (tick == length) {
                 boss.setVisibleByDefault(true);
                 boss.teleport(home);
                 if (ritual) slam(home);
-                else arrive(home);
+                else if (thread) touchdown(home);
+                else if (!bloom) arrive(home);
                 clear(room, entrance);
             }
             if (tick < length || host.cutsceneRunning() && tick < length + 400) return;
@@ -505,6 +514,99 @@ final class RunEntrance {
             double radius = ring * 2.2;
             Bukkit.getScheduler().runTaskLater(plugin, () -> { if (host.live()) Telegraph.ring(home, radius, Telegraph.FIRE); }, ring * 2L);
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Descent
+    // ---------------------------------------------------------------------------------------------
+
+    private void descend(Room room, LivingEntity boss, Location home, int tick, int length) {
+        World world = host.world();
+        double done = tick / (double) length;
+        List<Display> strand = rituals.computeIfAbsent(room.id(), ignored -> new ArrayList<>());
+        double lowered = eased(Math.clamp((done - THREAD_SEEN) / (1 - THREAD_SEEN), 0D, 1D));
+        double height = THREAD_HEIGHT * (1 - lowered);
+        if (strand.isEmpty()) strand.add(world.spawn(home, BlockDisplay.class, display -> {
+            display.setBlock(Material.WHITE_CONCRETE.createBlockData());
+            display.setPersistent(false);
+            display.setBrightness(new Display.Brightness(13, 13));
+        }));
+        float from = (float) (height + boss.getHeight() * .7);
+        move(strand.getFirst(), new Transformation(new Vector3f(-.05F, from, -.05F), new Quaternionf(), new Vector3f(.1F, (float) THREAD_HEIGHT + 12 - from, .1F), new Quaternionf()), 1);
+        if (tick == (int) (length * THREAD_SEEN)) {
+            boss.setVisibleByDefault(true);
+            world.playSound(home, Sound.ENTITY_SPIDER_AMBIENT, 2F, .5F);
+        }
+        Location at = home.clone().add(0, height, 0);
+        at.setYaw((float) (home.getYaw() + (1 - lowered) * 720));
+        boss.teleport(at);
+        if (tick % 2 == 0) world.spawnParticle(Particle.ITEM_COBWEB, at.clone().add(0, boss.getHeight(), 0), 3, .2, .4, .2, .02);
+        if (tick % 6 == 0) world.playSound(at, Sound.BLOCK_WOOL_STEP, 1.4F, .6F);
+        if (tick % 14 == 0) world.playSound(at, Sound.ENTITY_SPIDER_STEP, 1.4F, .6F);
+    }
+
+    private void touchdown(Location home) {
+        World world = host.world();
+        Telegraph.shards(home.clone().add(0, .4, 0), 60, 2.4, Material.WHITE_WOOL);
+        world.spawnParticle(Particle.EXPLOSION, home.clone().add(0, .5, 0), 2, .6, .2, .6, 0);
+        world.playSound(home, Sound.ENTITY_GENERIC_EXPLODE, 1F, .7F);
+        world.playSound(home, Sound.ENTITY_SPIDER_DEATH, 1.8F, .5F);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Bloom
+    // ---------------------------------------------------------------------------------------------
+
+    private void bloom(Room room, Entrance entrance, LivingEntity boss, Location home, int tick, int length, List<Wisp> wisps) {
+        World world = host.world();
+        double done = tick / (double) length;
+        Location center = home.clone().add(0, .5, 0);
+        List<Display> cage = rituals.computeIfAbsent(room.id(), ignored -> new ArrayList<>());
+        catchFires(entrance, tick, (int) (length * VEINS_LIT), center, wisps);
+        flyWisps(wisps, tick, center, () -> {
+            world.spawnParticle(Particle.LAVA, center, 8, .5, .2, .5, 0);
+            world.playSound(center, Sound.BLOCK_ROOTED_DIRT_BREAK, 1.8F, .5F);
+        });
+        int total = CAGE_RIBS * CAGE_SEGMENTS, grown = (int) (total * Math.clamp((done - VEINS_LIT * .7) / (CAGE_GROWN - VEINS_LIT * .7), 0D, 1D));
+        while (cage.size() < grown) {
+            cage.add(rib(home, cage.size()));
+            if (cage.size() % 3 == 0) world.playSound(home, Sound.BLOCK_ROOTS_PLACE, 1.8F, .6F + cage.size() * .02F);
+        }
+        if (done > CAGE_GROWN && tick % 4 == 0) {
+            world.spawnParticle(Particle.FLAME, home.clone().add(0, 2, 0), 14, 1, 1.4, 1, .03);
+            world.playSound(home, Sound.ENTITY_WARDEN_HEARTBEAT, 2F, .6F + (float) done * .5F);
+        }
+        if (tick != (int) (length * CAGE_OPENS)) return;
+        boss.setVisibleByDefault(true);
+        boss.teleport(home);
+        for (int index = 0; index < cage.size(); index++) {
+            double angle = (index % CAGE_RIBS) * Math.TAU / CAGE_RIBS;
+            Transformation now = cage.get(index).getTransformation();
+            Vector3f flung = new Vector3f(now.getTranslation()).add((float) Math.cos(angle) * 7, -1.5F, (float) Math.sin(angle) * 7);
+            move(cage.get(index), new Transformation(flung, new Quaternionf(now.getLeftRotation()).rotateX(1.2F), new Vector3f(now.getScale()).mul(.3F), new Quaternionf()), 8);
+        }
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, home.clone().add(0, 1, 0), 1);
+        Telegraph.shards(home.clone().add(0, 1, 0), 120, 3.5, Material.DARK_OAK_LEAVES);
+        world.playSound(home, Sound.BLOCK_WOOD_BREAK, 2F, .5F);
+        world.playSound(home, Sound.ENTITY_EVOKER_PREPARE_SUMMON, 2F, .6F);
+    }
+
+    /** One length of the cage: ribs curve from the floor to a point above the spot, lowest first. */
+    private BlockDisplay rib(Location home, int index) {
+        int segment = index / CAGE_RIBS;
+        double angle = (index % CAGE_RIBS) * Math.TAU / CAGE_RIBS + segment * .12, rise = (segment + .5) / CAGE_SEGMENTS;
+        double radius = CAGE_RADIUS * Math.cos(rise * Math.PI / 2) + .25, height = Math.sin(rise * Math.PI / 2) * CAGE_ROD * CAGE_SEGMENTS * .85 + .2;
+        Vector3f middle = new Vector3f((float) (Math.cos(angle) * radius), (float) height, (float) (Math.sin(angle) * radius));
+        Quaternionf lean = new Quaternionf().rotateY((float) -angle).rotateZ((float) (rise * Math.PI / 2));
+        Vector3f full = new Vector3f(.5F, (float) CAGE_ROD, .5F);
+        BlockDisplay rod = host.world().spawn(home, BlockDisplay.class, display -> {
+            display.setBlock((index % 7 == 3 ? Material.SHROOMLIGHT : Material.DARK_OAK_LOG).createBlockData());
+            display.setPersistent(false);
+            display.setBrightness(new Display.Brightness(10, 10));
+            display.setTransformation(centered(middle, lean, new Vector3f(.05F, .05F, .05F)));
+        });
+        Bukkit.getScheduler().runTaskLater(plugin, () -> { if (rod.isValid()) move(rod, centered(middle, lean, full), 4); }, 2L);
+        return rod;
     }
 
     // ---------------------------------------------------------------------------------------------

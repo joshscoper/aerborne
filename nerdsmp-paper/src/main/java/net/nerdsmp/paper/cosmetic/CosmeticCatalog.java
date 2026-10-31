@@ -119,7 +119,10 @@ public final class CosmeticCatalog {
                 new Companion("lilypip", "Lilypip", "Lily frog", "lilypip", 0.85D, false, "DRIPPING_WATER", "green", false),
                 new Companion("rattlebones", "Rattlebones", "Barrow skeleton", "rattlebones", 0.9D, false, "", "gray", false, "The Warden of Bones, very rarely"),
                 new Companion("weepling", "Weepling", "Grieving wisp", "weepling", 0.9D, true, "SOUL", "dark_aqua", false, "The Keening Widow, very rarely"),
-                new Companion("hollow-hound", "Hollow Hound", "Huntsman's hound", "hollowhound", 1.0D, false, "SOUL_FIRE_FLAME", "dark_red", false, "The Hollow Huntsman, very rarely")),
+                new Companion("hollow-hound", "Hollow Hound", "Huntsman's hound", "hollowhound", 1.0D, false, "SOUL_FIRE_FLAME", "dark_red", false, "The Hollow Huntsman, very rarely"),
+                new Companion("silkling", "Silkling", "Nest spiderling", "silkling", 0.9D, false, "", "white", false, "The Briar Matron, very rarely"),
+                new Companion("thistlewing", "Thistlewing", "Ranger's hawk", "thistlewing", 1.0D, true, "", "dark_green", false, "Verrin, very rarely"),
+                new Companion("sproutling", "Sproutling", "Heart Tree seedling", "sproutling", 0.9D, false, "SPORE_BLOSSOM_AIR", "green", false, "The Thornheart Shaman, very rarely")),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),

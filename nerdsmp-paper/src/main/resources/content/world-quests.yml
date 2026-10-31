@@ -1088,6 +1088,24 @@ quests:
       xp: {hunting: 450}
       items: ["material:experience_bottle 2"]
 
+  daily_canopy_cull:
+    chain: daily_bounties
+    title: Thinning the Canopy
+    giver: ranger_ilsa
+    level: 1
+    repeat: daily
+    offer:
+      - "There's always more of them by morning. Thin the canopy for me, would you? Every one you drop is one less on my lines."
+      - "Stalkers, snipers, weavers, the lot. I'll be at the far end, if you make it."
+    complete:
+      - "That'll buy the Heart Tree a night's quiet. Here, you've earned this."
+    objectives:
+      - {type: kill, targets: ["custom:canopy_stalker", "custom:thornling", "custom:mire_weaver", "custom:bough_sniper", "custom:sporeback", "custom:rotbark_acolyte"], count: 25, description: Thin the canopy}
+    rewards:
+      marks: 220
+      xp: {hunting: 550}
+      items: ["material:experience_bottle 2"]
+
   daily_gnawer_cull:
     chain: daily_bounties
     title: Gnawer Cull

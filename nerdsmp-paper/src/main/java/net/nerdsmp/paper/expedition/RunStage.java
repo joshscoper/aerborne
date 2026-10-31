@@ -201,6 +201,8 @@ final class RunStage {
     /** Now and then a sound drifts in from somewhere off in the dark, a different spot for each player. */
     private void ambience() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
+        Particle motes = motes();
+        if (motes != null) for (Player player : host.online()) player.spawnParticle(motes, player.getLocation().add(0, 2, 0), 5, 9, 3.5, 9, 0);
         for (var sound : host.expedition().story().ambience()) {
             if (random.nextInt(sound.everySeconds()) != 0) continue;
             for (Player player : host.online()) {
@@ -209,6 +211,18 @@ final class RunStage {
                 player.playSound(player.getLocation().add(Math.cos(angle) * distance, random.nextDouble(-1, 4), Math.sin(angle) * distance),
                     sound.sound(), sound.volume(), sound.pitch());
             }
+        }
+    }
+
+    /** What drifts in the air around the party, if the map says. */
+    private Particle motes() {
+        String name = host.expedition().story().motes();
+        if (name == null) return null;
+        try {
+            Particle particle = Particle.valueOf(name.toUpperCase(java.util.Locale.ROOT));
+            return particle.getDataType() == Void.class ? particle : null;
+        } catch (IllegalArgumentException unknown) {
+            return null;
         }
     }
 

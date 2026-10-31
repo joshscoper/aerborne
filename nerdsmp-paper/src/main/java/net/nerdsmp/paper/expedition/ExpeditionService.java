@@ -155,7 +155,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
         "first_flight", Set.of("5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad",
             "cd56c677ebc280c6fe935fa0510d8114edd81d34d4d3b1de04c682ac87fa52be"),
-        "thornwood_canopy", Set.of("363bab2993b0d86720b4348a6ba320ac75bca0b14e920a32e0bf05300692a5ba",
+        "thornwood_canopy", Set.of("73bfdc9c48935c82f49c950a2bf5c8da04d997a0b0d246796e701d0e1d7f7cb6",
+            "363bab2993b0d86720b4348a6ba320ac75bca0b14e920a32e0bf05300692a5ba",
             "cbd9898be9c3d1d8b04026bd9eead04f4554cde6e688dc6197868e5aec5c9e62"),
         "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38",
             "211143e698ae6e4f09b27ce5072f2d42893f6410552911370546b4af8e551f85",

@@ -153,12 +153,12 @@ class SampleTemplatesTest {
         return 40;
     }
 
-    /** Walks every camera move of the Barrow: never inside or against anything, and always with room to see. */
-    @Test void theBarrowsCamerasStayClearOfWalls() {
-        var barrow = definition("hollow_barrow");
-        Map<Cell, Material> blocks = blocks("hollow_barrow");
+    /** Walks every camera move of a map: never inside or against anything, and always with room to see. */
+    private static void camerasStayClearOfWalls(String id) {
+        var expedition = definition(id);
+        Map<Cell, Material> blocks = blocks(id);
         List<String> problems = new java.util.ArrayList<>();
-        for (var scene : barrow.story().cutscenes().values()) {
+        for (var scene : expedition.story().cutscenes().values()) {
             var shots = scene.shots();
             for (int index = 0; index < shots.size(); index++) {
                 var shot = shots.get(index);
@@ -179,6 +179,126 @@ class SampleTemplatesTest {
             }
         }
         assertTrue(problems.isEmpty(), String.join("\n", new java.util.LinkedHashSet<>(problems)));
+    }
+
+    @Test void theBarrowsCamerasStayClearOfWalls() { camerasStayClearOfWalls("hollow_barrow"); }
+
+    @Test void theCanopysCamerasStayClearOfWalls() { camerasStayClearOfWalls("thornwood_canopy"); }
+
+    private static boolean walkThrough(Material material) {
+        return seeThrough(material) || material == Material.MOSS_CARPET || material == Material.RED_MUSHROOM || material == Material.SWEET_BERRY_BUSH;
+    }
+
+    private static boolean standsOn(Map<Cell, Material> blocks, int x, int y, int z) {
+        Material floor = blocks.getOrDefault(new Cell(x, y, z), Material.AIR);
+        return !walkThrough(floor) && !floor.name().endsWith("FENCE");
+    }
+
+    /** Fills the canopy from the spawn on foot, up steps and across short jumps, once the span and the nest wall have gone: everything must be reachable. */
+    @Test void theCanopyCanBeClimbedFromTheSpawn() {
+        var canopy = definition("thornwood_canopy");
+        Map<Cell, Material> blocks = new HashMap<>(blocks("thornwood_canopy"));
+        for (var piece : canopy.story().setpieces().values()) {
+            var box = piece.box();
+            Material fill = Material.matchMaterial(piece.block());
+            for (int x = box.minX(); x <= box.maxX(); x++) for (int y = box.minY(); y <= box.maxY(); y++) for (int z = box.minZ(); z <= box.maxZ(); z++) blocks.put(new Cell(x, y, z), fill);
+        }
+        java.util.function.BiPredicate<Cell, Integer> room = (at, up) -> walkThrough(blocks.getOrDefault(new Cell(at.x(), at.y() + up, at.z()), Material.AIR));
+        java.util.function.Predicate<Cell> stand = at -> room.test(at, 0) && room.test(at, 1) && standsOn(blocks, at.x(), at.y() - 1, at.z());
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
+        open.add(new Cell(canopy.spawn().x(), canopy.spawn().y(), canopy.spawn().z()));
+        while (!open.isEmpty()) {
+            Cell at = open.poll();
+            if (!seen.add(at)) continue;
+            for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) for (int reach = 1; reach <= 3; reach++) {
+                Cell over = new Cell(at.x() + step[0] * reach, at.y(), at.z() + step[1] * reach);
+                for (int dy : reach == 1 ? new int[]{-2, -1, 0, 1} : new int[]{0, 1}) {
+                    Cell landing = new Cell(over.x(), over.y() + dy, over.z());
+                    if (stand.test(landing)) open.add(landing);
+                }
+                if (!room.test(over, 0) || !room.test(over, 1)) break;
+            }
+        }
+        java.util.function.Consumer<ExpeditionDefinition.Point> reached = point -> {
+            boolean near = false;
+            for (int[] step : new int[][]{{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}}) near |= seen.contains(new Cell(point.x() + step[0], point.y(), point.z() + step[1]));
+            assertTrue(near, "can't reach " + point);
+        };
+        canopy.story().packs().values().forEach(pack -> reached.accept(pack.at()));
+        canopy.story().chests().values().forEach(chest -> reached.accept(chest.at()));
+        canopy.story().devices().values().forEach(device -> reached.accept(device.at()));
+        canopy.story().campfires().values().forEach(fire -> reached.accept(fire.at()));
+        reached.accept(canopy.exit());
+        for (var room2 : canopy.roomList()) {
+            room2.points().forEach(reached);
+            room2.puzzles().values().forEach(puzzle -> { if (puzzle.supply() != null) reached.accept(puzzle.supply()); });
+        }
+    }
+
+    /** Sacs are wool, cisterns hold water, and the rot the Shaman's fire runs from is really in the bark. */
+    @Test void theCanopysDevicesAreRealBlocks() {
+        Map<Cell, Material> blocks = blocks("thornwood_canopy");
+        var canopy = definition("thornwood_canopy");
+        assertEquals(10, canopy.story().devices().size());
+        for (var device : canopy.story().devices().values()) {
+            Material block = blocks.get(new Cell(device.at().x(), device.at().y(), device.at().z()));
+            assertEquals(device.id().startsWith("sac") ? Material.WHITE_WOOL : Material.WATER_CAULDRON, block, device.id());
+        }
+        for (var source : canopy.rooms().get("heart_grove").encounter().entrance().sources())
+            assertEquals(Material.SHROOMLIGHT, blocks.get(new Cell(source.x(), source.y(), source.z())), "knot at " + source);
+    }
+
+    /** When the deck burns away, what's left must still hold the fight: the boss, his adds, the cisterns, the chests and the way out. */
+    @Test void theGroveKeepsItsMiddleWhenTheDeckBurns() {
+        var canopy = definition("thornwood_canopy");
+        var hazard = canopy.story().hazards().get("heart_deck");
+        var grove = canopy.rooms().get("heart_grove");
+        List<ExpeditionDefinition.Point> safe = new java.util.ArrayList<>(grove.points());
+        safe.add(grove.checkpoint());
+        safe.add(canopy.exit());
+        safe.add(canopy.story().rewardChests().free());
+        safe.add(canopy.story().rewardChests().bonus());
+        for (var section : hazard.sections()) {
+            safe.add(canopy.story().devices().get(section.device()).at());
+            for (var point : safe) assertFalse(section.box().contains(point.x() + .5, point.y(), point.z() + .5), point + " burns with " + section.device());
+        }
+    }
+
+    /** The wind has to reach the open side, and each way it can blow has a stump to hide behind. */
+    @Test void thePerchHasCoverFromTheWind() {
+        Map<Cell, Material> blocks = blocks("thornwood_canopy");
+        var gale = definition("thornwood_canopy").story().hazards().get("canopy_gale");
+        for (var lane : gale.lanes()) {
+            int dx = Integer.signum(lane.x2() - lane.x1()), dz = Integer.signum(lane.z2() - lane.z1()), cover = 0;
+            for (int x = 28; x <= 54; x++) for (int z = 26; z <= 46; z++)
+                if (blocks.get(new Cell(x, 72, z)) == Material.DARK_OAK_WOOD && blocks.getOrDefault(new Cell(x + dx, 72, z + dz), Material.AIR) == Material.AIR) cover++;
+            assertTrue(cover >= 12, "only " + cover + " cover against " + lane);
+        }
+    }
+
+    /** Webs and thorns run on open floor; the props in the nest stop the side lanes partway, so there's cover. */
+    @Test void theCanopysLanesCrossOpenFloor() {
+        Map<Cell, Material> blocks = blocks("thornwood_canopy");
+        var hazards = definition("thornwood_canopy").story().hazards();
+        for (String id : List.of("web_lines_doubled", "thorn_lanes")) for (var lane : hazards.get(id).lanes()) {
+            int y = hazards.get(id).area().minY(), steps = Math.max(Math.abs(lane.x2() - lane.x1()), Math.abs(lane.z2() - lane.z1())), open = 0;
+            for (int step = 0; step <= steps; step++) {
+                int x = lane.x1() + Math.round((lane.x2() - lane.x1()) * step / (float) steps), z = lane.z1() + Math.round((lane.z2() - lane.z1()) * step / (float) steps);
+                if (solid(blocks, x, y + 2, z)) break;
+                open++;
+            }
+            assertTrue(open >= 12, id + " lane " + lane + " stops after " + open);
+        }
+    }
+
+    /** The goal is forces, so the standing packs must be able to fill it, with some to spare. */
+    @Test void theCanopysPacksCanFillItsForces() {
+        var canopy = definition("thornwood_canopy");
+        int total = 0;
+        for (var pack : canopy.story().packs().values()) for (var mob : pack.mobs().entrySet()) total += mob.getValue() * canopy.story().mob(mob.getKey()).forces();
+        assertTrue(total >= canopy.story().forces() * 1.1, total + " forces standing");
+        assertTrue(total <= canopy.story().forces() * 1.4, total + " forces standing");
     }
 
     /** The Warden's reanimation draws on real soul fires. */

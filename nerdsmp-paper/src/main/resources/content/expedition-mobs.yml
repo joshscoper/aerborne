@@ -31,13 +31,26 @@ mobs:
 
   # Thornwood Canopy
   briar_matron:
-    name: "<gradient:#6ab04c:#2d3436>Briar Matron</gradient>"
+    rank: normal
+    name: "<gradient:#6ab04c:#2d3436><bold>The Briar Matron</bold></gradient>"
     type: spider
-    health: 160
-    attack-damage: 6
-    scale: 2.3
+    boss: true
+    health: 360
+    attack-damage: 7
+    scale: 2.6
     ability: none
-    mark-reward: 20
+    mark-reward: 70
+  verrin_the_lost:
+    rank: normal
+    name: "<gradient:#7bed9f:#2f3542><bold>Verrin</bold></gradient>"
+    type: bogged
+    boss: true
+    health: 260
+    attack-damage: 6
+    scale: 1.3
+    ability: none
+    mark-reward: 60
+    equipment: {head: leather_helmet, chest: leather_chestplate, hand: bow}
   thornheart_shaman:
     name: "<gradient:#badc58:#218c74><bold>The Thornheart Shaman</bold></gradient>"
     type: evoker
@@ -332,6 +345,31 @@ mobs:
     attack-damage: 3
     ability: none
     mark-reward: 2
+  sporeback:
+    rank: normal
+    name: "<#b8a06a>Sporeback</#b8a06a>"
+    type: spider
+    health: 30
+    attack-damage: 4
+    scale: .9
+    ability: none
+    mark-reward: 3
+  rotbark_acolyte:
+    rank: normal
+    name: "<#a0623a>Rotbark Acolyte</#a0623a>"
+    type: witch
+    health: 26
+    attack-damage: 3
+    ability: none
+    mark-reward: 4
+  silk_cocoon:
+    rank: normal
+    name: "<white>Silk Cocoon</white>"
+    type: silverfish
+    health: 12
+    attack-damage: 0
+    ability: none
+    mark-reward: 0
   bough_sniper:
     name: "<dark_green>Bough Sniper</dark_green>"
     type: skeleton

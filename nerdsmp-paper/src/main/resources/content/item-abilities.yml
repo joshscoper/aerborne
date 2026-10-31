@@ -18,6 +18,15 @@ abilities:
   pyre_greatsword: [ember_brand, ember_sweep]
   huntsmans_longbow: [hunters_mark]
   hollowfang_blade: [soul_siphon]
+  # Thornwood Canopy.
+  fang_of_the_matron: [grave_chill]
+  venomglass_vial: [last_stand]
+  matrons_eye_pendant: [grave_sight]
+  windward_boots: [fleet_stride]
+  verrins_watchbow: [hunters_mark]
+  heartwood_band: [ember_aura]
+  heart_seed: [last_stand]
+  thornheart_cuirass: [ember_aura]
   # The other dungeons.
   briarshot_crossbow: [grave_chill]
   thornheart_rapier: [shadow_step]
@@ -36,6 +45,284 @@ abilities:
   astral_covenant_blade: [shadow_step]
 
 items:
+  rangers_roundel:
+    material: shield
+    name: "<green>Ranger's Roundel</green>"
+    slot: off_hand
+    rarity: uncommon
+    item-level: 13
+    stats: {defense: 4}
+    lore:
+      - "<gray>Painted green, once. The arrow holes have been patched.</gray>"
+  acorn_cord:
+    material: brown_dye
+    name: "<green>Acorn Cord</green>"
+    slot: neck
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>Every ranger wears one until they've earned better.</gray>"
+  bark_spaulders:
+    material: leather
+    name: "<green>Bark Spaulders</green>"
+    slot: shoulders
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Cut from the Heart Tree's own shed bark.</gray>"
+  mossweave_cloak:
+    material: phantom_membrane
+    name: "<green>Mossweave Cloak</green>"
+    slot: back
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>It grows back where it tears.</gray>"
+  vine_wraps:
+    material: lime_dye
+    name: "<green>Vine Wraps</green>"
+    slot: wrists
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>They tighten when you climb.</gray>"
+  climbers_grips:
+    material: rabbit_hide
+    name: "<green>Climber's Grips</green>"
+    slot: hands
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {defense: 1, damage-flat: 1}
+    lore:
+      - "<gray>Worn smooth on the inside, rough on the out.</gray>"
+  rangers_sash:
+    material: leather
+    name: "<green>Ranger's Sash</green>"
+    slot: waist
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Knotted so a line can clip straight on.</gray>"
+  bramble_loop:
+    material: iron_nugget
+    name: "<green>Bramble Loop</green>"
+    slot: ring
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {max-health: 2}
+    lore:
+      - "<gray>It only draws blood when you take it off.</gray>"
+  ember_touched_acorn:
+    material: blaze_powder
+    name: "<green>Ember-Touched Acorn</green>"
+    slot: trinket
+    rarity: uncommon
+    item-level: 13
+    sockets: 1
+    stats: {life-steal-percent: 1}
+    lore:
+      - "<gray>Warm as a coal. It will never sprout now.</gray>"
+  silk_wrapped_bracers:
+    material: white_dye
+    name: "<blue>Silk-Wrapped Bracers</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {defense: 3, life-steal-percent: 1}
+    lore:
+      - "<gray>The silk doesn't fray. Nothing cuts it, either.</gray>"
+  spinneret_gloves:
+    material: rabbit_hide
+    name: "<blue>Spinneret Gloves</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {defense: 2, damage-flat: 2}
+    lore:
+      - "<gray>They leave a thread on everything you touch.</gray>"
+  silkstrand_shawl:
+    material: phantom_membrane
+    name: "<blue>Silkstrand Shawl</blue>"
+    slot: back
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {max-health: 5}
+    lore:
+      - "<gray>A hundred layers, each lighter than the last.</gray>"
+  broodmothers_carapace:
+    material: chainmail_chestplate
+    name: "<blue>Broodmother's Carapace</blue>"
+    slot: chest
+    rarity: rare
+    item-level: 16
+    sockets: 2
+    stats: {defense: 9}
+    lore:
+      - "<gray>It still twitches when something walks past.</gray>"
+  fang_of_the_matron:
+    material: iron_sword
+    name: "<blue>Fang of the Matron</blue>"
+    slot: main_hand
+    rarity: rare
+    item-level: 16
+    sockets: 2
+    stats: {damage: 10}
+    lore:
+      - "<gray>It never quite stops dripping.</gray>"
+  venomglass_vial:
+    material: glow_ink_sac
+    name: "<light_purple>Venomglass Vial</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 17
+    sockets: 2
+    stats: {damage-percent: 3, life-steal-percent: 2}
+    lore:
+      - "<gray>Hold it to the light. Something in there looks back.</gray>"
+  matrons_eye_pendant:
+    material: nautilus_shell
+    name: "<light_purple>Matron's Eye Pendant</light_purple>"
+    slot: neck
+    rarity: epic
+    item-level: 17
+    sockets: 2
+    stats: {max-health: 5, damage-percent: 3}
+    lore:
+      - "<gray>One of eight. She had others.</gray>"
+  last_watch_hood:
+    material: leather_helmet
+    name: "<blue>Last Watch Hood</blue>"
+    slot: head
+    rarity: rare
+    item-level: 16
+    sockets: 2
+    stats: {defense: 6}
+    lore:
+      - "<gray>Twenty winters in the wind have shaped it to one face.</gray>"
+  wind_cut_mantle:
+    material: leather
+    name: "<blue>Wind-Cut Mantle</blue>"
+    slot: shoulders
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {defense: 3, max-health: 3}
+    lore:
+      - "<gray>The wind has taken the edges and left the rest.</gray>"
+  windward_boots:
+    material: leather_boots
+    name: "<blue>Windward Boots</blue>"
+    slot: feet
+    rarity: rare
+    item-level: 16
+    sockets: 2
+    stats: {defense: 6}
+    lore:
+      - "<gray>They've never once slipped. Verrin did that on purpose.</gray>"
+  waywatcher_belt:
+    material: leather
+    name: "<blue>Waywatcher's Belt</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {defense: 3, damage-flat: 1}
+    lore:
+      - "<gray>Twenty years of knots, every one a day.</gray>"
+  rangers_oath_band:
+    material: iron_nugget
+    name: "<blue>Ranger's Oath Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 16
+    sockets: 1
+    stats: {damage-percent: 3}
+    lore:
+      - "<gray>Two names inside. One is Ilsa's.</gray>"
+  verrins_watchbow:
+    material: bow
+    name: "<light_purple>Verrin's Watchbow</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 17
+    sockets: 3
+    stats: {projectile-damage: 10}
+    lore:
+      - "<gray>He never once fired it in anger, until the sap got in.</gray>"
+  rootbound_greaves:
+    material: leather_leggings
+    name: "<blue>Rootbound Greaves</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 17
+    sockets: 2
+    stats: {defense: 7}
+    lore:
+      - "<gray>Something is growing through the left knee.</gray>"
+  barkskin_helm:
+    material: chainmail_helmet
+    name: "<blue>Barkskin Helm</blue>"
+    slot: head
+    rarity: rare
+    item-level: 17
+    sockets: 2
+    stats: {defense: 7}
+    lore:
+      - "<gray>You'll hear the sap moving, if you listen.</gray>"
+  emberrot_buckler:
+    material: shield
+    name: "<blue>Ember-Rot Buckler</blue>"
+    slot: off_hand
+    rarity: rare
+    item-level: 17
+    stats: {defense: 7}
+    lore:
+      - "<gray>It smoulders at the rim, and never burns through.</gray>"
+  heartwood_band:
+    material: gold_nugget
+    name: "<light_purple>Heartwood Band</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 18
+    sockets: 2
+    stats: {damage-percent: 4}
+    lore:
+      - "<gray>Turned from a single ring of the Heart Tree.</gray>"
+  heart_seed:
+    material: blaze_powder
+    name: "<light_purple>Seed of the Heart Tree</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 18
+    sockets: 2
+    stats: {max-health: 4, damage-percent: 3}
+    lore:
+      - "<gray>Plant it somewhere you'd like to stay.</gray>"
+  thornheart_cuirass:
+    material: iron_chestplate
+    name: "<light_purple>Thornheart Cuirass</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 18
+    sockets: 3
+    stats: {defense: 10}
+    lore:
+      - "<gray>Grown, not forged. The thorns all point outward.</gray>"
   pallbearers_buckler:
     material: shield
     name: "<green>Pallbearer's Buckler</green>"

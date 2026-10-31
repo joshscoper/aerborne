@@ -5,6 +5,19 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Thornwood Canopy rebuilt (October 31)
+- **A climb with a long way down.** The canopy is rebuilt the way the Barrow was: Rootgate, the Low Boughs,
+  the Fork as a hub, a wing either side, and a long stair to the Heart Gate, with 16 standing packs. Enemy
+  forces are still the goal. Anyone who falls is caught and put back, for a little damage.
+- **Three bosses with rooms that fight back.** The Briar Matron comes down on a thread in a hollow trunk,
+  with web lanes, brood sacs to burst and cocoons to break. Verrin, an optional boss, fights on a railless
+  perch where gusts throw anyone without cover. The Thornheart Shaman bursts out of a cage of roots, and
+  the deck burns away a stretch at a time unless someone reaches its rain cistern.
+- **Its own trash.** Sporebacks burst as they die, Rotbark Acolytes mend and snare, and Weavers spit venom.
+- **Its own loot.** 28 new pieces, with gear for all 14 slots, a chest from each boss, and companions to find.
+- **The engine learned new tricks.** `brood`, `burndown` and `gust` hazards, lanes that leave webs or
+  thorns, `falls:`, `motes:`, and `descend` and `bloom` entrances, all usable from any expedition file.
+
 ### Fourth Barrow playtest (October 31)
 - **Tooltips stay narrow.** Long lines wrap at 38 characters and keep their colours, ability text is
   shorter, and a row of empty gem slots takes one line. Existing items pick this up on their own.

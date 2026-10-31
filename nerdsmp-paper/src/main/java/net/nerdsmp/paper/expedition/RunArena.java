@@ -7,6 +7,7 @@ import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Device;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Hazard;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Lane;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Point;
+import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Section;
 import net.nerdsmp.paper.presentation.Chat;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -48,7 +49,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * What a boss room does in a fight, beyond the boss. Lanes roll across the floor and break on columns,
  * chandeliers come down and can be baited onto the boss, vigil candles spread a pool until someone
  * lights them again, and a ward holds the boss out of reach until the party douses the room's fires.
- * Every piece is telegraphed, and everything it changes goes back when the party wipes.
+ * Brood sacs hatch unless they're burst, floors burn away unless someone reaches their cistern, and
+ * gusts throw anyone without cover. Every piece is telegraphed, and everything it changes goes back
+ * when the party wipes.
  */
 final class RunArena {
     interface Host {
@@ -69,6 +72,8 @@ final class RunArena {
         void bar(Player player, String markup);
         /** Runs one of the active room's scripts, such as {@code ward-broken}. */
         void script(String trigger);
+        /** Spawns room mobs at a spot. */
+        void hatch(String mob, int count, Location at);
         void log(String line);
     }
 
@@ -81,6 +86,9 @@ final class RunArena {
     private static final double POOL_GROWTH = .35, POOL_LIMIT = 7;
     private static final int STAGGER_TICKS = 100;
     private static final double REACH = 5;
+    private static final long SAC_MILLIS = 9_000, BURN_MILLIS = 13_000;
+    private static final int HATCHLINGS = 2, GUST_WARNING_TICKS = 50, GUST_TICKS = 16;
+    private static final double GUST_PUSH = .5, GUST_COVER = 5;
 
     /** A snuffed vigil device and the pool spreading from it. */
     private static final class Pool {
@@ -109,6 +117,14 @@ final class RunArena {
     private final Host host;
     private final Map<String, Pool> pools = new LinkedHashMap<>();
     private final Set<String> fallen = new HashSet<>();
+    /** Sacs swelling, by device, and when each hatches; and those already gone. */
+    private final Map<String, Long> swelling = new LinkedHashMap<>();
+    private final Map<String, Hazard> broods = new HashMap<>();
+    private final Set<String> burst = new HashSet<>();
+    /** Floors on fire, and when each falls; and those gone, and cisterns spent. */
+    private final Map<Section, Long> burning = new LinkedHashMap<>();
+    private final Set<Section> lost = new HashSet<>();
+    private final Set<String> spent = new HashSet<>();
     private final Map<Block, BlockData> wreckage = new HashMap<>();
     private final List<Display> falling = new ArrayList<>();
     private BukkitTask task;
@@ -139,6 +155,12 @@ final class RunArena {
         wreckage.forEach((block, data) -> block.setBlockData(data, false));
         wreckage.clear();
         fallen.clear();
+        swelling.clear();
+        broods.clear();
+        burst.clear();
+        burning.clear();
+        lost.clear();
+        spent.clear();
         nextBeat = 0;
     }
 
@@ -148,6 +170,8 @@ final class RunArena {
         heartbeat();
         tickPools();
         tickWard();
+        tickSacs();
+        tickBurns();
     }
 
     private void heartbeat() {
@@ -170,6 +194,9 @@ final class RunArena {
             case LANE -> lanes(hazard);
             case COLLAPSE -> collapse(hazard);
             case VIGIL -> snuff(hazard);
+            case BROOD -> swell(hazard);
+            case BURNDOWN -> ignite(hazard);
+            case GUST -> gust(hazard);
             default -> { }
         }
     }
@@ -187,8 +214,8 @@ final class RunArena {
         Vector path = to.toVector().subtract(from.toVector());
         double length = path.length();
         Vector along = path.clone().normalize(), across = new Vector(-along.getZ(), 0, along.getX()).multiply(LANE_WIDTH / 2);
-        Color color = hazard.soul() ? Telegraph.FROST : Telegraph.FIRE;
-        world.playSound(from, hazard.soul() ? Sound.ENTITY_EVOKER_PREPARE_ATTACK : Sound.ENTITY_BLAZE_AMBIENT, 1.3F, .6F);
+        Color color = hazard.trail() != null ? Telegraph.POISON : hazard.soul() ? Telegraph.FROST : Telegraph.FIRE;
+        world.playSound(from, hazard.trail() != null ? Sound.ENTITY_SPIDER_AMBIENT : hazard.soul() ? Sound.ENTITY_EVOKER_PREPARE_ATTACK : Sound.ENTITY_BLAZE_AMBIENT, 1.3F, .6F);
         int[] tick = {0};
         double[] front = {0};
         Set<UUID> struck = new HashSet<>();
@@ -206,8 +233,10 @@ final class RunArena {
             Location head = from.clone().add(along.clone().multiply(front[0]));
             if (front[0] >= length || blocked(head, floor)) {
                 run.cancel();
-                world.spawnParticle(hazard.soul() ? Particle.SOUL : Particle.LAVA, surface(head), 18, 1, .4, 1, .03);
-                world.playSound(head, Sound.BLOCK_FIRE_EXTINGUISH, 1F, .7F);
+                if (hazard.trail() == null) {
+                    world.spawnParticle(hazard.soul() ? Particle.SOUL : Particle.LAVA, surface(head), 18, 1, .4, 1, .03);
+                    world.playSound(head, Sound.BLOCK_FIRE_EXTINGUISH, 1F, .7F);
+                }
                 return;
             }
             sweep(hazard, head, across, struck);
@@ -222,22 +251,25 @@ final class RunArena {
     private void sweep(Hazard hazard, Location head, Vector across, Set<UUID> struck) {
         World world = host.world();
         Location top = surface(head);
+        Material trail = hazard.trail() == null ? null : Material.matchMaterial(hazard.trail());
         for (double side = -1; side <= 1; side += .5) {
             Location spot = top.clone().add(across.clone().multiply(side));
-            world.spawnParticle(hazard.soul() ? Particle.SOUL_FIRE_FLAME : Particle.FLAME, spot.clone().add(0, .4, 0), 5, .2, .4, .2, .02);
+            if (trail != null) Telegraph.shards(spot.clone().add(0, .4, 0), 4, .3, trail == Material.COBWEB ? Material.WHITE_WOOL : trail);
+            else world.spawnParticle(hazard.soul() ? Particle.SOUL_FIRE_FLAME : Particle.FLAME, spot.clone().add(0, .4, 0), 5, .2, .4, .2, .02);
             if (hazard.burnSeconds() > 0 && side % 1 == 0) {
                 Block open = surface(spot).getBlock();
-                if (open.getType().isAir()) host.temporary(open, Material.FIRE, hazard.burnSeconds() * 20);
+                if (open.getType().isAir()) host.temporary(open, trail == null ? Material.FIRE : trail, hazard.burnSeconds() * 20);
             }
         }
-        world.playSound(top, hazard.soul() ? Sound.PARTICLE_SOUL_ESCAPE : Sound.ITEM_FIRECHARGE_USE, .7F, .7F);
+        world.playSound(top, trail != null ? Sound.BLOCK_WOOL_STEP : hazard.soul() ? Sound.PARTICLE_SOUL_ESCAPE : Sound.ITEM_FIRECHARGE_USE, .7F, .7F);
         for (Player player : host.online()) {
             if (!exposed(player) || struck.contains(player.getUniqueId())) continue;
             Vector offset = player.getLocation().toVector().subtract(head.toVector()).setY(0);
             if (offset.lengthSquared() > (LANE_WIDTH / 2 + 1) * (LANE_WIDTH / 2 + 1)) continue;
             struck.add(player.getUniqueId());
             player.damage(hazard.damage());
-            if (hazard.soul()) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1));
+            if (trail != null) player.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
+            else if (hazard.soul()) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1));
             else player.setFireTicks(60);
         }
     }
@@ -382,6 +414,9 @@ final class RunArena {
             if (device.at().x() != block.getX() || device.at().y() != block.getY() || device.at().z() != block.getZ()) continue;
             if (pools.containsKey(device.id())) { relight(player, device); return true; }
             if (ward != null && ward.burning.contains(device.id())) { douse(player, device); return true; }
+            if (swelling.containsKey(device.id())) { burst(player, device); return true; }
+            for (Section section : burning.keySet())
+                if (section.device().equals(device.id())) { quench(player, device, section); return true; }
             return false;
         }
         return false;
@@ -391,8 +426,10 @@ final class RunArena {
     // Vigils
     // ---------------------------------------------------------------------------------------------
 
-    /** A vigil's script stopped it: the candles it snuffed come back, and their pools dry up. */
+    /** A vigil's script stopped it: the candles it snuffed come back, and their pools dry up. Sacs and fires stop where they are. */
     void stopped(Hazard hazard) {
+        swelling.keySet().removeIf(id -> broods.get(id) == hazard);
+        burning.keySet().removeIf(hazard.sections()::contains);
         for (var entry : List.copyOf(pools.entrySet()))
             if (entry.getValue().hazard == hazard) {
                 pools.remove(entry.getKey());
@@ -439,6 +476,212 @@ final class RunArena {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 25, 1));
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Brood sacs
+    // ---------------------------------------------------------------------------------------------
+
+    private void swap(Block block, Material type) {
+        wreckage.putIfAbsent(block, block.getBlockData().clone());
+        block.setType(type, false);
+    }
+
+    /** The next sacs start to swell and glow. They hatch unless they're burst. */
+    private void swell(Hazard hazard) {
+        List<String> ripe = new ArrayList<>(hazard.devices());
+        ripe.removeAll(burst);
+        ripe.removeAll(swelling.keySet());
+        Collections.shuffle(ripe);
+        World world = host.world();
+        for (String id : ripe.subList(0, Math.min(hazard.count(), ripe.size()))) {
+            swelling.put(id, System.currentTimeMillis() + SAC_MILLIS);
+            broods.put(id, hazard);
+            swap(block(device(id)), Material.PEARLESCENT_FROGLIGHT);
+            world.playSound(middle(device(id)), Sound.BLOCK_SNIFFER_EGG_CRACK, 1.8F, .6F);
+            host.broadcast("<green>A brood sac swells!</green> <gray>Right-click it before it hatches.</gray>");
+        }
+    }
+
+    private void tickSacs() {
+        World world = host.world();
+        long now = System.currentTimeMillis();
+        for (String id : List.copyOf(swelling.keySet())) {
+            Device device = device(id);
+            Location at = middle(device);
+            world.spawnParticle(Particle.ITEM_COBWEB, at.clone().add(0, .6, 0), 8, .4, .4, .4, .02);
+            Telegraph.ring(block(device).getLocation().add(.5, 0, .5), 1.4, Telegraph.POISON);
+            world.playSound(at, Sound.ENTITY_TURTLE_EGG_CRACK, 1F, .7F);
+            if (now < swelling.get(id)) continue;
+            swelling.remove(id);
+            burst.add(id);
+            clear(block(device));
+            world.playSound(at, Sound.BLOCK_SNIFFER_EGG_HATCH, 1.8F, .7F);
+            Telegraph.shards(at, 30, 1, Material.WHITE_WOOL);
+            host.hatch(broods.get(id).mob(), HATCHLINGS, at.clone().add(0, 1, 0));
+        }
+    }
+
+    private void burst(Player player, Device device) {
+        swelling.remove(device.id());
+        burst.add(device.id());
+        Location at = middle(device);
+        clear(block(device));
+        host.world().playSound(at, Sound.BLOCK_SLIME_BLOCK_BREAK, 1.6F, .7F);
+        Telegraph.shards(at, 24, .8, Material.LIME_WOOL);
+        host.bar(player, "<green>You burst the sac</green>");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Burning floors
+    // ---------------------------------------------------------------------------------------------
+
+    /** The next stretch of floor catches. Its cistern can put it out, once. */
+    private void ignite(Hazard hazard) {
+        List<Section> standing = new ArrayList<>(hazard.sections());
+        standing.removeAll(lost);
+        standing.removeAll(burning.keySet());
+        if (standing.isEmpty()) return;
+        Section section = standing.get(ThreadLocalRandom.current().nextInt(standing.size()));
+        burning.put(section, System.currentTimeMillis() + BURN_MILLIS);
+        Location at = centre(section);
+        host.world().playSound(at, Sound.ENTITY_BLAZE_SHOOT, 2F, .5F);
+        host.broadcast(spent.contains(section.device()) ? "<red>The deck is burning again!</red> <gray>Its cistern is dry. Get off it!</gray>"
+            : "<red>The deck is burning!</red> <gray>Right-click its " + Chat.escape(device(section.device()).title()) + " before it falls.</gray>");
+    }
+
+    private Location centre(Section section) {
+        var box = section.box();
+        return new Location(host.world(), (box.minX() + box.maxX()) / 2D + .5, box.minY() + 1, (box.minZ() + box.maxZ()) / 2D + .5);
+    }
+
+    private void tickBurns() {
+        World world = host.world();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        long now = System.currentTimeMillis();
+        for (Section section : List.copyOf(burning.keySet())) {
+            var box = section.box();
+            if (now >= burning.get(section)) {
+                burning.remove(section);
+                giveWay(section);
+                continue;
+            }
+            if (!spent.contains(section.device())) {
+                Location cistern = middle(device(section.device()));
+                world.spawnParticle(Particle.SPLASH, cistern.clone().add(0, .6, 0), 14, .3, .2, .3, 0);
+                world.spawnParticle(Particle.DRIPPING_WATER, cistern.clone().add(0, 1.2, 0), 4, .2, .3, .2, 0);
+            }
+            int width = box.maxX() - box.minX() + 1, depth = box.maxZ() - box.minZ() + 1;
+            world.spawnParticle(Particle.FLAME, centre(section), width * depth / 12, width / 2.5, .3, depth / 2.5, .02);
+            world.spawnParticle(Particle.LARGE_SMOKE, centre(section), width * depth / 30, width / 2.5, .6, depth / 2.5, .02);
+            world.playSound(centre(section), Sound.BLOCK_FIRE_AMBIENT, 2F, .6F);
+            for (int spot = 0; spot < 4; spot++) {
+                Block open = world.getBlockAt(random.nextInt(box.minX(), box.maxX() + 1), box.minY() + 1, random.nextInt(box.minZ(), box.maxZ() + 1));
+                if (open.getType().isAir() && open.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) host.temporary(open, Material.FIRE, 40);
+            }
+        }
+    }
+
+    private void quench(Player player, Device device, Section section) {
+        if (!spent.add(device.id())) {
+            host.bar(player, "<red>The " + Chat.escape(device.title()) + " is dry</red>");
+            return;
+        }
+        burning.remove(section);
+        swap(block(device), Material.CAULDRON);
+        World world = host.world();
+        world.spawnParticle(Particle.SPLASH, centre(section), 300, 5, .4, 5, 0);
+        world.spawnParticle(Particle.CLOUD, centre(section), 60, 5, .3, 5, .02);
+        world.playSound(centre(section), Sound.ITEM_BUCKET_EMPTY, 2F, .7F);
+        world.playSound(centre(section), Sound.BLOCK_FIRE_EXTINGUISH, 2F, .7F);
+        for (Player member : host.online()) host.bar(member, "<aqua>" + Chat.escape(player.getName()) + " put the fire out</aqua>");
+        host.log(player.getName() + " quenched " + device.id());
+    }
+
+    private void giveWay(Section section) {
+        lost.add(section);
+        var box = section.box();
+        World world = host.world();
+        for (int x = box.minX(); x <= box.maxX(); x++) for (int y = box.minY(); y <= box.maxY(); y++) for (int z = box.minZ(); z <= box.maxZ(); z++) {
+            Block block = world.getBlockAt(x, y, z);
+            if (!block.getType().isAir()) clear(block);
+        }
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int piece = 0; piece < 12; piece++) timber(new Location(world, random.nextDouble(box.minX(), box.maxX()), box.minY(), random.nextDouble(box.minZ(), box.maxZ())));
+        world.playSound(centre(section), Sound.ENTITY_GENERIC_EXPLODE, 2F, .6F);
+        world.playSound(centre(section), Sound.BLOCK_WOOD_BREAK, 2F, .5F);
+        world.spawnParticle(Particle.LARGE_SMOKE, centre(section), 60, 6, .6, 6, .03);
+        host.broadcast("<red>The deck gives way!</red>");
+        host.log("deck lost");
+    }
+
+    private void timber(Location from) {
+        BlockDisplay beam = host.world().spawn(from, BlockDisplay.class, display -> {
+            display.setBlock(Material.SPRUCE_PLANKS.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(2);
+            display.setTransformation(new Transformation(new Vector3f(-1, 0, -1), new Quaternionf().rotateY(from.getBlockX()), new Vector3f(2.4F, .3F, 1F), new Quaternionf()));
+        });
+        falling.add(beam);
+        int[] tick = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, run -> {
+            int now = ++tick[0];
+            if (!host.live() || now > 40) {
+                run.cancel();
+                beam.remove();
+                falling.remove(beam);
+                return;
+            }
+            beam.teleport(from.clone().subtract(0, .05 * now * now, 0));
+        }, 1L, 1L);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Wind
+    // ---------------------------------------------------------------------------------------------
+
+    /** Leaves stream along one of the wind's lanes, then the gust hits. Something solid upwind is cover. */
+    private void gust(Hazard hazard) {
+        Lane lane = hazard.lanes().get(ThreadLocalRandom.current().nextInt(hazard.lanes().size()));
+        World world = host.world();
+        double floor = hazard.area().minY();
+        Vector wind = new Vector(lane.x2() - lane.x1(), 0, lane.z2() - lane.z1()).normalize();
+        Location from = new Location(world, lane.x1() + .5, floor + 1, lane.z1() + .5), to = new Location(world, lane.x2() + .5, floor + 1, lane.z2() + .5);
+        Vector across = new Vector(-wind.getZ(), 0, wind.getX());
+        host.broadcast("<aqua>The wind rises!</aqua> <gray>Get behind something, or it will throw you off.</gray>");
+        for (Player player : host.online()) player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_INHALE, 1.6F, .6F);
+        int[] tick = {0};
+        Set<UUID> struck = new HashSet<>();
+        Bukkit.getScheduler().runTaskTimer(plugin, run -> {
+            if (!host.live() || host.bosses().isEmpty()) { run.cancel(); return; }
+            int now = tick[0]++;
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            if (now < GUST_WARNING_TICKS) {
+                if (now % 4 == 0) for (double offset = -18; offset <= 18; offset += 6) {
+                    Vector side = across.clone().multiply(offset + random.nextDouble(-2, 2));
+                    Telegraph.line(from.clone().add(side), to.clone().add(side), Telegraph.FROST);
+                    Telegraph.shards(from.clone().add(side), 3, .4, Material.DARK_OAK_LEAVES);
+                }
+                return;
+            }
+            if (now >= GUST_WARNING_TICKS + GUST_TICKS) { run.cancel(); return; }
+            if (now == GUST_WARNING_TICKS) for (Player player : host.online()) player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.6F, .7F);
+            world.spawnParticle(Particle.CLOUD, from.clone().add(to).multiply(.5), 30, 12, 1.5, 12, .4);
+            for (Player player : host.online()) {
+                var area = hazard.area();
+                if (!exposed(player) || !area.contains(player.getX(), area.minY(), player.getZ()) || sheltered(player, wind)) continue;
+                player.setVelocity(player.getVelocity().add(wind.clone().multiply(GUST_PUSH)).setY(Math.max(player.getVelocity().getY(), .12)));
+                if (!struck.add(player.getUniqueId())) continue;
+                host.log("gust caught " + player.getName());
+                if (hazard.damage() > 0) player.damage(hazard.damage());
+            }
+        }, 0L, 1L);
+    }
+
+    private boolean sheltered(Player player, Vector wind) {
+        Location eye = player.getLocation().add(0, 1, 0);
+        for (double step = 1; step <= GUST_COVER; step++) if (eye.clone().subtract(wind.clone().multiply(step)).getBlock().getType().isSolid()) return true;
+        return false;
     }
 
     // ---------------------------------------------------------------------------------------------

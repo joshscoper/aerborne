@@ -1,40 +1,119 @@
-# Thornwood Canopy: decks and rope bridges among giant trees at night. Clear enough of the forest's
-# creatures (enemy forces) to wake the Thornheart Shaman. Full reference: docs/EXPEDITIONS.md.
+# Thornwood Canopy: a night climb through the treetops, with a long way down. Thin the forest's creatures
+# (enemy forces) and put the Briar Matron down to reach the Thornheart Shaman. Full reference: docs/EXPEDITIONS.md.
 title: Thornwood Canopy
 description: Spiders own the treetops now. Thin their numbers and face the shaman at the Heart Tree.
 icon: dark_oak_sapling
 dimension: overworld
+# Built from code. Delete this line if you rebuild the template by hand.
 sample: thornwood_canopy
 published: true
 difficulty: 3
 level: 12
 party: {min: 1, max: 5}
-time-limit-minutes: 30
+time-limit-minutes: 40
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 1
+time: 18000
 spawn: [0, 64, 4, 0]
-exit: [10, 64, 112]
+exit: [0, 78, 146]
 modifiers: []
 requires: [hollow_barrow]
 goal: forces
-forces: 30
+forces: 80
+# Below this, a ranger's line catches you and puts you back where you last stood, or in the fight you're in.
+falls: {below: 52, damage: 4, message: "A ranger's line snaps taut and hauls you back up. Ilsa keeps them strung for a reason."}
+motes: firefly
 
 npcs:
   ilsa:
     name: Ranger Ilsa
     entity: villager
     at: [3, 64, 5, 90]
+    # She offers the daily in content/world-quests.yml, and takes it back at the far end of the run.
+    quests: ranger_ilsa
     lines:
-      - "The canopy's crawling. Webs on every bough, and something big nesting past the hollow."
-      - "Thin them out and the shaman will come down from the Heart Tree. He won't show for a handful."
-      - "The archers on the west boughs are worth hunting if you're short. Nobody makes you, mind."
-      - "Fall off the branches and I'll haul you back up to the deck. Costs you nothing but pride."
+      - "The canopy's crawling. Webs on every bough, and something big nesting in the dead trunk to the west."
+      - "Thin them out and the Shaman will have to answer. He won't open the gate for a handful."
+      - "The span south of the Fork is up. Hit the four signal boards in the east boughs and it comes down."
+      - "Mind the edges. My lines will catch you, but they won't catch you gently."
+      - "Verrin held the high perch for twenty years. He never came down. If you go up there, take him my regards."
 
 campfires:
   rootgate_fire: {at: [-3, 64, 7], lit: true, title: Rootgate Fire}
-  hunters_fire: {at: [3, 64, 97], lit: false, title: Hunter's Fire}
+  fork_fire: {at: [0, 64, 65], lit: false, title: The Fork}
+  heartgate_fire: {at: [5, 78, 105], lit: false, title: Heart Gate}
+
+setpieces:
+  heart_span: {box: [-2, 63, 80, 2, 63, 83], block: spruce_planks, style: rise}
+  nest_wall: {box: [-62, 64, 82, -54, 67, 85], block: air, style: crumble}
+
+# Things in the rooms that players use during a fight.
+devices:
+  sac_1: {at: [-49, 64, 54], title: Brood Sac}
+  sac_2: {at: [-60, 64, 50], title: Brood Sac}
+  sac_3: {at: [-71, 64, 54], title: Brood Sac}
+  sac_4: {at: [-75, 64, 65], title: Brood Sac}
+  sac_5: {at: [-71, 64, 76], title: Brood Sac}
+  sac_6: {at: [-60, 64, 80], title: Brood Sac}
+  sac_7: {at: [-49, 64, 76], title: Brood Sac}
+  cistern_north: {at: [-7, 78, 127], title: Rain Cistern}
+  cistern_west: {at: [-9, 78, 136], title: Rain Cistern}
+  cistern_east: {at: [9, 78, 136], title: Rain Cistern}
 
 hazards:
-  thorn_burst: {type: eruption, area: [-12, 63, 104, 12, 63, 120], every: 8, count: 3, damage: 4}
-  spore_cloud: {type: gas, area: [-12, 63, 104, 12, 63, 120], every: 10, count: 2, damage: 0}
+  # A trail leaves that block behind the lane for `burn` seconds, and poisons whoever it hits.
+  web_lines:
+    type: lane
+    trail: cobweb
+    area: [-78, 64, 46, -42, 64, 84]
+    every: 11
+    count: 1
+    damage: 5
+    burn: 6
+    lanes: [[-76, 59, -44, 59], [-44, 71, -76, 71], [-52, 49, -52, 81], [-68, 81, -68, 49]]
+  web_lines_doubled:
+    type: lane
+    trail: cobweb
+    area: [-78, 64, 46, -42, 64, 84]
+    every: 10
+    count: 2
+    damage: 5
+    burn: 6
+    lanes: [[-76, 59, -44, 59], [-44, 71, -76, 71], [-52, 49, -52, 81], [-68, 81, -68, 49], [-77, 65, -44, 65]]
+  # A brood swells its devices one at a time. Each hatches `mob` unless someone bursts it first.
+  brood_sacs: {type: brood, area: [-78, 64, 46, -42, 64, 84], every: 15, count: 1, mob: "custom:thornling", devices: [sac_1, sac_2, sac_3, sac_4, sac_5, sac_6, sac_7]}
+  # A gust blows along one of its lanes, from the first [x, z] towards the second. Something solid upwind is cover.
+  canopy_gale: {type: gust, area: [28, 71, 26, 54, 71, 46], every: 14, damage: 2, lanes: [[28, 36, 54, 36], [41, 46, 41, 26]]}
+  thorn_lanes:
+    type: lane
+    trail: sweet_berry_bush
+    area: [-23, 78, 115, 23, 78, 159]
+    every: 10
+    count: 2
+    damage: 7
+    burn: 5
+    lanes: [[0, 146, 0, 118], [-5, 148, -19, 127], [5, 148, 19, 127], [-8, 150, -21, 150], [8, 150, 21, 150]]
+  # A burndown lights one section each pulse. It falls away unless someone uses its device, which works once.
+  heart_deck:
+    type: burndown
+    area: [-23, 78, 115, 23, 78, 159]
+    sections:
+      - {box: [-10, 72, 115, 10, 82, 125], device: cistern_north}
+      - {box: [-23, 72, 115, -11, 82, 159], device: cistern_west}
+      - {box: [11, 72, 115, 23, 82, 159], device: cistern_east}
+  spore_drift: {type: gas, area: [-20, 77, 118, 20, 77, 156], every: 12, count: 2, damage: 0}
+  thorn_burst: {type: eruption, area: [-20, 77, 118, 20, 77, 156], every: 9, count: 3, damage: 5}
+
+# Sounds that drift through the dark. `every` is about how many seconds apart; `area` keeps one to a room.
+ambience:
+  - {sound: block.azalea_leaves.step, every: 12, volume: 0.6, pitch: 0.6}
+  - {sound: entity.spider.ambient, every: 20, volume: 0.45, pitch: 0.6}
+  - {sound: block.bamboo_wood_hanging_sign.step, every: 18, volume: 0.6, pitch: 0.5}
+  - {sound: entity.parrot.imitate.spider, every: 40, volume: 0.4, pitch: 0.6}
+  - {sound: item.elytra.flying, every: 34, volume: 0.12, pitch: 0.6}
+  - {sound: ambient.crimson_forest.mood, every: 40, volume: 0.8, pitch: 0.7}
+  - {sound: entity.spider.step, every: 8, volume: 0.5, pitch: 0.7, area: [-78, 60, 45, -42, 90, 85]}
+  - {sound: block.fire.ambient, every: 8, volume: 0.6, pitch: 0.6, area: [-23, 76, 115, 23, 100, 160]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
@@ -43,126 +122,213 @@ outro:
   - "Ranger Ilsa: 'Something sent that fire up through the roots, from where the water used to run. Find out why the aqueduct stopped.'"
 
 cutscenes:
+  # A flyover of the climb, branch by branch. `to` moves the camera over the shot; `fade` cuts to it.
   prologue:
-    - {at: [0.5, 90, -16, 0, 28], seconds: 5, title: "<green>Thornwood Canopy</green>", text: "<dark_green>The Heart Tree's crown</dark_green>", sound: "block.grass.place 0.6", lines: ["|The Wardens planted the Heart Tree to hold the islands' roots together.", "|Its roots still drink from the deep, and something in the deep is burning."]}
-    - {at: [0.5, 76, 44, 0, 25], seconds: 5, fade: true, lines: ["ilsa|The spiders came first. Then the archers in the high boughs.", "ilsa|Thin them out and the Shaman will have to come down himself."]}
-    - {at: [0.5, 78, 100, 0, 25], seconds: 4, lines: ["|At the Heart Tree, the Thornheart Shaman tends a fire that should never burn in living wood."]}
-  heart_tree:
-    - {at: [0.5, 76, 102, 0, 30], seconds: 3, text: "<dark_green>The Heart Tree stirs…</dark_green>", sound: "block.fire.ambient", lines: ["|Embers glow in the bark, deep in the grain."]}
-    - {at: [0.5, 68, 112, 0, 6], seconds: 4, title: "<green>The Thornheart Shaman</green>", text: "<gray>Keeper of the Heart Tree, rotted by embers</gray>", sound: "entity.evoker.prepare_summon 0.8", lines: ["The Thornheart Shaman|The fire below promised me a forest that never dies. Burn with me!"]}
+    - {at: [0.5, 70, 0, 0, 12], to: [0.5, 70, 8, 0, 8], seconds: 4, title: "<green>Thornwood Canopy</green>", text: "<dark_green>The Heart Tree's crown</dark_green>", sound: "block.azalea_leaves.step 0.6", lines: ["|The Wardens planted the Heart Tree to hold the islands' roots together. Its roots still drink from the deep, and something in the deep is burning."]}
+    - {at: [0.5, 71, 18, 0, 14], to: [0.5, 70, 38, 0, 10], seconds: 5, fade: true, lines: ["ilsa|The spiders came first. Then the archers in the high boughs."]}
+    - {at: [-5, 71, 55, -30, 24], to: [5, 71, 55, 30, 24], seconds: 4, fade: true, lines: ["|The Fork joins it all. West, a dead trunk full of something's young. East, the signal boughs, and the span they lower."]}
+    - {at: [-26, 69, 65, 90, 6], to: [-30, 68, 65, 90, 2], seconds: 3, fade: true, lines: ["ilsa|Don't go in that trunk without your wits about you."]}
+    - {at: [0.5, 82, 104, 0, -6], to: [0.5, 82, 112, 0, -9], seconds: 4, fade: true, lines: ["|At the top of the climb, the Thornheart Shaman tends a fire that should never burn in living wood."]}
+  # Timed with the Matron's entrance below: she comes down on a single thread.
+  matron_wakes:
+    - {at: [-46, 67, 65, 90, -6], to: [-48, 67, 65, 90, -24], seconds: 3, sound: "entity.spider.ambient 0.5", lines: ["|Something shifts in the dark at the top of the trunk. A thread catches the light."]}
+    - {at: [-49, 67, 65, 90, -14], to: [-49, 67, 65, 90, 0], seconds: 5, title: "<green>The Briar Matron</green>", text: "<gray>Mother of the canopy</gray>", lines: ["The Briar Matron|More flies for my web."]}
+  verrin_wakes:
+    - {at: [41.5, 73, 43, 180, -18], to: [41.5, 73, 43, 180, -4], seconds: 5, sound: "item.elytra.flying 0.6", lines: ["|A rope drops out of the crown overhead, and a man comes down it hand over hand."]}
+    - {at: [41.5, 73, 43, 180, 0], seconds: 3, title: "<dark_green>Verrin</dark_green>", text: "<gray>Last of the high rangers</gray>", lines: ["Verrin|Twenty years on this perch. Nobody relieved me. Nobody passes."]}
+  # Timed with the Shaman's entrance below: fire runs down from the knots, and roots grow up round the spot.
+  heart_wakes:
+    - {at: [0.5, 83, 120, 0, 12], to: [0.5, 82, 126, 0, 8], seconds: 5, text: "<dark_green>The Heart Tree stirs…</dark_green>", sound: "block.fire.ambient 0.6", lines: ["|Embers glow deep in the bark, and run down the grain towards the deck."]}
+    - {at: [-11, 81, 131, -50, 8], to: [11, 81, 131, 50, 8], seconds: 5}
+    - {at: [0.5, 81, 129, 0, 6], to: [0.5, 80, 130, 0, 2], seconds: 2}
+    - {at: [0.5, 80, 130, 0, -4], seconds: 3, title: "<green>The Thornheart Shaman</green>", text: "<gray>Keeper of the Heart Tree, rotted by embers</gray>", sound: "entity.evoker.prepare_summon 0.8", lines: ["The Thornheart Shaman|The fire below promised me a forest that never dies. Burn with me!"]}
 
 mobs:
-  "custom:mire_weaver": {role: elite, abilities: [web, poison_cloud]}
-  "custom:thorn_sentinel": {role: normal, forces: 2}
-  "custom:briar_matron": {role: miniboss, abilities: [web, summon, poison_cloud], forces: 10}
+  # `on-death` is what a mob does as it falls.
+  "custom:canopy_stalker": {abilities: [leap]}
+  "custom:mire_weaver": {role: elite, abilities: [web, venom_spit], behavior: caster}
+  "custom:thorn_sentinel": {forces: 2, abilities: [cleave]}
+  "custom:bough_sniper": {forces: 2, abilities: [pin_shot, arrow_rain], behavior: caster}
+  "custom:sporeback": {forces: 2, abilities: [poison_cloud], on-death: spore_burst}
+  "custom:rotbark_acolyte": {forces: 3, abilities: [mend, root_snare], behavior: caster}
+  "custom:silk_cocoon": {forces: 0}
+  "custom:verrin_the_lost": {behavior: caster}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group. `leash` is how far they'll be
+# dragged from `at` before giving up. A pack with a `patrol` walks its stops, there and back.
+packs:
+  # The Low Boughs.
+  low_gate: {at: [0, 64, 21], mobs: {"custom:canopy_stalker": 3, "custom:thornling": 2}, aggro: 8}
+  low_west: {at: [-13, 64, 24], mobs: {"custom:mire_weaver": 1, "custom:canopy_stalker": 2}}
+  low_east: {at: [13, 64, 33], mobs: {"custom:bough_sniper": 2, "custom:thorn_sentinel": 1}}
+  low_walkers:
+    at: [0, 64, 31]
+    mobs: {"custom:sporeback": 2, "custom:canopy_stalker": 1}
+    aggro: 7
+    patrol: [[0, 64, 31], [0, 64, 44]]
+  low_far: {at: [-13, 64, 44], mobs: {"custom:rotbark_acolyte": 1, "custom:canopy_stalker": 2}}
+  # The Fork.
+  fork_north: {at: [-6, 64, 59], mobs: {"custom:canopy_stalker": 2, "custom:rotbark_acolyte": 1}}
+  fork_south: {at: [6, 64, 71], mobs: {"custom:thorn_sentinel": 2, "custom:bough_sniper": 1}}
+  # The Signal Boughs.
+  east_gate: {at: [27, 64, 65], mobs: {"custom:thorn_sentinel": 2, "custom:bough_sniper": 1}}
+  east_north: {at: [36, 64, 57], mobs: {"custom:bough_sniper": 2, "custom:rotbark_acolyte": 1}}
+  east_south: {at: [36, 64, 73], mobs: {"custom:sporeback": 2, "custom:canopy_stalker": 2}}
+  east_far: {at: [46, 64, 65], mobs: {"custom:mire_weaver": 1, "custom:thorn_sentinel": 1}}
+  # The Silk Walk: these must fall before the nest will open.
+  west_gate: {at: [-26, 64, 65], mobs: {"custom:thornling": 4, "custom:canopy_stalker": 2}}
+  west_weavers: {at: [-32, 64, 59], mobs: {"custom:mire_weaver": 2, "custom:thornling": 2}}
+  west_brood: {at: [-32, 64, 72], mobs: {"custom:sporeback": 2, "custom:rotbark_acolyte": 1}}
+  west_walkers:
+    at: [-37, 64, 65]
+    mobs: {"custom:canopy_stalker": 3}
+    aggro: 7
+    patrol: [[-37, 64, 65], [-28, 64, 65]]
+  # The guard at the Heart Gate, last before the grove.
+  heart_guard: {at: [0, 78, 108], mobs: {"custom:thorn_sentinel": 2, "custom:rotbark_acolyte": 1, "custom:sporeback": 1}, aggro: 7}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  hunters_cache: {at: [-8, 64, 62], kind: crate, title: "Hunter's Cache"}
-  sentinel_hoard: {at: [-20, 64, 62], kind: chest, title: "Sentinel's Hoard"}
-  hollow_trunk_stash: {at: [10, 64, 90], kind: secret, title: Hollow-Trunk Stash}
+  hunters_cache: {at: [13, 64, 19], kind: crate, title: "Hunter's Cache"}
+  sentinel_hoard: {at: [47, 64, 74], kind: chest, title: "Sentinel's Hoard"}
+  hollow_trunk_stash: {at: [-34, 66, 29], kind: secret, title: Hollow-Trunk Stash}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
+companion-drops:
+  matrons_nest: {companion: silkling, chance: 0.005}
+  verrins_perch: {companion: thistlewing, chance: 0.01}
+  heart_grove: {companion: sproutling, chance: 0.005}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [8, 64, 112]
-  bonus: [12, 64, 112]
+  free: [-4, 78, 146]
+  bonus: [4, 78, 146]
 
 rooms:
-  bough_run:
-    title: The Bough Run
-    region: [-10, 40, 11, 10, 80, 41]
+  signal_boughs:
+    title: The Signal Boughs
+    region: [23, 60, 54, 49, 76, 76]
+    requires: []
+    requires-packs: [east_gate, east_north, east_south, east_far]
     puzzles:
-      branches:
-        type: reach
-        title: Cross the branches to the hollow
-        area: [-4, 63, 42, 4, 67, 46]
-        start: [0, 64, 8, 0]
-        fail-below: 56
+      signal_boards:
+        type: targets
+        title: Shoot the four signal boards
+        blocks: [[27, 66, 58], [45, 66, 58], [27, 66, 72], [45, 66, 72]]
+        supply: [25, 64, 56]
+        seconds: 30
     encounter:
       type: puzzle
       scripts:
-        start: ["say ilsa|Pads and beams, one at a time. The leaves hold better than they look."]
-  webbed_hollow:
-    title: The Webbed Hollow
-    region: [-10, 60, 42, 5, 75, 64]
-    checkpoint: [0, 64, 62, 0]
-    points: [[-7, 64, 46], [2, 64, 46], [-7, 64, 58], [2, 64, 58], [-3, 64, 52], [1, 64, 61]]
+        start: ["say ilsa|Four boards. Hit them all before the first one drops back. There's a bow in the barrel by the rail."]
+        clear: ["build heart_span", "sound block.wooden_door.open 0.5", "say ilsa|That's the span down, south of the Fork. Now the way up is open."]
+  matrons_nest:
+    title: The Briar Matron
+    region: [-78, 60, 46, -42, 88, 84]
+    requires: []
+    requires-packs: [west_gate, west_weavers, west_brood, west_walkers]
+    seal: [-41, 64, 63, -41, 67, 67]
+    checkpoint: [-45, 64, 65, 90]
+    points: [[-60, 64, 65, 270], [-52, 64, 56], [-52, 64, 74], [-68, 64, 56], [-68, 64, 74]]
     encounter:
-      type: clear
+      type: boss
+      boss: custom:briar_matron
+      # She comes down from the top of the trunk on a single thread.
+      entrance: {style: descend, delay: 1, seconds: 7}
+      boss-damage: 0.75
+      abilities: [web_wrap, leap]
+      phases:
+        - {at: 50, abilities: [web_wrap, leap, poison_cloud, venom_spit], title: "The Matron stops playing with her food"}
+      enrage-seconds: 270
+      adds-at-health: [60]
       waves:
-        - {"custom:canopy_stalker": 4, "custom:mire_weaver": 2, "custom:thornling": 2}
+        - {"custom:canopy_stalker": 3}
       scripts:
-        start: ["say ilsa|Weavers! The pale ones spit webs and poison. Kill them first."]
-        clear: ["say ilsa|The hollow's clear. The archers' boughs are west if you want more; the nest is south."]
-  sentinel_boughs:
-    title: The Sentinel Boughs
+        start: ["cutscene matron_wakes", "wait 8", "say ilsa|Those sacs on the wall! Burst them before they hatch, and break anyone she wraps out of it!", "hazard start web_lines", "hazard start brood_sacs"]
+        health-50: ["say The Briar Matron|My children will eat well.", "hazard stop web_lines", "hazard start web_lines_doubled"]
+        clear:
+          - "hazard stop web_lines"
+          - "hazard stop web_lines_doubled"
+          - "hazard stop brood_sacs"
+          - "break nest_wall"
+          - "say ilsa|She's down! And she's broken through the south wall of the trunk. There's a catwalk behind it that runs to the foot of the climb."
+  verrins_perch:
+    title: Verrin's Perch
+    region: [28, 71, 26, 54, 90, 46]
+    requires: [signal_boughs]
     optional: true
-    requires: [webbed_hollow]
-    region: [-24, 60, 49, -17, 75, 63]
-    points: [[-22, 64, 52], [-19, 64, 52], [-22, 64, 60], [-19, 64, 60], [-20, 64, 56]]
+    seal: [40, 71, 47, 42, 74, 47]
+    checkpoint: [41, 71, 44, 180]
+    points: [[41, 71, 36, 0], [31, 71, 30], [51, 71, 30], [31, 71, 43], [51, 71, 43]]
     encounter:
-      type: clear
-      waves:
-        - {"custom:thorn_sentinel": 4, "custom:bough_sniper": 2}
+      type: boss
+      boss: custom:verrin_the_lost
+      entrance: {style: descend, delay: 1, seconds: 5}
+      boss-damage: 0.7
+      abilities: [pin_shot, arrow_rain]
+      phases:
+        - {at: 50, abilities: [pin_shot, arrow_rain, barrage, blink], title: "Verrin takes to the ropes"}
+      enrage-seconds: 200
       scripts:
-        start: ["message <gray>Bowstrings creak in the boughs.</gray>"]
-  briar_nest:
-    title: The Briar Matron's Nest
-    requires: [webbed_hollow]
-    region: [-8, 60, 71, 11, 75, 92]
-    checkpoint: [0, 64, 91, 0]
-    points: [[0, 64, 81], [-5, 64, 75], [8, 64, 75], [-5, 64, 88], [8, 64, 88]]
-    encounter:
-      type: waves
-      waves:
-        - {"custom:briar_matron": 1, "custom:thornling": 3}
-        - {mobs: {"custom:canopy_stalker": 3}, delay-seconds: 6}
-      scripts:
-        start:
-          - "say The Briar Matron|More flies for my web."
-          - "say ilsa|That's the Matron. Burn down her brood or she'll bury you in them."
-        clear: ["say ilsa|There's a hunter's fire past the nest. Light it; the grove is close."]
-  thornheart_grove:
+        start: ["cutscene verrin_wakes", "wait 8", "say ilsa|Mind the wind up there! When the leaves stream past you, get behind a stump.", "hazard start canopy_gale"]
+        clear: ["hazard stop canopy_gale", "say ilsa|He's stopped, then. I'll climb up and bring him down myself, when this is over."]
+  heart_grove:
     title: The Thornheart Grove
-    requires: [briar_nest]
-    region: [-14, 60, 103, 14, 80, 130]
-    points: [[0, 64, 114], [-9, 64, 108], [9, 64, 108], [-10, 64, 116], [10, 64, 116]]
+    region: [-23, 72, 115, 23, 112, 159]
+    requires: [signal_boughs, matrons_nest]
+    requires-packs: [heart_guard]
+    seal: [-2, 78, 115, 2, 81, 115]
+    checkpoint: [0, 78, 130, 0]
+    # The first point is where the roots bring him up; adds use the others.
+    points: [[0, 78, 137, 180], [-6, 78, 131], [6, 78, 131], [-6, 78, 143], [6, 78, 143]]
     encounter:
       type: boss
       boss: custom:thornheart_shaman
+      # Fire runs from the rot in the bark to the deck, and a cage of roots grows up and bursts open round him.
+      entrance:
+        style: bloom
+        delay: 1
+        seconds: 12
+        sources: [[-5, 80, 149], [5, 80, 149], [-3, 84, 148], [3, 84, 148], [0, 88, 147], [-7, 83, 152], [7, 83, 152]]
       boss-level-bonus: 3
-      abilities: [poison_cloud, tether]
+      abilities: [root_snare, poison_cloud, tether]
       phases:
-        - {at: 60, abilities: [poison_cloud, tether, summon], title: "The grove answers the shaman"}
-        - {at: 30, abilities: [fire_pools, tether, summon], title: "The Heart Tree bleeds"}
+        - {at: 60, abilities: [root_snare, poison_cloud, tether, summon], title: "The grove answers the shaman"}
+        - {at: 30, abilities: [root_snare, fire_pools, tether, summon, volatile_mark], title: "The Heart Tree bleeds"}
       enrage-seconds: 360
       adds-at-health: [50]
       waves:
         - {"custom:canopy_stalker": 3}
       scripts:
-        start:
-          - "cutscene heart_tree"
-          - "wait 7"
-          - "say The Thornheart Shaman|You burned my children. The wood remembers."
-        health-60: ["hazard start spore_cloud"]
+        start: ["cutscene heart_wakes", "wait 15", "hazard start thorn_lanes"]
+        health-75: ["say ilsa|The deck's caught! There are rain cisterns on the sound boards. Tip one out, or that whole stretch goes!", "hazard pulse heart_deck"]
+        health-60: ["hazard start spore_drift"]
+        health-45: ["hazard pulse heart_deck"]
         health-30: ["hazard start thorn_burst", "say The Thornheart Shaman|Root and thorn, rise!"]
-        clear: ["hazard stop spore_cloud", "hazard stop thorn_burst", "say ilsa|The canopy's quiet. Head out by the east steps when you're ready."]
+        health-20: ["hazard pulse heart_deck"]
+        enrage: ["say The Thornheart Shaman|Burn, all of it, and let it grow again!"]
+        clear: ["hazard stop thorn_lanes", "hazard stop spore_drift", "hazard stop thorn_burst", "hazard stop heart_deck", "npc ilsa 3 78 142 0", "say ilsa|It's over. Go out by the split in the trunk when you're ready. I've a friend to fetch."]
 
+# Shown in the guide book (/expedition guide thornwood_canopy) and on the website.
 guide:
-  lore: "The Heart Tree was planted by the Wardens to bind the islands' roots, and its shamans have tended it since the Sundering. Its roots drink from the deep places of the world, and lately the deep has been burning. The Thornheart Shaman tasted the ember-rot in the sap and heard a promise in it: a forest that never dies. Now thorns choke the canopy, spiders nest in the hollows, and Ranger Ilsa is one of the few who still climbs it."
-  overview: A night climb through the treetops. Thin out the spiders and archers (watch the enemy forces bar) until the Thornheart Shaman comes down to fight at the Heart Tree.
+  lore: "The Heart Tree was planted by the Wardens to bind the islands' roots, and its shamans have tended it since the Sundering. Its roots drink from the deep places of the world, and lately the deep has been burning. The Thornheart Shaman tasted the ember-rot in the sap and heard a promise in it: a forest that never dies. Now thorns choke the canopy, spiders nest in the dead trunks, and Ranger Ilsa is one of the few who still climbs it. Her partner Verrin went up to the high perch years ago and never came down."
+  overview: A night climb through the treetops, with a long way down. Thin out what lives in the canopy (watch the enemy forces bar), lower the span from the Signal Boughs in the east, and kill the Briar Matron in the dead trunk to the west. Then the climb opens to the Heart Gate and the Thornheart Shaman. Verrin waits on the high perch for anyone who goes looking.
   tips:
-    - The final grove stays shut until enemy forces reach 100%. The optional Sentinel Boughs to the west help if you're short.
-    - Falling off the Bough Run puts you back on the deck without spending a life.
-    - Mire Weavers are elites. Their webs pin you; break line of sight or kill them first.
-    - Bring fire resistance and a bucket of milk for the grove's spores.
+    - Enemy forces fill as you kill. The Heart Gate stays shut until they reach 100%, the span is down and the Matron is dead, so clear more than you strictly have to.
+    - If you fall, a ranger's line hauls you back to where you last stood and it stings. In a boss fight you land by the door.
+    - Light the fires at the Fork and the Heart Gate. If you fall in a fight, that's where you run back from, and everything you've killed stays dead.
+    - Mire Weavers and Rotbark Acolytes hang back. A green line means venom is coming down it, so sidestep, and stop an Acolyte's mending with a charged hit.
+    - Sporebacks burst as they die. Step off the ring around the body.
+    - Something's tucked away off the west rail of the Low Boughs, if you can make the jumps.
   rooms:
-    bough_run: A jump course of leaf pads and log beams. One step up, one long beam.
-    webbed_hollow: Spiders, cave spiders and two Mire Weavers all at once.
-    sentinel_boughs: Optional. Thorn Sentinels and skeletons shooting from a perch to the west; each counts double.
-    briar_nest: The Briar Matron webs and poisons, and calls more spiders. A second brood follows.
-    thornheart_grove: The Thornheart Shaman fights with fangs from the ground and summoned vexes, plus his own abilities.
-  boss: The Thornheart Shaman (an evoker) snaps rows of fangs up from the deck and calls vexes, as evokers do. He also drops poison clouds and chains players to him. At 60% the grove fills with spores and he calls spiders; at 30% fire pools join in and thorns burst from the deck. Spread out for the fangs, and kill the vexes fast.
+    signal_boughs: East of the Fork. Clear the boughs, take a bow from the barrel by the rail and hit all four signal boards within 30 seconds. That lowers the span south of the Fork.
+    matrons_nest: West of the Fork, past the Silk Walk, which has to be clear before the trunk will open. Her webs run down the pale strips in the floor; the two props stop them. Right-click a glowing sac before it hatches. If she wraps someone, break the cocoon at their feet. Below half she throws venom and the webs come two at a time. Killing her breaks the south wall, and the catwalk behind it runs to the foot of the climb.
+    verrins_perch: Optional. Up the stair from the Signal Boughs. Verrin shoots from a distance, and there are no rails to the north and east. When leaves stream past you the wind is about to hit, so get a stump between you and it. Below half he takes to the ropes and appears behind you.
+    heart_grove: The fire in the bark runs down to the deck, and roots grow up around the Shaman. Light the Heart Gate fire before you go in. See the boss briefing.
+  boss: The Thornheart Shaman (an evoker) snaps rows of fangs up from the deck and calls vexes, as evokers do. He also pins players with roots, drops poison clouds and chains players to him, while thorns run out along the roots in the boards. Three times the deck catches fire. Right-click that stretch's rain cistern before it falls; each works only once, and a stretch you lose stays gone. At 60% the grove fills with spores and he calls spiders; at 30% fire pools join in and thorns burst from the deck.
 loot:
   marks: 180
-  items: {string: 12, spider_eye: 4, experience_bottle: 4, oak_sapling: 2}
+  items: {briar_silk: 6, thornheart_sap: 2, experience_bottle: 4}
+# Campaign credit is set in the season file (campaign/season.yml), not here.

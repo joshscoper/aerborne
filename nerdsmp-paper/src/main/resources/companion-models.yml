@@ -236,3 +236,49 @@ lilypip:
     - { block: MOSS_BLOCK, at: [4.8, 2.6, -1.2], size: [3, 5, 6], group: leg_a }
     - { block: SMOOTH_SANDSTONE, at: [-5.2, 0.4, 2.4], size: [3, 0.8, 3], group: leg_b }
     - { block: SMOOTH_SANDSTONE, at: [5.2, 0.4, 2.4], size: [3, 0.8, 3], group: leg_a }
+
+silkling:
+  bounce: trot
+  pivots:
+    head: [0, 5, 3]
+  parts:
+    - { block: WHITE_WOOL, at: [0, 5, -2.2], size: [6, 5, 6] }
+    - { block: LIGHT_GRAY_WOOL, at: [0, 7.6, -2.2], size: [3, 0.4, 3] }
+    - { block: GRAY_CONCRETE, at: [0, 4.6, 2], size: [4, 3.4, 3], group: head }
+    - { block: RED_CONCRETE, at: [-1, 5.2, 3.6], size: [0.8, 0.8, 0.3], glow: true, group: head }
+    - { block: RED_CONCRETE, at: [1, 5.2, 3.6], size: [0.8, 0.8, 0.3], glow: true, group: head }
+    - { block: BLACK_CONCRETE, at: [-3.8, 2.2, 1.8], size: [5, 0.8, 0.8], group: leg_a }
+    - { block: BLACK_CONCRETE, at: [3.8, 2.2, 1.8], size: [5, 0.8, 0.8], group: leg_b }
+    - { block: BLACK_CONCRETE, at: [-3.8, 2.2, -0.4], size: [5, 0.8, 0.8], group: leg_b }
+    - { block: BLACK_CONCRETE, at: [3.8, 2.2, -0.4], size: [5, 0.8, 0.8], group: leg_a }
+    - { block: BLACK_CONCRETE, at: [-3.8, 2.2, -2.6], size: [5, 0.8, 0.8], group: leg_a }
+    - { block: BLACK_CONCRETE, at: [3.8, 2.2, -2.6], size: [5, 0.8, 0.8], group: leg_b }
+
+thistlewing:
+  bounce: none
+  pivots:
+    head: [0, 8, 2]
+  parts:
+    - { block: BROWN_CONCRETE, at: [0, 6, 0], size: [3.4, 3.4, 6] }
+    - { block: WHITE_CONCRETE, at: [0, 5, 0.6], size: [2.6, 1.6, 4.4] }
+    - { block: BROWN_TERRACOTTA, at: [0, 8, 3.4], size: [3, 3, 3], group: head }
+    - { block: YELLOW_CONCRETE, at: [0, 7.6, 5.2], size: [1, 0.9, 1], group: head }
+    - { block: BLACK_CONCRETE, at: [-1.1, 8.6, 4.9], size: [0.6, 0.6, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [1.1, 8.6, 4.9], size: [0.6, 0.6, 0.3], group: head }
+    - { block: BROWN_TERRACOTTA, at: [-5.4, 6.6, -0.2], size: [7.4, 0.7, 4.4], group: wing_left }
+    - { block: BROWN_TERRACOTTA, at: [5.4, 6.6, -0.2], size: [7.4, 0.7, 4.4], group: wing_right }
+    - { block: DARK_OAK_PLANKS, at: [0, 5.8, -4.6], size: [2.8, 0.6, 3.6], group: tail }
+
+sproutling:
+  bounce: hop
+  pivots:
+    head: [0, 7, 0]
+  parts:
+    - { block: DARK_OAK_LOG, at: [0, 5, 0], size: [4.4, 6, 4.4] }
+    - { block: BLACK_CONCRETE, at: [-1.1, 6, 2.3], size: [0.8, 1, 0.3] }
+    - { block: BLACK_CONCRETE, at: [1.1, 6, 2.3], size: [0.8, 1, 0.3] }
+    - { block: DARK_OAK_LOG, at: [-1.3, 1.2, 0], size: [1.5, 2.4, 1.5], group: leg_a }
+    - { block: DARK_OAK_LOG, at: [1.3, 1.2, 0], size: [1.5, 2.4, 1.5], group: leg_b }
+    - { block: MOSS_BLOCK, at: [0, 8.8, 0], size: [6.2, 2, 6.2], group: head }
+    - { block: FLOWERING_AZALEA_LEAVES, at: [0, 10.8, 0], size: [4.4, 2.2, 4.4], group: head }
+    - { block: LIME_CONCRETE, at: [0, 12.6, 0], size: [0.8, 1.6, 0.8], group: head }

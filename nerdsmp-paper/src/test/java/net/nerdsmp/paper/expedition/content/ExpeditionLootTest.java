@@ -112,6 +112,11 @@ class ExpeditionLootTest {
         assertEquals(Set.of("wardens_hall", "widows_cell", "kings_rest"), bosses.getKeys(false));
         for (String room : bosses.getKeys(false)) for (String item : bosses.getStringList(room))
             assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
+        var canopy = loot.getConfigurationSection("expeditions.thornwood_canopy.bosses");
+        assertEquals(Set.of("matrons_nest", "verrins_perch", "heart_grove"), canopy.getKeys(false));
+        for (String room : canopy.getKeys(false)) for (String item : canopy.getStringList(room))
+            assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
+        for (String item : added) assertFalse(relics.contains(item), item + " would lose to the catalog's own item");
     }
 
     @Test void aBossChestAlwaysPaysAndItsRarestItemIsRare() {
@@ -146,9 +151,13 @@ class ExpeditionLootTest {
         org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> ExpeditionLoot.forgeCost(table, "found_ring", 8));
     }
 
-    @Test void theBarrowHasGearForEverySlot() {
+    @Test void theBarrowHasGearForEverySlot() { hasGearForEverySlot("hollow_barrow"); }
+
+    @Test void theCanopyHasGearForEverySlot() { hasGearForEverySlot("thornwood_canopy"); }
+
+    private static void hasGearForEverySlot(String expedition) {
         YamlConfiguration loot = resource("/content/expedition-loot.yml"), abilities = resource("/content/item-abilities.yml");
-        var barrow = loot.getConfigurationSection("expeditions.hollow_barrow");
+        var barrow = loot.getConfigurationSection("expeditions." + expedition);
         var relics = resource("/content/relics.yml").getConfigurationSection("relics");
         var added = abilities.getConfigurationSection("items");
         java.util.Set<String> slots = new java.util.TreeSet<>(), items = new java.util.LinkedHashSet<>(barrow.getStringList("gear"));

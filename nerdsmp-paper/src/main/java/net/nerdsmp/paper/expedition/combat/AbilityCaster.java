@@ -51,7 +51,12 @@ public final class AbilityCaster {
         void temporary(Block block, Material type, int ticks);
         /** Who the caster is fighting: the top of its threat table. */
         default LivingEntity target(LivingEntity caster) { return null; }
+        /** Spawns a mob that doesn't move, tracked by the room, or null if it can't. */
+        default LivingEntity fixture(String mob, Location at) { return null; }
     }
+
+    /** How long silk holds a player if nobody breaks the cocoon. */
+    private static final int WRAP_TICKS = 120;
 
     private final Plugin plugin;
     private final Set<UUID> channeling = new HashSet<>();
@@ -100,6 +105,9 @@ public final class AbilityCaster {
             case "ambush" -> ambush(caster, arena, targets, power);
             case "bone_throw" -> boneThrow(caster, arena, power);
             case "bone_wave" -> boneWave(caster, arena, power);
+            case "venom_spit" -> venomSpit(caster, arena, power);
+            case "root_snare" -> rootSnare(caster, arena, targets, power);
+            case "web_wrap" -> webWrap(caster, arena, targets, power);
             default -> false;
         };
     }
@@ -109,7 +117,7 @@ public final class AbilityCaster {
         return switch (ability) {
             case "mend", "ward" -> arena.friends(caster, 10).stream().anyMatch(friend -> ratio(friend) < .8);
             case "rally" -> arena.friends(caster, 10).size() > 1;
-            case "bolt", "heavy_blow", "pin_shot", "bone_throw" -> {
+            case "bolt", "heavy_blow", "pin_shot", "bone_throw", "venom_spit" -> {
                 LivingEntity target = arena.target(caster);
                 yield target != null && caster.hasLineOfSight(target);
             }
@@ -461,8 +469,123 @@ public final class AbilityCaster {
         return true;
     }
 
+    private boolean rootSnare(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location at = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        caster.getWorld().playSound(at, Sound.BLOCK_ROOTS_BREAK, 1.4F, .6F);
+        repeat(caster, arena, 4, 5, tick -> Telegraph.disc(at, 1.9, Telegraph.POISON), () -> {
+            Telegraph.spikes(plugin, at, Material.DARK_OAK_LOG, 9, 1.8, 1.7F);
+            Telegraph.shards(at, 24, 1, Material.DARK_OAK_LEAVES);
+            caster.getWorld().playSound(at, Sound.BLOCK_ROOTED_DIRT_PLACE, 1.4F, .6F);
+            for (Player player : arena.near(at, 2.1)) {
+                hit(player, caster, 4 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 5));
+            }
+        });
+        return true;
+    }
+
+    /** A green line to the target, then venom down it. Anyone standing on the line is hit. */
+    private boolean venomSpit(LivingEntity caster, Arena arena, double power) {
+        LivingEntity target = arena.target(caster);
+        if (target == null || !caster.hasLineOfSight(target)) return false;
+        hold(caster, 24);
+        Location from = caster.getEyeLocation();
+        Location[] to = {target.getEyeLocation()};
+        caster.getWorld().playSound(from, Sound.ENTITY_SPIDER_HURT, 1.2F, .6F);
+        repeat(caster, arena, 4, 5, tick -> {
+            if (tick < 2 && target.isValid()) to[0] = target.getEyeLocation();
+            Telegraph.line(from, to[0], Telegraph.POISON);
+        }, () -> {
+            caster.getWorld().playSound(from, Sound.ENTITY_LLAMA_SPIT, 1.4F, .6F);
+            Vector along = to[0].toVector().subtract(from.toVector());
+            double length = along.length();
+            along.normalize();
+            for (double step = 0; step < length; step += .8) caster.getWorld().spawnParticle(Particle.SPIT, from.clone().add(along.clone().multiply(step)), 1, 0, 0, 0, 0);
+            for (Player player : arena.targets(caster, 24)) {
+                Vector offset = player.getLocation().add(0, 1, 0).toVector().subtract(from.toVector());
+                double reach = Math.clamp(offset.dot(along), 0, length);
+                if (offset.subtract(along.clone().multiply(reach)).lengthSquared() > 1.6 * 1.6) continue;
+                hit(player, caster, 4 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0));
+            }
+        });
+        return true;
+    }
+
+    /** Silk closes round a player the caster isn't fighting. It holds and poisons them until the cocoon at their feet is broken. */
+    private boolean webWrap(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        LivingEntity fought = arena.target(caster);
+        List<Player> others = targets.stream().filter(player -> player != fought).toList();
+        List<Player> pool = others.isEmpty() ? targets : others;
+        Player wrapped = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        caster.getWorld().playSound(wrapped.getLocation(), Sound.ENTITY_SPIDER_AMBIENT, 1.4F, .5F);
+        net.nerdsmp.paper.presentation.Chat.bar(wrapped, "<red>Silk is closing round you!</red>");
+        repeat(caster, arena, 3, 5, tick -> Telegraph.ring(wrapped.getLocation(), 1.4, Telegraph.SHADOW), () -> {
+            if (!wrapped.isValid() || wrapped.isDead()) return;
+            Location anchor = wrapped.getLocation();
+            LivingEntity cocoon = arena.fixture("custom:silk_cocoon", anchor);
+            if (cocoon == null) return;
+            org.bukkit.entity.BlockDisplay shell = anchor.getWorld().spawn(anchor, org.bukkit.entity.BlockDisplay.class, display -> {
+                display.setBlock(Material.COBWEB.createBlockData());
+                display.setPersistent(false);
+                display.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-.7F, 0, -.7F), new org.joml.Quaternionf(), new org.joml.Vector3f(1.4F, 2.2F, 1.4F), new org.joml.Quaternionf()));
+            });
+            net.nerdsmp.paper.presentation.Chat.bar(wrapped, "<red>You're wrapped!</red> <gray>Break the cocoon at your feet.</gray>");
+            caster.getWorld().playSound(anchor, Sound.BLOCK_WOOL_PLACE, 1.4F, .6F);
+            int[] tick = {0};
+            Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                boolean over = !arena.live() || !cocoon.isValid() || cocoon.isDead() || !wrapped.isValid() || wrapped.isDead() || tick[0] >= WRAP_TICKS;
+                if (over) {
+                    task.cancel();
+                    shell.remove();
+                    if (cocoon.isValid()) cocoon.remove();
+                    return;
+                }
+                tick[0] += 5;
+                if (wrapped.getLocation().distanceSquared(anchor) > .25) {
+                    Location held = anchor.clone();
+                    held.setYaw(wrapped.getYaw());
+                    held.setPitch(wrapped.getPitch());
+                    wrapped.teleport(held);
+                }
+                if (tick[0] % 20 == 0) {
+                    wrapped.damage(1.5 * power);
+                    wrapped.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 25, 0));
+                }
+            }, 0L, 5L);
+        });
+        return true;
+    }
+
+    /** It swells as it dies, then bursts, and a cloud hangs where it fell. */
+    private void sporeBurst(Location at, Arena arena) {
+        at.getWorld().playSound(at, Sound.ENTITY_SLIME_SQUISH, 1.2F, .5F);
+        int[] tick = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!arena.live()) { task.cancel(); return; }
+            if (tick[0]++ < 4) {
+                Telegraph.ring(at, 2.6, Telegraph.POISON);
+                Telegraph.shards(at.clone().add(0, .3, 0), 5, .3, Material.BROWN_MUSHROOM_BLOCK);
+                return;
+            }
+            task.cancel();
+            Telegraph.shards(at.clone().add(0, .6, 0), 36, 1.4, Material.BROWN_MUSHROOM_BLOCK);
+            at.getWorld().playSound(at, Sound.BLOCK_FUNGUS_BREAK, 1.6F, .5F);
+            at.getWorld().spawn(at, AreaEffectCloud.class, cloud -> {
+                cloud.setRadius(2.6F);
+                cloud.setDuration(80);
+                cloud.setRadiusPerTick(0F);
+                cloud.setWaitTime(0);
+                cloud.setReapplicationDelay(20);
+                cloud.setColor(Telegraph.POISON);
+                cloud.addCustomEffect(new PotionEffect(PotionEffectType.POISON, 50, 0), true);
+            });
+        }, 0L, 5L);
+    }
+
     /** A thrall comes apart as it falls, and what's left of it flies out a moment later. */
     public void deathThroe(String ability, Location at, Arena arena) {
+        if (ability.equals("spore_burst") && !arena.near(at, 12).isEmpty()) sporeBurst(at, arena);
         if (!ability.equals("bone_burst") || arena.near(at, 12).isEmpty()) return;
         at.getWorld().playSound(at, Sound.ENTITY_SKELETON_DEATH, 1F, .7F);
         int[] tick = {0};

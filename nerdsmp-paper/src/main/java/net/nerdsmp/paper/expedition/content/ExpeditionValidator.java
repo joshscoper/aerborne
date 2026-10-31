@@ -310,6 +310,16 @@ public final class ExpeditionValidator {
                 case LANE -> { if (hazard.lanes().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no lanes to run down.", "lanes: [[x1, z1, x2, z2], ...]"); }
                 case COLLAPSE -> { if (hazard.spots().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has nothing to bring down.", "spots: [[x, y, z], ...]"); }
                 case VIGIL -> { if (hazard.devices().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no devices to snuff.", "devices: [id, ...]"); }
+                case BROOD -> {
+                    if (hazard.devices().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no devices to swell.", "devices: [id, ...]");
+                    if (hazard.mob() == null) error(issues, "Hazard '" + hazard.id() + "' needs a mob to hatch.", "mob: custom:thornling");
+                }
+                case BURNDOWN -> {
+                    if (hazard.sections().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no sections to burn.", "sections: [{box: [...], device: id}, ...]");
+                    for (var section : hazard.sections())
+                        if (!story.devices().containsKey(section.device())) error(issues, "Hazard '" + hazard.id() + "' names unknown device '" + section.device() + "'.", where + ".sections");
+                }
+                case GUST -> { if (hazard.lanes().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no wind to blow.", "lanes: [[x1, z1, x2, z2], ...]"); }
                 default -> { }
             }
             for (String device : hazard.devices())

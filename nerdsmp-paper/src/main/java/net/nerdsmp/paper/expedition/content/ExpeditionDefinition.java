@@ -76,22 +76,22 @@ public record ExpeditionDefinition(
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
                         List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro,
                         Map<String, Pack> packs, int recordsVersion, Map<String, CompanionDrop> companionDrops,
-                        Map<String, Device> devices, List<Ambience> ambience) {
+                        Map<String, Device> devices, List<Ambience> ambience, Falls falls, String motes) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null, null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
+            Map.of(), null, null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
-                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
         }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
-                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
         }
 
         public Story {
@@ -164,27 +164,44 @@ public record ExpeditionDefinition(
      * Arena hazards, always telegraphed before they land. The first four strike patches of floor. The
      * rest use the room itself: a {@code LANE} rolls down one of its {@code lanes} until a wall or column
      * stops it, a {@code COLLAPSE} drops the next of its hanging {@code spots}, and a {@code VIGIL} snuffs
-     * one of its {@code devices}, which spreads a pool until someone lights it again.
+     * one of its {@code devices}, which spreads a pool until someone lights it again. A {@code BROOD} swells
+     * one of its {@code devices}, which hatches {@code mob} unless someone bursts it first. A {@code BURNDOWN}
+     * sets one of its {@code sections} alight, which falls away unless someone uses that section's device.
+     * A {@code GUST} blows along one of its {@code lanes}, pushing anyone in {@code area} without cover.
      */
     public enum HazardType {
-        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL;
+        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL, BROOD, BURNDOWN, GUST;
 
-        public boolean usesRoom() { return this == LANE || this == COLLAPSE || this == VIGIL; }
+        public boolean usesRoom() { return ordinal() >= LANE.ordinal(); }
     }
 
     /** A straight run across the floor, from one [x, z] to another. */
     public record Lane(int x1, int z1, int x2, int z2) { }
 
+    /** A stretch of floor that can burn away, and the device that saves it. */
+    public record Section(Box box, String device) { }
+
+    /** Anyone below {@code below} is caught and put back, for {@code damage} and with {@code message}. */
+    public record Falls(int below, double damage, String message) { }
+
     /**
      * A hazard over an area: every {@code everySeconds} it strikes {@code count} spots for {@code damage}.
-     * A lane can leave the floor burning for {@code burnSeconds}, and {@code soul} draws it in blue.
+     * A lane can leave the floor burning for {@code burnSeconds}, and {@code soul} draws it in blue. With a
+     * {@code trail} a lane leaves that block behind for {@code burnSeconds} instead, and poisons.
      */
     public record Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage,
-                         List<Lane> lanes, List<Point> spots, List<String> devices, int burnSeconds, boolean soul) {
+                         List<Lane> lanes, List<Point> spots, List<String> devices, int burnSeconds, boolean soul,
+                         String trail, String mob, List<Section> sections) {
         public Hazard {
             lanes = lanes == null ? List.of() : List.copyOf(lanes);
             spots = spots == null ? List.of() : List.copyOf(spots);
             devices = devices == null ? List.of() : List.copyOf(devices);
+            sections = sections == null ? List.of() : List.copyOf(sections);
+        }
+
+        public Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage,
+                      List<Lane> lanes, List<Point> spots, List<String> devices, int burnSeconds, boolean soul) {
+            this(id, type, area, everySeconds, count, damage, lanes, spots, devices, burnSeconds, soul, null, null, List.of());
         }
 
         public Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage) {
@@ -393,7 +410,7 @@ public record ExpeditionDefinition(
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
     /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
-    public enum EntranceStyle { RISE, REANIMATE, SUMMON }
+    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM }
 
     /**
      * How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds}

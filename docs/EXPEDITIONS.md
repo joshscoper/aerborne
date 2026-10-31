@@ -144,7 +144,7 @@ and other members need only be allowed into the expedition itself.
 |---|---|---|---|
 | `first_flight` | Sky islands at dusk, level 2 (tutorial) | 1–5 | Skyhop Crossing (jump course) → The Lever Lock (lever puzzle) → Wayfarer's Fire (campfire) → The Training Yard (2 waves, an elite) → The Sentinel's Rest (The Old Sentinel, slam; summons below 50%) |
 | `hollow_barrow` | Overworld crypt, level 8, rooms | 1–5 | Crypt Gallery (2 waves, Veil Stalker elites) → Ossuary (survive 45 s under bone rain) → Lever Vault (Barrow Warden mini-boss + four levers in the candles' order) → antechamber brazier → King's Rest (The Hollow Huntsman: cleave, summon; below 50% slam, tether, falling masonry) |
-| `thornwood_canopy` | Treetops at night, level 12, forces (30) | 1–5 | Bough Run (jump course) → Webbed Hollow (clear) → Sentinel Boughs (optional, archers worth double) → Briar Matron's Nest (mini-boss) → Hunter's Fire → Thornheart Grove (The Thornheart Shaman, an evoker: fangs and vexes plus poison, tether; spores and thorn bursts) |
+| `thornwood_canopy` | Treetops at night, level 12, forces (80) | 1–5 | Rootgate → Low Boughs → the Fork (hub) → east: Signal Boughs (four boards lower the span), then optional Verrin's Perch (boss in the wind) → west: Silk Walk, then the Briar Matron's Nest (boss; breaks open a catwalk) → the climb → Heart Gate → Thornheart Grove (The Thornheart Shaman) |
 | `sunken_aqueduct` | Flooded waterworks, level 16, timed (10 min, +2 min per room) | 1–5 | Sluice Hall (waves + three valves in the shown order, which drain the channel) → Cistern (survive 50 s, geysers) → Floodgate Control (clear + two counterweight plates) → Pumphouse Stove → Tidewarden's Basin (The Tidewarden: tether, frost nova; below 50% meteor, summon, geysers) |
 | `gloomforge_mines` | Deep mines, level 20, rooms | 1–5 | Ore Galleries (waves + three alarm targets in 25 s) → Grell's Shaft (Overseer Grell) → Blasting Hall (the Blastmaster + two ore-cart plates, blasting charges) → Slag Pits (the Slag Hound, rockfall) → Miners' Rest → Foreman's Delve (The Deep Foreman: slam, summon; below 50% meteor, charge, collapsing pillars) |
 | `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | From the concourse, three wings in any order: Ember Antechamber (four brazier targets) → Ember Throne; Frost Antechamber (four chimes in the shown order) → Frost Hall; Stone Antechamber (three plates) → Stone Court |
@@ -584,8 +584,19 @@ npcs:
   fired (a chandelier hub, with its arms and chain) after a three-second warning. It hits anyone
   underneath, and a boss caught there loses 6% of its health and staggers, so it can be lured. A
   `vigil` snuffs `count` of its `devices` every `every` seconds, and a pool spreads from each until a
-  player right-clicks it to light it again.
-- **Devices** are lit blocks players right-click in a fight: campfires, candles, anything that can be lit.
+  player right-clicks it to light it again. With `trail: cobweb` a lane leaves that block behind for `burn`
+  seconds instead of fire, and poisons. A `brood` swells `count` of its `devices` every `every` seconds;
+  each hatches two of its `mob` after nine seconds unless a player right-clicks it first, and a sac that's
+  gone stays gone. A `burndown` lights one of its `sections` each time it's fired, each
+  `{box: [...], device: id}`: the box falls away after thirteen seconds unless a player right-clicks its
+  device, which works once. Keep the boss's spawn, its adds' spots and the reward chests out of every box.
+  A `gust` picks one of its `lanes` as a wind direction, warns for two and a half seconds, then pushes
+  anyone in `area` who has nothing solid within five blocks upwind.
+- **Falls.** `falls: {below: 52, damage: 4, message: "..."}` catches anyone below that height and puts
+  them back where they last stood, or at the room's checkpoint in a boss fight. It never kills. Enemies
+  that go over are put back too.
+- **Motes.** `motes: firefly` drifts that particle round each player. It has to be one that needs no data.
+- **Devices** are blocks players right-click in a fight: campfires, candles, sacs, cisterns.
 - **Ambience** plays each sound to each player from a spot off in the dark, about once every `every`
   seconds, and only inside `area` if it has one. A boss fight also has a heartbeat, which quickens as the
   boss weakens.
@@ -603,7 +614,7 @@ npcs:
   after the overview, and the website shows it.
 - **Boss name cards.** A boss's name appears as a title when it spawns, with the `title` from its
   `mobs:` profile underneath, unless a cutscene is introducing it.
-- **Boss entrances.** `entrance: {style: rise|reanimate|summon, delay: 3, seconds: 5}` on a boss encounter
+- **Boss entrances.** `entrance: {style: rise|reanimate|summon|descend|bloom, delay: 3, seconds: 5}` on a boss encounter
   holds the boss out of sight, untouchable, and brings it in `delay` seconds into the fight. `rise`
   climbs steadily through breaking floor. `reanimate` scatters a skeleton around the room's first point
   from the start of the run. List soul fires under `sources: [[x, y, z], ...]` and they go out one by

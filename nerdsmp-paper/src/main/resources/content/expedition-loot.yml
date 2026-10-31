@@ -19,6 +19,11 @@ expeditions:
     materials: [briar_silk, thornheart_sap, matrons_fang]
     gear: [thornwarden_hood, thornwarden_jerkin, thornwarden_leggings, thornwarden_boots, briarshot_crossbow]
     signatures: [thornheart_rapier]
+    finds: [rangers_roundel, acorn_cord, bark_spaulders, mossweave_cloak, vine_wraps, climbers_grips, rangers_sash, bramble_loop, ember_touched_acorn]
+    bosses:
+      matrons_nest: [silk_wrapped_bracers, spinneret_gloves, silkstrand_shawl, fang_of_the_matron, broodmothers_carapace, venomglass_vial, matrons_eye_pendant]
+      verrins_perch: [wind_cut_mantle, waywatcher_belt, rangers_oath_band, last_watch_hood, windward_boots, briarshot_crossbow, verrins_watchbow]
+      heart_grove: [rootbound_greaves, barkskin_helm, emberrot_buckler, heartwood_band, heart_seed, thornheart_cuirass, thornheart_rapier]
   sunken_aqueduct:
     materials: [tidepearl, sluice_cog, tidewardens_scale]
     gear: [tidebound_helm, tidebound_cuirass, tidebound_greaves, tidebound_boots, sluicebreaker_trident]

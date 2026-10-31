@@ -89,6 +89,8 @@ final class ExpeditionRun {
     private UUID barMiniboss;
     private final Map<UUID, Caster> casters = new HashMap<>();
     private final Map<UUID, Integer> forcesOf = new HashMap<>();
+    /** Where each player last stood, to put them back after a fall. */
+    private final Map<UUID, Location> footing = new HashMap<>();
     private final Map<UUID, Set<UUID>> shields = new HashMap<>();
     private final Map<UUID, Long> combat = new HashMap<>();
     private final RunPuzzles puzzles;
@@ -226,6 +228,11 @@ final class ExpeditionRun {
             @Override public void temporary(Block block, Material type, int ticks) { run.stage.temporary(block, type, ticks); }
             @Override public void broadcast(String markup) { run.broadcast(markup); }
             @Override public void bar(Player player, String markup) { Chat.bar(player, markup); }
+            @Override public void hatch(String mob, int count, Location at) {
+                Room active = run.progress.activeRoom();
+                if (active == null) return;
+                for (int copy = 0; copy < count; copy++) run.spawnAt(active, mob, at.clone().add((copy * 2 - 1) * .8, 0, 0), false);
+            }
             @Override public void script(String trigger) {
                 Room active = run.progress == null ? null : run.progress.activeRoom();
                 if (active != null) run.runScript(active.id(), active.encounter().script(trigger), 0);
@@ -472,6 +479,7 @@ final class ExpeditionRun {
         stage.tick(now);
         puzzles.tick(now);
         updateSeals(now);
+        catchEnemies();
         if (!bosses.isEmpty() && state == State.ACTIVE) {
             double percent = bossPercent();
             if (bossBar != null) bossBar.progress((float) Math.max(0, Math.min(1, percent / 100)));
@@ -521,8 +529,43 @@ final class ExpeditionRun {
     // Events routed from the service
     // ---------------------------------------------------------------------------------------------
 
+    /** Anyone off the edge is caught and put back where they last stood, or inside the fight they're in. */
+    private void caught(Player player, Location to) {
+        var falls = expedition.story().falls();
+        if (falls == null || player.getGameMode() == org.bukkit.GameMode.SPECTATOR || player.isDead()) return;
+        if (to.getY() >= falls.below()) {
+            // Only real floor counts: a client can call itself grounded in mid-air, just after a teleport.
+            if (to.clone().subtract(0, .2, 0).getBlock().isSolid()) footing.put(player.getUniqueId(), to.clone());
+            return;
+        }
+        Room room = progress.activeRoom();
+        Location back = footing.getOrDefault(player.getUniqueId(), new Location(world, expedition.spawn().x() + .5, expedition.spawn().y(), expedition.spawn().z() + .5));
+        if (room != null && room.bossRoom() && room.checkpoint() != null)
+            back = new Location(world, room.checkpoint().x() + .5, room.checkpoint().y(), room.checkpoint().z() + .5, room.checkpoint().yaw(), 0);
+        service.teleport(player, back);
+        player.setFallDistance(0);
+        player.setVelocity(new org.bukkit.util.Vector());
+        if (falls.damage() > 0) player.damage(Math.min(falls.damage(), Math.max(0, player.getHealth() - 1)));
+        player.getWorld().spawnParticle(Particle.CLOUD, back.clone().add(0, 1, 0), 16, .3, .5, .3, .03);
+        player.playSound(back, Sound.BLOCK_WOOL_PLACE, 1F, .8F);
+        Chat.notice(player, falls.message());
+        logAbility(player.getName() + " caught");
+    }
+
+    /** Enemies off the edge go back to the middle of the room they're fighting in. */
+    private void catchEnemies() {
+        var falls = expedition.story().falls();
+        Room room = progress.activeRoom();
+        if (falls == null || room == null || room.points().isEmpty()) return;
+        Point home = room.points().getFirst();
+        for (UUID uuid : engaged())
+            if (Bukkit.getEntity(uuid) instanceof LivingEntity enemy && enemy.getY() < falls.below() && !packs.member(uuid))
+                enemy.teleport(new Location(world, home.x() + .5, home.y(), home.z() + .5));
+    }
+
     void moved(Player player, Location to) {
         if (stage.inCutscene(player)) return;
+        if (state == State.ACTIVE || state == State.ENDING) caught(player, to);
         if (state == State.ACTIVE) {
             puzzles.moved(player, to);
             for (Room room : expedition.roomList())
@@ -1146,6 +1189,13 @@ final class ExpeditionRun {
                 LivingEntity helper = spawnAt(room, mob, caster.getLocation().clone().add((copy * 2 - 1) * 1.5, 0, 1), false);
                 if (helper != null) spawned.add(helper);
             }
+            return spawned;
+        }
+
+        @Override public LivingEntity fixture(String mob, Location at) {
+            Room room = progress.activeRoom();
+            LivingEntity spawned = room == null ? null : spawnAt(room, mob, at, false);
+            if (spawned instanceof Mob still) still.setAI(false);
             return spawned;
         }
 

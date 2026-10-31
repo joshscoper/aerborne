@@ -150,7 +150,9 @@ final class RunPacks {
         boolean target = false;
         double home = 0;
         Location center = live.center();
+        var falls = host.expedition().story().falls();
         for (LivingEntity member : members) {
+            if (falls != null && member.getY() < falls.below() && live.home.containsKey(member.getUniqueId())) member.teleport(live.home.get(member.getUniqueId()));
             home = Math.max(home, Math.sqrt(member.getLocation().distanceSquared(center)));
             if (member instanceof Mob mob && mob.getTarget() != null) target = true;
         }

@@ -112,10 +112,11 @@ public final class ExpeditionLoader {
             Box area = box(hazard, "area", path);
             if (area == null) throw new IllegalArgumentException(path + ".area: the floor it strikes, [x1, y1, z1, x2, y2, z2].");
             hazards.put(entry.getKey(), new ExpeditionDefinition.Hazard(entry.getKey(),
-                enumValue(ExpeditionDefinition.HazardType.class, hazard.getString("type", "rocks"), path + ".type", "rocks, fire, eruption, gas, lane, collapse or vigil"),
+                enumValue(ExpeditionDefinition.HazardType.class, hazard.getString("type", "rocks"), path + ".type", "rocks, fire, eruption, gas, lane, collapse, vigil, brood, burndown or gust"),
                 area, hazard.contains("every") ? integer(hazard, "every") : 8, hazard.contains("count") ? integer(hazard, "count") : 3,
                 hazard.contains("damage") ? hazard.getDouble("damage") : 6, lanes(hazard, path), points(hazard, "spots", path),
-                lower(hazard.getStringList("devices")), hazard.contains("burn") ? integer(hazard, "burn") : 0, hazard.getBoolean("soul", false)));
+                lower(hazard.getStringList("devices")), hazard.contains("burn") ? integer(hazard, "burn") : 0, hazard.getBoolean("soul", false),
+                lowerOrNull(hazard.getString("trail")), lowerOrNull(hazard.getString("mob")), deckSections(hazard, path)));
         }
         Map<String, ExpeditionDefinition.Device> devices = new LinkedHashMap<>();
         for (var entry : sections(yaml, "devices").entrySet()) {
@@ -181,7 +182,30 @@ public final class ExpeditionLoader {
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
             lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
-            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops, devices, ambience(yaml));
+            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops, devices, ambience(yaml),
+            falls(yaml), lowerOrNull(yaml.getString("motes")));
+    }
+
+    /** {@code falls: {below: 50, damage: 4, message: "..."}}. */
+    private static ExpeditionDefinition.Falls falls(ConfigurationSection yaml) {
+        ConfigurationSection falls = yaml.getConfigurationSection("falls");
+        if (falls == null) return null;
+        if (!falls.isInt("below")) throw new IllegalArgumentException("falls.below: the height anyone below is caught at.");
+        return new ExpeditionDefinition.Falls(falls.getInt("below"), falls.getDouble("damage", 0), falls.getString("message", "You fall, and something catches you."));
+    }
+
+    /** {@code sections: [{box: [x1, y1, z1, x2, y2, z2], device: id}, ...]}. */
+    private static List<ExpeditionDefinition.Section> deckSections(ConfigurationSection hazard, String path) {
+        List<ExpeditionDefinition.Section> sections = new ArrayList<>();
+        int index = 0;
+        for (Map<?, ?> raw : hazard.getMapList("sections")) {
+            index++;
+            if (!(raw.get("box") instanceof List<?> list) || list.size() != 6 || list.stream().anyMatch(value -> !(value instanceof Number)) || !(raw.get("device") instanceof String device))
+                throw new IllegalArgumentException(path + ".sections[" + index + "]: a section is {box: [x1, y1, z1, x2, y2, z2], device: id}.");
+            int[] v = list.stream().mapToInt(value -> ((Number) value).intValue()).toArray();
+            sections.add(new ExpeditionDefinition.Section(Box.of(v[0], v[1], v[2], v[3], v[4], v[5]), device.toLowerCase(Locale.ROOT)));
+        }
+        return sections;
     }
 
     /** {@code lanes: [[x1, z1, x2, z2], ...]}. */
@@ -283,7 +307,7 @@ public final class ExpeditionLoader {
         List<?> raw = entrance.getList("sources", List.of());
         for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise, reanimate or summon"), delay, seconds, sources);
+            path + ".entrance.style", "rise, reanimate, summon, descend or bloom"), delay, seconds, sources);
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {
