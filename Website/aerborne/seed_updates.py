@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 28
+LATEST = 29
 C = "static:img/companions/"
 
 
@@ -78,6 +78,8 @@ def apply(conn):
         _rev27(conn)
     if current < 28:
         _rev28(conn)
+    if current < 29:
+        _rev29(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -285,6 +287,21 @@ def _rev28(conn):
         row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
         if row and row['updated_by'] == 'starter content' and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() == old:
             conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
+
+
+REV29_OLD_BOTTLES = ('Right-click an **experience bottle** to choose a skill: the bottle gives that skill 10% of the XP it needs for its '
+                     'next level. **Greater** bottles give 25% and **Grand** bottles 60%; they come from expedition chests.')
+REV29_BOTTLES = ('Experience bottles hold what someone else already learned. Right-click a **Bottled Lesson** to uncork it and choose a '
+                 'skill: that skill gains 10% of the XP it needs for its next level. A **Bottled Lifetime** gives 25% and a '
+                 '**Bottled Legend** 60%; they come from expedition chests.')
+
+
+def _rev29(conn):
+    # Sites hold older versions of this guide, so only the sentence is swapped, and only where staff haven't edited it.
+    row = conn.execute("SELECT * FROM guides WHERE slug = 'skills-and-talents'").fetchone()
+    if row and row['updated_by'] == 'starter content' and REV29_OLD_BOTTLES in (row['body'] or ''):
+        conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?',
+                     (row['body'].replace(REV29_OLD_BOTTLES, REV29_BOTTLES), now_str(), row['id']))
 
 
 def _rev18(conn):

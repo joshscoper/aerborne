@@ -41,6 +41,24 @@ class DungeonGuideTests(unittest.TestCase):
         self.assertIn("Bottled Lessons", rows["expeditions"])
         conn.close()
 
+    def test_revision_29_swaps_the_bottle_sentence_in_an_older_guide(self):
+        conn = connect(self.app.config["DATABASE"])
+        older = "## An older section\n" + seed_updates.REV29_OLD_BOTTLES + " Shift-click a skill.\n"
+        conn.execute("UPDATE guides SET body = ?, updated_by = 'starter content' WHERE slug = 'skills-and-talents'", (older,))
+        conn.execute("UPDATE settings SET value = '28' WHERE key = 'seed_rev'")
+        conn.commit()
+        self.assertTrue(seed_updates.apply(conn))
+        body = conn.execute("SELECT body FROM guides WHERE slug = 'skills-and-talents'").fetchone()["body"]
+        conn.close()
+        self.assertIn("Bottled Lesson", body)
+        self.assertIn("## An older section", body)
+        self.assertIn("Shift-click a skill.", body)
+        self.assertNotIn("experience bottle**", body)
+
+    def test_the_shipped_guide_uses_the_new_bottle_sentence(self):
+        guide = next(g for g in reference_content.GUIDES if g["slug"] == "skills-and-talents")
+        self.assertIn(seed_updates.REV29_BOTTLES, guide["body"])
+
     def test_revision_27_keeps_staff_edits(self):
         conn = connect(self.app.config["DATABASE"])
         edited = "## Our own expedition notes\n"
