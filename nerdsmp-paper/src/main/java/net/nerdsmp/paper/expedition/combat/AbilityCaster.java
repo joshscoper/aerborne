@@ -47,6 +47,8 @@ public final class AbilityCaster {
         void shield(LivingEntity caster, List<LivingEntity> helpers);
         /** Places a block the run removes again after {@code ticks} (fire, webs). */
         void temporary(Block block, Material type, int ticks);
+        /** Who the caster is fighting: the top of its threat table. */
+        default LivingEntity target(LivingEntity caster) { return null; }
     }
 
     private final Plugin plugin;
@@ -64,7 +66,7 @@ public final class AbilityCaster {
     public boolean cast(String ability, LivingEntity caster, Arena arena, double power) {
         if (!caster.isValid() || caster.isDead() || busy(caster)) return false;
         List<Player> targets = arena.targets(caster, 24);
-        if (targets.isEmpty() && !ability.equals("mend")) return false;
+        if (targets.isEmpty() && !ability.equals("mend") && !ability.equals("ward")) return false;
         return switch (ability) {
             case "charge" -> charge(caster, arena, targets, power);
             case "cleave" -> cleave(caster, arena, targets, power);
@@ -82,7 +84,27 @@ public final class AbilityCaster {
             case "mend" -> mend(caster, arena);
             case "web" -> web(caster, arena, targets);
             case "wrath" -> wrath(caster, arena, power);
+            case "volatile_mark" -> volatileMark(caster, arena, targets, power);
+            case "bolt" -> bolt(caster, arena, power);
+            case "ward" -> ward(caster, arena);
+            case "dread_howl" -> dreadHowl(caster, arena);
+            case "rally" -> rally(caster, arena);
+            case "heavy_blow" -> heavyBlow(caster, arena, power);
+            case "soul_rend" -> soulRend(caster, arena, power);
             default -> false;
+        };
+    }
+
+    /** Whether an ability has any use right now, so a mob doesn't start casting it for nothing. */
+    public boolean useful(String ability, LivingEntity caster, Arena arena) {
+        return switch (ability) {
+            case "mend", "ward" -> arena.friends(caster, 10).stream().anyMatch(friend -> ratio(friend) < .8);
+            case "rally" -> arena.friends(caster, 10).size() > 1;
+            case "bolt", "heavy_blow" -> {
+                LivingEntity target = arena.target(caster);
+                yield target != null && caster.hasLineOfSight(target);
+            }
+            default -> true;
         };
     }
 
@@ -317,26 +339,13 @@ public final class AbilityCaster {
     private boolean mend(LivingEntity caster, Arena arena) {
         List<LivingEntity> wounded = arena.friends(caster, 10).stream().filter(friend -> ratio(friend) < .9).toList();
         if (wounded.isEmpty()) return false;
-        double start = caster.getHealth();
-        double cap = maxHealth(caster);
         caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ILLUSIONER_PREPARE_MIRROR, 1F, 1.2F);
-        hold(caster, 40);
-        boolean[] broken = {false};
-        repeat(caster, arena, 8, 5, tick -> {
-            // Burst it down mid-channel to interrupt.
-            if (start - caster.getHealth() >= cap * .12) broken[0] = true;
-            if (!broken[0]) caster.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, caster.getLocation().add(0, 1.2, 0), 8, .5, .6, .5, 0);
-        }, () -> {
-            if (broken[0]) {
-                caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ITEM_BREAK, 1F, .6F);
-                return;
-            }
-            for (LivingEntity friend : arena.friends(caster, 10)) {
-                double max = maxHealth(friend);
-                friend.setHealth(Math.min(max, friend.getHealth() + max * .15));
-                friend.getWorld().spawnParticle(Particle.HEART, friend.getLocation().add(0, friend.getHeight() + .3, 0), 3, .3, .2, .3, 0);
-            }
-        });
+        caster.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, caster.getLocation().add(0, 1.2, 0), 16, .5, .6, .5, 0);
+        for (LivingEntity friend : arena.friends(caster, 10)) {
+            double max = maxHealth(friend);
+            friend.setHealth(Math.min(max, friend.getHealth() + max * .15));
+            friend.getWorld().spawnParticle(Particle.HEART, friend.getLocation().add(0, friend.getHeight() + .3, 0), 3, .3, .2, .3, 0);
+        }
         return true;
     }
 
@@ -348,6 +357,81 @@ public final class AbilityCaster {
             Block feet = at[0].getBlock();
             if (feet.getType().isAir()) arena.temporary(feet, Material.COBWEB, 60);
         });
+        return true;
+    }
+
+
+    /** Marks a player: the ring follows them for four seconds, then bursts on everyone near them. */
+    private boolean volatileMark(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player marked = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        marked.sendActionBar(net.kyori.adventure.text.Component.text("You are marked! Get away from the others!", net.kyori.adventure.text.format.NamedTextColor.RED));
+        marked.playSound(marked.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1F, .5F);
+        repeat(caster, arena, 8, 5, tick -> Telegraph.ring(marked.getLocation(), 4, Telegraph.SHADOW), () -> {
+            Location at = marked.getLocation();
+            at.getWorld().spawnParticle(Particle.SOUL, at.clone().add(0, 1, 0), 50, 1.6, .5, 1.6, .03);
+            at.getWorld().playSound(at, Sound.ENTITY_GENERIC_EXPLODE, .8F, .7F);
+            for (Player player : arena.targets(caster, 48)) if (player.getLocation().distanceSquared(at) <= 16) hit(player, caster, 7 * power);
+        });
+        return true;
+    }
+
+    private boolean bolt(LivingEntity caster, Arena arena, double power) {
+        LivingEntity target = arena.target(caster);
+        if (target == null || !caster.hasLineOfSight(target)) return false;
+        Location from = caster.getEyeLocation(), to = target.getEyeLocation();
+        Telegraph.line(from, to, Telegraph.SHADOW);
+        caster.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, to, 12, .3, .4, .3, .02);
+        caster.getWorld().playSound(from, Sound.ENTITY_EVOKER_CAST_SPELL, 1F, 1.3F);
+        target.damage(5 * power, caster);
+        return true;
+    }
+
+    /** The most wounded ally takes far less damage for ten seconds. */
+    private boolean ward(LivingEntity caster, Arena arena) {
+        LivingEntity ally = arena.friends(caster, 10).stream().min(Comparator.comparingDouble(AbilityCaster::ratio)).orElse(caster);
+        ally.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 200, 1, false, true));
+        ally.getWorld().spawnParticle(Particle.ENCHANT, ally.getLocation().add(0, 1, 0), 40, .5, .7, .5, .4);
+        ally.getWorld().playSound(ally.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1F, 1.5F);
+        return true;
+    }
+
+    private boolean dreadHowl(LivingEntity caster, Arena arena) {
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_WARDEN_ROAR, 1F, 1.4F);
+        Telegraph.ring(caster.getLocation(), 9, Telegraph.SHADOW);
+        for (Player player : arena.targets(caster, 9)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 2));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 50, 0));
+        }
+        return true;
+    }
+
+    private boolean rally(LivingEntity caster, Arena arena) {
+        caster.getWorld().playSound(caster.getLocation(), Sound.EVENT_RAID_HORN, 1F, 1.5F);
+        for (LivingEntity friend : arena.friends(caster, 10)) {
+            friend.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 0, false, true));
+            friend.getWorld().spawnParticle(Particle.ANGRY_VILLAGER, friend.getLocation().add(0, friend.getHeight(), 0), 3, .3, .2, .3, 0);
+        }
+        return true;
+    }
+
+    /** A huge hit on its target. A raised shield takes it; anyone who stepped out of reach is missed. */
+    private boolean heavyBlow(LivingEntity caster, Arena arena, double power) {
+        LivingEntity target = arena.target(caster);
+        caster.getWorld().spawnParticle(Particle.SWEEP_ATTACK, caster.getLocation().add(0, 1, 0), 4, .8, .3, .8, 0);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.2F, .6F);
+        if (target == null || target.getLocation().distanceSquared(caster.getLocation()) > 4.5 * 4.5) return true;
+        face(caster, target.getLocation());
+        target.damage(12 * power, caster);
+        return true;
+    }
+
+    private boolean soulRend(LivingEntity caster, Arena arena, double power) {
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1.2F, .6F);
+        caster.getWorld().spawnParticle(Particle.SOUL, caster.getLocation().add(0, 1, 0), 80, 4, 1, 4, .05);
+        for (Player player : arena.targets(caster, 24)) {
+            hit(player, caster, 8 * power);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 60, 0));
+        }
         return true;
     }
 

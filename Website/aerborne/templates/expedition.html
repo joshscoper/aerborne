@@ -46,7 +46,7 @@
 <section class="season-section"><div class="reference-section-heading"><div><p class="eyebrow">Rewards and records</p><h2>When the boss falls.</h2></div></div>
 {% if e.rewards %}<p>Every player gets their own loot{% if e.rewards.marks %}: <strong>{{ e.rewards.marks }} Marks</strong> on Normal, more on harder tiers{% endif %}{% if e.rewards['items'] %}, plus {% for item in e.rewards['items'] %}{{ item.amount }} × {{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% if e.rewards.profileRolls %}, and extra loot rolls on harder tiers{% endif %}.</p>{% endif %}
 <table class="expedition-tiers"><thead><tr><th scope="col">Tier</th><th scope="col">Level</th><th scope="col">Lives</th><th scope="col">Loot rolls</th><th scope="col">Clears</th></tr></thead><tbody>
-{% for t in e.tiers %}<tr><th scope="row">{{ t.title }}{% if t.modifiers %}<span class="expedition-mods">{% for m in t.modifiers %}<abbr title="{{ m.description }}">{{ m.title }}</abbr>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</th><td>{{ t.level }}</td><td>{{ t.lives }}</td><td>{{ t.lootRolls }}</td><td>{{ t.clears | number }}</td></tr>{% endfor %}
+{% for t in e.tiers %}<tr><th scope="row">{{ t.title }}{% if t.modifiers %}<span class="expedition-mods">{% for m in t.modifiers %}<abbr title="{{ m.description }}">{{ m.title }}</abbr>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</th><td>{{ t.level }}</td><td>{% if t.runBack %}Run back{% else %}{{ t.lives }}{% endif %}</td><td>{{ t.lootRolls }}</td><td>{{ t.clears | number }}</td></tr>{% endfor %}
 </tbody></table>
 <p class="fine">In game: <code>/expedition guide {{ e.id }}</code> opens this guide as a book.</p></section>
 {% endif %}

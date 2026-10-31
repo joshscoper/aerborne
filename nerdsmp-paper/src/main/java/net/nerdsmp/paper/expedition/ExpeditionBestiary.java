@@ -51,6 +51,8 @@ public final class ExpeditionBestiary {
                     if (action.verb() == ScriptAction.Verb.SPAWN)
                         rooms.computeIfAbsent(action.arg(0).toLowerCase(Locale.ROOT), key -> new LinkedHashSet<>()).add(room.title());
         }
+        for (var pack : expedition.story().packs().values())
+            for (String mob : pack.mobs().keySet()) rooms.computeIfAbsent(mob, key -> new LinkedHashSet<>()).add("Standing guard");
         List<Entry> entries = new ArrayList<>();
         List<String> order = new ArrayList<>(bosses);
         rooms.keySet().stream().filter(id -> !bosses.contains(id)).forEach(order::add);

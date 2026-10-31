@@ -144,7 +144,8 @@ public final class ExpeditionMenu implements Listener {
             if (tier.health() != 1 || tier.damage() != 1)
                 lore.add("<gray>Enemy health</gray> <white>" + Math.round(tier.health() * 100) + "%</white> <gray>· damage</gray> <white>"
                     + Math.round(tier.damage() * 100) + "%</white>");
-            lore.add("<gray>Party lives</gray> <white>" + tier.lives() + "</white> <gray>· loot rolls</gray> <white>" + tier.lootRolls() + "</white>");
+            lore.add((tier.runBack() ? "<gray>Fall and you run back</gray>" : "<gray>Party lives</gray> <white>" + tier.lives() + "</white>")
+                + " <gray>· loot rolls</gray> <white>" + tier.lootRolls() + "</white>");
             var modifiers = service.modifiers(definition, tier);
             for (Modifier modifier : modifiers) lore.add("<light_purple>" + modifier.title() + ":</light_purple> <gray>" + modifier.description() + "</gray>");
             if (cleared) lore.add("<green>✔ You've cleared this.</green>");

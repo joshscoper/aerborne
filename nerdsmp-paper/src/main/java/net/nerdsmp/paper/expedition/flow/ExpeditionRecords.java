@@ -63,6 +63,27 @@ public final class ExpeditionRecords {
         return totals;
     }
 
+    /**
+     * A map changed enough that old times mean nothing: clears stay, best times go. True when this
+     * version is new. Runs once per version.
+     */
+    public synchronized boolean startNewTimes(String expedition, int version) {
+        if (version <= yaml.getInt("versions." + expedition, 0)) return false;
+        yaml.set("versions." + expedition, version);
+        var totals = yaml.getConfigurationSection("totals." + expedition);
+        if (totals != null) for (String tier : totals.getKeys(false)) {
+            totals.set(tier + ".best-seconds", null);
+            totals.set(tier + ".best-party", null);
+        }
+        var players = yaml.getConfigurationSection("players");
+        if (players != null) for (String account : players.getKeys(false)) {
+            var mine = players.getConfigurationSection(account + "." + expedition);
+            if (mine != null) for (String tier : mine.getKeys(false)) mine.set(tier + ".best-seconds", null);
+        }
+        save();
+        return true;
+    }
+
     /** Records an unlock (such as the Nether) for a player; true when it is new. */
     public synchronized boolean unlock(String account, String key) {
         List<String> unlocks = new java.util.ArrayList<>(yaml.getStringList("unlocks." + account));

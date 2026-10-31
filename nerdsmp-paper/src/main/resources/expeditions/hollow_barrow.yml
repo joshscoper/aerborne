@@ -1,4 +1,4 @@
-# The Hollow Barrow: a crypt crawl and the first expedition of the campaign. Copy this file to
+# The Hollow Barrow: a pillared crypt and the first dungeon of the campaign. Copy this file to
 # start your own, or build one in game with /expedition create <id>. Full reference:
 # docs/EXPEDITIONS.md.
 #
@@ -17,9 +17,11 @@ difficulty: 2
 # Base mob level. Each tier adds its own level bonus on top.
 level: 8
 party: {min: 1, max: 5}
-time-limit-minutes: 25
+time-limit-minutes: 40
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 1
 spawn: [0, 64, 4, 0]
-exit: [0, 64, 108]
+exit: [0, 64, 135]
 modifiers: []
 
 npcs:
@@ -29,17 +31,21 @@ npcs:
     at: [-4, 64, 6, 270]
     lines:
       - "Forty years I've swept these halls. Never heard the bones so restless."
-      - "The King's Huntsman was buried with him. Loyal past death, that one."
-      - "The vault opens only to those who pull the levers in the order the candles show."
-      - "Mind the ossuary ceiling. When the dead stir, the bones come down with them."
+      - "They stand in the dark in their old ranks. Mind you don't wake more than you can bury."
+      - "The Vault's levers lift the west portcullis. The candles there still remember the order."
+      - "The Warden keeps the south gate. Past him there's only the King's Rest."
+      - "They heal each other, the Keeners. Strike them hard when they start to wail, and they'll lose the note."
 
 campfires:
   mouth_fire: {at: [4, 64, 8], lit: true, title: Barrow Mouth}
-  antechamber_brazier: {at: [3, 64, 79], lit: false, title: Antechamber Brazier}
+  crossing_fire: {at: [0, 64, 68], lit: false, title: The Crossing}
+  antechamber_brazier: {at: [3, 64, 85], lit: false, title: Antechamber Brazier}
+
+setpieces:
+  warden_tunnel: {box: [-64, 64, 81, -62, 67, 81], block: air, style: crumble}
 
 hazards:
-  bone_rain: {type: rocks, area: [-7, 63, 37, 7, 63, 53], every: 7, count: 3, damage: 4}
-  falling_masonry: {type: rocks, area: [-10, 63, 85, 10, 63, 106], every: 9, count: 3, damage: 5}
+  falling_masonry: {type: rocks, area: [-14, 63, 104, 14, 63, 131], every: 9, count: 3, damage: 5}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
@@ -50,89 +56,140 @@ outro:
 cutscenes:
   prologue:
     - {at: [0.5, 67, 3, 0, 5], seconds: 5, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky.", "|They buried him here with honours, his longbow across his chest."]}
-    - {at: [0.5, 67, 18, 0, 10], seconds: 5, fade: true, lines: ["sexton|Something woke him. A voice from the deep, whispering of embers.", "sexton|Now he hunts the living, and the dead rise to follow."]}
-    - {at: [0.5, 67, 58, 0, 10], seconds: 4, lines: ["|Past the ossuary, the Lever Vault guards the King's Rest. The candles still remember the order."]}
+    - {at: [0.5, 70, 16, 0, 12], seconds: 5, fade: true, lines: ["sexton|Something woke him. A voice from the deep, whispering of embers.", "sexton|Now his dead stand watch in the Processional, in the old ranks."]}
+    - {at: [0.5, 70, 58, 0, 20], seconds: 4, lines: ["|Beyond them lies the Crossing. East, the Lever Vault. West, the Warden, who keeps the way to the King."]}
+  warden_wakes:
+    - {at: [-56.5, 68, 68.5, 90, 8], seconds: 3, title: "<dark_gray>The Warden of Bones</dark_gray>", text: "<gray>Keeper of the south gate</gray>", sound: "entity.wither_skeleton.ambient 0.5", lines: ["The Warden of Bones|None pass while I stand."]}
   king_wakes:
-    - {at: [0.5, 71, 86, 0, 25], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
-    - {at: [0.5, 67, 95, 0, 12], seconds: 4, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
+    - {at: [0.5, 72, 103, 0, 22], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
+    - {at: [0.5, 68, 110, 0, 12], seconds: 4, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
 
 mobs:
   "custom:veil_stalker": {role: elite, abilities: [blink]}
-  "custom:barrow_warden": {role: miniboss, abilities: [shield, cleave]}
+  "custom:bone_lurcher": {role: elite, abilities: [heavy_blow]}
+  "custom:barrow_keener": {abilities: [mend, ward], behavior: caster}
+  "custom:crypt_hexer": {abilities: [bolt, dread_howl], behavior: caster}
+  "custom:keening_widow": {behavior: caster}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group. `leash` is how far they'll be
+# dragged from `at` before giving up. A pack with a `patrol` walks its stops, there and back.
+packs:
+  # The Processional: pull them one group at a time, and watch the walkers in the middle.
+  door_guard: {at: [0, 64, 24], mobs: {"custom:barrow_thrall": 3, "custom:crypt_archer": 1}, aggro: 8}
+  west_aisle: {at: [-11, 64, 31], mobs: {"custom:barrow_thrall": 2, "custom:barrow_keener": 1}}
+  east_aisle: {at: [11, 64, 36], mobs: {"custom:crypt_archer": 2, "custom:thorn_sentinel": 1}}
+  processional_walkers:
+    at: [0, 64, 50]
+    mobs: {"custom:bone_lurcher": 1, "custom:barrow_thrall": 2}
+    aggro: 7
+    patrol: [[0, 64, 50], [0, 64, 36]]
+  far_aisle: {at: [10, 64, 49], mobs: {"custom:crypt_hexer": 1, "custom:veil_stalker": 2}}
+  # The Crossing.
+  crossing_north: {at: [-7, 64, 66], mobs: {"custom:barrow_thrall": 3, "custom:barrow_keener": 1}}
+  crossing_south: {at: [7, 64, 72], mobs: {"custom:crypt_hexer": 1, "custom:crypt_archer": 2}}
+  # The Lever Vault.
+  vault_gate: {at: [29, 64, 68], mobs: {"custom:thorn_sentinel": 2, "custom:barrow_thrall": 2}}
+  vault_north: {at: [39, 64, 59], mobs: {"custom:bone_lurcher": 1, "custom:barrow_keener": 1}}
+  vault_south: {at: [39, 64, 77], mobs: {"custom:crypt_hexer": 1, "custom:mire_weaver": 2}}
+  # The Ossuary: these must fall before the Warden's door opens.
+  ossuary_east: {at: [-32, 64, 62], mobs: {"custom:barrow_thrall": 3, "custom:crypt_archer": 1}}
+  ossuary_south: {at: [-34, 64, 76], mobs: {"custom:crypt_hexer": 1, "custom:veil_stalker": 2}}
+  ossuary_walkers:
+    at: [-44, 64, 68]
+    mobs: {"custom:bone_lurcher": 2}
+    aggro: 7
+    patrol: [[-44, 64, 73], [-44, 64, 62], [-30, 64, 62]]
+  ossuary_west: {at: [-44, 64, 56], mobs: {"custom:barrow_keener": 1, "custom:thorn_sentinel": 2}}
+  # The antechamber's guard, last before the King.
+  kings_guard: {at: [0, 64, 93], mobs: {"custom:bone_lurcher": 2, "custom:crypt_hexer": 1}, aggro: 7}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  sexton_crate: {at: [5, 64, 16], kind: crate, title: "Sexton's Crate"}
-  ossuary_reliquary: {at: [-7, 64, 52], kind: chest, title: Ossuary Reliquary}
-  forgotten_offering: {at: [8, 64, 73], kind: secret, title: Forgotten Offering}
+  sexton_crate: {at: [-14, 64, 15], kind: crate, title: "Sexton's Crate"}
+  ossuary_reliquary: {at: [-51, 64, 84], kind: chest, title: Ossuary Reliquary}
+  forgotten_offering: {at: [-16, 64, 30], kind: secret, title: Forgotten Offering}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-2, 64, 106]
-  bonus: [2, 64, 106]
+  free: [-3, 64, 132]
+  bonus: [3, 64, 132]
 
 rooms:
-  crypt_gallery:
-    title: The Crypt Gallery
-    region: [-7, 64, 14, 7, 69, 34]
-    checkpoint: [0, 64, 32, 0]
-    # These iron bars lift when the room is cleared.
-    gate: [-1, 64, 35, 1, 66, 35]
-    points: [[-5, 64, 19], [5, 64, 19], [-5, 64, 29], [5, 64, 29], [0, 64, 24]]
-    encounter:
-      type: waves
-      waves:
-        - {"custom:barrow_thrall": 3, "custom:thorn_sentinel": 1}
-        - {mobs: {"custom:veil_stalker": 2, "custom:crypt_archer": 2}, delay-seconds: 3}
-      scripts:
-        start: ["message <gray>Dust shivers from the niches. Something is waking.</gray>"]
-        wave-2: ["say sexton|Veil Stalkers! They step through shadow. Watch your backs!"]
-        clear: ["message <gray>The bars to the ossuary grind upward.</gray>"]
-  ossuary:
-    title: The Ossuary
-    region: [-8, 64, 36, 8, 69, 54]
-    checkpoint: [0, 64, 52, 0]
-    gate: [-1, 64, 55, 1, 66, 55]
-    points: [[-6, 64, 38], [6, 64, 38], [-6, 64, 51], [6, 64, 51], [0, 64, 45]]
-    encounter:
-      # Survive rooms keep releasing their waves until the timer runs out.
-      type: survive
-      survive-seconds: 45
-      waves:
-        - {"custom:barrow_thrall": 3}
-        - {mobs: {"custom:mire_weaver": 2, "custom:crypt_archer": 1}, delay-seconds: 12}
-      scripts:
-        start: ["title <gold>Hold the ossuary|<gray>Survive until the bones fall still</gray>", "hazard start bone_rain"]
-        timer-30: ["message <yellow>The rattling slows. Fifteen more seconds!</yellow>"]
-        clear: ["hazard stop bone_rain"]
   lever_vault:
     title: The Lever Vault
-    region: [-9, 64, 56, 9, 71, 74]
-    checkpoint: [0, 64, 73, 0]
-    gate: [-1, 64, 75, 1, 66, 75]
-    points: [[-5, 64, 66], [-6, 64, 61], [6, 64, 61], [0, 64, 62], [4, 64, 67]]
+    region: [26, 64, 54, 52, 72, 82]
+    requires: []
+    # The west portcullis at the Crossing lifts when the levers are solved.
+    gate: [-13, 64, 66, -13, 67, 70]
     puzzles:
       vault_levers:
         type: sequence
         title: Pull the levers in the candles' order
-        blocks: [[-9, 65, 60], [9, 65, 60], [-9, 65, 67], [9, 65, 67]]
+        blocks: [[30, 65, 60], [48, 65, 60], [30, 65, 76], [48, 65, 76]]
         order: [3, 1, 4, 2]
         show: true
     encounter:
-      type: waves
-      waves:
-        - {"custom:barrow_warden": 1, "custom:crypt_archer": 2}
+      type: puzzle
       scripts:
-        start:
-          - "say The Barrow Warden|None pass the vault while I stand."
-          - "say sexton|The Warden! Bring it down, then mind the candles: they show the levers' order."
+        start: ["say sexton|Watch the candles. They'll show you the order."]
         solved-vault_levers: ["sound block.iron_door.open 0.6"]
-        clear: ["say sexton|The vault yields. There's a brazier in the antechamber; rest before the King."]
+        clear: ["say sexton|Hear that? The west portcullis. The Warden knows you're coming."]
+  wardens_hall:
+    title: The Warden of Bones
+    region: [-76, 64, 56, -53, 74, 80]
+    requires: [lever_vault]
+    requires-packs: [ossuary_east, ossuary_south, ossuary_walkers, ossuary_west]
+    seal: [-52, 64, 66, -52, 67, 70]
+    checkpoint: [-56, 64, 68, 270]
+    # The south gate at the Crossing lifts when the Warden falls.
+    gate: [-2, 64, 81, 2, 67, 81]
+    points: [[-67, 66, 68, 90], [-72, 64, 68], [-60, 64, 68], [-66, 64, 58], [-66, 64, 78]]
+    encounter:
+      type: boss
+      boss: custom:warden_of_bones
+      boss-damage: 0.7
+      abilities: [heavy_blow, shield]
+      phases:
+        - {at: 50, abilities: [heavy_blow, slam, dread_howl], title: "The Warden stops holding back"}
+      enrage-seconds: 240
+      adds-at-health: [75, 40]
+      waves:
+        - {"custom:barrow_thrall": 3}
+        - {"custom:crypt_archer": 2, "custom:barrow_thrall": 1}
+      scripts:
+        start: ["cutscene warden_wakes"]
+        health-50: ["say The Warden of Bones|The gate will not fall!"]
+        clear:
+          - "break warden_tunnel"
+          - "say sexton|He's down! The south gate's lifted, and the wall behind him has given way."
+          - "say sexton|That tunnel runs to the antechamber. Save your legs."
+  widows_cell:
+    title: The Keening Widow
+    region: [-46, 64, 30, -30, 70, 50]
+    requires: [lever_vault]
+    optional: true
+    seal: [-40, 64, 51, -36, 67, 51]
+    points: [[-38, 64, 34, 0], [-42, 64, 46], [-34, 64, 46]]
+    encounter:
+      type: boss
+      boss: custom:keening_widow
+      boss-damage: 0.7
+      abilities: [bolt, soul_rend]
+      phases:
+        - {at: 40, abilities: [bolt, soul_rend, volatile_mark], title: "Her grief turns outward"}
+      enrage-seconds: 200
+      scripts:
+        start: ["say The Keening Widow|He promised he would come home.", "say sexton|The Widow! When she draws breath for the long wail, hit her hard, all of you, or it'll tear you apart."]
+        clear: ["say sexton|She's quiet at last. I never thought I'd hear that."]
   kings_rest:
     title: The King's Rest
-    region: [-11, 64, 84, 11, 74, 110]
+    region: [-18, 64, 100, 18, 78, 136]
+    requires: [wardens_hall]
+    requires-packs: [kings_guard]
+    seal: [-2, 64, 99, 2, 67, 99]
     # The first point is where the boss rises; adds use the others.
-    points: [[0, 65, 99], [-8, 64, 88], [8, 64, 88], [-8, 64, 104], [8, 64, 104]]
+    points: [[0, 66, 120, 180], [-10, 64, 110], [10, 64, 110], [-10, 64, 128], [10, 64, 128]]
     encounter:
       type: boss
       boss: custom:the_hollow_huntsman
@@ -140,9 +197,9 @@ rooms:
       # The Huntsman is tuned down for a first expedition (1.0 = as authored).
       boss-damage: 0.6
       boss-health: 0.85
-      abilities: [cleave, summon]
+      abilities: [heavy_blow, cleave, summon]
       phases:
-        - {at: 50, abilities: [cleave, slam, tether], title: "The Huntsman calls the hunt"}
+        - {at: 50, abilities: [heavy_blow, cleave, volatile_mark, tether], title: "The Huntsman calls the hunt"}
       enrage-seconds: 300
       # Each threshold releases the next wave as adds.
       adds-at-health: [66, 33]
@@ -161,18 +218,20 @@ rooms:
 # Shown in the guide book (/expedition guide hollow_barrow) and on the website.
 guide:
   lore: "The Huntsman was the hero of the Sundering: when the world below burned, he held the hill road against Pyrrhax's cultists while the last carts climbed into the sky. The survivors buried him in the barrow with his longbow across his chest. Generations later a voice from deep below began whispering of embers, and the Huntsman rose hollow, hunting the living for the master he once fought. Old Sexton Pell has tended the barrow all his life. He wants the Huntsman laid to rest, not destroyed."
-  overview: A crypt crawl and the first stop of the campaign. Two waves of undead, a survival hold in the ossuary under falling bones, the Barrow Warden and its lever vault, then the Hollow Huntsman in his tomb.
+  overview: The first dungeon of the campaign. The dead stand in their old ranks through the Processional and the Crossing; pull them one group at a time. Solve the Lever Vault to the east, break through the Ossuary to the Warden of Bones in the west, then face the Hollow Huntsman in the King's Rest. The Keening Widow waits in her cell for anyone who goes looking.
   tips:
-    - Bring a shield and a bow. Thorn Sentinels and skeletons shoot from the back of the gallery.
-    - In the ossuary, stay near the middle and watch the floor for shadows; that's where bones fall.
-    - Kill the Warden's skeletons to break its shield, then watch the candles for the lever order.
-    - A ring of light around the Huntsman means a shockwave is coming. Step outside it.
+    - Enemies stand still until you come close, hit them, or a fight spills next to them. Clear one group before you step towards the next.
+    - Enemies fight whoever worries them most. Sneak and right-click with a shield to taunt everything close to you; raising a shield against a hit draws attention too.
+    - A bar over an enemy means a cast. A yellow bar can be stopped with a fully charged hit or a full-draw arrow; kill Keeners first, or stop their healing.
+    - A red bar with a ring means a heavy blow on whoever it's fighting. Raise a shield or step out of the ring.
+    - Walkers patrol the Processional and the Ossuary. Wait for them to turn away, or pull them to you on your terms.
+    - Light the fires at the Crossing and the antechamber. If you fall, that's where you run back from, and everything you've killed stays dead.
   rooms:
-    crypt_gallery: Zombies and a Thorn Sentinel come first, then Veil Stalkers (elites that blink behind you) and skeletons.
-    ossuary: Survive 45 seconds. Waves keep coming and bones rain from the ceiling; you only need to stay alive.
-    lever_vault: The Barrow Warden shields itself while its skeletons live. The vault also needs its four levers pulled in the order the candles flash; a wrong lever resets it.
-    kings_rest: The Huntsman rises from the sarcophagus. Light the antechamber brazier first so the party regroups close by.
-  boss: The Hollow Huntsman cleaves in front of him and calls skeletons. Below half health he adds a ground slam and a chain that drags one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead. Let one player keep him busy while the others clear the adds.
+    lever_vault: Clear the room, then pull the four levers in the order the candles flash. A wrong lever resets them. Solving it lifts the west portcullis at the Crossing.
+    wardens_hall: The door opens once the Ossuary is clear. The Warden shields himself while his helpers live, then hits harder below half health. Killing him lifts the south gate and opens a tunnel to the antechamber.
+    widows_cell: Optional. The Widow keeps her distance and throws bolts. Her Soul Rend takes three charged hits to break, and it hurts everyone if it finishes. Below 40% she marks players; move away from the others when you're marked.
+    kings_rest: The Huntsman rises from his sarcophagus. Light the antechamber brazier first so the party runs back from close by.
+  boss: The Hollow Huntsman winds up heavy blows on whoever he's fighting, cleaves in front of him and calls skeletons. Below half health he marks players to burst on the group and chains one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead.
 loot:
   marks: 120
   items: {iron_ingot: 4, bone: 8, experience_bottle: 3}

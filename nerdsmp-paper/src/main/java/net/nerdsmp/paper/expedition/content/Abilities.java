@@ -10,8 +10,15 @@ import java.util.Optional;
  * abilities roll one from {@link #ELITE_POOL}; mini-bosses roll two.
  */
 public final class Abilities {
-    /** One ability: what it does for guides and the cooldown in seconds. */
-    public record Info(String id, String title, String description, int cooldownSeconds) { }
+    /**
+     * One ability: what it does for guides and the cooldown in seconds. A cast shows a bar over the
+     * mob for {@code castSeconds} before it lands; {@code interruptHits} charged hits stop it, and 0
+     * means it can't be stopped, only dodged or blocked.
+     */
+    public record Info(String id, String title, String description, int cooldownSeconds, double castSeconds, int interruptHits) {
+        public boolean casted() { return castSeconds > 0; }
+        public boolean interruptible() { return interruptHits > 0; }
+    }
 
     private static final Map<String, Info> KIT = new java.util.LinkedHashMap<>();
 
@@ -29,9 +36,16 @@ public final class Abilities {
         add("poison_cloud", "Poison Cloud", "Leaves a lingering cloud of poison. Move out of it.", 12);
         add("tether", "Tether", "Chains the nearest player and drags them in. Break line of sight to snap it.", 16);
         add("barrage", "Barrage", "Looses a volley of arrows at random players.", 10);
-        add("mend", "Mend", "Heals itself and wounded allies around it. Interrupt it with burst damage.", 16);
+        cast("mend", "Mend", "Heals itself and wounded allies around it. A charged hit stops it.", 16, 2.5, 1);
         add("web", "Web", "Throws a web that pins a player in place.", 12);
         add("wrath", "Wrath", "A wide ring of flame marks the ground, then a blast throws everyone inside outward. Keep your back to safe ground.", 20);
+        add("volatile_mark", "Volatile Mark", "Marks one player. Get away from the others before it bursts.", 17);
+        cast("bolt", "Soul Bolt", "Hurls a bolt at whoever it's fighting. A charged hit stops it.", 5, 1.8, 1);
+        cast("ward", "Warding Word", "Wraps its most wounded ally in a ward that blunts every hit. A charged hit stops it.", 14, 2.0, 1);
+        cast("dread_howl", "Dread Howl", "A long howl that slows and blinds everyone close. A charged hit stops it.", 16, 2.5, 1);
+        cast("rally", "Rally", "Drives its allies on, and they hit harder for ten seconds. A charged hit stops it.", 18, 2.0, 1);
+        cast("heavy_blow", "Heavy Blow", "Winds up on whoever it's fighting. Raise a shield or get out of reach.", 11, 2.0, 0);
+        cast("soul_rend", "Soul Rend", "A long channel that tears at the whole party when it finishes. It takes three charged hits to break.", 26, 4.0, 3);
     }
 
     /** Abilities an elite can roll when it has none listed. */
@@ -40,7 +54,11 @@ public final class Abilities {
     private Abilities() { }
 
     private static void add(String id, String title, String description, int cooldown) {
-        KIT.put(id, new Info(id, title, description, cooldown));
+        KIT.put(id, new Info(id, title, description, cooldown, 0, 0));
+    }
+
+    private static void cast(String id, String title, String description, int cooldown, double seconds, int hits) {
+        KIT.put(id, new Info(id, title, description, cooldown, seconds, hits));
     }
 
     public static boolean known(String id) { return id != null && KIT.containsKey(id); }

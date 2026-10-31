@@ -97,6 +97,7 @@ final class PublicGameJson {
                 row.addProperty("title", tier.title());
                 row.addProperty("level", definition.level() + tier.levelBonus());
                 row.addProperty("lives", tier.lives());
+                row.addProperty("runBack", tier.runBack());
                 row.addProperty("lootRolls", tier.lootRolls());
                 if (tier.requires() != null) row.addProperty("requires", tier.requires());
                 JsonArray modifiers = new JsonArray();

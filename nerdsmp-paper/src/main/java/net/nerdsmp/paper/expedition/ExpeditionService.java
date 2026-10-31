@@ -139,6 +139,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         worlds.cleanupLeftovers();
         reload();
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
+        Bukkit.getPluginManager().registerEvents(new ExpeditionCombatListener(this), plugin);
     }
 
     public void attach(ExpeditionSetup setup, ExpeditionMenu menu) {
@@ -168,7 +169,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         "hollow_barrow", Set.of("e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
             "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf",
-            "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a"),
+            "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a",
+            "3d9bd7d0ba9d95b03480111ce1647ccf19da0d2905c056a1e565b7a5cf8ff658"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
             "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
@@ -221,6 +223,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 ExpeditionDefinition definition = ExpeditionLoader.parse(id, yaml);
                 definitions.put(id, definition);
                 files.put(id, yaml);
+                if (records.startNewTimes(id, definition.story().recordsVersion())) keystones.clearBests(id);
             } catch (Exception invalid) {
                 loadErrors.put(id, invalid.getMessage());
                 messages.add(id + ".yml: " + invalid.getMessage() + (definitions.containsKey(id) ? " Keeping the previous version." : ""));
@@ -1007,7 +1010,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     // Events
     // ---------------------------------------------------------------------------------------------
 
-    private ExpeditionRun runIn(World world) { return world == null ? null : runByWorld.get(world.getUID()); }
+    ExpeditionRun runIn(World world) { return world == null ? null : runByWorld.get(world.getUID()); }
 
     /** An expedition enemy: a run fights it, so claim protection leaves its hoglins and golems alone. */
     public boolean enemy(Entity entity) {

@@ -111,7 +111,7 @@ final class ExpeditionGuideBook {
         }
         book.newPage();
         for (Tier tier : service.tiersFor(expedition))
-            book.text("dark_gray", tier.title() + ": level " + (expedition.level() + tier.levelBonus()) + ", " + tier.lives() + " lives, "
+            book.text("dark_gray", tier.title() + ": level " + (expedition.level() + tier.levelBonus()) + ", " + (tier.runBack() ? "no lives to lose" : tier.lives() + " lives") + ", "
                 + tier.lootRolls() + (tier.lootRolls() == 1 ? " roll" : " rolls"));
         book.flush();
         List<Component> rendered = book.pages.stream().map(lines -> Chat.render(String.join("\n", lines))).toList();

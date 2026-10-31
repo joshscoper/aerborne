@@ -67,15 +67,23 @@ class ExpeditionContentTest {
 
     @Test void barrowRoomsWavesScriptsAndLootParse() {
         ExpeditionDefinition barrow = sample("hollow_barrow");
-        assertEquals(List.of("crypt_gallery", "ossuary", "lever_vault", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
-        var gallery = barrow.rooms().get("crypt_gallery");
-        assertEquals(Map.of("custom:barrow_thrall", 3, "custom:thorn_sentinel", 1), gallery.encounter().waves().get(0).mobs());
-        assertEquals(3, gallery.encounter().waves().get(1).delaySeconds());
-        assertEquals(ExpeditionDefinition.Box.of(-1, 64, 35, 1, 66, 35), gallery.gate());
-        assertEquals(ScriptAction.Verb.MESSAGE, gallery.encounter().script("start").get(0).verb());
-        var ossuary = barrow.rooms().get("ossuary");
-        assertEquals(EncounterType.SURVIVE, ossuary.encounter().type());
-        assertEquals(45, ossuary.encounter().surviveSeconds());
+        assertEquals(List.of("lever_vault", "wardens_hall", "widows_cell", "kings_rest"), List.copyOf(barrow.rooms().keySet()));
+        var vault = barrow.rooms().get("lever_vault");
+        assertEquals(EncounterType.PUZZLE, vault.encounter().type());
+        assertEquals(ExpeditionDefinition.Box.of(-13, 64, 66, -13, 67, 70), vault.gate());
+        var warden = barrow.rooms().get("wardens_hall");
+        assertEquals(List.of("lever_vault"), warden.requires());
+        assertEquals(4, warden.requiresPacks().size());
+        assertEquals(ExpeditionDefinition.Box.of(-52, 64, 66, -52, 67, 70), warden.seal());
+        assertTrue(barrow.rooms().get("widows_cell").optional());
+        assertEquals(ScriptAction.Verb.CUTSCENE, warden.encounter().script("start").get(0).verb());
+        var walkers = barrow.story().packs().get("processional_walkers");
+        assertEquals(Map.of("custom:bone_lurcher", 1, "custom:barrow_thrall", 2), walkers.mobs());
+        assertEquals(2, walkers.patrol().size());
+        assertEquals(7, walkers.aggro());
+        assertEquals(ExpeditionDefinition.Pack.DEFAULT_LEASH, walkers.leash());
+        assertEquals(ExpeditionDefinition.Behavior.CASTER, barrow.story().mob("custom:barrow_keener").behavior());
+        assertEquals(1, barrow.story().recordsVersion());
         var boss = barrow.rooms().get("kings_rest").encounter();
         assertEquals("custom:the_hollow_huntsman", boss.boss());
         assertEquals(List.of(66, 33), boss.addsAtHealth());
@@ -130,21 +138,25 @@ class ExpeditionContentTest {
 
     @Test void validatorCatchesBrokenRoomsGatesAndReferences() {
         YamlConfiguration yaml = resource("/expeditions/hollow_barrow.yml");
-        yaml.set("rooms.crypt_gallery.points", List.of(List.of(40, 64, 20)));
-        yaml.set("rooms.ossuary.gate", List.of(-1, 64, 3, 1, 66, 5));
-        yaml.set("rooms.ossuary.encounter.scripts.clear", List.of("open nowhere"));
+        yaml.set("rooms.wardens_hall.points", List.of(List.of(40, 64, 20)));
+        yaml.set("rooms.widows_cell.gate", List.of(-1, 64, 3, 1, 66, 5));
+        yaml.set("rooms.widows_cell.encounter.scripts.clear", List.of("open nowhere"));
+        yaml.set("rooms.kings_rest.requires-packs", List.of("nobody"));
+        yaml.set("packs.door_guard.aggro", 40);
+        yaml.set("packs.processional_walkers.patrol", List.of(List.of(0, 64, 50)));
+        yaml.set("packs.far_aisle.mobs.custom:unknown_thing", 2);
         yaml.set("rooms.kings_rest.encounter.boss", "custom:unknown_king");
         yaml.set("loot.profile", "unknown_profile");
         yaml.set("party.min", 6);
         List<String> errors = errors(ExpeditionLoader.parse("hollow_barrow", yaml));
         for (String expected : List.of("outside the room", "covers the party spawn", "unknown room 'nowhere'", "not a known mob",
-            "Loot profile", "Party size"))
+            "Loot profile", "Party size", "unknown pack 'nobody'", "aggro must be", "two patrol stops", "unknown mob 'custom:unknown_thing'"))
             assertTrue(errors.stream().anyMatch(message -> message.contains(expected)), expected + " in " + errors);
     }
 
     @Test void overlappingRoomsAndEncountersWithoutPointsAreErrors() {
         YamlConfiguration yaml = resource("/expeditions/hollow_barrow.yml");
-        yaml.set("rooms.ossuary.region", List.of(-7, 64, 30, 7, 69, 40));
+        yaml.set("rooms.widows_cell.region", List.of(-18, 64, 100, 18, 78, 136));
         yaml.set("rooms.kings_rest.points", List.of());
         List<String> errors = errors(ExpeditionLoader.parse("hollow_barrow", yaml));
         assertTrue(errors.stream().anyMatch(message -> message.contains("overlaps")), errors.toString());

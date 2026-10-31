@@ -64,6 +64,9 @@ public record ExpeditionDefinition(
     /** Encounter roles. Elites and mini-bosses carry abilities; mini-bosses also get a boss bar. */
     public enum Role { NORMAL, ELITE, MINIBOSS, BOSS }
 
+    /** How a mob fights. {@code BRUISER}s close in; {@code CASTER}s keep their distance and fight with their abilities. */
+    public enum Behavior { BRUISER, CASTER }
+
     /**
      * Everything beyond rooms and fights: the win condition, rest points, set pieces that change the
      * map, arena hazards, cutscenes, talking characters and per-mob roles and abilities.
@@ -71,22 +74,23 @@ public record ExpeditionDefinition(
     public record Story(Goal goal, int forces, int timeBonusSeconds, boolean raid,
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
-                        List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro) {
+                        List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro,
+                        Map<String, Pack> packs, int recordsVersion) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null, null, List.of());
+            Map.of(), null, null, List.of(), Map.of(), 0);
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
-                null, List.of());
+                null, List.of(), Map.of(), 0);
         }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
-                null, List.of());
+                null, List.of(), Map.of(), 0);
         }
 
         public Story {
@@ -100,6 +104,7 @@ public record ExpeditionDefinition(
             requires = requires == null ? List.of() : List.copyOf(requires);
             chests = ordered(chests);
             outro = outro == null ? List.of() : List.copyOf(outro);
+            packs = ordered(packs);
         }
 
         /** How many secret caches the map hides, for the run's exploration score. */
@@ -112,6 +117,21 @@ public record ExpeditionDefinition(
 
         private static <T> Map<String, T> ordered(Map<String, T> map) {
             return map == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(map));
+        }
+    }
+
+    /**
+     * A group of enemies already standing in the world (or walking {@code patrol}). They wait until
+     * someone comes within {@code aggro} blocks in plain sight, is hit, or a nearby fight spills into
+     * them, then fight together and give up if dragged more than {@code leash} blocks from {@code at}.
+     */
+    public record Pack(String id, Point at, Map<String, Integer> mobs, int aggro, int leash, List<Point> patrol) {
+        public static final int DEFAULT_AGGRO = 9;
+        public static final int DEFAULT_LEASH = 36;
+
+        public Pack {
+            mobs = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(mobs));
+            patrol = patrol == null ? List.of() : List.copyOf(patrol);
         }
     }
 
@@ -173,9 +193,14 @@ public record ExpeditionDefinition(
      * How a wave mob behaves in this expedition: its role, the abilities it uses and how much it
      * counts toward enemy forces. Mobs not listed are normal and worth one.
      */
-    public record MobProfile(String mob, Role role, List<String> abilities, int forces, String title) {
+    public record MobProfile(String mob, Role role, List<String> abilities, int forces, String title, Behavior behavior) {
         public MobProfile {
             abilities = List.copyOf(abilities);
+            behavior = behavior == null ? Behavior.BRUISER : behavior;
+        }
+
+        public MobProfile(String mob, Role role, List<String> abilities, int forces, String title) {
+            this(mob, role, abilities, forces, title, Behavior.BRUISER);
         }
 
         public static MobProfile plain(String mob) { return new MobProfile(mob, Role.NORMAL, List.of(), 1, null); }
@@ -274,10 +299,13 @@ public record ExpeditionDefinition(
     /**
      * {@code requires} lists the rooms that must be cleared before this one can start; null means the
      * room before it in the file. Optional rooms aren't needed to finish. Puzzles must all be solved
-     * (as well as the encounter) for the room to clear.
+     * (as well as the encounter) for the room to clear. {@code seal} is a doorway that stays barred
+     * until {@code requiresPacks} are dead and shuts behind the party during the fight, so anyone who
+     * dies stays out until it ends.
      */
     public record Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
-                       List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks) {
+                       List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks,
+                       Box seal, List<String> requiresPacks) {
         /** What a room can unlock for everyone who clears it. */
         public static final List<String> UNLOCKS = List.of("nether");
 
@@ -287,6 +315,12 @@ public record ExpeditionDefinition(
             puzzles = puzzles == null ? Map.of() : java.util.Collections.unmodifiableMap(new LinkedHashMap<>(puzzles));
             loot = loot == null ? Loot.NONE : loot;
             unlocks = unlocks == null ? List.of() : List.copyOf(unlocks);
+            requiresPacks = requiresPacks == null ? List.of() : List.copyOf(requiresPacks);
+        }
+
+        public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
+                    List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks) {
+            this(id, title, region, checkpoint, gate, points, encounter, requires, optional, puzzles, loot, unlocks, null, List.of());
         }
 
         public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,

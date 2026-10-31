@@ -38,7 +38,7 @@ class SampleTemplatesTest {
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
-    private static final java.util.Set<String> LINEAR = java.util.Set.of("first_flight", "hollow_barrow", "cinder_keep", "sunken_aqueduct");
+    private static final java.util.Set<String> LINEAR = java.util.Set.of("first_flight", "cinder_keep", "sunken_aqueduct");
 
     @Test void everyStandingSpotHasFloorAndHeadroom() {
         List<String> problems = new java.util.ArrayList<>();
@@ -46,6 +46,10 @@ class SampleTemplatesTest {
             ExpeditionDefinition expedition = definition(id);
             Map<Cell, Material> blocks = blocks(id);
             List<ExpeditionDefinition.Point> spots = new java.util.ArrayList<>(List.of(expedition.spawn(), expedition.exit()));
+            for (var pack : expedition.story().packs().values()) {
+                spots.add(pack.at());
+                spots.addAll(pack.patrol());
+            }
             for (var room : expedition.roomList()) {
                 spots.addAll(room.points());
                 if (room.checkpoint() != null) spots.add(room.checkpoint());
@@ -116,6 +120,52 @@ class SampleTemplatesTest {
             }
         }
         assertEquals(List.of(), problems);
+    }
+
+    /** The run bars seals itself; in the template they must be open doorways it can fill. */
+    @Test void sealsAreOpenDoorways() {
+        for (String id : ExpeditionService.SAMPLES) {
+            Map<Cell, Material> blocks = blocks(id);
+            for (var room : definition(id).roomList()) {
+                var seal = room.seal();
+                if (seal == null) continue;
+                assertTrue(seal.minX() == seal.maxX() || seal.minZ() == seal.maxZ(), id + " seal of " + room.id() + " is one block thick");
+                for (int x = seal.minX(); x <= seal.maxX(); x++) for (int y = seal.minY(); y <= seal.maxY(); y++) for (int z = seal.minZ(); z <= seal.maxZ(); z++)
+                    assertEquals(Material.AIR, blocks.getOrDefault(new Cell(x, y, z), Material.AIR), id + " seal of " + room.id() + " at " + x + "," + y + "," + z);
+            }
+        }
+    }
+
+    /** Walks the Barrow's floor from the spawn: everything a party must reach is connected, once gates and the tunnel open. */
+    @Test void theBarrowsWingsAndTunnelConnect() {
+        var barrow = definition("hollow_barrow");
+        Map<Cell, Material> blocks = new java.util.HashMap<>(blocks("hollow_barrow"));
+        var setpieces = barrow.story().setpieces().values();
+        java.util.function.Predicate<int[]> walkable = at -> {
+            for (int y : new int[]{64, 65}) {
+                Material here = blocks.getOrDefault(new Cell(at[0], y, at[1]), Material.AIR);
+                if (here == Material.IRON_BARS || !solid(blocks, at[0], y, at[1])) continue;
+                boolean opens = false;
+                for (var piece : setpieces) if (piece.box().contains(at[0], y, at[1])) opens = true;
+                if (!opens) return false;
+            }
+            return true;
+        };
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<int[]> open = new java.util.ArrayDeque<>();
+        open.add(new int[]{barrow.spawn().x(), barrow.spawn().z()});
+        while (!open.isEmpty()) {
+            int[] at = open.poll();
+            if (!seen.add(((long) at[0] << 32) | (at[1] & 0xffffffffL)) || Math.abs(at[0]) > 90 || at[1] < -5 || at[1] > 140 || !walkable.test(at)) continue;
+            for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) open.add(new int[]{at[0] + step[0], at[1] + step[1]});
+        }
+        for (var pack : barrow.story().packs().values())
+            assertTrue(seen.contains(((long) pack.at().x() << 32) | (pack.at().z() & 0xffffffffL)), pack.id() + " can be walked to");
+        for (var room : barrow.roomList()) {
+            var point = room.points().isEmpty() ? room.puzzles().values().iterator().next().blocks().getFirst() : room.points().get(1 % room.points().size());
+            assertTrue(room.points().isEmpty() || seen.contains(((long) point.x() << 32) | (point.z() & 0xffffffffL)), room.id() + " can be walked to");
+        }
+        assertTrue(seen.contains(((long) -30 << 32) | (88 & 0xffffffffL)), "The tunnel is reachable");
     }
 
     @Test void gatesAreBuiltAndRoomsConnect() {

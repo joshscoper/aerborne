@@ -126,7 +126,7 @@ class ExpeditionCampaignPagesTest(unittest.TestCase):
         self.assertIn("/guide/season-campaign</loc>", sitemap)
 
     def test_new_sites_get_the_expedition_guides_and_region(self):
-        for path, text in (("/guide/expeditions", "Lives are shared"), ("/guide/season-campaign", "/campaign claim"),
+        for path, text in (("/guide/expeditions", "Normal and Heroic forgive"), ("/guide/season-campaign", "/campaign claim"),
                            ("/guide/parties", "ready check"), ("/guide/world-overview", "Vanilla portals stay sealed"),
                            ("/explore/expeditions", "Your party, your instance")):
             self.assertIn(text, self.client.get(path).get_data(as_text=True), path)

@@ -387,3 +387,56 @@ mobs:
     ability: none
     mark-reward: 4
     equipment: {head: golden_helmet, hand: stone_sword}
+
+  # The Hollow Barrow's standing dead.
+  bone_lurcher:
+    rank: elite
+    name: "<gradient:#ced6e0:#57606f>Bone Lurcher</gradient>"
+    type: husk
+    health: 70
+    attack-damage: 6
+    scale: 1.35
+    speed: 0.2
+    ability: none
+    mark-reward: 6
+    equipment: {head: iron_helmet, chest: chainmail_chestplate, hand: stone_axe}
+  barrow_keener:
+    rank: normal
+    name: "<gradient:#a29bfe:#636e72>Barrow Keener</gradient>"
+    type: skeleton
+    health: 26
+    attack-damage: 3
+    ability: none
+    mark-reward: 3
+    equipment: {head: leather_helmet, chest: leather_chestplate}
+  crypt_hexer:
+    rank: normal
+    name: "<gradient:#6c5ce7:#2d3436>Crypt Hexer</gradient>"
+    type: stray
+    health: 28
+    attack-damage: 3
+    ability: none
+    mark-reward: 3
+    equipment: {head: chainmail_helmet}
+  warden_of_bones:
+    rank: normal
+    name: "<gradient:#b2bec3:#2d3436><bold>The Warden of Bones</bold></gradient>"
+    type: wither_skeleton
+    boss: true
+    health: 300
+    attack-damage: 8
+    scale: 1.6
+    ability: none
+    mark-reward: 60
+    equipment: {head: iron_helmet, chest: iron_chestplate, hand: iron_sword, off-hand: shield}
+  keening_widow:
+    rank: normal
+    name: "<gradient:#dfe6e9:#6c5ce7><bold>The Keening Widow</bold></gradient>"
+    type: stray
+    boss: true
+    health: 220
+    attack-damage: 4
+    scale: 1.2
+    ability: none
+    mark-reward: 40
+    equipment: {head: chainmail_helmet}

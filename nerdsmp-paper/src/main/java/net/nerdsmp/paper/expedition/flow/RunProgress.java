@@ -61,6 +61,8 @@ public final class RunProgress {
         record Campfire(String campfire) implements Effect { }
         /** A linked council member's partners didn't fall in time, so it rises again at full health. */
         record ReviveBoss(String room, int index) implements Effect { }
+        /** The last pack barring a room fell. */
+        record RoomUnlocked(String room) implements Effect { }
     }
 
     /** Sidebar line: an objective with its state and indent depth. */
@@ -108,6 +110,7 @@ public final class RunProgress {
     private long limitSeconds;
     private int forces;
     private boolean forcesAnnounced;
+    private final Set<String> packsCleared = new HashSet<>();
 
     public RunProgress(ExpeditionDefinition expedition, Tier tier, Set<Modifier> modifiers, Set<UUID> members, long now) {
         this.expedition = expedition;
@@ -127,6 +130,8 @@ public final class RunProgress {
 
     public Phase phase() { return phase; }
     public int lives() { return lives; }
+    /** Whether the clock can end the run: Normal and Heroic only race it on a Timed expedition. */
+    public boolean clockRuns() { return !tier.runBack() || expedition.story().goal() == Goal.TIMED; }
     /** Every member death this run, wipes included. */
     public int deaths() { return deaths; }
     /** Optional rooms on the map, and how many the party cleared: they count toward exploration. */
@@ -188,6 +193,42 @@ public final class RunProgress {
     }
 
     public long elapsedSeconds(long now) { return Math.max(0, (now - startedAt) / 1000); }
+
+    /** Whether a room's seal is shut: until its packs are dead, and for as long as its fight runs. */
+    public boolean sealed(String roomId) {
+        int index = index(roomId);
+        if (index < 0) return false;
+        return switch (states[index]) {
+            case CLEARED -> false;
+            case ACTIVE -> !encounterDone;
+            case WAITING -> !packsClear(rooms.get(index));
+        };
+    }
+
+    /** Packs that still bar a room. */
+    public int packsLeft(String roomId) {
+        int index = index(roomId);
+        if (index < 0) return 0;
+        return (int) rooms.get(index).requiresPacks().stream().filter(pack -> !packsCleared.contains(pack)).count();
+    }
+
+    /** A standing pack was wiped out; rooms it was barring may open. */
+    public List<Effect> packCleared(String pack) {
+        List<Effect> effects = new ArrayList<>();
+        if (phase != Phase.ACTIVE || !packsCleared.add(pack)) return effects;
+        for (Room room : rooms)
+            if (room.requiresPacks().contains(pack) && packsClear(room)) effects.add(new Effect.RoomUnlocked(room.id()));
+        return effects;
+    }
+
+    /** Nobody is left alive inside a sealed fight: it ends as a wipe. */
+    public List<Effect> evacuated() {
+        List<Effect> effects = new ArrayList<>();
+        if (phase == Phase.ACTIVE && active >= 0 && !encounterDone) wipe(effects);
+        return effects;
+    }
+
+    private boolean packsClear(Room room) { return packsCleared.containsAll(room.requiresPacks()); }
 
     public long secondsLeft(long now) { return Math.max(0, limitSeconds - elapsedSeconds(now)); }
 
@@ -258,7 +299,7 @@ public final class RunProgress {
     public List<Effect> tick(long now, int alive) {
         List<Effect> effects = new ArrayList<>();
         if (phase != Phase.ACTIVE) return effects;
-        if (elapsedSeconds(now) >= limitSeconds) {
+        if (clockRuns() && elapsedSeconds(now) >= limitSeconds) {
             fail(effects, "Time ran out.");
             return effects;
         }
@@ -397,12 +438,20 @@ public final class RunProgress {
         return List.of(new Effect.Campfire(id));
     }
 
-    /** A member died. Each death spends a life; everyone down at once is a wipe and resets the room. */
+    /**
+     * A member died. Everyone down at once is a wipe and resets the room. Where the tier counts lives,
+     * each death spends one; on Normal and Heroic the party simply runs back.
+     */
     public List<Effect> death(UUID member) {
         List<Effect> effects = new ArrayList<>();
         if (phase != Phase.ACTIVE || !present.contains(member)) return effects;
         dead.add(member);
         deaths++;
+        if (tier.runBack()) {
+            effects.add(new Effect.Lives(-1, member));
+            if (dead.containsAll(present)) wipe(effects);
+            return effects;
+        }
         lives--;
         effects.add(new Effect.Lives(lives, member));
         if (lives <= 0) {
@@ -446,6 +495,8 @@ public final class RunProgress {
                 : available(index) ? Objective.Status.OPEN : Objective.Status.LOCKED;
             String text = room.title() + (room.optional() ? " (optional)" : "");
             if (status == Objective.Status.ACTIVE) text += detail(room, now);
+            else if (states[index] == RoomState.WAITING && !room.requiresPacks().isEmpty() && !packsClear(room))
+                text += " · " + packsLeft(room.id()) + " packs guard the way";
             lines.add(new Objective(text, status, 0));
             if (status == Objective.Status.ACTIVE) for (var puzzle : room.puzzles().values())
                 lines.add(new Objective(puzzle.title(), solved.contains(puzzle.id()) ? Objective.Status.DONE : Objective.Status.ACTIVE, 1));
@@ -548,6 +599,7 @@ public final class RunProgress {
     private boolean available(int index) {
         if (states[index] != RoomState.WAITING) return false;
         Room room = rooms.get(index);
+        if (!packsClear(room)) return false;
         List<String> requires = room.requires();
         if (requires == null) {
             if (index > 0 && states[index - 1] != RoomState.CLEARED) return false;

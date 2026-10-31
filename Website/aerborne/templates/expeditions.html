@@ -35,7 +35,7 @@
     <tbody>
     {% for t in e.tiers %}
     <tr><th scope="row">{{ t.title }}{% if t.modifiers %}<span class="expedition-mods">{% for m in t.modifiers %}<abbr title="{{ m.description }}">{{ m.title }}</abbr>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</th>
-      <td>{{ t.level }}</td><td>{{ t.lives }}</td><td>{{ t.clears | number }}</td>
+      <td>{{ t.level }}</td><td>{% if t.runBack %}Run back{% else %}{{ t.lives }}{% endif %}</td><td>{{ t.clears | number }}</td>
       <td>{{ duration(t.bestSeconds) }}{% if t.bestParty %}<span class="expedition-party">{{ t.bestParty | join(', ') }}</span>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
@@ -46,6 +46,6 @@
 {% endfor %}
 </div>
 {% endif %}
-<div class="reference-callout"><div><h2>Never played one?</h2><p>Dying inside an expedition never drops your gear, but each death spends one of the party's shared lives. Heroic and Mythic unlock once you've cleared the tier below.</p></div><a class="btn btn-ghost" href="{{ url_for('public.guide_article', slug='expeditions') }}">Read the guide →</a></div>
+<div class="reference-callout"><div><h2>Never played one?</h2><p>Dying inside an expedition never drops your gear. On Normal and Heroic you just run back from the last campfire. Heroic and Mythic unlock once you've cleared the tier below.</p></div><a class="btn btn-ghost" href="{{ url_for('public.guide_article', slug='expeditions') }}">Read the guide →</a></div>
 </div>
 {% endblock %}

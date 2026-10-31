@@ -5,6 +5,23 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Dungeon rework begins: threat, packs and the new Hollow Barrow (October 31)
+- **The Hollow Barrow is rebuilt as a dungeon**: a pillared Processional, a Crossing hub, the Lever
+  Vault and the Ossuary as wings, the Warden of Bones, the King's Rest, an optional fight with the
+  Keening Widow, and a tunnel that opens once the Warden falls. Enemies stand in 15 packs, some on
+  patrol, instead of spawning in waves. The other expeditions keep their maps for now.
+- **Threat, for every expedition.** Enemies fight whoever worries them most, not whoever is nearest.
+  Anyone can taunt: sneak and right-click with a shield. A raised shield that takes a hit draws
+  attention too.
+- **Casts can be stopped.** A bar over an enemy shows what it's casting. A charged hit or full-draw
+  arrow stops a yellow bar; a red bar means raise a shield or step out. Caster enemies keep their
+  distance. New abilities: Soul Bolt, Warding Word, Dread Howl, Rally, Heavy Blow, Soul Rend and
+  Volatile Mark.
+- **Normal and Heroic forgive.** There are no lives or time limit: fall and you run back from the
+  last campfire, and a wipe resets the fight but not what you've killed. Timed expeditions still
+  race their clock. Mythic keeps its lives, and keys keep their timer and death penalties.
+- The Barrow's best times and best keys start fresh on the new map. Clears, keys and gear are kept.
+
 ### Gemstone ladder, new tooltips and the item updater (October 22)
 - Gems climb five grades: **Rough, Flawed, Fine, Flawless and Perfect**. Geodes crack into Rough or
   Flawed gems (Luminous geodes sometimes Fine), and merging two of a grade makes the next.

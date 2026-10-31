@@ -88,7 +88,7 @@ Research discovers enchantments; Chosen Imbuement applies a discovery at a chose
 Shopping and player commerce work remotely; you do not need to leave your island just to browse. Review fees, prices and delivery information before confirming.
 
 ## Prepare before an expedition
-[Expeditions](/guide/expeditions) are private adventures for you and up to four friends. Dying inside one never costs your gear, but each death spends one of the party's shared lives. Make a [party](/guide/parties) first, or queue on your own and the finder groups you with other players.
+[Expeditions](/guide/expeditions) are private adventures for you and up to four friends. Dying inside one never costs your gear, and on Normal and Heroic you simply run back from the last campfire. Make a [party](/guide/parties) first, or queue on your own and the finder groups you with other players.
 
 The [expedition board](/expeditions) lists what is open right now, and the [campaign page](/campaign) shows which expeditions the server is still working to unlock.
 """, 'getting-started', 'Explore the skies | /explore\nChoose how to trade | /guide/trading-safely'),
@@ -648,12 +648,22 @@ A run with hired allies still pays loot and Marks, but it doesn't count toward t
 
 ## Lives, deaths and disconnects
 - **Your gear is safe.** Dying in an expedition never drops items or creates a grave.
-- **Lives are shared.** Every death spends one of the party's lives. When they run out, the run fails.
-- **Wipes reset the room.** If the whole party is down at once, the current room resets and you regroup at the last checkpoint.
+- **Normal and Heroic forgive.** Fall and you run back from the last campfire or checkpoint, as often as it takes. There are no lives and no time limit, except on expeditions where beating the clock is the goal.
+- **Mythic shares lives.** Every death spends one of the party's lives. When they run out, the run fails. Keystones have no lives: each death costs time instead.
+- **Wipes reset the fight.** If the whole party is down at once, or nobody is left alive behind a sealed boss door, that fight resets and the door opens. Everything you've already killed stays dead.
 - **Checkpoints.** Clearing a room can move the party's respawn point forward.
 - **Disconnects.** Rejoin within a few minutes and you're put back into the run.
 
-While you're in a run, your sidebar shows the time left, your lives, every objective and your party's health. The bar at the top of the screen appears only for a boss or mini-boss.
+While you're in a run, your sidebar shows the clock, your lives or deaths, every objective and your party's health. The bar at the top of the screen appears only for a boss or mini-boss.
+
+## Packs, threat and interrupts
+The Hollow Barrow plays like a proper dungeon, and the other expeditions will follow:
+- **Enemies stand in packs.** They wait until you come close in plain sight, hit one, or a fight spills next to them. Then the whole pack fights together. Patrols walk set routes, so watch them before you pull.
+- **Pull one group at a time.** A pack you've led too far from home, or lost, gives up, walks back and heals.
+- **Threat decides who they hit.** Enemies fight whoever worries them most, not whoever is nearest. Dealing damage builds threat, and a raised shield that takes a hit builds far more.
+- **Taunt with a shield.** Anyone can do it: sneak and right-click with a shield, and everything close turns on you for a few seconds. It has a 12-second cooldown.
+- **Stop casts.** A bar over an enemy means it's casting. A yellow bar can be stopped with a fully charged hit or a full-draw arrow, and strong casts take several. A red bar with a ring can't be stopped: raise a shield or step out.
+- **Boss doors seal.** A boss door can stay barred until the packs guarding it are dead, and it shuts behind you during the fight.
 
 ## Puzzles, campfires and bosses
 - **Puzzles**: pull levers, press buttons in the order shown, weigh down pressure plates by throwing items on them, shoot targets before time runs out, or cross a jump course. Falling off a course puts you back at its start without costing a life. Puzzles that need a bow or something to throw have a **supply crate**: right-click it for what you need, and it's taken back when you leave.
@@ -667,8 +677,8 @@ Each expedition opens once you've cleared the one before it: **The Hollow Barrow
 ## Difficulty
 | Tier | What changes |
 |---|---|
-| **Normal** | The expedition's base level, 10 lives, one loot roll. |
-| **Heroic** | Stronger enemies, 6 lives, two loot rolls. Clear Normal first. |
+| **Normal** | The expedition's base level, one loot roll. Fall and you run back. |
+| **Heroic** | Stronger enemies, two loot rolls. Fall and you run back. Clear Normal first. |
 | **Mythic** | Much stronger enemies, 3 lives, three loot rolls and extra modifiers. Clear Heroic first. |
 
 Modifiers add twists: **Fortified** (tougher regular enemies), **Tyrannical** (tougher bosses), **Bolstering** (enemies grow stronger when allies fall), **Volatile** (enemies burst after dying), **Raging** (wounded enemies hit harder), **Sanguine** (fallen enemies leave healing pools) and **Timed** (finish under par for an extra loot roll). The board shows which apply before you start.
@@ -868,7 +878,7 @@ Every run is a private copy of the map, built for your group alone. Gather a [pa
 Vanilla portals are sealed. The Nether and the End are reached through themed expeditions that run in those dimensions. The campaign may seal one until the server reaches a milestone; the [expedition board](/expeditions) shows what is open now.
 
 ## Safe to try
-Dying inside an expedition never drops your items, but it spends one of the party's shared lives. The [expedition guide](/guide/expeditions) covers difficulty tiers, modifiers and rewards.'''),
+Dying inside an expedition never drops your items, and on Normal and Heroic you simply run back. The [expedition guide](/guide/expeditions) covers difficulty tiers, modifiers and rewards.'''),
 }
 
 CODEX_NOTES = {

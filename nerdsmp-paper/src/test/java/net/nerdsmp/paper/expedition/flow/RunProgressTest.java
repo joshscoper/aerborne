@@ -50,6 +50,33 @@ class RunProgressTest {
         return new RunProgress(dungeon(), Tier.DEFAULTS.get("normal"), modifiers, new LinkedHashSet<>(List.of(A, B)), 0);
     }
 
+    /** A tier that counts lives and races the clock, as Mythic does. */
+    private static RunProgress counted(Set<Modifier> modifiers) {
+        Tier tier = new Tier("hardcore", "Hardcore", 0, 1, 1, 10, 1, 1, 1, null, List.of());
+        return new RunProgress(dungeon(), tier, modifiers, new LinkedHashSet<>(List.of(A, B)), 0);
+    }
+
+    /** gallery (needs two packs), then a sealed boss room. */
+    private static RunProgress guarded(String goal) {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("spawn", List.of(0, 64, 0));
+        yaml.set("exit", List.of(0, 64, 95));
+        yaml.set("time-limit-minutes", 10);
+        if (goal != null) yaml.set("goal", goal);
+        yaml.set("packs.west.at", List.of(-5, 64, 10));
+        yaml.set("packs.west.mobs.vanilla:zombie", 2);
+        yaml.set("packs.east.at", List.of(5, 64, 10));
+        yaml.set("packs.east.mobs.vanilla:zombie", 2);
+        yaml.set("packs.stray.at", List.of(9, 64, 10));
+        yaml.set("packs.stray.mobs.vanilla:zombie", 1);
+        yaml.set("rooms.tomb.region", List.of(-5, 64, 20, 5, 70, 40));
+        yaml.set("rooms.tomb.seal", List.of(-1, 64, 19, 1, 66, 19));
+        yaml.set("rooms.tomb.requires-packs", List.of("west", "east"));
+        yaml.set("rooms.tomb.points", List.of(List.of(0, 64, 30)));
+        yaml.set("rooms.tomb.encounter.boss", "custom:king");
+        return new RunProgress(ExpeditionLoader.parse("guarded", yaml), Tier.DEFAULTS.get("normal"), Set.of(), new LinkedHashSet<>(List.of(A, B)), 0);
+    }
+
     private static <T extends Effect> List<T> of(List<Effect> effects, Class<T> type) {
         return effects.stream().filter(type::isInstance).map(type::cast).toList();
     }
@@ -93,7 +120,7 @@ class RunProgressTest {
     }
 
     @Test void deathsSpendLivesAndAWipeResetsTheRoom() {
-        RunProgress run = run(Set.of());
+        RunProgress run = counted(Set.of());
         run.enter("hall", 0);
         run.enter("gallery", 0);
         assertEquals(List.of(new Effect.Lives(9, A)), run.death(A));
@@ -119,8 +146,66 @@ class RunProgressTest {
         assertEquals(Set.of(A), run.present());
     }
 
+    @Test void normalAndHeroicNeverRunOutOfLives() {
+        RunProgress run = run(Set.of());
+        run.enter("hall", 0);
+        run.enter("gallery", 0);
+        for (int death = 0; death < 30; death++) {
+            assertEquals(List.of(new Effect.Lives(-1, A)), run.death(A));
+            run.respawned(A);
+        }
+        assertEquals(RunProgress.Phase.ACTIVE, run.phase());
+        assertEquals(30, run.deaths(), "Deaths still count for the grade");
+        run.death(A);
+        assertEquals(List.of(new Effect.ResetRoom("gallery")), of(run.death(B), Effect.ResetRoom.class), "A wipe still resets the fight");
+        assertEquals(RunProgress.Phase.ACTIVE, run.phase());
+    }
+
+    @Test void normalAndHeroicHaveNoTimeLimitUnlessTheClockIsTheGoal() {
+        for (String tier : List.of("normal", "heroic")) {
+            RunProgress run = new RunProgress(dungeon(), Tier.DEFAULTS.get(tier), Set.of(), new LinkedHashSet<>(List.of(A)), 0);
+            assertFalse(run.clockRuns());
+            assertTrue(of(run.tick(36_000_000, 0), Effect.Fail.class).isEmpty(), tier);
+        }
+        assertTrue(guarded("timed").clockRuns());
+        assertEquals(1, of(guarded("timed").tick(600_000, 0), Effect.Fail.class).size());
+        RunProgress mythic = new RunProgress(dungeon(), Tier.DEFAULTS.get("mythic"), Set.of(), new LinkedHashSet<>(List.of(A)), 0);
+        assertTrue(mythic.clockRuns());
+        assertEquals(3, mythic.lives());
+    }
+
+    @Test void aSealedRoomWaitsForItsPacksThenShutsDuringTheFight() {
+        RunProgress run = guarded(null);
+        assertTrue(run.sealed("tomb"));
+        assertEquals(2, run.packsLeft("tomb"));
+        assertTrue(run.enter("tomb", 0).isEmpty(), "The door is barred");
+        assertTrue(run.packCleared("stray").isEmpty(), "Not one of the door's packs");
+        assertTrue(run.packCleared("west").isEmpty());
+        assertTrue(run.objectives(0).getFirst().text().contains("1 packs guard"), run.objectives(0).toString());
+        assertEquals(List.of(new Effect.RoomUnlocked("tomb")), run.packCleared("east"));
+        assertTrue(run.packCleared("east").isEmpty(), "Counted once");
+        assertFalse(run.sealed("tomb"));
+        run.enter("tomb", 1_000);
+        assertTrue(run.sealed("tomb"), "Shut behind the party");
+        run.bossDefeated(2_000);
+        assertFalse(run.sealed("tomb"));
+        assertEquals(RunProgress.Phase.COMPLETE, run.phase());
+    }
+
+    @Test void aSealedFightWithNobodyLeftInsideIsAWipe() {
+        RunProgress run = guarded(null);
+        run.packCleared("west");
+        run.packCleared("east");
+        run.enter("tomb", 0);
+        assertEquals(List.of(new Effect.ResetRoom("tomb")), of(run.evacuated(), Effect.ResetRoom.class));
+        assertFalse(run.sealed("tomb"), "The door reopens for the run back");
+        assertEquals(RunProgress.RoomState.WAITING, run.state("tomb"));
+        assertTrue(run.evacuated().isEmpty(), "Nothing to reset now");
+        assertEquals(1, of(run.enter("tomb", 5_000), Effect.SpawnBoss.class).size(), "The boss comes back at full health");
+    }
+
     @Test void theTimeLimitFailsTheRunAndTimedRewardsAFastClear() {
-        RunProgress slow = run(Set.of());
+        RunProgress slow = counted(Set.of());
         assertEquals(List.of(new Effect.Fail("Time ran out.")), of(slow.tick(600_000, 0), Effect.Fail.class));
         assertTrue(slow.enter("hall", 600_001).isEmpty(), "A failed run ignores further events");
 

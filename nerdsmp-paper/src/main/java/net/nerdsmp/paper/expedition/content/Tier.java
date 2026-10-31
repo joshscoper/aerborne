@@ -20,6 +20,13 @@ public record Tier(String id, String title, int levelBonus, double health, doubl
 
     public static final Map<String, Tier> DEFAULTS = defaults();
 
+    /**
+     * Normal and Heroic forgive: nobody counts lives or runs out of time. A fallen player runs back
+     * from the last checkpoint, and a wipe resets the fight in front of them, but what they've already
+     * killed stays dead. Mythic and keys keep their pressure.
+     */
+    public boolean runBack() { return id.equals("normal") || id.equals("heroic"); }
+
     private static Map<String, Tier> defaults() {
         Map<String, Tier> tiers = new LinkedHashMap<>();
         tiers.put("normal", new Tier("normal", "Normal", 0, 1.0, 1.0, 10, 1, 1.0, 1.0, null, List.of()));

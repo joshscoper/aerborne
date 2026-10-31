@@ -64,6 +64,14 @@ public final class KeystoneStore {
     }
 
     /** The highest timed key on each expedition. */
+    /** Forgets every best key on a map that changed. Keys people hold are kept. */
+    public synchronized void clearBests(String expedition) {
+        yaml.set("best." + expedition, null);
+        var players = yaml.getConfigurationSection("players");
+        if (players != null) for (String account : players.getKeys(false)) players.set(account + "." + expedition, null);
+        save();
+    }
+
     public synchronized Map<String, Best> bests() {
         Map<String, Best> bests = new LinkedHashMap<>();
         var section = yaml.getConfigurationSection("best");

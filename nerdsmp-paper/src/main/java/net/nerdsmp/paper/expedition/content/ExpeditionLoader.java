@@ -142,7 +142,8 @@ public final class ExpeditionLoader {
             mobs.put(mob.toLowerCase(Locale.ROOT), new ExpeditionDefinition.MobProfile(mob.toLowerCase(Locale.ROOT), role,
                 lower(profile.getStringList("abilities")),
                 profile.contains("forces") ? integer(profile, "forces") : ExpeditionDefinition.MobProfile.defaultForces(role),
-                profile.getString("title")));
+                profile.getString("title"), enumValue(ExpeditionDefinition.Behavior.class, profile.getString("behavior", "bruiser"),
+                    "mobs." + mob + ".behavior", "bruiser or caster")));
         }
         Map<String, ExpeditionDefinition.LootChest> chests = new LinkedHashMap<>();
         for (var entry : sections(yaml, "chests").entrySet()) {
@@ -165,7 +166,8 @@ public final class ExpeditionLoader {
         return new ExpeditionDefinition.Story(goal, yaml.contains("forces") ? integer(yaml, "forces") : 0,
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
-            lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"));
+            lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
+            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0);
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {
@@ -277,7 +279,28 @@ public final class ExpeditionLoader {
         return new Room(id, room.getString("title", titleCase(id)), box(room, "region", path), point(room, "checkpoint"),
             box(room, "gate", path), points, encounter == null ? Encounter.NONE : encounter(encounter, path + ".encounter"),
             requires, room.getBoolean("optional", false), puzzles(room, path), loot(room.getConfigurationSection("loot")),
-            lower(room.getStringList("unlocks")));
+            lower(room.getStringList("unlocks")), box(room, "seal", path), lower(room.getStringList("requires-packs")));
+    }
+
+    private static Map<String, ExpeditionDefinition.Pack> packs(ConfigurationSection yaml) {
+        Map<String, ExpeditionDefinition.Pack> packs = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "packs").entrySet()) {
+            ConfigurationSection pack = entry.getValue();
+            String path = "packs." + entry.getKey();
+            Point at = point(pack, "at");
+            if (at == null) throw new IllegalArgumentException(path + ".at: where the pack stands, [x, y, z, yaw].");
+            ConfigurationSection listed = pack.getConfigurationSection("mobs");
+            if (listed == null) throw new IllegalArgumentException(path + ".mobs: who stands here, {mob id: count}.");
+            Map<String, Integer> mobs = new LinkedHashMap<>();
+            for (String mob : listed.getKeys(false)) mobs.put(mob.toLowerCase(Locale.ROOT), listed.getInt(mob));
+            List<Point> patrol = new ArrayList<>();
+            List<?> route = pack.getList("patrol", List.of());
+            for (int index = 0; index < route.size(); index++) patrol.add(point(route.get(index), path + ".patrol[" + (index + 1) + "]"));
+            packs.put(entry.getKey(), new ExpeditionDefinition.Pack(entry.getKey(), at, mobs,
+                pack.contains("aggro") ? integer(pack, "aggro") : ExpeditionDefinition.Pack.DEFAULT_AGGRO,
+                pack.contains("leash") ? integer(pack, "leash") : ExpeditionDefinition.Pack.DEFAULT_LEASH, patrol));
+        }
+        return packs;
     }
 
     private static Encounter encounter(ConfigurationSection section, String path) {

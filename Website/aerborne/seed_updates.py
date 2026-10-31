@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 26
+LATEST = 27
 C = "static:img/companions/"
 
 
@@ -74,6 +74,8 @@ def apply(conn):
         _rev25(conn)
     if current < 26:
         _rev26(conn)
+    if current < 27:
+        _rev27(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -242,6 +244,30 @@ def _rev26(conn):
         if (row and row['updated_by'] == 'starter content'
                 and hashlib.sha256((row['body'] or '').encode('utf-8')).hexdigest() in fingerprints):
             conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
+
+
+# Normal and Heroic dropped lives, and expeditions gained packs and threat.
+REV27_GUIDES = {'expeditions': 'f6d82a1442f8f3976bc4ddbf919e1a00364644cdc6c097cd3d47068534681718',
+                'beyond-your-island': 'b61d00e4e33274910bf5cc11bfacf831bac7dacdec608957353b0d7b083eff34'}
+REV27_REGION = '3a682459448551a2e6532fa62b3856d5d48ae10ba96c7f0605eee7ee61a4790d'
+
+
+def _rev27(conn):
+    import hashlib
+    from .reference_content import GUIDES as REVIEWED, REGIONS
+
+    def fingerprint(text):
+        return hashlib.sha256((text or '').encode('utf-8')).hexdigest()
+
+    for slug, old in REV27_GUIDES.items():
+        guide = next(g for g in REVIEWED if g['slug'] == slug)
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
+        if row and row['updated_by'] == 'starter content' and fingerprint(row['body']) == old:
+            conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (guide['body'], now_str(), row['id']))
+    row = conn.execute("SELECT * FROM regions WHERE slug = 'expeditions'").fetchone()
+    if row and row['updated_by'] == 'starter content' and fingerprint(row['body']) == REV27_REGION:
+        conn.execute('UPDATE regions SET body = ?, updated_at = ? WHERE id = ?',
+                     (REGIONS['expeditions']['body'], now_str(), row['id']))
 
 
 def _rev18(conn):

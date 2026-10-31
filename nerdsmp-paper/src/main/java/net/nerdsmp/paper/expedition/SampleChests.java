@@ -15,8 +15,8 @@ final class SampleChests {
 
     private static final Map<String, List<Spot>> SPOTS = Map.of(
         "first_flight", List.of(new Spot(-9, 64, 80, Material.BARREL), new Spot(7, 64, 93, Material.CHEST)),
-        "hollow_barrow", List.of(new Spot(5, 64, 16, Material.BARREL), new Spot(-7, 64, 52, Material.CHEST),
-            new Spot(8, 64, 73, Material.CHEST)),
+        "hollow_barrow", List.of(new Spot(-14, 64, 15, Material.BARREL), new Spot(-51, 64, 84, Material.CHEST),
+            new Spot(-16, 64, 30, Material.CHEST)),
         "thornwood_canopy", List.of(new Spot(-8, 64, 62, Material.BARREL), new Spot(-20, 64, 62, Material.CHEST),
             new Spot(10, 64, 90, Material.CHEST)),
         "sunken_aqueduct", List.of(new Spot(6, 64, 16, Material.BARREL), new Spot(-9, 64, 64, Material.CHEST),

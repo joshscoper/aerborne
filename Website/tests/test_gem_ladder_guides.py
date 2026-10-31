@@ -59,7 +59,7 @@ class GemLadderGuideTests(unittest.TestCase):
         rows = {r["slug"]: r["body"] for r in conn.execute("SELECT slug, body FROM guides")}
         self.assertEqual(rows["first-gear"], reviewed["first-gear"]["body"])
         self.assertEqual(rows["gem-merging"], old_merging, "Staff edits are kept")
-        self.assertEqual(conn.execute("SELECT value FROM settings WHERE key = 'seed_rev'").fetchone()["value"], "26")
+        self.assertEqual(conn.execute("SELECT value FROM settings WHERE key = 'seed_rev'").fetchone()["value"], str(seed_updates.LATEST))
         conn.close()
 
 

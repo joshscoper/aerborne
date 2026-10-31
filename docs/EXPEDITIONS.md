@@ -445,9 +445,22 @@ Ability damage is dealt as the caster, so tier, modifier and `boss-damage` multi
 | `poison_cloud` | A green disc, then a poison cloud that lingers | 12 s |
 | `tether` | A chain to the nearest player, then a pull; breaking line of sight snaps it | 16 s |
 | `barrage` | A volley of arrows at random players | 10 s |
-| `mend` | Heals itself and wounded allies by 15%; burst damage during the channel interrupts it | 16 s |
+| `mend` | Cast (2.5 s, 1 hit stops it): heals itself and wounded allies by 15% | 16 s |
 | `web` | Pins a player in a cobweb | 12 s |
 | `wrath` | A ring 9 blocks wide, then a blast that throws everyone inside outward | 20 s |
+| `volatile_mark` | A dark ring follows one player for 4 s, then bursts on everyone near them | 17 s |
+| `bolt` | Cast (1.8 s, 1 hit): a bolt at its threat target; needs line of sight | 5 s |
+| `ward` | Cast (2 s, 1 hit): its most wounded ally takes far less damage for 10 s | 14 s |
+| `dread_howl` | Cast (2.5 s, 1 hit): slows and blinds everyone within 9 blocks | 16 s |
+| `rally` | Cast (2 s, 1 hit): nearby allies hit harder for 10 s | 18 s |
+| `heavy_blow` | Cast (2 s, can't be stopped): a huge hit on its threat target; a raised shield takes it and stepping out of reach avoids it | 11 s |
+| `soul_rend` | Cast (4 s, 3 hits): tears at the whole party when it finishes | 26 s |
+
+**Casts.** An ability with a cast time shows a bar over the mob and roots it. A yellow bar can be
+stopped with charged hits (a full swing or a full-draw arrow); a red bar can't. An interrupted cast
+is lost, its cooldown still runs, and whoever landed the last hit gains threat. Set
+`behavior: caster` on a mob's profile and it keeps its distance and fights with its abilities
+instead of closing to melee.
 
 Expedition creatures ship in the plugin as `content/expedition-mobs.yml`, so updates bring new ones.
 An entry with the same id in `content/mobs.yml` overrides the shipped one. Mob entries accept
@@ -456,6 +469,44 @@ An entry with the same id in `content/mobs.yml` overrides the shipped one. Mob e
 
 Enemies never hurt each other, poison clouds touch only players, and fire left by abilities or
 hazards doesn't burn enemies (a player's fire aspect still does).
+
+### Packs and threat
+
+```yaml
+packs:
+  door_guard: {at: [0, 64, 24], mobs: {"custom:barrow_thrall": 3, "custom:crypt_archer": 1}, aggro: 8}
+  walkers:
+    at: [0, 64, 50]
+    mobs: {"custom:bone_lurcher": 1}
+    aggro: 7            # default 9
+    leash: 36           # default 36
+    patrol: [[0, 64, 50], [0, 64, 36]]
+
+rooms:
+  wardens_hall:
+    requires-packs: [door_guard]         # stays barred until these are dead
+    seal: [-52, 64, 66, -52, 67, 70]     # open air in the map; barred by the run
+```
+
+A pack stands in the map from the start of a run with its AI off. It wakes when someone comes
+within `aggro` blocks in plain sight, when a member is hit or taunted, or when a fight comes within
+6 blocks of it in plain sight. All its members then fight together. It gives up when the party is
+beyond `leash` blocks of `at`, when a member is dragged that far, or after 4 s with nobody to fight:
+members walk home unhurt, heal and wait again. Dead members stay dead. Counts scale with party size
+like waves, and forces and drops work the same way.
+
+A `seal` is one block thick. It's barred while its room's `requires-packs` live and during the
+room's fight. If nobody alive is left inside for 3 s, the fight counts as a wipe. Rooms with a
+`requires-packs` list show how many packs are left on the sidebar.
+
+Every enemy in a run keeps a threat table and fights the top of it. A hit adds its damage as threat
+(Bulwark allies add three times that), and a raised shield taking a hit adds four times the hit.
+A new target must pass 110% of the current one's threat in melee reach, or 130% from further away.
+Sneaking and right-clicking with a shield taunts every enemy within 10 blocks for 4 s, once every
+12 s. All of this applies to wave and boss rooms too.
+
+`records-version: <n>` at the top of a file clears that expedition's best times and best keys once,
+for when a map changes. Clears, keys and lockouts stay.
 
 ### Campfires, set pieces, hazards, cutscenes and characters
 

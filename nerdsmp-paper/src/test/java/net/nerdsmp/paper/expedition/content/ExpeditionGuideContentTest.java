@@ -12,10 +12,10 @@ class ExpeditionGuideContentTest {
         ExpeditionDefinition barrow = ExpeditionContentTest.sample("hollow_barrow");
         assertEquals(2, Difficulty.rating(barrow));
         assertFalse(barrow.guide().isEmpty());
-        assertTrue(barrow.guide().overview().startsWith("A crypt crawl"));
-        assertEquals(4, barrow.guide().tips().size());
+        assertTrue(barrow.guide().overview().startsWith("The first dungeon"));
+        assertEquals(6, barrow.guide().tips().size());
         assertEquals(barrow.rooms().keySet(), barrow.guide().rooms().keySet(), "Every room has a tip");
-        assertTrue(barrow.guide().boss().contains("slam"));
+        assertTrue(barrow.guide().boss().contains("heavy blows"));
         var huntsman = barrow.rooms().get("kings_rest").encounter();
         assertEquals(0.6, huntsman.bossDamage());
         assertEquals(0.85, huntsman.bossHealth());

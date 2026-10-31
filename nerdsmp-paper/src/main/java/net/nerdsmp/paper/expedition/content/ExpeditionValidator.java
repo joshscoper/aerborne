@@ -328,6 +328,20 @@ public final class ExpeditionValidator {
                 if (!catalog.ability(ability)) error(issues, "Mob '" + profile.mob() + "' uses unknown ability '" + ability + "'.", abilityFix());
             if (profile.forces() < 0 || profile.forces() > 100) error(issues, "Mob '" + profile.mob() + "' forces must be 0-100.", "mobs." + profile.mob() + ".forces");
         });
+        story.packs().values().forEach(pack -> {
+            String where = "packs." + pack.id();
+            if (pack.mobs().isEmpty()) error(issues, "Pack '" + pack.id() + "' has nobody in it.", where + ".mobs");
+            pack.mobs().forEach((mob, count) -> {
+                if (!catalog.mob(mob)) error(issues, "Pack '" + pack.id() + "' uses unknown mob '" + mob + "'.", where + ".mobs");
+                if (count < 1 || count > 12) error(issues, "Pack '" + pack.id() + "' count for " + mob + " must be 1-12.", where + ".mobs");
+            });
+            if (pack.aggro() < 1 || pack.aggro() > 32) error(issues, "Pack '" + pack.id() + "' aggro must be 1-32 blocks.", where + ".aggro");
+            if (pack.leash() <= pack.aggro() || pack.leash() > 96) error(issues, "Pack '" + pack.id() + "' leash must be above its aggro and at most 96.", where + ".leash");
+            if (pack.patrol().size() == 1) error(issues, "Pack '" + pack.id() + "' needs at least two patrol stops.", where + ".patrol");
+        });
+        expedition.rooms().values().forEach(room -> room.requiresPacks().forEach(pack -> {
+            if (!story.packs().containsKey(pack)) error(issues, "Room '" + room.id() + "' waits on unknown pack '" + pack + "'.", "rooms." + room.id() + ".requires-packs");
+        }));
     }
 
     private static String abilityFix() {
