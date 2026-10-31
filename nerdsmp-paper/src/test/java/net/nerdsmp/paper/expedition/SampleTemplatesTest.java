@@ -136,6 +136,59 @@ class SampleTemplatesTest {
         }
     }
 
+    private static boolean seeThrough(Material material) {
+        return material == Material.AIR || material == Material.COBWEB || material == Material.HANGING_ROOTS || material == Material.IRON_CHAIN
+            || material.name().endsWith("CANDLE") || material.name().endsWith("LANTERN") || material.name().endsWith("CAMPFIRE");
+    }
+
+    /** The first solid block along a look direction, as a distance from the eye. */
+    private static double view(Map<Cell, Material> blocks, double x, double y, double z, float yaw, float pitch) {
+        double dx = -Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
+        double dy = -Math.sin(Math.toRadians(pitch));
+        double dz = Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
+        for (double reach = 0; reach < 40; reach += .25) {
+            Cell at = new Cell((int) Math.floor(x + dx * reach), (int) Math.floor(y + dy * reach), (int) Math.floor(z + dz * reach));
+            if (!seeThrough(blocks.getOrDefault(at, Material.AIR))) return reach;
+        }
+        return 40;
+    }
+
+    /** Walks every camera move of the Barrow: never inside or against anything, and always with room to see. */
+    @Test void theBarrowsCamerasStayClearOfWalls() {
+        var barrow = definition("hollow_barrow");
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        List<String> problems = new java.util.ArrayList<>();
+        for (var scene : barrow.story().cutscenes().values()) {
+            var shots = scene.shots();
+            for (int index = 0; index < shots.size(); index++) {
+                var shot = shots.get(index);
+                var next = index + 1 < shots.size() ? shots.get(index + 1) : shot;
+                var from = shot.frame();
+                var to = shot.to() != null ? shot.to() : next.fade() ? from : next.frame();
+                for (double t = 0; t <= 1; t += .1) {
+                    double x = from.x() + (to.x() - from.x()) * t, y = from.y() + (to.y() - from.y()) * t, z = from.z() + (to.z() - from.z()) * t;
+                    float yaw = (float) (from.yaw() + (to.yaw() - from.yaw()) * t), pitch = (float) (from.pitch() + (to.pitch() - from.pitch()) * t);
+                    String where = scene.id() + " shot " + (index + 1) + " at " + String.format(java.util.Locale.ROOT, "%.1f,%.1f,%.1f", x, y, z);
+                    for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
+                        Cell near = new Cell((int) Math.floor(x) + dx, (int) Math.floor(y) + dy, (int) Math.floor(z) + dz);
+                        if (!seeThrough(blocks.getOrDefault(near, Material.AIR))) problems.add(where + " touches " + blocks.get(near) + " at " + near);
+                    }
+                    double clear = view(blocks, x, y, z, yaw, pitch);
+                    if (clear < 7) problems.add(where + " only sees " + clear + " blocks");
+                }
+            }
+        }
+        assertTrue(problems.isEmpty(), String.join("\n", new java.util.LinkedHashSet<>(problems)));
+    }
+
+    /** The Warden's reanimation draws on real soul fires. */
+    @Test void theWardensFiresAreRealCampfires() {
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        var entrance = definition("hollow_barrow").rooms().get("wardens_hall").encounter().entrance();
+        assertEquals(ExpeditionDefinition.EntranceStyle.REANIMATE, entrance.style());
+        for (var fire : entrance.sources()) assertEquals(Material.SOUL_CAMPFIRE, blocks.get(new Cell(fire.x(), fire.y(), fire.z())), "fire at " + fire);
+    }
+
     /** Fills the Barrow from the spawn through everything a player can pass: nothing may lead out of the map. */
     @Test void theBarrowIsSealed() {
         var barrow = definition("hollow_barrow");

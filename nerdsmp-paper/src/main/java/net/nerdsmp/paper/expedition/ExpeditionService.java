@@ -171,7 +171,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             "d872519fa5b9f187bdc082f9c059752aa91f6cca3d5b7a956b03ec1c89ee3bbf",
             "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a",
             "3d9bd7d0ba9d95b03480111ce1647ccf19da0d2905c056a1e565b7a5cf8ff658",
-            "d302132dbe72606870496c166365aa9de3fffef02217ca09d9ee34c8a9096a99"),
+            "d302132dbe72606870496c166365aa9de3fffef02217ca09d9ee34c8a9096a99",
+            "d96eee9528e7984a340de9a5624d13b6031a7f7c9800c2431cc0cf3589b54796"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
             "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
@@ -1254,6 +1255,12 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (!event.isCancelled() || !event.getBlock().getType().name().endsWith("PRESSURE_PLATE")) return;
         World world = event.getBlock().getWorld();
         if (InstanceWorlds.isRunWorld(world) || isTemplate(world)) event.setCancelled(false);
+    }
+
+    /** Gear doesn't wear down inside a run: a long key shouldn't cost a repair bill on top. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onWear(org.bukkit.event.player.PlayerItemDamageEvent event) {
+        if (runIn(event.getPlayer().getWorld()) != null) event.setCancelled(true);
     }
 
     /** Poison clouds from abilities and hazards touch only players. */

@@ -3,6 +3,7 @@ package net.nerdsmp.paper.expedition;
 import net.nerdsmp.api.model.AccountId;
 import net.nerdsmp.api.model.AdventurerProgression;
 import net.nerdsmp.api.model.ItemId;
+import net.nerdsmp.api.model.Skill;
 import net.nerdsmp.api.service.EconomyService;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition;
@@ -149,16 +150,34 @@ final class RunLoot {
 
     /** An enemy fell: drop its role's loot where it died. */
     void enemyDied(ExpeditionDefinition.Role role, Location at) {
-        ExpeditionLoot.Source source = switch (role) {
+        List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source(role), luck, ThreadLocalRandom.current()), null);
+        for (ItemStack drop : drops) at.getWorld().dropItemNaturally(at, drop);
+        if (role == ExpeditionDefinition.Role.BOSS && !drops.isEmpty())
+            at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
+    }
+
+    /** Everyone present learns from a kill, not only whoever landed the last hit. */
+    void enemyLessons(ExpeditionDefinition.Role role, UUID enemy) {
+        if (run.test || plugin.skills() == null) return;
+        long experience = ExpeditionLoot.skillExperience(source(role), run.expedition.level(), luck);
+        for (Player player : run.online()) plugin.skills().awardMilestone(player, Skill.HUNTING, experience, "expedition:" + run.id + ":" + enemy);
+    }
+
+    /** The run's own lesson, paid to one player as it's won. */
+    void finishLessons(Player player) {
+        if (run.test || plugin.skills() == null) return;
+        long experience = ExpeditionLoot.finishExperience(run.expedition.level(), luck);
+        plugin.skills().awardMilestone(player, Skill.HUNTING, experience, "expedition-finish:" + run.id);
+        Chat.success(player, "You learned from the run: <green>+" + experience + " Hunting XP</green>.");
+    }
+
+    private static ExpeditionLoot.Source source(ExpeditionDefinition.Role role) {
+        return switch (role) {
             case BOSS -> ExpeditionLoot.Source.BOSS;
             case MINIBOSS -> ExpeditionLoot.Source.MINIBOSS;
             case ELITE -> ExpeditionLoot.Source.ELITE;
             default -> ExpeditionLoot.Source.NORMAL;
         };
-        List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source, luck, ThreadLocalRandom.current()), null);
-        for (ItemStack drop : drops) at.getWorld().dropItemNaturally(at, drop);
-        if (role == ExpeditionDefinition.Role.BOSS && !drops.isEmpty())
-            at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
     }
 
     /** A room with a rare companion was cleared: every player present rolls their own chance at its charm. */
@@ -245,6 +264,7 @@ final class RunLoot {
         Window window = new Window(this, player.getUniqueId(), title, price);
         window.inventory = Bukkit.createInventory(window, price > 0 ? 54 : 27, Chat.render("<dark_gray>" + Chat.escape(title) + "</dark_gray>"));
         for (int index = 0; index < items.size() && index < 27; index++) window.inventory.setItem(index, items.get(index));
+        if (plugin.gearUpgrades() != null) plugin.gearUpgrades().mark(player, window.inventory);
         if (price > 0) {
             window.inventory.setItem(BUY_SLOT, MenuKit.item(Material.GOLD_INGOT, "<gold>Open for " + price + " Marks</gold>", List.of(
                 "<gray>The bonus chest holds better odds and always</gray>", "<gray>a piece of set gear. Pay to take its contents.</gray>")));

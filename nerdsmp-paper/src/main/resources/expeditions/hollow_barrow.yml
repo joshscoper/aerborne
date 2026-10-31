@@ -57,25 +57,26 @@ outro:
   - "Old Sexton Pell lays the longbow back across his chest. 'Rest now. You held the road long enough.'"
 
 cutscenes:
-  # A flyover of the dungeon, room by room, with cuts through black. `to` moves the camera over the shot.
+  # A flyover of the dungeon, room by room. `to` moves the camera over the shot; `fade` cuts to it.
   prologue:
-    - {at: [0.5, 66, 2, 0, 0], to: [0.5, 66, 11, 0, 4], seconds: 3, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky."]}
-    - {at: [3.5, 70, 16, 0, 12], to: [3.5, 67, 50, 0, 6], seconds: 4, fade: true, lines: ["sexton|Now his dead stand watch in the Processional, in the old ranks."]}
-    - {at: [-9, 69, 58, -42, 17], to: [9, 69, 58, 42, 17], seconds: 3, fade: true, lines: ["|The Crossing joins it all. East, the Lever Vault. West, the Ossuary."]}
-    - {at: [39, 70, 56, 0, 25], to: [39, 68, 66, 0, 18], seconds: 3, fade: true, lines: ["sexton|The Vault's levers lift the west portcullis."]}
-    - {at: [-56, 68, 68.5, 90, 6], to: [-61, 67, 68.5, 90, 0], seconds: 3, fade: true, lines: ["sexton|Past the bones, the Warden keeps the south gate."]}
-    - {at: [0.5, 71, 102, 0, 12], to: [0.5, 68, 112, 0, -2], seconds: 4, fade: true, lines: ["|And beyond him, the King's Rest. Something there is still awake."]}
+    - {at: [0.5, 66, 3, 0, 0], to: [0.5, 66, 9, 0, 3], seconds: 3, title: "<gray>The Hollow Barrow</gray>", text: "<dark_gray>Tomb of the Huntsman</dark_gray>", sound: "ambient.cave 0.8", lines: ["|When the world burned, the Huntsman held the hill road while the last carts climbed into the sky."]}
+    - {at: [3.5, 69, 17, 0, 10], to: [3.5, 68, 44, 0, 6], seconds: 5, fade: true, lines: ["sexton|Now his dead stand watch in the Processional, in the old ranks."]}
+    - {at: [-5, 69, 60, -36, 23], to: [5, 69, 60, 36, 23], seconds: 4, fade: true, lines: ["|The Crossing joins it all. East, the Lever Vault. West, the Ossuary."]}
+    - {at: [39, 70, 57, 0, 24], to: [39, 69, 63, 0, 20], seconds: 3, fade: true, lines: ["sexton|The Vault's levers lift the west portcullis."]}
+    - {at: [-56, 68, 68.5, 90, 6], to: [-59, 67, 68.5, 90, 2], seconds: 3, fade: true, lines: ["sexton|Past the bones, the Warden keeps the south gate."]}
+    - {at: [0.5, 69, 102, 0, 8], to: [0.5, 68, 110, 0, 0], seconds: 3, fade: true, lines: ["|And beyond him, the King's Rest. Something there is still awake."]}
+  # Timed with the Warden's entrance below: his fires are drawn into the bones through the first shots.
   warden_wakes:
-    - {at: [-56.5, 69, 68.5, 90, 10], to: [-60.5, 68, 68.5, 90, 6], seconds: 2, sound: "entity.wither_skeleton.ambient 0.5", lines: ["|The bones heaped on the dais begin to stir."]}
-    - {at: [-61, 66.5, 63, 50, -4], to: [-61, 66.5, 73, 130, -4], seconds: 5}
-    - {at: [-60, 67, 68.5, 90, -4], seconds: 3, title: "<dark_gray>The Warden of Bones</dark_gray>", text: "<gray>Keeper of the south gate</gray>", lines: ["The Warden of Bones|None pass while I stand."]}
+    - {at: [-55, 69, 68.5, 90, 8], to: [-59, 68, 68.5, 90, 5], seconds: 3, sound: "entity.wither_skeleton.ambient 0.5", lines: ["|One by one, the fires along the wall bow toward the bones."]}
+    - {at: [-62, 67, 63, 45, -2], to: [-62, 67, 73, 135, -2], seconds: 6}
+    - {at: [-60, 67, 68.5, 90, -4], seconds: 3, title: "<gray>The Warden of Bones</gray>", text: "<gray>Keeper of the south gate</gray>", lines: ["The Warden of Bones|None pass while I stand."]}
   widow_wakes:
-    - {at: [-38, 67, 48, 180, 8], to: [-38, 66, 41, 180, 2], seconds: 3, sound: "ambient.cave 0.6", lines: ["|The candles lean, all at once, towards the sarcophagus."]}
-    - {at: [-38, 66, 40, 180, 0], to: [-38, 66, 38, 180, -6], seconds: 4, title: "<dark_aqua>The Keening Widow</dark_aqua>", text: "<gray>She waited at the door until the door fell</gray>", lines: ["The Keening Widow|He promised he would come home."]}
+    - {at: [-38, 67, 48, 180, 8], to: [-38, 66, 44, 180, 2], seconds: 3, sound: "ambient.cave 0.6", lines: ["|The candles lean, all at once, towards the sarcophagus."]}
+    - {at: [-38, 66, 44, 180, 2], to: [-38, 66, 41, 180, -4], seconds: 4, title: "<dark_aqua>The Keening Widow</dark_aqua>", text: "<gray>She waited at the door until the door fell</gray>", lines: ["The Keening Widow|He promised he would come home."]}
   king_wakes:
-    - {at: [0.5, 71, 103, 0, 15], to: [0.5, 70, 110, 0, 12], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
-    - {at: [6, 66.5, 114, 45, -3], to: [-6, 66.5, 114, -45, -3], seconds: 5, actions: ["break king_lid"]}
-    - {at: [0.5, 66.5, 112, 0, -6], seconds: 3, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
+    - {at: [0.5, 69, 102, 0, 10], to: [0.5, 68, 109, 0, 8], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
+    - {at: [4, 67, 113, 30, 0], to: [-4, 67, 113, -30, 0], seconds: 5, actions: ["break king_lid"]}
+    - {at: [0.5, 67, 112, 0, -4], seconds: 3, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
 
 mobs:
   "custom:veil_stalker": {role: elite, abilities: [blink]}
@@ -167,7 +168,12 @@ rooms:
     encounter:
       type: boss
       boss: custom:warden_of_bones
-      entrance: {style: form, delay: 2, seconds: 5}
+      # The fires along the back wall are drawn into the bone pile, then come back as he rises.
+      entrance:
+        style: reanimate
+        delay: 1
+        seconds: 8
+        sources: [[-76, 65, 58], [-76, 65, 78], [-76, 65, 63], [-76, 65, 73], [-76, 65, 68]]
       boss-damage: 0.7
       abilities: [heavy_blow, shield]
       phases:

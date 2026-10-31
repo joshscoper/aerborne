@@ -227,8 +227,11 @@ public final class ExpeditionLoader {
         if (entrance == null) return null;
         int delay = entrance.getInt("delay", 0), seconds = entrance.getInt("seconds", 4);
         if (delay < 0 || delay > 20 || seconds < 1 || seconds > 20) throw new IllegalArgumentException(path + ".entrance: delay 0-20 and seconds 1-20.");
+        List<Point> sources = new ArrayList<>();
+        List<?> raw = entrance.getList("sources", List.of());
+        for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise or form"), delay, seconds);
+            path + ".entrance.style", "rise or reanimate"), delay, seconds, sources);
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {

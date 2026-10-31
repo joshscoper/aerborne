@@ -61,6 +61,7 @@ Ops can use `/dev` (`nerdsmp.dev`) to test without playing up to something. Run 
 | `/dev speed <1-10> [player]` | Walk and fly speed; 1 is normal |
 | `/dev item <id> [amount] [player]` | Any catalog item or vanilla item; `lesson`, `lifetime` and `legend` are the bottles |
 | `/dev gear <id> [item levels] [affixes] [player]` | A rolled piece of loot, above its catalog level if you like |
+| `/dev sealed <id> [player]` | An unidentified piece of loot |
 | `/dev charm <companion> [player]` | A companion charm |
 | `/dev level <skill\|all> <level> [player]` | Set a skill's level, up or down |
 | `/dev marks <amount> [player]` | Add Marks |

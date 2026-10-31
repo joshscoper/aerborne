@@ -353,11 +353,16 @@ public record ExpeditionDefinition(
      */
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
-    /** A boss rising out of the floor, or its bones gathering first and then rising. */
-    public enum EntranceStyle { RISE, FORM }
+    /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
+    public enum EntranceStyle { RISE, REANIMATE }
 
-    /** How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds} into the fight. */
-    public record Entrance(EntranceStyle style, int delaySeconds, int seconds) { }
+    /**
+     * How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds}
+     * into the fight. {@code sources} are the fires a reanimation draws on.
+     */
+    public record Entrance(EntranceStyle style, int delaySeconds, int seconds, List<Point> sources) {
+        public Entrance { sources = sources == null ? List.of() : List.copyOf(sources); }
+    }
 
     /**
      * A boss phase: below {@code atHealth} percent the boss switches to these abilities. With

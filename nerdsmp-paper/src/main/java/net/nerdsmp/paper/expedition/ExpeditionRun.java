@@ -95,6 +95,7 @@ final class ExpeditionRun {
     private final RunStage stage;
     private final AbilityCaster abilityCaster;
     private final RunCombat fight;
+    private final RunEntrance entrance;
     private final RunPacks packs;
     /** Whether each sealed room's door is shut now. */
     private final Map<String, Boolean> seals = new HashMap<>();
@@ -199,6 +200,13 @@ final class ExpeditionRun {
                 var counts = plugin.quests().counts(player, giver);
                 return counts.ready() > 0 ? "?" : counts.available() > 0 ? "!" : null;
             }
+        });
+        this.entrance = new RunEntrance(plugin, new RunEntrance.Host() {
+            @Override public World world() { return run.world; }
+            @Override public boolean live() { return run.state == State.ACTIVE; }
+            @Override public boolean cutsceneRunning() { return run.stage.cutsceneRunning(); }
+            @Override public void log(String line) { run.logAbility(line); }
+            @Override public void loose(Room room, String id, LivingEntity boss) { run.announceBoss(room, id, boss); }
         });
         this.fight = new RunCombat(plugin, new RunCombat.Host() {
             @Override public boolean live() { return run.state == State.ACTIVE; }
@@ -348,6 +356,7 @@ final class ExpeditionRun {
         updateSeals(now);
         if (expedition.story().time() != null && world.getEnvironment() == World.Environment.NORMAL) world.setTime(expedition.story().time());
         stage.begin();
+        entrance.begin(expedition.roomList());
         puzzles.begin(expedition.roomList());
         Location spawn = location(expedition.spawn());
         for (UUID member : members) {
@@ -462,6 +471,7 @@ final class ExpeditionRun {
             slot.entity = null;
         }
         stage.close();
+        entrance.close();
         hideBar();
         for (UUID member : members) {
             Player player = Bukkit.getPlayer(member);
@@ -551,7 +561,10 @@ final class ExpeditionRun {
         Integer bossSlot = bosses.remove(uuid);
         damage.remove(uuid);
         ExpeditionDefinition.Role role = roles.remove(uuid);
-        if (role != null && state == State.ACTIVE) loot.enemyDied(role, entity.getLocation());
+        if (role != null && state == State.ACTIVE) {
+            loot.enemyDied(role, entity.getLocation());
+            loot.enemyLessons(role, uuid);
+        }
         casters.remove(uuid);
         fight.died(uuid);
         packs.died(uuid);
@@ -768,6 +781,7 @@ final class ExpeditionRun {
             long marks = payMarks(account.get(), expedition.loot(), "complete");
             fixed.put(member, fixedRewards(expedition.loot(), rolls, member));
             if (marks > 0) Chat.success(player, "Reward: " + Chat.marks(marks) + (underPar ? " <yellow>(+1 timed roll in your chest)</yellow>" : "") + ".");
+            loot.finishLessons(player);
         }
         int findable = expedition.story().secrets() + progress.optionalTotal();
         var score = net.nerdsmp.paper.expedition.content.ExpeditionLoot.Score.of(seconds, progress.limitSeconds(), progress.deaths(),
@@ -906,63 +920,13 @@ final class ExpeditionRun {
         if (entity == null) return;
         bosses.put(entity.getUniqueId(), index);
         casters.put(entity.getUniqueId(), new Caster(ExpeditionDefinition.Role.BOSS, bossAbilities(room, 0), 1.4));
-        if (room.encounter().entrance() != null) enter(room, id, entity, room.encounter().entrance());
-        else announceBoss(room, id, entity);
-    }
-
-    /**
-     * A boss's arrival: held under the floor, brought up with its effects, and let loose once every
-     * camera is back. A second attempt at the fight gets a short version with no wait.
-     */
-    private void enter(Room room, String id, LivingEntity boss, ExpeditionDefinition.Entrance entrance) {
-        boolean first = entered.add(room.id());
-        int delay = first ? entrance.delaySeconds() * 20 : 0, length = first ? entrance.seconds() * 20 : 20;
-        Location home = boss.getLocation();
-        Caster caster = casters.get(boss.getUniqueId());
-        if (caster != null) caster.nextCast = System.currentTimeMillis() + (delay + length) * 50L + 3_000;
-        boss.setInvulnerable(true);
-        if (boss instanceof Mob mob) mob.setAI(false);
-        boss.teleport(home.clone().subtract(0, ENTRANCE_DEPTH, 0));
-        logAbility(id + " entering");
-        int[] clock = {-delay};
-        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
-            if (state != State.ACTIVE || !boss.isValid()) { task.cancel(); return; }
-            int tick = clock[0]++;
-            if (tick < 0) return;
-            if (tick < length) entering(boss, home, entrance.style(), tick, length);
-            if (tick == length) {
-                boss.teleport(home);
-                world.spawnParticle(Particle.SOUL, home.clone().add(0, 1, 0), 45, .7, .9, .7, .06);
-                world.spawnParticle(Particle.EXPLOSION, home.clone().add(0, 1, 0), 2, .3, .3, .3, 0);
-                world.playSound(home, Sound.ENTITY_WITHER_SKELETON_DEATH, 1.2F, .5F);
-            }
-            if (tick < length || stage.cutsceneRunning() && tick < length + 400) return;
-            task.cancel();
-            boss.setInvulnerable(false);
-            if (boss instanceof Mob mob) mob.setAI(true);
-            logAbility(id + " loose");
-            announceBoss(room, id, boss);
-        }, 0L, 1L);
-    }
-
-    /** One tick of a boss coming up: {@code RISE} climbs steadily, {@code FORM} gathers its bones first and comes up fast. */
-    private void entering(LivingEntity boss, Location home, ExpeditionDefinition.EntranceStyle style, int tick, int length) {
-        double done = tick / (double) length;
-        boolean forming = style == ExpeditionDefinition.EntranceStyle.FORM;
-        double rise = forming ? Math.max(0, (done - .7) / .3) : done;
-        boss.teleport(home.clone().subtract(0, ENTRANCE_DEPTH * (1 - rise * rise * (3 - 2 * rise)), 0));
-        Location floor = home.clone().add(0, .15, 0);
-        if (forming && done < .8) {
-            double radius = 3.2 * (1 - done);
-            for (int arm = 0; arm < 3; arm++) {
-                double angle = tick * .3 + arm * 2.094;
-                net.nerdsmp.paper.expedition.combat.Telegraph.shards(floor.clone().add(Math.cos(angle) * radius, .4 + done * 1.6, Math.sin(angle) * radius), 3, .1, Material.BONE_BLOCK);
-            }
-        } else {
-            net.nerdsmp.paper.expedition.combat.Telegraph.shards(floor, 10, .7, Material.DEEPSLATE_BRICKS);
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, floor, 6, .6, .1, .6, .02);
+        if (room.encounter().entrance() == null) {
+            announceBoss(room, id, entity);
+            return;
         }
-        if (tick % 12 == 0) world.playSound(home, forming ? Sound.ENTITY_SKELETON_STEP : Sound.BLOCK_DEEPSLATE_BREAK, 1F, .5F + (float) done * .4F);
+        int ticks = entrance.enter(room, id, entity);
+        Caster caster = casters.get(entity.getUniqueId());
+        if (caster != null) caster.nextCast = System.currentTimeMillis() + ticks * 50L + 3_000;
     }
 
     /** The bar and the name card, once a boss is really in the fight. */
@@ -980,10 +944,11 @@ final class ExpeditionRun {
         world.playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.2F, .8F);
         // A name card for the boss, unless a cutscene is introducing it.
         String epithet = expedition.story().mob(id).title();
-        for (Player player : online())
-            if (!stage.inCutscene(player)) player.showTitle(Title.title(displayName(entity),
-                epithet == null ? Component.empty() : Chat.render("<gray>" + Chat.escape(epithet) + "</gray>"),
-                Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2500), Duration.ofMillis(600))));
+        for (Player player : online()) {
+            if (stage.inCutscene(player)) continue;
+            player.showTitle(Title.title(Component.empty(), displayName(entity), Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2500), Duration.ofMillis(600))));
+            if (epithet != null) player.sendActionBar(Chat.render("<gray>" + Chat.escape(epithet) + "</gray>"));
+        }
     }
 
     /** A boss's abilities for a phase: the phase's list, or the encounter's when the phase lists none. */

@@ -5,6 +5,19 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Second Barrow playtest (October 31)
+- **The Warden is reanimated.** A pile of bones lies on his dais. The soul fires along the back wall
+  go out one by one, their flames fly into the pile, the bones lift around him and the fires roar back
+  as he rises.
+- **Cameras are smooth and stay out of walls.** Cinematics move every tick instead of every third, and
+  a test walks every shot of the Barrow to keep it clear of walls with a view worth seeing.
+- **Boss titles fit.** Titles in a scene hang in front of the camera and wrap, at any interface scale.
+- **Upgrades are marked.** Gear that beats what you're wearing gets a green arrow, a glint and a line
+  saying what it gains, in your bags and in loot chests.
+- **Sealed gear can't be equipped**, by any route.
+- **Dungeons teach.** Everyone present gets Hunting XP for every kill, and more for finishing.
+- **No durability loss** inside expeditions.
+
 ### Developer commands (October 31)
 - **`/dev`** gives ops god mode, healing, flight, speed, any item, rolled gear, companion charms, skill
   levels up or down, Marks, mob spawning, a nearby kill and a jump to any room of a run. Every use is

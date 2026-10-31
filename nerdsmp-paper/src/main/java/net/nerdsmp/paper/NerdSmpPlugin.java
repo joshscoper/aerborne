@@ -159,6 +159,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private org.bukkit.scheduler.BukkitTask contentRefreshTask;
     private SkillListener skillListener;
     private net.nerdsmp.paper.item.SkillLampService skillLamps;
+    private net.nerdsmp.paper.item.GearUpgradeMarks gearUpgrades;
     private net.nerdsmp.paper.item.ItemUpdater itemUpdater;
     private net.nerdsmp.paper.gathering.HoeHarvestService hoeHarvest;
     private net.nerdsmp.paper.gathering.OreSmeltingService oreSmelting;
@@ -167,6 +168,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.gathering.ForestryService forestry;
     public SkillListener skills() { return skillListener; }
     public net.nerdsmp.paper.item.SkillLampService skillLamps() { return skillLamps; }
+    public net.nerdsmp.paper.item.GearUpgradeMarks gearUpgrades() { return gearUpgrades; }
     public net.nerdsmp.paper.gathering.HoeHarvestService hoeHarvest() { return hoeHarvest; }
     public net.nerdsmp.paper.gathering.OreSmeltingService oreSmelting() { return oreSmelting; }
     public net.nerdsmp.paper.gathering.AutoSmeltService autoSmelt() { return autoSmelt; }
@@ -637,6 +639,9 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(new net.nerdsmp.paper.gathering.LivestockService(this), this);
         skillLamps = new net.nerdsmp.paper.item.SkillLampService(this);
         plugins.registerEvents(skillLamps, this);
+        gearUpgrades = new net.nerdsmp.paper.item.GearUpgradeMarks(this, items);
+        plugins.registerEvents(gearUpgrades, this);
+        plugins.registerEvents(new net.nerdsmp.paper.item.SealedGearGuard(this, items), this);
         itemUpdater = new net.nerdsmp.paper.item.ItemUpdater(items, forge);
         itemUpdater.lamps(skillLamps);
         plugins.registerEvents(itemUpdater, this);

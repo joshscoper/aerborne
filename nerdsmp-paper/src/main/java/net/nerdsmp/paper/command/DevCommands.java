@@ -55,6 +55,7 @@ final class DevCommands implements Listener {
         HELP.put("speed", "<1-10> [player]: walk and fly speed (1 is normal)");
         HELP.put("item", "<id> [amount] [player]: any item; lesson, lifetime and legend are the bottles");
         HELP.put("gear", "<id> [item levels] [affixes] [player]: a rolled piece of loot");
+        HELP.put("sealed", "<id> [player]: an unidentified piece of loot");
         HELP.put("charm", "<companion> [player]: a companion charm");
         HELP.put("level", "<skill|all> <level> [player]: set a skill's level, up or down");
         HELP.put("marks", "<amount> [player]: add Marks");
@@ -91,6 +92,7 @@ final class DevCommands implements Listener {
             case "speed" -> speed(sender, args);
             case "item" -> item(sender, args);
             case "gear" -> gear(sender, args);
+            case "sealed" -> sealed(sender, args);
             case "charm" -> charm(sender, args);
             case "level" -> level(sender, args);
             case "marks" -> marks(sender, args);
@@ -242,6 +244,17 @@ final class DevCommands implements Listener {
         done(sender, target, "Gave a rolled " + Chat.escape(args[1]) + ", " + levels + " levels up.");
     }
 
+    private void sealed(CommandSender sender, String[] args) {
+        if (args.length < 2 || plugin.items().itemIds().stream().noneMatch(item -> item.value().equals(args[1].toLowerCase(Locale.ROOT)))) {
+            usage(sender, "sealed");
+            return;
+        }
+        Player target = target(sender, args, 2);
+        if (target == null) return;
+        give(target, plugin.items().createLoot(new ItemId(args[1].toLowerCase(Locale.ROOT)), 2, true, ThreadLocalRandom.current().nextLong()));
+        done(sender, target, "Gave a sealed " + Chat.escape(args[1]) + ".");
+    }
+
     private void charm(CommandSender sender, String[] args) {
         if (args.length < 2) {
             usage(sender, "charm");
@@ -351,7 +364,7 @@ final class DevCommands implements Listener {
         if (args.length == 2) return switch (action) {
             case "god", "heal", "fly" -> players;
             case "item" -> Stream.concat(BOTTLES.keySet().stream(), plugin.items().itemIds().stream().map(ItemId::value)).toList();
-            case "gear" -> plugin.items().itemIds().stream().map(ItemId::value).toList();
+            case "gear", "sealed" -> plugin.items().itemIds().stream().map(ItemId::value).toList();
             case "charm" -> plugin.cosmetics() == null ? List.of() : plugin.cosmetics().catalog().companionSlugs();
             case "level" -> Stream.concat(Stream.of("all"), Arrays.stream(Skill.values()).map(skill -> skill.name().toLowerCase(Locale.ROOT))).toList();
             case "mob" -> List.copyOf(plugin.mobs().ids());
@@ -359,7 +372,7 @@ final class DevCommands implements Listener {
             default -> List.of();
         };
         boolean lastIsPlayer = switch (action) {
-            case "speed", "marks", "charm" -> args.length == 3;
+            case "speed", "marks", "charm", "sealed" -> args.length == 3;
             case "item", "level" -> args.length == 4;
             case "gear" -> args.length == 5;
             default -> false;

@@ -84,7 +84,7 @@ commands:
     aliases: [questlog, storyquests]
   dev:
     description: Developer tools for testing, such as god mode, items and levels.
-    usage: /dev <god|heal|fly|speed|item|gear|charm|level|marks|mob|kill|goto> [arguments]
+    usage: /dev <god|heal|fly|speed|item|gear|sealed|charm|level|marks|mob|kill|goto> [arguments]
     permission: nerdsmp.dev
   worldpack:
     description: Show or re-apply the shipped content for a known world map.

@@ -211,6 +211,10 @@ levels the player has above the expedition's level (at most 15), up to 40 in all
 adds 1% to the piece's base stats and shows in its tooltip. Stacks of items grow the same way, by the
 tier's luck and 1% per level above the expedition (at most half again); single items stay single.
 
+**Skill XP and wear.** Everyone present gets Hunting XP for each enemy that falls (10, 30, 90 or 300
+for normal, elite, miniboss and boss, plus 10% per expedition level, times the tier's luck), and 600
+on the same scale for finishing. Gear doesn't lose durability inside a run.
+
 **Rare companions.** `companion-drops: {<room>: {companion: <slug>, chance: 0.005}}` gives each
 player present their own roll when that room is cleared, multiplied by the tier's luck. A win is a
 charm that can be traded until someone right-clicks it to bind the companion to their account. Test
@@ -551,10 +555,11 @@ npcs:
   launches players and `gas` leaves a poison cloud. Wipes stop every hazard.
 - **Cutscenes** glide the camera between shots (eased), or within one with `to: [x, y, z, yaw,
   pitch]`, where the shot moves from `at` to `to` over its own length. Each plays once a run, so a
-  second try at a boss skips its scene, and sneaking skips one for that player. Each shot can show a `title` card and a
-  subtitle (`text`), play a `sound` (`key [pitch]`), and speak `lines` spread across its length:
-  `"Speaker|line"` (an NPC id or any name) or `"|line"` for narration. `fade: true` cuts to the shot
-  through black instead of gliding to it. `actions` are script lines run as the shot starts, once for
+  second try at a boss skips its scene, and sneaking skips one for that player. A shot's `title` and
+  subtitle (`text`) hang in front of the camera and wrap to fit, at any interface scale. A shot can
+  also play a `sound` (`key [pitch]`) and speak `lines` spread across its length: `"Speaker|line"` (an
+  NPC id or any name) or `"|line"` for narration. `fade: true` cuts straight to the shot instead of
+  gliding to it. `actions` are script lines run as the shot starts, once for
   the party, so a scene can raise a bridge or start a hazard. Players are spectators meanwhile;
   anyone who logs off mid-scene gets their game mode back on join. A scene can run 45 seconds.
 - **Intro and outro.** `intro:` plays a cutscene for the party as the run starts; `outro:` lines are
@@ -562,11 +567,13 @@ npcs:
   after the overview, and the website shows it.
 - **Boss name cards.** A boss's name appears as a title when it spawns, with the `title` from its
   `mobs:` profile underneath, unless a cutscene is introducing it.
-- **Boss entrances.** `entrance: {style: rise|form, delay: 3, seconds: 5}` on a boss encounter holds
-  the boss under the floor, untouchable, and brings it up `delay` seconds into the fight: `rise`
-  climbs steadily through breaking floor, `form` gathers its bones first and comes up fast. It's let
-  loose once every camera is back, and a second attempt takes a second with no wait. Time a scene
-  around it.
+- **Boss entrances.** `entrance: {style: rise|reanimate, delay: 3, seconds: 5}` on a boss encounter
+  holds the boss under the floor, untouchable, and brings it up `delay` seconds into the fight. `rise`
+  climbs steadily through breaking floor. `reanimate` lays a pile of bones at the room's first point
+  from the start of the run; list soul fires under `sources: [[x, y, z], ...]` and they go out one by
+  one, their flames fly into the pile, the bones lift around the boss and the fires come back as it
+  arrives. It's let loose once every camera is back, and a second attempt takes a second with no
+  wait. Time a scene around it.
 - **Characters** stand where placed, can't be hurt or traded with, and play their next line when
   right-clicked. Scripts make them (or anyone) speak with `say`, and move them with `npc`. With
   `quests: <giver id>` a character is a quest giver for `content/world-quests.yml`: it shows a blue

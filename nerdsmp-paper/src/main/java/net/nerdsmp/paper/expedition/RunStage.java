@@ -25,13 +25,15 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Lightable;
 import org.bukkit.entity.AreaEffectCloud;
-import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
@@ -77,6 +79,10 @@ final class RunStage {
 
     /** Players out of combat this close to a lit campfire rest. */
     static final double REST_RADIUS = 4.5;
+    /** Ticks the client smooths each camera move over. */
+    private static final int CAMERA_SMOOTHING = 2;
+    /** How far in front of the camera a title card hangs. */
+    private static final double CARD_DISTANCE = 3.2;
     static NamespacedKey cutsceneKey;
 
     private final Plugin plugin;
@@ -92,6 +98,7 @@ final class RunStage {
     private final Set<UUID> fallingRocks = new HashSet<>();
     /** Scenes already shown this run: a second attempt at a boss doesn't sit through its scene again. */
     private final Set<String> played = new HashSet<>();
+    private final List<TextDisplay> cards = new ArrayList<>();
     /** The blue marks over a quest-giving character, one per mark, shown only to the players they're for. */
     private final Map<String, Map<String, org.bukkit.entity.TextDisplay>> marks = new HashMap<>();
     private final Map<UUID, Map<String, String>> marksShown = new HashMap<>();
@@ -144,6 +151,8 @@ final class RunStage {
         npcByEntity.clear();
         marks.values().forEach(displays -> displays.values().forEach(Entity::remove));
         marks.clear();
+        cards.forEach(Entity::remove);
+        cards.clear();
         for (UUID uuid : fallingRocks) {
             Entity entity = Bukkit.getEntity(uuid);
             if (entity != null) entity.remove();
@@ -536,21 +545,16 @@ final class RunStage {
         }
         for (Player player : host.online()) {
             if (player.isDead() || inCutscene(player)) continue;
-            Shot first = cutscene.shots().getFirst();
-            ArmorStand camera = host.world().spawn(location(first.frame()), ArmorStand.class, stand -> {
-                stand.setInvisible(true);
-                stand.setMarker(true);
-                stand.setGravity(false);
-                stand.setInvulnerable(true);
-                stand.setPersistent(false);
-                stand.setSilent(true);
+            // A display entity moves every tick; an armor stand only updates its viewers every third.
+            ItemDisplay camera = host.world().spawn(location(cutscene.shots().getFirst().frame()), ItemDisplay.class, display -> {
+                display.setPersistent(false);
+                display.setTeleportDuration(CAMERA_SMOOTHING);
             });
             GameMode mode = player.getGameMode();
             Location from = player.getLocation();
             // If the player logs off mid-scene, their game mode comes back on the next join.
             player.getPersistentDataContainer().set(cutsceneKey, PersistentDataType.STRING, mode.name());
             player.setGameMode(GameMode.SPECTATOR);
-            player.setSpectatorTarget(camera);
             int total = cutscene.seconds() * 20;
             int[] tick = {0};
             BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -559,39 +563,115 @@ final class RunStage {
                     return;
                 }
                 if (tick[0] == 30 && total > 100) player.sendActionBar(Chat.render("<dark_gray>Sneak to skip</dark_gray>"));
-                int elapsed = 0;
-                for (int shot = 0; shot < cutscene.shots().size(); shot++) {
-                    Shot current = cutscene.shots().get(shot);
-                    int length = current.seconds() * 20;
-                    if (tick[0] < elapsed + length) {
-                        if (tick[0] == elapsed) beginShot(player, current, shot == 0);
-                        Shot next = shot + 1 < cutscene.shots().size() ? cutscene.shots().get(shot + 1) : current;
-                        if (next.fade()) next = current; // A cut through black: hold this frame, then jump.
-                        double t = (tick[0] - elapsed) / (double) length;
-                        camera.teleport(lerp(current.frame(), current.to() != null ? current.to() : next.frame(), t));
-                        break;
-                    }
-                    elapsed += length;
-                }
+                Moment now = moment(cutscene, tick[0]);
+                if (now.start() == tick[0]) sound(player, cutscene.shots().get(now.shot()));
+                // A cut jumps in one go; every other move is smoothed. The duration has to reach the client first.
+                camera.setTeleportDuration(cut(cutscene, tick[0] + 1) ? 0 : CAMERA_SMOOTHING);
+                camera.teleport(pose(cutscene, tick[0]));
                 if (player.getSpectatorTarget() != camera) player.setSpectatorTarget(camera);
                 tick[0]++;
-            }, 0L, 1L);
+            }, 1L, 1L);
             cameras.put(player.getUniqueId(), new CameraState(mode, from, camera.getUniqueId(), task));
         }
+        showCards(cutscene);
     }
 
-    /** A shot begins for one viewer: its cards, its sound, and a fade through black when it cuts in. */
-    private void beginShot(Player player, Shot shot, boolean first) {
-        if (shot.text() != null || shot.title() != null)
-            player.showTitle(Title.title(shot.title() == null ? net.kyori.adventure.text.Component.empty() : Chat.render(shot.title()),
-                shot.text() == null ? net.kyori.adventure.text.Component.empty() : Chat.render(shot.text()),
-                Title.Times.times(Duration.ofMillis(first || shot.fade() ? 700 : 250), Duration.ofSeconds(Math.max(1, shot.seconds() - 1)), Duration.ofMillis(400))));
-        if (first || shot.fade()) player.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.BLINDNESS, 22, 0, false, false, false));
-        if (shot.sound() != null) {
-            String[] parts = shot.sound().split(" ");
-            float pitch = parts.length > 1 ? Float.parseFloat(parts[1]) : 1F;
-            player.playSound(player.getLocation(), parts[0], 1F, pitch);
+    /** The shot running {@code tick} ticks into a scene, and the tick it began on. */
+    private record Moment(int shot, int start) { }
+
+    private static Moment moment(Cutscene cutscene, int tick) {
+        int start = 0;
+        for (int shot = 0; shot < cutscene.shots().size(); shot++) {
+            int length = cutscene.shots().get(shot).seconds() * 20;
+            if (tick < start + length) return new Moment(shot, start);
+            start += length;
         }
+        int last = cutscene.shots().size() - 1;
+        return new Moment(last, start - cutscene.shots().get(last).seconds() * 20);
+    }
+
+    /** Where a shot's camera ends up: its own {@code to}, the next shot it glides into, or where it stands. */
+    private static ExpeditionDefinition.Frame end(Cutscene cutscene, int shot) {
+        Shot current = cutscene.shots().get(shot);
+        if (current.to() != null) return current.to();
+        Shot next = shot + 1 < cutscene.shots().size() ? cutscene.shots().get(shot + 1) : current;
+        return next.fade() ? current.frame() : next.frame();
+    }
+
+    private Location pose(Cutscene cutscene, int tick) {
+        Moment now = moment(cutscene, tick);
+        Shot shot = cutscene.shots().get(now.shot());
+        return lerp(shot.frame(), end(cutscene, now.shot()), Math.min(1, (tick - now.start()) / (double) (shot.seconds() * 20)));
+    }
+
+    /** True when this tick starts a shot somewhere other than where the last one left the camera. */
+    private static boolean cut(Cutscene cutscene, int tick) {
+        Moment now = moment(cutscene, tick);
+        return now.shot() > 0 && tick == now.start() && !end(cutscene, now.shot() - 1).equals(cutscene.shots().get(now.shot()).frame());
+    }
+
+    /**
+     * A shot's title and subtitle, hung in front of the camera. On-screen titles can't wrap and run off
+     * the edge at large interface scales; these wrap, and take up the same share of any screen.
+     */
+    private void showCards(Cutscene cutscene) {
+        int total = cutscene.seconds() * 20;
+        int[] tick = {0}, showing = {-1};
+        List<TextDisplay> shown = new ArrayList<>();
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!host.live() || tick[0] >= total || cameras.isEmpty()) {
+                task.cancel();
+                shown.forEach(card -> { card.remove(); cards.remove(card); });
+                return;
+            }
+            Moment now = moment(cutscene, tick[0]);
+            Location camera = pose(cutscene, tick[0]);
+            Location ahead = camera.clone().add(camera.getDirection().multiply(CARD_DISTANCE));
+            if (now.shot() != showing[0]) {
+                showing[0] = now.shot();
+                shown.forEach(card -> { card.remove(); cards.remove(card); });
+                shown.clear();
+                Shot shot = cutscene.shots().get(now.shot());
+                if (shot.title() != null) shown.add(card(ahead, shot.title(), 1.2F, 150, true));
+                if (shot.text() != null) shown.add(card(ahead, shot.text(), .6F, 260, false));
+            }
+            boolean cutNext = cut(cutscene, tick[0] + 1);
+            for (int index = 0; index < shown.size(); index++) {
+                shown.get(index).setTeleportDuration(cutNext ? 0 : CAMERA_SMOOTHING);
+                shown.get(index).teleport(ahead.clone().add(0, shown.size() == 1 ? 0 : index == 0 ? .3 : -.28, 0));
+            }
+            tick[0]++;
+        }, 1L, 1L);
+    }
+
+    private TextDisplay card(Location at, String markup, float scale, int width, boolean bold) {
+        TextDisplay card = host.world().spawn(at, TextDisplay.class, display -> {
+            var text = Chat.render(markup);
+            display.text(bold ? text.decorate(net.kyori.adventure.text.format.TextDecoration.BOLD) : text);
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setAlignment(TextDisplay.TextAlignment.CENTER);
+            display.setLineWidth(width);
+            display.setShadowed(true);
+            display.setSeeThrough(true);
+            display.setDefaultBackground(false);
+            display.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+            display.setPersistent(false);
+            display.setVisibleByDefault(false);
+            display.setTeleportDuration(CAMERA_SMOOTHING);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(), new org.joml.AxisAngle4f(),
+                new org.joml.Vector3f(scale, scale, scale), new org.joml.AxisAngle4f()));
+        });
+        for (Player player : host.online()) if (inCutscene(player)) player.showEntity(plugin, card);
+        cards.add(card);
+        return card;
+    }
+
+    private void sound(Player player, Shot shot) {
+        if (shot.sound() == null) return;
+        String[] parts = shot.sound().split(" ");
+        float pitch = parts.length > 1 ? Float.parseFloat(parts[1]) : 1F;
+        player.playSound(player.getLocation(), parts[0], 1F, pitch);
     }
 
     /** A cutscene line: a named speaker (an NPC id or any name), or plain narration when the name is empty. */

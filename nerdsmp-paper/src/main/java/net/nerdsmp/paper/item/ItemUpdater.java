@@ -64,7 +64,7 @@ public final class ItemUpdater implements Listener {
     /** The current form of an item read from storage, or the item itself when it's current (or no updater runs). */
     public static ItemStack current(ItemStack item) {
         ItemUpdater updater = active;
-        return updater == null || item == null ? item : updater.upgrade(item).orElse(item);
+        return updater == null || item == null ? item : updater.items.withoutUpgradeNote(updater.upgrade(item).orElse(item));
     }
 
     public void close() {

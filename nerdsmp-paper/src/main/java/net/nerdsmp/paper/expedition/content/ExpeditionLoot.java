@@ -88,6 +88,22 @@ public final class ExpeditionLoot {
     /** A rare drop's chance on this tier: harder tiers raise it with their luck. */
     public static double rareChance(double chance, double luck) { return Math.min(1, chance * Math.max(1, luck)); }
 
+    /** Skill experience everyone present gets when an enemy of this source falls. */
+    public static long skillExperience(Source source, int level, double luck) {
+        double base = switch (source) {
+            case ELITE -> 30;
+            case MINIBOSS -> 90;
+            case BOSS -> 300;
+            default -> 10;
+        };
+        return Math.round(base * (1 + Math.max(0, level) * .1) * Math.max(1, luck));
+    }
+
+    /** Skill experience for finishing a run. */
+    public static long finishExperience(int level, double luck) {
+        return Math.round(600 * (1 + Math.max(0, level) * .1) * Math.max(1, luck));
+    }
+
     /** The most item levels a reward can gain over its catalog level. */
     public static final int MAX_ITEM_LEVEL_BONUS = 40;
 

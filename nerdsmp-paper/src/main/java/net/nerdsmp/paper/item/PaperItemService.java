@@ -76,6 +76,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
     private final NamespacedKey socketsKey;
     private final NamespacedKey qualityKey;
     private final NamespacedKey levelBonusKey;
+    private final NamespacedKey upgradeKey;
     private final NamespacedKey enchantmentsKey;
     private final NamespacedKey coatingTypeKey;
     private final NamespacedKey coatingPotencyKey;
@@ -105,6 +106,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         socketsKey = new NamespacedKey(plugin, "sockets");
         qualityKey = new NamespacedKey(plugin, "gear_quality");
         levelBonusKey = new NamespacedKey(plugin, "item_level_bonus");
+        upgradeKey = new NamespacedKey(plugin, "upgrade_note");
         enchantmentsKey = new NamespacedKey(plugin, "custom_enchantments");
         coatingTypeKey = new NamespacedKey(plugin, "poison_coating");
         coatingPotencyKey = new NamespacedKey(plugin, "poison_potency");
@@ -668,6 +670,28 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return data.has(key, PersistentDataType.STRING) ? Optional.ofNullable(data.get(key, PersistentDataType.STRING)) : Optional.empty();
     }
 
+    /** What this item would gain its owner, when they've been told it's an upgrade; null otherwise. */
+    public String upgradeNote(ItemStack item) {
+        return item == null || !item.hasItemMeta() ? null : item.getItemMeta().getPersistentDataContainer().get(upgradeKey, PersistentDataType.STRING);
+    }
+
+    /** Shows or clears the upgrade mark on this item. */
+    public void markUpgrade(ItemStack item, String note) {
+        item.editMeta(meta -> {
+            if (note == null) meta.getPersistentDataContainer().remove(upgradeKey);
+            else meta.getPersistentDataContainer().set(upgradeKey, PersistentDataType.STRING, note);
+        });
+        refresh(item);
+    }
+
+    /** This item with no upgrade mark, for anywhere the next person might see it. */
+    public ItemStack withoutUpgradeNote(ItemStack item) {
+        if (upgradeNote(item) == null) return item;
+        ItemStack clean = item.clone();
+        markUpgrade(clean, null);
+        return clean;
+    }
+
     /** Extra item levels this one item dropped with. */
     private int levelBonus(ItemMeta meta) {
         return Math.clamp(meta.getPersistentDataContainer().getOrDefault(levelBonusKey, PersistentDataType.INTEGER, 0), 0, 100);
@@ -861,10 +885,11 @@ public final class PaperItemService implements ItemService<ItemStack> {
         }
         GearQuality quality = quality(meta);
         String name = colored(rarityColor(definition.rarity()), miniMessage.escapeTags(miniMessage.stripTags(definition.name())));
-        meta.itemName(tooltipLine(quality == GearQuality.WROUGHT ? name
-            : quality.color() + "<bold>" + quality.displayName() + "</bold> " + name));
+        boolean upgrade = meta.getPersistentDataContainer().has(upgradeKey);
+        meta.itemName(tooltipLine((upgrade ? "<green>▲</green> " : "") + (quality == GearQuality.WROUGHT ? name
+            : quality.color() + "<bold>" + quality.displayName() + "</bold> " + name)));
         meta.lore(renderTooltip(definition, meta));
-        meta.setEnchantmentGlintOverride(!enchantments(meta).isEmpty()
+        meta.setEnchantmentGlintOverride(upgrade || !enchantments(meta).isEmpty()
             || meta.getPersistentDataContainer().has(arcaneSignatureKey));
         if (VanillaTextures.customModels(plugin) && definition.model() != null && !definition.model().isBlank()) {
             NamespacedKey model = NamespacedKey.fromString(definition.model());
@@ -879,6 +904,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
 
     private List<Component> renderTooltip(Definition definition, ItemMeta meta) {
         List<Component> tooltip = new ArrayList<>();
+        String upgrade = meta.getPersistentDataContainer().get(upgradeKey, PersistentDataType.STRING);
+        if (upgrade != null) tooltip.add(tooltipLine("<green><bold>▲ Upgrade</bold></green>" + (upgrade.isEmpty() ? "" : " <green>" + miniMessage.escapeTags(upgrade) + "</green>")));
         List<AffixRoll> rolledAffixes = affixes(meta);
         // WoW-style header: item level, and (Wynncraft) how well the item rolled overall.
         StringBuilder header = new StringBuilder();
@@ -1223,8 +1250,13 @@ public final class PaperItemService implements ItemService<ItemStack> {
         };
     }
 
-    static String statLine(String stat, double value) {
-        String label = switch (stat) {
+    /** A short gain, such as {@code +3 Defense}, for upgrade marks. */
+    static String statChange(String stat, double value) {
+        return "+" + formatNumber(value) + (stat.endsWith("-percent") ? "% " : " ") + statName(stat);
+    }
+
+    private static String statName(String stat) {
+        return switch (stat) {
             case "damage" -> "Damage";
             case "defense" -> "Defense";
             case "damage-flat" -> "Bonus Damage";
@@ -1246,6 +1278,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
             case "chain-harvest" -> "Chain Harvest";
             default -> titleCase(stat.endsWith("-percent") ? stat.substring(0, stat.length() - 8) : stat);
         };
+    }
+
+    static String statLine(String stat, double value) {
+        String label = statName(stat);
         String suffix = stat.endsWith("-percent") ? "%" : "";
         String prefix = value > 0.0D ? "+" : "";
         // Hypixel colours: red for offence, green for everything else.

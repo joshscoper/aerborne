@@ -39,6 +39,13 @@ class PlaytestRewardsTest {
         assertEquals(64, ExpeditionLoot.scaled(60, 1.7, 8, 100));
     }
 
+    @Test void skillExperienceGrowsWithTheEnemyAndTheDungeon() {
+        assertEquals(18, ExpeditionLoot.skillExperience(ExpeditionLoot.Source.NORMAL, 8, 1));
+        assertEquals(540, ExpeditionLoot.skillExperience(ExpeditionLoot.Source.BOSS, 8, 1));
+        assertEquals(729, ExpeditionLoot.skillExperience(ExpeditionLoot.Source.BOSS, 8, 1.35));
+        assertEquals(1080, ExpeditionLoot.finishExperience(8, 1));
+    }
+
     @Test void rareDropsRiseWithDifficultyWithinReason() {
         assertEquals(.005, ExpeditionLoot.rareChance(.005, 1), 1e-9);
         assertEquals(.0085, ExpeditionLoot.rareChance(.005, 1.7), 1e-9);
