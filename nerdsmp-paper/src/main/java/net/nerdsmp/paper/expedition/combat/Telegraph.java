@@ -29,6 +29,27 @@ public final class Telegraph {
         at.getWorld().spawnParticle(Particle.BLOCK, at, count, spread, .1, spread, 0, block.createBlockData());
     }
 
+    /** Thin spikes of a block thrusting up around a spot, gone again in a moment. */
+    public static void spikes(org.bukkit.plugin.Plugin plugin, Location at, org.bukkit.Material block, int count, double radius, float height) {
+        var random = java.util.concurrent.ThreadLocalRandom.current();
+        for (int index = 0; index < count; index++) {
+            double angle = random.nextDouble(Math.PI * 2), distance = Math.sqrt(random.nextDouble()) * radius;
+            var tilt = new org.joml.Quaternionf().rotateX((float) random.nextDouble(-.25, .25)).rotateZ((float) random.nextDouble(-.25, .25));
+            var spike = at.getWorld().spawn(at.clone().add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance), org.bukkit.entity.BlockDisplay.class, display -> {
+                display.setBlock(block.createBlockData());
+                display.setPersistent(false);
+                display.setBrightness(new org.bukkit.entity.Display.Brightness(12, 12));
+                display.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-.1F, 0, -.1F), tilt, new org.joml.Vector3f(.2F, .02F, .2F), new org.joml.Quaternionf()));
+            });
+            org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                spike.setInterpolationDelay(0);
+                spike.setInterpolationDuration(3);
+                spike.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-.1F, 0, -.1F), tilt, new org.joml.Vector3f(.2F, height, .2F), new org.joml.Quaternionf()));
+            }, 2L);
+            org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, spike::remove, 26L + random.nextInt(8));
+        }
+    }
+
     /** A flat ring on the ground around {@code center}. */
     public static void ring(Location center, double radius, Color color) {
         World world = center.getWorld();

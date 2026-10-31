@@ -5,6 +5,31 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Third Barrow playtest (October 31)
+- **Boss rooms fight back.** Soul fires throw lances down the Warden's hall, and a ring of bone rolls out
+  that you have to jump. The Widow snuffs her vigil candles, and grief spreads from each until someone
+  lights it again. Flame runs down the channels in the King's floor and leaves them burning, chandeliers
+  fall and can be dropped on him, and at half health the rite's fires lift him out of reach until the
+  party douses them.
+- **The Warden is built, not raised.** His bones lie scattered, fly to their places from the feet up,
+  char black as the fire climbs them, and the skull lifts before he takes the figure's place.
+- **The King is summoned.** Six fires catch around the dais, their flames run to a turning circle, and
+  he rises in a column of fire and slams down.
+- **Trash has teeth.** Thralls burst when they fall and pin players with grasping bones. Archers mark
+  a line before a heavy shot and rain arrows on a ring. Hexers curse the ground, stalkers vanish and
+  step out behind you, and lurchers throw bone.
+- **Rarer gear does things.** Rare and better weapons and armour can carry on-hit, right-click and equipped
+  abilities, shown on their tooltips, listed in `content/item-abilities.yml`.
+- **Bosses leave chests.** Each boss leaves a chest with a private share for everyone: materials, a good
+  chance at set gear, and a chance at that boss's own items. The Barrow's drop rates rose across the board.
+- **The action bar is quiet.** XP shows in a brief bar at the top of the screen. The heart darkens while
+  recovery is held back, instead of a countdown, and a passing notice takes the place of Well Fed.
+- **The run's title waits** for the opening scene to finish, and rooms that open on a scene leave the
+  announcing to it.
+- **The Barrow sounds alive.** Sounds drift through the dark, each room has its own, and a heartbeat
+  quickens under boss fights.
+- **`/dev kill` works while holding gear.** It used to deal that weapon's damage instead.
+
 ### Second Barrow playtest (October 31)
 - **The Warden is reanimated.** A pile of bones lies on his dais. The soul fires along the back wall
   go out one by one, their flames fly into the pile, the bones lift around him and the fires roar back

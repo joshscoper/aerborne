@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 29
+LATEST = 30
 C = "static:img/companions/"
 
 
@@ -80,6 +80,8 @@ def apply(conn):
         _rev28(conn)
     if current < 29:
         _rev29(conn)
+    if current < 30:
+        _rev30(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -302,6 +304,29 @@ def _rev29(conn):
     if row and row['updated_by'] == 'starter content' and REV29_OLD_BOTTLES in (row['body'] or ''):
         conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?',
                      (row['body'].replace(REV29_OLD_BOTTLES, REV29_BOTTLES), now_str(), row['id']))
+
+
+REV30_LINES = (
+    ('expeditions', '- **Boss doors seal.** A boss door can stay barred until the packs guarding it are dead, and it shuts behind you during the fight.\n',
+     '- **Boss rooms join in.** Fire can run down the floor, chandeliers can fall, and candles and braziers can need you to right-click them mid-fight. Watch the room as well as the boss.\n'),
+    ('expeditions', "- **Bosses can drop a rare charm.** Right-click it to bind a companion you can't buy, or trade it to someone who wants it more.\n",
+     "- **Bosses leave a chest.** Everyone has their own share: materials, a good chance at set gear, and sometimes one of that boss's own items.\n"),
+)
+REV30_ABILITIES = ('## Item abilities\nRare and better gear can do more than carry stats. Its tooltip names each ability and when it works: '
+                   '**On Hit** has a chance to go off when you strike, **Right Click** is yours to use on a cooldown, and **Equipped** works for '
+                   "as long as you wear or hold the item. Sealed gear does nothing until it's identified.\n\n")
+
+
+def _rev30(conn):
+    # As with rev 29, new lines go in beside what's there, and only where staff haven't edited the guide.
+    for slug, after, line in REV30_LINES:
+        row = conn.execute('SELECT * FROM guides WHERE slug = ?', (slug,)).fetchone()
+        if row and row['updated_by'] == 'starter content' and after in (row['body'] or '') and line not in row['body']:
+            conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?', (row['body'].replace(after, after + line), now_str(), row['id']))
+    row = conn.execute("SELECT * FROM guides WHERE slug = 'gear-and-sockets'").fetchone()
+    if row and row['updated_by'] == 'starter content' and '## Use Forge & Sockets\n' in (row['body'] or '') and '## Item abilities' not in row['body']:
+        conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?',
+                     (row['body'].replace('## Use Forge & Sockets\n', REV30_ABILITIES + '## Use Forge & Sockets\n'), now_str(), row['id']))
 
 
 def _rev18(conn):

@@ -403,6 +403,9 @@ Sealed equipment hides its rolled bonuses. **Nyra** offers identification and sa
 
 Rarity, quality and item level affect different parts of equipment. Socket limits and Arcane Capacity are separate: a free gem socket is not a promise of free enchantment capacity.
 
+## Item abilities
+Rare and better gear can do more than carry stats. Its tooltip names each ability and when it works: **On Hit** has a chance to go off when you strike, **Right Click** is yours to use on a cooldown, and **Equipped** works for as long as you wear or hold the item. Sealed gear does nothing until it's identified.
+
 ## Use Forge & Sockets
 Right-click an anvil. Put identified equipment on the left and a compatible socket gem on the right. Review the exact result, then confirm. The menu checks available sockets and rejects incompatible or invalid equipment.
 
@@ -664,6 +667,7 @@ The Hollow Barrow plays like a proper dungeon, and the other expeditions will fo
 - **Taunt with a shield.** Anyone can do it: sneak and right-click with a shield, and everything close turns on you for a few seconds. It has a 12-second cooldown.
 - **Stop casts.** A bar over an enemy means it's casting. A yellow bar can be stopped with a fully charged hit or a full-draw arrow, and strong casts take several. A red bar with a ring can't be stopped: raise a shield or step out.
 - **Boss doors seal.** A boss door can stay barred until the packs guarding it are dead, and it shuts behind you during the fight.
+- **Boss rooms join in.** Fire can run down the floor, chandeliers can fall, and candles and braziers can need you to right-click them mid-fight. Watch the room as well as the boss.
 
 ## Puzzles, campfires and bosses
 - **Puzzles**: pull levers, press buttons in the order shown, weigh down pressure plates by throwing items on them, shoot targets before time runs out, or cross a jump course. Falling off a course puts you back at its start without costing a life. Puzzles that need a bow or something to throw have a **supply crate**: right-click it for what you need, and it's taken back when you leave.
@@ -703,6 +707,7 @@ Every expedition has its own loot: **materials** from common to rare, a **signat
 - **Rewards grow with you.** Set gear gains item levels on harder difficulties and when you outlevel the dungeon, and stacks of items grow with them.
 - **Bottled Lessons** from chests are skill lamps: uncork one to choose the skill that gets its XP.
 - **Bosses can drop a rare charm.** Right-click it to bind a companion you can't buy, or trade it to someone who wants it more.
+- **Bosses leave a chest.** Everyone has their own share: materials, a good chance at set gear, and sometimes one of that boss's own items.
 
 Marks are paid as soon as you win, and items that don't fit wait until you leave. Expeditions also count towards the [season campaign](/guide/season-campaign), with harder tiers counting for more. The [expedition board](/expeditions) shows clear counts and the fastest parties.
 """, 'world', 'Expedition board | /expeditions\nParties | /guide/parties\nSeason campaign | /guide/season-campaign'),

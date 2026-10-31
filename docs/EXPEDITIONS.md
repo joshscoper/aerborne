@@ -186,13 +186,23 @@ affixes.
 
 | Source | What it gives |
 |---|---|
-| Regular enemy | 20% common material (1–2), rare chance of a sealed set piece or a bottle |
-| Elite | Common material (1–3), 20% uncommon, 5% set piece, 5% bottle |
+| Regular enemy | 25% common material (1–2), rare chance of a sealed set piece or a bottle |
+| Elite | Common material (1–3), 25% uncommon, 7% set piece, 5% bottle |
 | Mini-boss | Common (2–4), 60% uncommon, 15% rare, 25% set piece (2 affixes), 10% Greater bottle |
-| Boss | Uncommon (1–3), 35% rare, 4% signature |
-| Crate | Common (2–4), 25% uncommon, 20% bottle |
-| Chest | Common (3–5), 50% uncommon, 8% rare, 10% set piece, bottles |
+| Boss chest (each player's own) | Uncommon (1–3), 35% rare, 50% set piece, 35% one of that boss's items, 30% Greater bottle, 4% signature |
+| Crate | Common (2–4), 25% uncommon, 5% set piece, 20% bottle |
+| Chest | Common (3–5), 50% uncommon, 8% rare, 15% set piece, bottles |
 | Hidden cache | Uncommon (1–2), 25% rare, 35% set piece, 25% Greater bottle, 1.5% signature |
+
+A boss's chest stands where it fell, and each player opens their own share once. `bosses:` in
+`content/expedition-loot.yml` lists what each boss room can give, likeliest first: with three items,
+about 64%, 29% and 7% of the time.
+
+Rarer gear can carry abilities: **on hit** (a chance, with a cooldown), **right-click** (a cooldown),
+or **equipped** (for as long as it's worn or held). `content/item-abilities.yml` binds them to items
+and adds the gear that needs no entry in `relics.yml`, so an ability can change without touching a
+server's edited catalog. Abilities belong to rare or better items in the slots they suit: nothing that
+already uses its right-click gets a right-click ability. They only touch hostile mobs, never players.
 
 Heroic multiplies the odds of the better lines by 1.35, Mythic and keys by 1.7 (keys add 0.05 per
 level), and raids by a further 1.1. Expedition enemies still drop coin purses and their relic, but no
@@ -533,6 +543,15 @@ setpieces:
   bridge: {box: [-1, 63, 60, 1, 63, 70], block: spruce_planks, style: rise}   # instant | rise | crumble
 hazards:
   rockfall: {type: rocks, area: [-9, 63, 78, 9, 63, 94], every: 6, count: 3, damage: 4}  # rocks | fire | eruption | gas
+  lances: {type: lane, area: [-30, 64, 0, 30, 64, 40], every: 12, count: 1, damage: 7, soul: true, lanes: [[-29, 5, 29, 5], [-29, 15, 29, 15]]}
+  channels: {type: lane, area: [-18, 64, 100, 18, 64, 136], every: 10, count: 2, damage: 7, burn: 5, lanes: [[0, 120, -9, 112]]}
+  roof: {type: collapse, area: [-18, 64, 100, 18, 64, 136], damage: 9, spots: [[-8, 73, 118]]}
+  grief: {type: vigil, area: [-46, 64, 30, -30, 64, 50], every: 15, count: 1, damage: 2, devices: [candle_one]}
+devices:
+  candle_one: {at: [-44, 65, 34], title: Vigil Candle}
+ambience:
+  - {sound: ambient.cave, every: 40, volume: 0.7, pitch: 0.7}
+  - {sound: block.fire.ambient, every: 8, area: [-18, 64, 100, 18, 78, 136]}
 intro: prologue           # a cutscene played for the party as the run starts
 outro:                    # narration lines after the win, a few seconds apart
   - "The Old Sentinel lowers its blade and steps aside."
@@ -553,6 +572,18 @@ npcs:
 - **Hazards** always telegraph (a disc on the floor for about 1.5 s). About half of each strike aims
   at players inside the area. `rocks` drop falling rock, `fire` leaves brief fire, `eruption`
   launches players and `gas` leaves a poison cloud. Wipes stop every hazard.
+- **Hazards that use the room.** A `lane` marks a strip of floor, then rolls down it from `[x1, z1]` to
+  `[x2, z2]` and hits everyone in its path. A wall or column two blocks above the floor stops it, so
+  columns give cover; `burn` leaves real fire behind it for that many seconds, and `soul: true` draws it
+  blue and slows instead of burning. A `collapse` brings down the next of its `spots` each time it's
+  fired (a chandelier hub, with its arms and chain) after a three-second warning. It hits anyone
+  underneath, and a boss caught there loses 6% of its health and staggers, so it can be lured. A
+  `vigil` snuffs `count` of its `devices` every `every` seconds, and a pool spreads from each until a
+  player right-clicks it to light it again.
+- **Devices** are lit blocks players right-click in a fight: campfires, candles, anything that can be lit.
+- **Ambience** plays each sound to each player from a spot off in the dark, about once every `every`
+  seconds, and only inside `area` if it has one. A boss fight also has a heartbeat, which quickens as the
+  boss weakens.
 - **Cutscenes** glide the camera between shots (eased), or within one with `to: [x, y, z, yaw,
   pitch]`, where the shot moves from `at` to `to` over its own length. Each plays once a run, so a
   second try at a boss skips its scene, and sneaking skips one for that player. A shot's `title` and
@@ -567,13 +598,17 @@ npcs:
   after the overview, and the website shows it.
 - **Boss name cards.** A boss's name appears as a title when it spawns, with the `title` from its
   `mobs:` profile underneath, unless a cutscene is introducing it.
-- **Boss entrances.** `entrance: {style: rise|reanimate, delay: 3, seconds: 5}` on a boss encounter
-  holds the boss under the floor, untouchable, and brings it up `delay` seconds into the fight. `rise`
-  climbs steadily through breaking floor. `reanimate` lays a pile of bones at the room's first point
-  from the start of the run; list soul fires under `sources: [[x, y, z], ...]` and they go out one by
-  one, their flames fly into the pile, the bones lift around the boss and the fires come back as it
-  arrives. It's let loose once every camera is back, and a second attempt takes a second with no
-  wait. Time a scene around it.
+- **Boss entrances.** `entrance: {style: rise|reanimate|summon, delay: 3, seconds: 5}` on a boss encounter
+  holds the boss out of sight, untouchable, and brings it in `delay` seconds into the fight. `rise`
+  climbs steadily through breaking floor. `reanimate` scatters a skeleton around the room's first point
+  from the start of the run. List soul fires under `sources: [[x, y, z], ...]` and they go out one by
+  one, their flames fly into the bones, the bones build a body from the feet up (sized to the boss,
+  carrying its weapon and shield) and char black as fire climbs them, and the boss takes the figure's
+  place as the fires come back. `summon` lights its `sources` one by one, runs their flames to a
+  turning circle around the first point, then raises the boss in a column of fire and slams it
+  down; those fires stay lit for the fight. Either takes about a dozen seconds to read well. The boss is
+  let loose once every camera is back, and a second attempt takes a second with no wait. Time a
+  scene around it.
 - **Characters** stand where placed, can't be hurt or traded with, and play their next line when
   right-clicked. Scripts make them (or anyone) speak with `say`, and move them with `npc`. With
   `quests: <giver id>` a character is a quest giver for `content/world-quests.yml`: it shows a blue
@@ -583,7 +618,8 @@ npcs:
 
 Optional actions run on encounter events. Triggers: `start`, `clear`, `wave-N` (when wave N is
 released), `health-N` (boss at or below N%, once; councils use their average), `timer-N` (N seconds
-after the room starts), `down-N` (the Nth council boss falls), `solved-<puzzle>` and `enrage`.
+after the room starts), `down-N` (the Nth council boss falls), `solved-<puzzle>`, `enrage`, and
+`ward-broken` and `ward-failed`, for how a ward ended.
 
 | Action | Example |
 |---|---|
@@ -602,6 +638,8 @@ after the room starts), `down-N` (the Nth council boss falls), `solved-<puzzle>`
 | `hazard <start\|stop\|pulse> <id>` | Run, stop or fire once a hazard |
 | `campfire <id>` | Light a campfire for the party |
 | `npc <id> <x> <y> <z> [yaw]` | Move a character, say to meet the party at the end |
+| `ward <seconds> <device>...` | Lift the boss out of reach until the party douses the devices. Takes two plus the party's size, at most all of them |
+| `cast <ability>` | Every boss in the room uses an ability now |
 
 Scripts are parsed on load, so `/expedition check` reports unknown actions, rooms, mobs, effects
 or sounds before anyone plays.

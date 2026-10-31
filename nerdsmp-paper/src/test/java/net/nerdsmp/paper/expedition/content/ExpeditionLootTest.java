@@ -103,4 +103,42 @@ class ExpeditionLootTest {
                 for (String item : expeditions.getStringList(expedition + "." + key)) assertTrue(catalog.contains(item), expedition + " " + item);
         }
     }
+
+    @Test void everyBossItemIsInTheCatalogAndItsRoomExists() {
+        YamlConfiguration loot = resource("/content/expedition-loot.yml"), abilities = resource("/content/item-abilities.yml");
+        Set<String> relics = resource("/content/relics.yml").getConfigurationSection("relics").getKeys(false);
+        Set<String> added = abilities.getConfigurationSection("items").getKeys(false);
+        var bosses = loot.getConfigurationSection("expeditions.hollow_barrow.bosses");
+        assertEquals(Set.of("wardens_hall", "widows_cell", "kings_rest"), bosses.getKeys(false));
+        for (String room : bosses.getKeys(false)) for (String item : bosses.getStringList(room))
+            assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
+    }
+
+    @Test void aBossChestAlwaysPaysAndItsRarestItemIsRare() {
+        var table = new ExpeditionLoot.Table(BARROW.materials(), BARROW.gear(), BARROW.signatures(), java.util.Map.of("wardens_hall", List.of("common", "middling", "rarest")));
+        Random random = new Random(5);
+        int common = 0, rarest = 0, gear = 0, runs = 20_000;
+        for (int i = 0; i < runs; i++) {
+            var chest = ExpeditionLoot.bossChest(table, "wardens_hall", 1, random);
+            assertTrue(chest.stream().anyMatch(drop -> drop.item().equals("barrow_wax")));
+            common += (int) chest.stream().filter(drop -> drop.item().equals("common")).count();
+            rarest += (int) chest.stream().filter(drop -> drop.item().equals("rarest")).count();
+            gear += (int) chest.stream().filter(drop -> BARROW.gear().contains(drop.item())).count();
+        }
+        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE * 9 / 14, common / (double) runs, .02);
+        assertEquals(ExpeditionLoot.BOSS_ITEM_CHANCE / 14, rarest / (double) runs, .01);
+        assertEquals(.5, gear / (double) runs, .02);
+        assertTrue(ExpeditionLoot.bossChest(table, "no_such_room", 1, random).stream().noneMatch(drop -> drop.item().equals("common")));
+    }
+
+    @Test void harderTiersGetTheirBossItemsMoreOften() {
+        var table = new ExpeditionLoot.Table(List.of("a"), List.of(), List.of(), java.util.Map.of("room", List.of("only")));
+        Random random = new Random(9);
+        int normal = 0, mythic = 0;
+        for (int i = 0; i < 5000; i++) {
+            if (ExpeditionLoot.bossChest(table, "room", 1, random).stream().anyMatch(drop -> drop.item().equals("only"))) normal++;
+            if (ExpeditionLoot.bossChest(table, "room", 1.7, random).stream().anyMatch(drop -> drop.item().equals("only"))) mythic++;
+        }
+        assertTrue(mythic > normal * 1.4, mythic + " vs " + normal);
+    }
 }

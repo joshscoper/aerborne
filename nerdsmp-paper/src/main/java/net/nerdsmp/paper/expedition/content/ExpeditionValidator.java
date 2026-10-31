@@ -305,7 +305,20 @@ public final class ExpeditionValidator {
             if (hazard.everySeconds() < 2 || hazard.everySeconds() > 120) error(issues, "Hazard '" + hazard.id() + "' every must be 2-120 seconds.", where + ".every");
             if (hazard.count() < 1 || hazard.count() > 12) error(issues, "Hazard '" + hazard.id() + "' count must be 1-12.", where + ".count");
             if (hazard.damage() < 0 || hazard.damage() > 40) error(issues, "Hazard '" + hazard.id() + "' damage must be 0-40.", where + ".damage");
+            if (hazard.burnSeconds() < 0 || hazard.burnSeconds() > 20) error(issues, "Hazard '" + hazard.id() + "' burn must be 0-20 seconds.", where + ".burn");
+            switch (hazard.type()) {
+                case LANE -> { if (hazard.lanes().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no lanes to run down.", "lanes: [[x1, z1, x2, z2], ...]"); }
+                case COLLAPSE -> { if (hazard.spots().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has nothing to bring down.", "spots: [[x, y, z], ...]"); }
+                case VIGIL -> { if (hazard.devices().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no devices to snuff.", "devices: [id, ...]"); }
+                default -> { }
+            }
+            for (String device : hazard.devices())
+                if (!story.devices().containsKey(device)) error(issues, "Hazard '" + hazard.id() + "' names unknown device '" + device + "'.", where + ".devices");
         });
+        for (var sound : story.ambience()) {
+            if (!catalog.sound(sound.sound())) error(issues, "Ambience plays unknown sound '" + sound.sound() + "'.", "ambience: in the expedition file");
+            if (sound.everySeconds() < 2 || sound.everySeconds() > 600) error(issues, "Ambience '" + sound.sound() + "' every must be 2-600 seconds.", "ambience: in the expedition file");
+        }
         if (story.intro() != null && !story.cutscenes().containsKey(story.intro()))
             error(issues, "The intro plays unknown cutscene '" + story.intro() + "'.", "intro: in the expedition file");
         story.cutscenes().values().forEach(cutscene -> {
@@ -326,6 +339,8 @@ public final class ExpeditionValidator {
             if (!catalog.mob(profile.mob())) error(issues, "Mob profile for unknown mob '" + profile.mob() + "'.", "mobs: in the expedition file");
             for (String ability : profile.abilities())
                 if (!catalog.ability(ability)) error(issues, "Mob '" + profile.mob() + "' uses unknown ability '" + ability + "'.", abilityFix());
+            if (profile.deathAbility() != null && !catalog.ability(profile.deathAbility()))
+                error(issues, "Mob '" + profile.mob() + "' uses unknown on-death ability '" + profile.deathAbility() + "'.", abilityFix());
             if (profile.forces() < 0 || profile.forces() > 100) error(issues, "Mob '" + profile.mob() + "' forces must be 0-100.", "mobs." + profile.mob() + ".forces");
         });
         story.packs().values().forEach(pack -> {
@@ -356,6 +371,11 @@ public final class ExpeditionValidator {
             case HAZARD -> { if (!story.hazards().containsKey(action.arg(1))) error(issues, room + " script names unknown hazard '" + action.arg(1) + "'.", action.text()); }
             case CAMPFIRE -> { if (!story.campfires().containsKey(action.arg(0))) error(issues, room + " script lights unknown campfire '" + action.arg(0) + "'.", action.text()); }
             case NPC -> { if (!story.npcs().containsKey(action.arg(0))) error(issues, room + " script moves unknown character '" + action.arg(0) + "'.", action.text()); }
+            case WARD -> {
+                for (String device : action.args().subList(1, action.args().size()))
+                    if (!story.devices().containsKey(device)) error(issues, room + " script wards with unknown device '" + device + "'.", action.text());
+            }
+            case CAST -> { if (!catalog.ability(action.arg(0))) error(issues, room + " script casts unknown ability '" + action.arg(0) + "'.", abilityFix()); }
             case SPAWN -> { if (!catalog.mob(action.arg(0))) error(issues, room + " script spawns unknown mob '" + action.arg(0) + "'.", action.text()); }
             case OPEN, CLOSE -> {
                 Room target = expedition.rooms().get(action.arg(0));

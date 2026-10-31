@@ -1,0 +1,109 @@
+# What rarer gear can do. `abilities` binds ability ids to item ids, so an item's ability can change
+# here without touching a server's edited relics.yml. `items` adds gear that the catalog doesn't list yet;
+# an entry a server has defined in relics.yml keeps that server's version. Ability ids are in ItemAbility.java.
+abilities:
+  # The Hollow Barrow.
+  ossuary_cleaver: [bone_shards]
+  wardens_soulblade: [soul_siphon, soul_nova]
+  gravewall_bulwark: [last_stand]
+  mourning_veil: [grave_sight]
+  keening_dirk: [grave_chill, shadow_step]
+  widows_requiem: [soul_siphon]
+  hollow_crown: [ember_aura]
+  pyre_greatsword: [ember_brand, ember_sweep]
+  huntsmans_longbow: [hunters_mark]
+  hollowfang_blade: [soul_siphon]
+  # The other dungeons.
+  briarshot_crossbow: [grave_chill]
+  thornheart_rapier: [shadow_step]
+  sluicebreaker_trident: [grave_chill]
+  tidewardens_trident: [thunderclap]
+  tri_seal_blade: [soul_nova]
+  wardens_aegis: [last_stand]
+  kilnbreaker_maul: [ember_brand, bulwark]
+  sovereigns_hammer: [ember_brand, ember_sweep]
+  crown_of_embers: [ember_aura]
+  steward_ashkars_mantle: [last_stand]
+  # The Skyforge blades.
+  deepcurrent_blade: [grave_chill]
+  stormbound_blade: [thunderclap]
+  dawnguard_blade: [soul_siphon]
+  astral_covenant_blade: [shadow_step]
+
+items:
+  ossuary_cleaver:
+    material: iron_axe
+    name: "<blue>Ossuary Cleaver</blue>"
+    slot: main_hand
+    rarity: rare
+    item-level: 12
+    stats: {damage: 9}
+    lore:
+      - "<gray>The Warden's own axe. There are still chips of the last visitor in the edge.</gray>"
+  gravewall_bulwark:
+    material: shield
+    name: "<blue>Gravewall Bulwark</blue>"
+    slot: off_hand
+    rarity: rare
+    item-level: 12
+    stats: {defense: 6}
+    lore:
+      - "<gray>Cut from a slab of the south gate. It has held worse than you.</gray>"
+  wardens_soulblade:
+    material: iron_sword
+    name: "<light_purple>Warden's Soulblade</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 13
+    sockets: 3
+    stats: {damage: 10, execute-damage-percent: 4}
+    lore:
+      - "<gray>The soul fire that woke him never quite left it.</gray>"
+  mourning_veil:
+    material: chainmail_helmet
+    name: "<blue>Mourning Veil</blue>"
+    slot: head
+    rarity: rare
+    item-level: 12
+    stats: {defense: 5}
+    lore:
+      - "<gray>She wore it at the door, until the door fell.</gray>"
+  keening_dirk:
+    material: iron_sword
+    name: "<blue>Keening Dirk</blue>"
+    slot: main_hand
+    rarity: rare
+    item-level: 12
+    stats: {damage: 8}
+    lore:
+      - "<gray>It hums a single note, very quietly, when drawn.</gray>"
+  widows_requiem:
+    material: bow
+    name: "<light_purple>Widow's Requiem</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 13
+    sockets: 3
+    stats: {projectile-damage: 7}
+    lore:
+      - "<gray>Strung with hair from a veil. Every arrow sounds like a sigh.</gray>"
+  hollow_crown:
+    material: golden_helmet
+    name: "<light_purple>The Hollow Crown</light_purple>"
+    slot: head
+    rarity: epic
+    item-level: 14
+    sockets: 3
+    stats: {defense: 7}
+    lore:
+      - "<gray>Still warm. It shouldn't be.</gray>"
+  pyre_greatsword:
+    material: diamond_sword
+    name: "<light_purple>Pyre Greatsword</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 14
+    sockets: 3
+    stats: {damage: 11, execute-damage-percent: 4}
+    lore:
+      - "<gray>Quenched in the rite fires. Now it won't go out.</gray>"

@@ -189,6 +189,45 @@ class SampleTemplatesTest {
         for (var fire : entrance.sources()) assertEquals(Material.SOUL_CAMPFIRE, blocks.get(new Cell(fire.x(), fire.y(), fire.z())), "fire at " + fire);
     }
 
+    /** The King's rite, the Widow's vigils and the fight's wards all work real blocks that can be lit and put out. */
+    @Test void theBarrowsDevicesAreRealLightableBlocks() {
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        var barrow = definition("hollow_barrow");
+        assertEquals(ExpeditionDefinition.EntranceStyle.SUMMON, barrow.rooms().get("kings_rest").encounter().entrance().style());
+        for (var fire : barrow.rooms().get("kings_rest").encounter().entrance().sources())
+            assertEquals(Material.CAMPFIRE, blocks.get(new Cell(fire.x(), fire.y(), fire.z())), "fire at " + fire);
+        assertEquals(10, barrow.story().devices().size());
+        for (var device : barrow.story().devices().values()) {
+            Material block = blocks.get(new Cell(device.at().x(), device.at().y(), device.at().z()));
+            assertTrue(block == Material.CAMPFIRE || block == Material.CANDLE, device.id() + " is " + block);
+        }
+    }
+
+    /** What a collapse brings down has to hang where the hazard says, or it falls from nothing. */
+    @Test void theKingsChandeliersHangWhereTheHazardLooks() {
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        var hazard = definition("hollow_barrow").story().hazards().get("king_chandeliers");
+        assertEquals(ExpeditionDefinition.HazardType.COLLAPSE, hazard.type());
+        for (var spot : hazard.spots()) {
+            assertEquals(Material.POLISHED_DEEPSLATE, blocks.get(new Cell(spot.x(), spot.y(), spot.z())), "hub at " + spot);
+            assertEquals(Material.IRON_CHAIN, blocks.get(new Cell(spot.x(), spot.y() + 1, spot.z())), "chain over " + spot);
+        }
+    }
+
+    /** A lane has to run over open floor, and stops at the first thing tall enough to stop it. */
+    @Test void theBarrowsLanesCrossOpenFloor() {
+        Map<Cell, Material> blocks = blocks("hollow_barrow");
+        var hazards = definition("hollow_barrow").story().hazards();
+        for (String id : List.of("soul_lances", "soul_lances_doubled", "ember_channels")) for (var lane : hazards.get(id).lanes()) {
+            int steps = Math.max(Math.abs(lane.x2() - lane.x1()), Math.abs(lane.z2() - lane.z1())), open = 0;
+            for (int step = 0; step <= steps; step++) {
+                int x = lane.x1() + (lane.x2() - lane.x1()) * step / steps, z = lane.z1() + (lane.z2() - lane.z1()) * step / steps;
+                if (!blocks.containsKey(new Cell(x, 66, z)) || blocks.get(new Cell(x, 66, z)) == Material.AIR) open++;
+            }
+            assertEquals(steps + 1, open, id + " " + lane + " runs into a wall");
+        }
+    }
+
     /** Fills the Barrow from the spawn through everything a player can pass: nothing may lead out of the map. */
     @Test void theBarrowIsSealed() {
         var barrow = definition("hollow_barrow");

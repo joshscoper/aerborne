@@ -17,6 +17,7 @@ import static net.nerdsmp.paper.expedition.SampleTemplates.candles;
  */
 final class HollowBarrowTemplate {
     private static final Material WALL = Material.DEEPSLATE_BRICKS;
+    private static final int[][] KING_FIRES = {{-9, 112}, {9, 112}, {11, 120}, {9, 128}, {-9, 128}, {-11, 120}};
 
     private HollowBarrowTemplate() { }
 
@@ -237,7 +238,12 @@ final class HollowBarrowTemplate {
         b.box(-71, 64, 64, -63, 64, 72, Material.POLISHED_DEEPSLATE);
         b.box(-69, 65, 66, -65, 65, 70, Material.CHISELED_DEEPSLATE);
         chandelier(b, -67, 68, 74, 4);
-        for (int z = 58; z <= 78; z += 5) brazier(b, -76, z);
+        for (int z = 58; z <= 78; z += 5) {
+            brazier(b, -76, z);
+            // Each fire throws its lance down this strip; it reads as a lane before it ever lights.
+            for (int x = -75; x <= -54; x++) b.block(x, 63, z, x % 4 == 0 ? Material.CHISELED_POLISHED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS);
+        }
+        for (int[] heap : new int[][]{{-74, 57}, {-56, 79}, {-74, 79}, {-56, 57}, {-70, 62}, {-58, 74}}) bones(b, heap[0], heap[1]);
         banner(b, -77, 62, 72, Material.BLACK_WOOL);
         banner(b, -77, 74, 72, Material.BLACK_WOOL);
         // The wall that falls: cracked stone that reads as weak before it goes.
@@ -248,7 +254,12 @@ final class HollowBarrowTemplate {
         for (int x = -44; x <= -32; x += 4) for (int z : new int[]{31, 49}) b.block(x, 70, z, Material.COBWEB);
         sarcophagus(b, -39, 33, false);
         for (int[] column : new int[][]{{-42, 42}, {-34, 42}}) for (int y = 64; y <= 70; y++) b.block(column[0], y, column[1], Material.POLISHED_DEEPSLATE);
-        candles(b, new int[][]{{-40, 36}, {-36, 36}, {-44, 34}, {-32, 34}, {-44, 46}, {-32, 46}});
+        candles(b, new int[][]{{-40, 36}, {-36, 36}});
+        // Her four vigils. She snuffs them in the fight; they have to be lit again.
+        for (int[] vigil : new int[][]{{-44, 34}, {-32, 34}, {-44, 46}, {-32, 46}}) {
+            b.block(vigil[0], 64, vigil[1], Material.CHISELED_DEEPSLATE);
+            b.block(vigil[0], 65, vigil[1], Material.CANDLE, "candles=4,lit=true");
+        }
         for (int z = 34; z <= 46; z += 6) for (int x : new int[]{-47, -29}) {
             b.block(x, 66, z, Material.SOUL_LANTERN);
             b.block(x < 0 ? x - 1 : x + 1, 66, z, WALL);
@@ -292,5 +303,29 @@ final class HollowBarrowTemplate {
         for (int z = 104; z <= 132; z += 7) for (int x : new int[]{-19, 19}) banner(b, x, z, 76, Material.GRAY_WOOL);
         // The cracked tomb wall at the far end, ringed by soul fire once the King falls.
         b.box(-1, 63, 133, 1, 63, 135, Material.SOUL_SOIL);
+        // The six fires of the rite, and the channels cut from each to the tomb. Flame runs along them in the fight.
+        for (int[] fire : KING_FIRES) {
+            channel(b, 0, 120, fire[0], fire[1]);
+            b.block(fire[0], 64, fire[1], Material.CHISELED_POLISHED_BLACKSTONE);
+            b.block(fire[0], 65, fire[1], Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
+            for (int[] step : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) b.block(fire[0] + step[0], 64, fire[1] + step[1], Material.POLISHED_BLACKSTONE_SLAB, "type=bottom");
+        }
+        // Embers banked in the walls, behind bars.
+        for (int z = 104; z <= 132; z += 7) for (int side : new int[]{-1, 1}) for (int y = 65; y <= 66; y++) {
+            b.block(side * 19, y, z, Material.MAGMA_BLOCK);
+            b.block(side * 18, y, z, Material.IRON_BARS);
+        }
+        for (int[] heap : new int[][]{{-17, 103}, {16, 103}, {-17, 133}, {16, 133}}) bones(b, heap[0], heap[1]);
+    }
+
+    /** A line cut into the floor, stepping up onto the dais where it crosses it. */
+    private static void channel(BuildCanvas b, int x1, int z1, int x2, int z2) {
+        int steps = Math.max(Math.abs(x2 - x1), Math.abs(z2 - z1));
+        for (int step = 1; step < steps; step++) {
+            int x = x1 + Math.round((x2 - x1) * step / (float) steps), z = z1 + Math.round((z2 - z1) * step / (float) steps);
+            if (Math.abs(x) <= 1 && z >= 118 && z <= 122) continue; // The tomb itself.
+            boolean dais = Math.abs(x) <= 6 && z >= 112 && z <= 124;
+            b.block(x, dais ? 64 : 63, z, step % 3 == 0 ? Material.GILDED_BLACKSTONE : Material.CRACKED_POLISHED_BLACKSTONE_BRICKS);
+        }
     }
 }

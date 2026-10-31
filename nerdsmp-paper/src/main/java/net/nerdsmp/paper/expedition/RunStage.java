@@ -75,6 +75,13 @@ final class RunStage {
         boolean openQuests(Player player, String giver);
         /** The mark this quest giver shows the player: {@code !} for a quest, {@code ?} for a hand-in, or null. */
         String questMark(Player player, String giver);
+        /** Fires a hazard that uses the room itself. */
+        void strike(Hazard hazard);
+        /** A hazard that uses the room itself was stopped. */
+        void stopped(Hazard hazard);
+        void logHazard(String id);
+        /** A player's camera came back from a scene. */
+        void sceneOver(Player player, String scene);
     }
 
     /** Players out of combat this close to a lit campfire rest. */
@@ -104,7 +111,7 @@ final class RunStage {
     private final Map<UUID, Map<String, String>> marksShown = new HashMap<>();
     private int restClock;
 
-    private record CameraState(GameMode mode, Location from, UUID camera, BukkitTask task) { }
+    private record CameraState(GameMode mode, Location from, UUID camera, BukkitTask task, String scene) { }
 
     RunStage(Plugin plugin, Host host) {
         this.plugin = plugin;
@@ -164,6 +171,7 @@ final class RunStage {
     void tick(long now) {
         restClock++;
         updateMarks();
+        ambience();
         for (Campfire fire : host.expedition().story().campfires().values()) {
             Location at = new Location(host.world(), fire.at().x() + .5, fire.at().y(), fire.at().z() + .5);
             if (!lit.getOrDefault(fire.id(), false)) {
@@ -186,6 +194,20 @@ final class RunStage {
                 player.setSaturation(Math.min(10, player.getSaturation() + 1));
                 player.setFireTicks(0);
                 player.sendActionBar(Chat.render("<gold>♨</gold> <gray>Resting by the " + Chat.escape(fire.title()) + "</gray>"));
+            }
+        }
+    }
+
+    /** Now and then a sound drifts in from somewhere off in the dark, a different spot for each player. */
+    private void ambience() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (var sound : host.expedition().story().ambience()) {
+            if (random.nextInt(sound.everySeconds()) != 0) continue;
+            for (Player player : host.online()) {
+                if (inCutscene(player) || sound.area() != null && !sound.area().contains(player.getX(), player.getY(), player.getZ())) continue;
+                double angle = random.nextDouble(Math.TAU), distance = random.nextDouble(6, 14);
+                player.playSound(player.getLocation().add(Math.cos(angle) * distance, random.nextDouble(-1, 4), Math.sin(angle) * distance),
+                    sound.sound(), sound.volume(), sound.pitch());
             }
         }
     }
@@ -309,6 +331,7 @@ final class RunStage {
             case "stop" -> {
                 BukkitTask task = hazards.remove(id);
                 if (task != null) task.cancel();
+                if (hazard.type().usesRoom()) host.stopped(hazard);
             }
             case "pulse" -> strike(hazard);
             default -> { }
@@ -322,6 +345,11 @@ final class RunStage {
     }
 
     private void strike(Hazard hazard) {
+        if (hazard.type().usesRoom()) {
+            host.strike(hazard);
+            return;
+        }
+        host.logHazard(hazard.id());
         Box area = hazard.area();
         ThreadLocalRandom random = ThreadLocalRandom.current();
         List<Location> spots = new ArrayList<>();
@@ -333,8 +361,8 @@ final class RunStage {
         }
         var color = switch (hazard.type()) {
             case ROCKS -> Telegraph.SHADOW;
-            case FIRE, ERUPTION -> Telegraph.FIRE;
             case GAS -> Telegraph.POISON;
+            default -> Telegraph.FIRE;
         };
         double radius = hazard.type() == ExpeditionDefinition.HazardType.GAS ? 2.5 : 1.6;
         int[] tick = {0};
@@ -562,7 +590,7 @@ final class RunStage {
                     endCutscene(player);
                     return;
                 }
-                if (tick[0] == 30 && total > 100) player.sendActionBar(Chat.render("<dark_gray>Sneak to skip</dark_gray>"));
+                if (tick[0] == 30 && total > 100) Chat.bar(player, "<dark_gray>Sneak to skip</dark_gray>");
                 Moment now = moment(cutscene, tick[0]);
                 if (now.start() == tick[0]) sound(player, cutscene.shots().get(now.shot()));
                 // A cut jumps in one go; every other move is smoothed. The duration has to reach the client first.
@@ -571,7 +599,7 @@ final class RunStage {
                 if (player.getSpectatorTarget() != camera) player.setSpectatorTarget(camera);
                 tick[0]++;
             }, 1L, 1L);
-            cameras.put(player.getUniqueId(), new CameraState(mode, from, camera.getUniqueId(), task));
+            cameras.put(player.getUniqueId(), new CameraState(mode, from, camera.getUniqueId(), task, id));
         }
         showCards(cutscene);
     }
@@ -695,6 +723,7 @@ final class RunStage {
         host.teleport(player, state.from());
         player.setGameMode(state.mode());
         player.getPersistentDataContainer().remove(cutsceneKey);
+        host.sceneOver(player, state.scene());
     }
 
     /** On join: a player who left mid-cutscene gets their game mode back. */

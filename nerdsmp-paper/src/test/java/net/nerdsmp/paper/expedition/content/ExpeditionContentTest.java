@@ -89,7 +89,7 @@ class ExpeditionContentTest {
         assertEquals(List.of(66, 33), boss.addsAtHealth());
         assertEquals(3, boss.script("health-50").size());
         assertEquals(120, barrow.loot().marks());
-        assertEquals(4, barrow.loot().items().get("iron_ingot"));
+        assertEquals(6, barrow.loot().items().get("grave_dust"));
         assertEquals(new ExpeditionDefinition.Point(0, 64, 4, 0), barrow.spawn());
     }
 

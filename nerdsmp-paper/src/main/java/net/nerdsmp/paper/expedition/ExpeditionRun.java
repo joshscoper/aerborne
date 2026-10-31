@@ -94,8 +94,11 @@ final class ExpeditionRun {
     private final RunPuzzles puzzles;
     private final RunStage stage;
     private final AbilityCaster abilityCaster;
+    /** What an enemy does as it falls, by enemy. */
+    private final Map<UUID, String> deathThroes = new HashMap<>();
     private final RunCombat fight;
     private final RunEntrance entrance;
+    private final RunArena roomFight;
     private final RunPacks packs;
     /** Whether each sealed room's door is shut now. */
     private final Map<String, Boolean> seals = new HashMap<>();
@@ -200,6 +203,34 @@ final class ExpeditionRun {
                 var counts = plugin.quests().counts(player, giver);
                 return counts.ready() > 0 ? "?" : counts.available() > 0 ? "!" : null;
             }
+            @Override public void strike(ExpeditionDefinition.Hazard hazard) { run.roomFight.strike(hazard); }
+            @Override public void logHazard(String id) { run.logAbility("hazard " + id); }
+            @Override public void stopped(ExpeditionDefinition.Hazard hazard) { run.roomFight.stopped(hazard); }
+            @Override public void sceneOver(Player player, String scene) {
+                if (run.state == State.ACTIVE && scene.equals(run.expedition.story().intro())) run.welcome(player);
+            }
+        });
+        this.roomFight = new RunArena(plugin, new RunArena.Host() {
+            @Override public World world() { return run.world; }
+            @Override public ExpeditionDefinition expedition() { return run.expedition; }
+            @Override public boolean live() { return run.state == State.ACTIVE; }
+            @Override public List<Player> online() { return run.online(); }
+            @Override public boolean inCutscene(Player player) { return run.stage.inCutscene(player); }
+            @Override public List<LivingEntity> bosses() {
+                List<LivingEntity> found = new ArrayList<>();
+                for (UUID uuid : run.bosses.keySet()) if (Bukkit.getEntity(uuid) instanceof LivingEntity living && living.isValid() && !living.isDead()) found.add(living);
+                return found;
+            }
+            @Override public BossBar bar() { return run.bossBar; }
+            @Override public void cancelCast(LivingEntity boss) { run.fight.cancelCast(boss.getUniqueId()); }
+            @Override public void temporary(Block block, Material type, int ticks) { run.stage.temporary(block, type, ticks); }
+            @Override public void broadcast(String markup) { run.broadcast(markup); }
+            @Override public void bar(Player player, String markup) { Chat.bar(player, markup); }
+            @Override public void script(String trigger) {
+                Room active = run.progress == null ? null : run.progress.activeRoom();
+                if (active != null) run.runScript(active.id(), active.encounter().script(trigger), 0);
+            }
+            @Override public void log(String line) { run.logAbility(line); }
         });
         this.entrance = new RunEntrance(plugin, new RunEntrance.Host() {
             @Override public World world() { return run.world; }
@@ -357,6 +388,7 @@ final class ExpeditionRun {
         if (expedition.story().time() != null && world.getEnvironment() == World.Environment.NORMAL) world.setTime(expedition.story().time());
         stage.begin();
         entrance.begin(expedition.roomList());
+        roomFight.begin();
         puzzles.begin(expedition.roomList());
         Location spawn = location(expedition.spawn());
         for (UUID member : members) {
@@ -369,9 +401,8 @@ final class ExpeditionRun {
             service.returns().remember(member, player.getLocation());
             service.teleport(player, spawn);
             loot.readLevel(member);
-            player.showTitle(Title.title(Chat.render("<gold>" + Chat.escape(expedition.title()) + "</gold>"),
-                Chat.render("<gray>" + Chat.escape(tier.title()) + (modifiers.isEmpty() ? "" : " · " + modifierNames()) + "</gray>"),
-                Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(600))));
+            // An opening scene has the screen first: the title waits for the camera to come back.
+            if (expedition.story().intro() == null) welcome(player);
         }
         for (AllySlot slot : allies) spawnAlly(slot, spawn);
         // The opening scene, once everyone has arrived.
@@ -402,6 +433,12 @@ final class ExpeditionRun {
             default -> { }
         }
         updateStatus(now);
+    }
+
+    private void welcome(Player player) {
+        player.showTitle(Title.title(Chat.render("<gold>" + Chat.escape(expedition.title()) + "</gold>"),
+            Chat.render("<gray>" + Chat.escape(tier.title()) + (modifiers.isEmpty() ? "" : " · " + modifierNames()) + "</gray>"),
+            Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(600))));
     }
 
     void tick(long now) {
@@ -472,6 +509,7 @@ final class ExpeditionRun {
         }
         stage.close();
         entrance.close();
+        roomFight.close();
         hideBar();
         for (UUID member : members) {
             Player player = Bukkit.getPlayer(member);
@@ -562,8 +600,15 @@ final class ExpeditionRun {
         damage.remove(uuid);
         ExpeditionDefinition.Role role = roles.remove(uuid);
         if (role != null && state == State.ACTIVE) {
-            loot.enemyDied(role, entity.getLocation());
+            Room fought = progress.activeRoom();
+            if (bossSlot == null || fought == null) loot.enemyDied(role, entity.getLocation());
+            else if (bosses.isEmpty()) loot.bossFell(fought, entity.getLocation());
             loot.enemyLessons(role, uuid);
+            String throes = deathThroes.remove(uuid);
+            if (throes != null) {
+                abilityCaster.deathThroe(throes, entity.getLocation(), arena);
+                logAbility("death throe " + throes);
+            }
         }
         casters.remove(uuid);
         fight.died(uuid);
@@ -665,7 +710,9 @@ final class ExpeditionRun {
         switch (effect) {
             case Effect.StartRoom start -> {
                 Room room = expedition.rooms().get(start.room());
-                for (Player player : online()) {
+                // A room that opens on a scene lets the scene announce it.
+                boolean scene = room.encounter().script("start").stream().anyMatch(action -> action.verb() == ScriptAction.Verb.CUTSCENE);
+                if (!scene) for (Player player : online()) {
                     player.showTitle(Title.title(Component.empty(), Chat.render("<gold>" + Chat.escape(room.title()) + "</gold>"),
                         Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))));
                     player.playSound(player.getLocation(), Sound.EVENT_RAID_HORN, .5F, 1.2F);
@@ -690,6 +737,8 @@ final class ExpeditionRun {
                 despawn(reset.room());
                 puzzles.reset(expedition.rooms().get(reset.room()));
                 stage.stopHazards();
+                roomFight.reset();
+                entrance.reset(expedition.rooms().get(reset.room()));
                 regroupAllies();
                 broadcast("<red>The party has fallen.</red> <gray>" + Chat.escape(expedition.rooms().get(reset.room()).title())
                     + " resets. Regroup and try again.</gray>");
@@ -947,7 +996,7 @@ final class ExpeditionRun {
         for (Player player : online()) {
             if (stage.inCutscene(player)) continue;
             player.showTitle(Title.title(Component.empty(), displayName(entity), Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2500), Duration.ofMillis(600))));
-            if (epithet != null) player.sendActionBar(Chat.render("<gray>" + Chat.escape(epithet) + "</gray>"));
+            if (epithet != null) Chat.bar(player, "<gray>" + Chat.escape(epithet) + "</gray>");
         }
     }
 
@@ -1070,6 +1119,14 @@ final class ExpeditionRun {
             return found;
         }
 
+        @Override public List<Player> near(Location at, double radius) {
+            List<Player> found = new ArrayList<>();
+            for (Player player : online())
+                if (!player.isDead() && player.getGameMode() != org.bukkit.GameMode.SPECTATOR && !stage.inCutscene(player)
+                    && player.getLocation().distanceSquared(at) <= radius * radius) found.add(player);
+            return found;
+        }
+
         @Override public List<LivingEntity> friends(LivingEntity caster, double radius) {
             List<LivingEntity> found = new ArrayList<>();
             for (UUID uuid : damage.keySet())
@@ -1115,6 +1172,7 @@ final class ExpeditionRun {
             if (caster.abilities.isEmpty() || now < caster.nextCast) continue;
             if (!(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity living) || living.isDead() || abilityCaster.busy(living)) continue;
             if (packs.dormant(entry.getKey()) || fight.casting(entry.getKey()) || arena.targets(living, 20).isEmpty()) continue;
+            if (roomFight.warding() && caster.role == ExpeditionDefinition.Role.BOSS) continue;
             List<String> ready = new ArrayList<>();
             for (String ability : caster.abilities)
                 if (now >= caster.ready.getOrDefault(ability, 0L) && abilityCaster.useful(ability, living, arena)) ready.add(ability);
@@ -1141,7 +1199,7 @@ final class ExpeditionRun {
     /** A right-clicked block: loot and reward chests (also after the finish), then campfires, crates and puzzles. */
     void interact(Player player, Block block) {
         if (state != State.ACTIVE && state != State.ENDING) return;
-        if (loot.interact(player, block) || state != State.ACTIVE || stage.interact(player, block)) return;
+        if (loot.interact(player, block) || state != State.ACTIVE || roomFight.interact(player, block) || stage.interact(player, block)) return;
         if (supplies(player, block)) return;
         puzzles.used(player, block);
     }
@@ -1209,6 +1267,7 @@ final class ExpeditionRun {
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(true);
             spawned.setCanPickupItems(false); // Counterweights thrown on plates stay where they land.
+            if (asBoss && room.encounter().entrance() != null) entrance.hold(spawned);
             var max = spawned.getAttribute(Attribute.MAX_HEALTH);
             if (max != null) {
                 max.setBaseValue(max.getBaseValue() * health);
@@ -1232,6 +1291,7 @@ final class ExpeditionRun {
                 java.util.Collections.shuffle(pool, random);
                 abilities = pool.subList(0, role == ExpeditionDefinition.Role.MINIBOSS ? 2 : 1);
             }
+            if (profile.deathAbility() != null) deathThroes.put(entity.getUniqueId(), profile.deathAbility());
             if (!abilities.isEmpty()) {
                 Caster caster = new Caster(role, List.copyOf(abilities), role == ExpeditionDefinition.Role.MINIBOSS ? 1.2 : 1);
                 caster.nextCast = System.currentTimeMillis() + 3_000 + random.nextInt(3_000);
@@ -1351,6 +1411,10 @@ final class ExpeditionRun {
             case HAZARD -> stage.hazard(action.arg(0).toLowerCase(Locale.ROOT), action.arg(1));
             case CAMPFIRE -> stage.light(action.arg(0));
             case NPC -> stage.moveNpc(action.arg(0), new Point(action.intArg(1, 0), action.intArg(2, 0), action.intArg(3, 0), action.intArg(4, 0)));
+            case WARD -> roomFight.ward(action.intArg(0, 30), action.args().subList(1, action.args().size()));
+            case CAST -> {
+                for (UUID uuid : bosses.keySet()) if (Bukkit.getEntity(uuid) instanceof LivingEntity boss) abilityCaster.cast(action.arg(0), boss, arena, 1.4);
+            }
             case WAIT -> { }
         }
     }

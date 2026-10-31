@@ -52,6 +52,7 @@ website, so these work straight away:
 ## Developer commands
 
 Ops can use `/dev` (`nerdsmp.dev`) to test without playing up to something. Run it alone for the list.
+Try the Barrow's boss gear with `/dev gear pyre_greatsword`, `/dev gear keening_dirk`, `/dev gear hollow_crown` or `/dev gear wardens_soulblade`.
 
 | Command | What it does |
 |---|---|

@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
  * and gold is reserved for Marks. See docs/STYLE_GUIDE.md.
  */
 public final class Chat {
+    private static java.util.function.BiConsumer<org.bukkit.entity.Player, net.kyori.adventure.text.Component> barRoute = (player, line) -> player.sendActionBar(line);
+
     public static final String ACCOUNT_LOADING = "Your account is still loading. Try again in a moment.";
     public static final String NO_PERMISSION = "You do not have permission to do that.";
     public static final String PLAYERS_ONLY = "Use this command in game.";
@@ -42,6 +44,12 @@ public final class Chat {
     public static void error(Audience audience, String markup) {
         send(audience, "<red>" + markup + "</red>");
     }
+
+    /** Sends a line to a player's action bar, through whatever shares it with them. */
+    public static void bar(org.bukkit.entity.Player player, String markup) { barRoute.accept(player, render(markup)); }
+
+    /** Hands the action bar to whatever draws it, so short lines join its display rather than flickering over it. */
+    public static void routeBar(java.util.function.BiConsumer<org.bukkit.entity.Player, net.kyori.adventure.text.Component> route) { barRoute = route; }
 
     public static void notice(Audience audience, String markup) {
         send(audience, "<yellow>" + markup + "</yellow>");

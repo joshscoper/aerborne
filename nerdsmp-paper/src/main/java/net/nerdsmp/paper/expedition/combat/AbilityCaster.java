@@ -39,6 +39,8 @@ public final class AbilityCaster {
         boolean live();
         /** Living party members (not allies) within {@code radius} of the caster. */
         List<Player> targets(LivingEntity caster, double radius);
+        /** Living party members within {@code radius} of a spot, for effects that outlast or don't need a caster. */
+        default List<Player> near(Location at, double radius) { return List.of(); }
         /** Encounter mobs near the caster, itself included. */
         List<LivingEntity> friends(LivingEntity caster, double radius);
         /** Spawns helpers next to the caster; the run tracks them like any wave mob. */
@@ -91,6 +93,13 @@ public final class AbilityCaster {
             case "rally" -> rally(caster, arena);
             case "heavy_blow" -> heavyBlow(caster, arena, power);
             case "soul_rend" -> soulRend(caster, arena, power);
+            case "grave_grasp" -> graveGrasp(caster, arena, targets, power);
+            case "pin_shot" -> pinShot(caster, arena, power);
+            case "arrow_rain" -> arrowRain(caster, arena, targets, power);
+            case "cursed_ground" -> cursedGround(caster, arena, targets, power);
+            case "ambush" -> ambush(caster, arena, targets, power);
+            case "bone_throw" -> boneThrow(caster, arena, power);
+            case "bone_wave" -> boneWave(caster, arena, power);
             default -> false;
         };
     }
@@ -100,7 +109,7 @@ public final class AbilityCaster {
         return switch (ability) {
             case "mend", "ward" -> arena.friends(caster, 10).stream().anyMatch(friend -> ratio(friend) < .8);
             case "rally" -> arena.friends(caster, 10).size() > 1;
-            case "bolt", "heavy_blow" -> {
+            case "bolt", "heavy_blow", "pin_shot", "bone_throw" -> {
                 LivingEntity target = arena.target(caster);
                 yield target != null && caster.hasLineOfSight(target);
             }
@@ -364,7 +373,7 @@ public final class AbilityCaster {
     /** Marks a player: the ring follows them for four seconds, then bursts on everyone near them. */
     private boolean volatileMark(LivingEntity caster, Arena arena, List<Player> targets, double power) {
         Player marked = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
-        marked.sendActionBar(net.kyori.adventure.text.Component.text("You are marked! Get away from the others!", net.kyori.adventure.text.format.NamedTextColor.RED));
+        net.nerdsmp.paper.presentation.Chat.bar(marked, "<red>You are marked! Get away from the others!</red>");
         marked.playSound(marked.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1F, .5F);
         repeat(caster, arena, 8, 5, tick -> Telegraph.ring(marked.getLocation(), 4, Telegraph.SHADOW), () -> {
             Location at = marked.getLocation();
@@ -432,6 +441,201 @@ public final class AbilityCaster {
             hit(player, caster, 8 * power);
             player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 60, 0));
         }
+        return true;
+    }
+
+    /** Bones burst from the floor where a player stood. The ring holds still, so stepping off it is enough. */
+    private boolean graveGrasp(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location at = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        caster.getWorld().playSound(at, Sound.BLOCK_BONE_BLOCK_BREAK, 1.2F, .6F);
+        repeat(caster, arena, 4, 5, tick -> Telegraph.disc(at, 1.9, Telegraph.SHADOW), () -> {
+            Telegraph.spikes(plugin, at, Material.BONE_BLOCK, 9, 1.8, 1.7F);
+            Telegraph.shards(at, 24, 1, Material.BONE_BLOCK);
+            caster.getWorld().playSound(at, Sound.ENTITY_SKELETON_HURT, 1.2F, .6F);
+            caster.getWorld().playSound(at, Sound.BLOCK_BONE_BLOCK_PLACE, 1.4F, .7F);
+            for (Player player : arena.near(at, 2.1)) {
+                hit(player, caster, 4 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 5));
+            }
+        });
+        return true;
+    }
+
+    /** A thrall comes apart as it falls, and what's left of it flies out a moment later. */
+    public void deathThroe(String ability, Location at, Arena arena) {
+        if (!ability.equals("bone_burst") || arena.near(at, 12).isEmpty()) return;
+        at.getWorld().playSound(at, Sound.ENTITY_SKELETON_DEATH, 1F, .7F);
+        int[] tick = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!arena.live()) { task.cancel(); return; }
+            if (tick[0]++ < 5) {
+                Telegraph.ring(at, 2.6, Telegraph.DANGER);
+                Telegraph.shards(at.clone().add(0, .3, 0), 6, .3, Material.BONE_BLOCK);
+                return;
+            }
+            task.cancel();
+            Telegraph.shards(at.clone().add(0, .6, 0), 40, 1.4, Material.BONE_BLOCK);
+            Telegraph.spikes(plugin, at, Material.BONE_BLOCK, 7, 2.2, 1.1F);
+            at.getWorld().playSound(at, Sound.ENTITY_SKELETON_HURT, 1.4F, .5F);
+            at.getWorld().playSound(at, Sound.BLOCK_DECORATED_POT_SHATTER, 1.4F, .6F);
+            for (Player player : arena.near(at, 2.8)) {
+                player.damage(3);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 1));
+            }
+        }, 0L, 5L);
+    }
+
+    /** A red line pins the target down, then a heavy arrow flies straight along it. It locks a moment before the shot. */
+    private boolean pinShot(LivingEntity caster, Arena arena, double power) {
+        LivingEntity target = arena.target(caster);
+        if (target == null || !caster.hasLineOfSight(target)) return false;
+        hold(caster, 28);
+        Location from = caster.getEyeLocation();
+        Location[] to = {target.getEyeLocation()};
+        caster.getWorld().playSound(from, Sound.ITEM_CROSSBOW_LOADING_MIDDLE, 1.3F, .6F);
+        repeat(caster, arena, 5, 5, tick -> {
+            if (tick < 3 && target.isValid()) to[0] = target.getEyeLocation();
+            Telegraph.line(from, to[0], Telegraph.DANGER);
+        }, () -> {
+            Arrow arrow = caster.launchProjectile(Arrow.class, to[0].toVector().subtract(from.toVector()).normalize().multiply(2.8));
+            arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+            arrow.setDamage(5 * power);
+            arrow.setCritical(true);
+            arrow.addCustomEffect(new PotionEffect(PotionEffectType.SLOWNESS, 50, 2), true);
+            caster.getWorld().playSound(from, Sound.ITEM_CROSSBOW_SHOOT, 1.3F, .7F);
+        });
+        return true;
+    }
+
+    /** Arrows fall across a marked ring a moment after it's drawn. */
+    private boolean arrowRain(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location at = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        hold(caster, 20);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.2F, .5F);
+        repeat(caster, arena, 7, 5, tick -> Telegraph.disc(at, 3.8, Telegraph.DANGER), () -> repeat(caster, arena, 6, 2, tick -> {
+            var random = ThreadLocalRandom.current();
+            for (int shaft = 0; shaft < 3; shaft++) {
+                double angle = random.nextDouble(Math.PI * 2), distance = Math.sqrt(random.nextDouble()) * 3.6;
+                Location top = at.clone().add(Math.cos(angle) * distance, 4.5, Math.sin(angle) * distance);
+                Arrow arrow = at.getWorld().spawnArrow(top, new Vector(0, -1, 0), 1.6F, 2F);
+                arrow.setShooter(caster);
+                arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                arrow.setDamage(2.5 * power);
+            }
+            at.getWorld().playSound(at, Sound.ENTITY_ARROW_HIT, .9F, .8F);
+        }, () -> { }));
+        return true;
+    }
+
+    /** Soul fire pools under a player and keeps burning after they've moved, and after the caster has fallen. */
+    private boolean cursedGround(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location at = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_EVOKER_CAST_SPELL, 1F, .7F);
+        repeat(caster, arena, 3, 5, tick -> Telegraph.disc(at, 2.8, Telegraph.SHADOW), () -> {
+            at.getWorld().playSound(at, Sound.BLOCK_SOUL_SAND_BREAK, 1.4F, .6F);
+            int[] tick = {0};
+            Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                if (!arena.live() || tick[0]++ >= 14) { task.cancel(); return; }
+                Telegraph.ring(at, 2.8, Telegraph.FROST);
+                at.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, at.clone().add(0, .2, 0), 16, 1.4, .1, 1.4, .01);
+                if (tick[0] % 2 == 0) for (Player player : arena.near(at, 3)) {
+                    hit(player, caster, 1.5 * power);
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 25, 1));
+                }
+            }, 0L, 10L);
+        });
+        return true;
+    }
+
+    /** Fades out, then steps out behind its target with a moment's warning, and strikes. */
+    private boolean ambush(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        caster.getWorld().spawnParticle(Particle.LARGE_SMOKE, caster.getLocation().add(0, 1, 0), 26, .4, .7, .4, .03);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.2F, .7F);
+        caster.setInvisible(true);
+        if (caster instanceof Mob mob) mob.setAware(false);
+        repeat(caster, arena, 5, 5, tick -> { }, () -> {
+            Location at = target.getLocation();
+            Location behind = at.clone().add(at.getDirection().setY(0).normalize().multiply(-1.6));
+            if (!behind.getBlock().isPassable() || !behind.clone().add(0, 1, 0).getBlock().isPassable()) behind = at;
+            Location spot = behind;
+            caster.teleport(spot.clone().setDirection(at.toVector().subtract(spot.toVector())));
+            caster.setInvisible(false);
+            caster.getWorld().spawnParticle(Particle.PORTAL, spot.clone().add(0, 1, 0), 30, .3, .6, .3, .4);
+            caster.getWorld().playSound(spot, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, .7F);
+            repeat(caster, arena, 2, 5, tick -> Telegraph.ring(spot, 2.5, Telegraph.DANGER), () -> {
+                if (caster instanceof Mob mob) {
+                    mob.setAware(true);
+                    mob.setTarget(target);
+                }
+                caster.getWorld().spawnParticle(Particle.SWEEP_ATTACK, caster.getLocation().add(0, 1, 0), 3, .6, .3, .6, 0);
+                caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.3F, .7F);
+                if (target.isValid() && target.getLocation().distanceSquared(spot) <= 6.25) {
+                    hit(target, caster, 7 * power);
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 50, 0));
+                }
+            });
+        });
+        return true;
+    }
+
+    /** A mass of bone sails over and lands on the marked spot. */
+    private boolean boneThrow(LivingEntity caster, Arena arena, double power) {
+        LivingEntity target = arena.target(caster);
+        if (target == null || !caster.hasLineOfSight(target)) return false;
+        hold(caster, 24);
+        face(caster, target.getLocation());
+        Location landing = target.getLocation(), start = caster.getEyeLocation();
+        caster.getWorld().playSound(start, Sound.ENTITY_WITCH_THROW, 1.3F, .5F);
+        var mass = caster.getWorld().spawn(start, org.bukkit.entity.BlockDisplay.class, display -> {
+            display.setBlock(Material.BONE_BLOCK.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(5);
+            display.setBrightness(new org.bukkit.entity.Display.Brightness(12, 12));
+            display.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-.5F, -.5F, -.5F),
+                new org.joml.Quaternionf().rotateXYZ(.6F, .5F, .3F), new org.joml.Vector3f(1, 1, 1), new org.joml.Quaternionf()));
+        });
+        repeat(caster, arena, 5, 5, tick -> {
+            Telegraph.disc(landing, 2.6, Telegraph.DANGER);
+            double flown = (tick + 1) / 5D;
+            mass.teleport(start.clone().add(landing.toVector().subtract(start.toVector()).multiply(flown)).add(0, Math.sin(flown * Math.PI) * 2.5, 0));
+        }, () -> {
+            mass.remove();
+            Telegraph.shards(landing.clone().add(0, .4, 0), 40, 1.3, Material.BONE_BLOCK);
+            Telegraph.spikes(plugin, landing, Material.BONE_BLOCK, 6, 1.6, .9F);
+            landing.getWorld().playSound(landing, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.3F, .5F);
+            for (Player player : arena.near(landing, 2.8)) {
+                hit(player, caster, 6 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 2));
+            }
+        });
+        return true;
+    }
+
+    /** A ring of bone rolls out across the floor; it only catches those standing on the ground as it passes. */
+    private boolean boneWave(LivingEntity caster, Arena arena, double power) {
+        hold(caster, 30);
+        Location center = caster.getLocation();
+        caster.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_CHARGE, 1.2F, .7F);
+        repeat(caster, arena, 5, 5, tick -> Telegraph.ring(center, 1 + tick, Telegraph.DANGER), () -> {
+            caster.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1F, .6F);
+            double[] radius = {1};
+            Set<UUID> struck = new HashSet<>();
+            Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                radius[0] += .55;
+                if (!arena.live() || radius[0] > 16) { task.cancel(); return; }
+                for (int index = 0; index < 18; index++) {
+                    double angle = index * Math.PI / 9;
+                    Telegraph.shards(center.clone().add(Math.cos(angle) * radius[0], .25, Math.sin(angle) * radius[0]), 2, .15, Material.BONE_BLOCK);
+                }
+                for (Player player : arena.near(center, radius[0] + 1.2)) {
+                    double out = Math.hypot(player.getX() - center.getX(), player.getZ() - center.getZ());
+                    if (Math.abs(out - radius[0]) > .9 || player.getY() - center.getY() > 1.5 || !((org.bukkit.entity.Entity) player).isOnGround() || !struck.add(player.getUniqueId())) continue;
+                    hit(player, caster, 6 * power);
+                    player.setVelocity(player.getVelocity().setY(.45));
+                }
+            }, 0L, 1L);
+        });
         return true;
     }
 

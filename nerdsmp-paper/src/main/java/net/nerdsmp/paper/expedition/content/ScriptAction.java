@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public record ScriptAction(Verb verb, List<String> args, String text) {
     /** Triggers an encounter can attach actions to. */
     public static final Pattern TRIGGER = Pattern.compile(
-        "start|clear|enrage|revive|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
+        "start|clear|enrage|revive|ward-broken|ward-failed|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
 
     public ScriptAction {
         args = List.copyOf(args);
@@ -54,7 +54,11 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         /** {@code campfire <id>} lights a campfire for the party. */
         CAMPFIRE(1, false),
         /** {@code npc <id> <x> <y> <z> [yaw]} moves a character, say to meet the party at the end. */
-        NPC(4, false);
+        NPC(4, false),
+        /** {@code ward <seconds> <device>...}: the boss can't be hurt until its devices are doused, or the time runs out. */
+        WARD(2, false),
+        /** {@code cast <ability>}: every boss in the room uses an ability now, ready or not. */
+        CAST(1, false);
 
         final int minimumArgs;
         final boolean freeText;
@@ -76,7 +80,7 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         } catch (IllegalArgumentException unknown) {
             throw new IllegalArgumentException("Unknown script action '" + word.toLowerCase(Locale.ROOT)
                 + "'. Use message, title, say, sound, spawn, open, close, effect, checkpoint, wait, command, cutscene, "
-                + "build, break, restore, hazard, campfire or npc.");
+                + "build, break, restore, hazard, campfire, npc, ward or cast.");
         }
         String rest = space < 0 ? "" : trimmed.substring(space + 1).strip();
         List<String> args = rest.isEmpty() ? List.of() : verb.freeText ? List.of(rest) : List.of(rest.split("\\s+"));
@@ -92,6 +96,7 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
                 if (args.size() > 2) nonNegative(args.get(2), "effect amplifier", 4);
             }
             case WAIT -> positive(args.get(0), "wait seconds", 300);
+            case WARD -> positive(args.get(0), "ward seconds", 120);
             case SOUND -> { if (args.size() > 1) Double.parseDouble(args.get(1)); }
             case NPC -> {
                 number(args.get(1), "npc x");

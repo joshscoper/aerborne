@@ -85,6 +85,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
     private final NamespacedKey unidentifiedKey;
     private final NamespacedKey lootInstanceKey;
     private final NamespacedKey signatureAffixKey;
+    private Map<String, List<String>> abilityBindings = Map.of();
     private final NamespacedKey arcaneSignatureKey;
     private final NamespacedKey arcaneInstabilityKey;
     private final NamespacedKey arcaneCorruptionKey;
@@ -210,6 +211,12 @@ public final class PaperItemService implements ItemService<ItemStack> {
             && validSignatureTag(item.getItemMeta(), catalog.items().get(descriptor.get().itemId()));
     }
 
+    /** What this item can do, from the authenticated catalog. A sealed item does nothing until it's identified. */
+    public List<ItemAbility> abilities(ItemStack item) {
+        if (item == null || item.getType().isAir() || !isAuthentic(item) || item.getAmount() != 1 || isUnidentified(item)) return List.of();
+        return catalog.items().get(describe(item).orElseThrow().itemId()).abilities();
+    }
+
     /** Signatures are resolved from the authenticated catalog, never a name, lore line or stored bonus value. */
     public Optional<SignatureAffix> signatureAffix(ItemStack item) {
         if (!isAuthentic(item) || item.getAmount() != 1 || isUnidentified(item)) return Optional.empty();
@@ -278,6 +285,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         SignatureAffix signature = definition.signatureAffix();
         if (signature != null) key.append('|').append(signature.name()).append(signature.displayName())
             .append(signature.description()).append(new TreeMap<>(signature.stats()));
+        definition.abilities().forEach(ability -> key.append('|').append(ability.name()).append(ability.description()));
         SetDefinition set = definition.setId() == null ? null : catalog.sets().get(definition.setId());
         if (set != null) {
             key.append('|').append(set.name()).append(set.pieceCount());
@@ -986,6 +994,13 @@ public final class PaperItemService implements ItemService<ItemStack> {
             tooltip.add(tooltipLine("<gold>Ability: " + miniMessage.escapeTags(signature.displayName()) + "</gold>"));
             tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(signature.description()) + "</gray>"));
         }
+        if (!definition.abilities().isEmpty()) {
+            appendDivider(tooltip);
+            for (ItemAbility ability : definition.abilities()) {
+                tooltip.add(tooltipLine("<gold>" + ability.trigger().label() + ": " + miniMessage.escapeTags(ability.displayName()) + "</gold>"));
+                tooltip.add(tooltipLine("<gray>" + miniMessage.escapeTags(ability.description()) + "</gray>"));
+            }
+        }
 
         Map<ArcaneEnchantment, Integer> customEnchantments = enchantments(meta);
         if (!customEnchantments.isEmpty()) {
@@ -1312,6 +1327,21 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return result.toString();
     }
 
+    /** Ability ids by item, and the gear they come with, from the bundled content/item-abilities.yml. */
+    private Map<String, List<String>> readAbilities(JavaPlugin plugin, YamlConfiguration catalog) throws Exception {
+        try (var reader = new InputStreamReader(java.util.Objects.requireNonNull(plugin.getResource("content/item-abilities.yml")), StandardCharsets.UTF_8)) {
+            YamlConfiguration file = new YamlConfiguration();
+            file.load(reader);
+            ConfigurationSection added = file.getConfigurationSection("items");
+            if (added != null) for (String id : added.getKeys(false))
+                if (!catalog.contains("relics." + id)) catalog.set("relics." + id, added.getConfigurationSection(id));
+            Map<String, List<String>> bound = new HashMap<>();
+            ConfigurationSection abilities = file.getConfigurationSection("abilities");
+            if (abilities != null) for (String id : abilities.getKeys(false)) bound.put(id, abilities.getStringList(id));
+            return Map.copyOf(bound);
+        }
+    }
+
     private LoadedCatalog loadContent(JavaPlugin plugin) {
         File contentDirectory = new File(plugin.getDataFolder(), "content");
         File target = new File(contentDirectory, "relics.yml");
@@ -1323,6 +1353,11 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 candidate -> loadItems(candidate, loadSets(candidate)));
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to load relic definitions; existing content was preserved", exception);
+        }
+        try {
+            abilityBindings = readAbilities(plugin, configuration);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to load item abilities", exception);
         }
 
         try (var stream = java.util.Objects.requireNonNull(plugin.getResource("content/skyforge-items.yml"))) {
@@ -1520,6 +1555,12 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 if (!signature.supports(material, slot, rarity))
                     throw new IllegalStateException("Incompatible signature affix on NerdSMP item " + key);
             }
+            List<ItemAbility> abilities = new ArrayList<>();
+            for (String ability : abilityBindings.getOrDefault(key, List.of())) {
+                ItemAbility bound = ItemAbility.fromId(ability).orElseThrow(() -> new IllegalStateException("Unknown ability " + ability + " on NerdSMP item " + key));
+                if (!bound.fits(material, slot, rarity)) throw new IllegalStateException("Ability " + ability + " doesn't fit NerdSMP item " + key);
+                abilities.add(bound);
+            }
             loaded.put(itemId, new Definition(
                 material,
                 section.getString("name", titleCase(key)),
@@ -1532,7 +1573,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 new ArrayList<>(section.getStringList("lore")),
                 stats(section),
                 Math.clamp(section.getInt("item-level", 0), 0, 100),
-                signature
+                signature,
+                abilities
             ));
         }
         return loaded;
@@ -1636,16 +1678,18 @@ public final class PaperItemService implements ItemService<ItemStack> {
         List<String> lore,
         Map<String, Double> stats,
         int itemLevel,
-        SignatureAffix signatureAffix
+        SignatureAffix signatureAffix,
+        List<ItemAbility> abilities
     ) {
         private Definition(Material material, String name, String setId, GearSlot slot, String category,
                            String rarity, String model, int sockets, List<String> lore, Map<String, Double> stats,
                            int itemLevel) {
-            this(material, name, setId, slot, category, rarity, model, sockets, lore, stats, itemLevel, null);
+            this(material, name, setId, slot, category, rarity, model, sockets, lore, stats, itemLevel, null, List.of());
         }
         private Definition {
             sockets = Math.max(0, Math.min(4, sockets));
             lore = List.copyOf(lore);
+            abilities = List.copyOf(abilities);
             stats = Map.copyOf(stats);
             if (signatureAffix != null && !signatureAffix.supports(material, slot, rarity))
                 throw new IllegalArgumentException("Incompatible signature affix");

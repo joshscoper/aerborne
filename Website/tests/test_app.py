@@ -1448,6 +1448,24 @@ class CosmeticsContentTest(SiteTest):
         self.assertEqual(conn.execute("SELECT acquisition FROM companions WHERE slug = 'pufflet'").fetchone()[0], "Not announced yet")
         conn.close()
 
+    def test_new_expedition_lines_reach_older_guides_but_not_edited_ones(self):
+        from aerborne import seed_updates
+        conn = self.db()
+        for slug, _, line in seed_updates.REV30_LINES:
+            body = conn.execute("SELECT body FROM guides WHERE slug = ?", (slug,)).fetchone()[0]
+            conn.execute("UPDATE guides SET body = ? WHERE slug = ?", (body.replace(line, ""), slug))
+        gear = conn.execute("SELECT body FROM guides WHERE slug = 'gear-and-sockets'").fetchone()[0]
+        conn.execute("UPDATE guides SET body = ?, updated_by = 'boss' WHERE slug = 'gear-and-sockets'",
+                     (gear.replace(seed_updates.REV30_ABILITIES, ""),))
+        conn.execute("UPDATE settings SET value = '29' WHERE key = 'seed_rev'")
+        conn.commit()
+        seed_updates.apply(conn)
+        body = conn.execute("SELECT body FROM guides WHERE slug = 'expeditions'").fetchone()[0]
+        for _, _, line in seed_updates.REV30_LINES:
+            self.assertEqual(body.count(line), 1)
+        self.assertNotIn("## Item abilities", conn.execute("SELECT body FROM guides WHERE slug = 'gear-and-sockets'").fetchone()[0])
+        conn.close()
+
 
 class ApiStatusTest(SiteTest):
     STATUS = {"apiVersion": 1, "ready": True, "onlinePlayers": 3, "maxPlayers": 20, "serverVersion": "Paper 26.2"}

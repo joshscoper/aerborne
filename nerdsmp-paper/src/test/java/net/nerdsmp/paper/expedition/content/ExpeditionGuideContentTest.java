@@ -13,7 +13,7 @@ class ExpeditionGuideContentTest {
         assertEquals(2, Difficulty.rating(barrow));
         assertFalse(barrow.guide().isEmpty());
         assertTrue(barrow.guide().overview().startsWith("The first dungeon"));
-        assertEquals(6, barrow.guide().tips().size());
+        assertEquals(7, barrow.guide().tips().size());
         assertEquals(barrow.rooms().keySet(), barrow.guide().rooms().keySet(), "Every room has a tip");
         assertTrue(barrow.guide().boss().contains("heavy blows"));
         var huntsman = barrow.rooms().get("kings_rest").encounter();

@@ -75,22 +75,23 @@ public record ExpeditionDefinition(
                         Map<String, Campfire> campfires, Map<String, SetPiece> setpieces, Map<String, Hazard> hazards,
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
                         List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro,
-                        Map<String, Pack> packs, int recordsVersion, Map<String, CompanionDrop> companionDrops) {
+                        Map<String, Pack> packs, int recordsVersion, Map<String, CompanionDrop> companionDrops,
+                        Map<String, Device> devices, List<Ambience> ambience) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null, null, List.of(), Map.of(), 0, Map.of());
+            Map.of(), null, null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
-                null, List.of(), Map.of(), 0, Map.of());
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
         }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
-                null, List.of(), Map.of(), 0, Map.of());
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of());
         }
 
         public Story {
@@ -106,6 +107,8 @@ public record ExpeditionDefinition(
             outro = outro == null ? List.of() : List.copyOf(outro);
             packs = ordered(packs);
             companionDrops = ordered(companionDrops);
+            devices = ordered(devices);
+            ambience = ambience == null ? List.of() : List.copyOf(ambience);
         }
 
         /** How many secret caches the map hides, for the run's exploration score. */
@@ -157,11 +160,43 @@ public record ExpeditionDefinition(
     /** A region of the map a script can fill ({@code build}), empty ({@code break}) or put back ({@code restore}). */
     public record SetPiece(String id, Box box, String block, PieceStyle style) { }
 
-    /** Arena hazards, always telegraphed before they land. */
-    public enum HazardType { ROCKS, FIRE, ERUPTION, GAS }
+    /**
+     * Arena hazards, always telegraphed before they land. The first four strike patches of floor. The
+     * rest use the room itself: a {@code LANE} rolls down one of its {@code lanes} until a wall or column
+     * stops it, a {@code COLLAPSE} drops the next of its hanging {@code spots}, and a {@code VIGIL} snuffs
+     * one of its {@code devices}, which spreads a pool until someone lights it again.
+     */
+    public enum HazardType {
+        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL;
 
-    /** A hazard over an area: every {@code everySeconds} it strikes {@code count} spots for {@code damage}. */
-    public record Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage) { }
+        public boolean usesRoom() { return this == LANE || this == COLLAPSE || this == VIGIL; }
+    }
+
+    /** A straight run across the floor, from one [x, z] to another. */
+    public record Lane(int x1, int z1, int x2, int z2) { }
+
+    /**
+     * A hazard over an area: every {@code everySeconds} it strikes {@code count} spots for {@code damage}.
+     * A lane can leave the floor burning for {@code burnSeconds}, and {@code soul} draws it in blue.
+     */
+    public record Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage,
+                         List<Lane> lanes, List<Point> spots, List<String> devices, int burnSeconds, boolean soul) {
+        public Hazard {
+            lanes = lanes == null ? List.of() : List.copyOf(lanes);
+            spots = spots == null ? List.of() : List.copyOf(spots);
+            devices = devices == null ? List.of() : List.copyOf(devices);
+        }
+
+        public Hazard(String id, HazardType type, Box area, int everySeconds, int count, double damage) {
+            this(id, type, area, everySeconds, count, damage, List.of(), List.of(), List.of(), 0, false);
+        }
+    }
+
+    /** A lit block players can right-click in a fight: wards ask them to douse it, vigils to light it again. */
+    public record Device(String id, Point at, String title) { }
+
+    /** A sound that drifts through the map (or only {@code area}), about once every {@code everySeconds}. */
+    public record Ambience(String sound, int everySeconds, float volume, float pitch, Box area) { }
 
     /**
      * One camera position; the camera glides from each shot to the next over {@code seconds}, unless
@@ -203,10 +238,14 @@ public record ExpeditionDefinition(
      * How a wave mob behaves in this expedition: its role, the abilities it uses and how much it
      * counts toward enemy forces. Mobs not listed are normal and worth one.
      */
-    public record MobProfile(String mob, Role role, List<String> abilities, int forces, String title, Behavior behavior) {
+    public record MobProfile(String mob, Role role, List<String> abilities, int forces, String title, Behavior behavior, String deathAbility) {
         public MobProfile {
             abilities = List.copyOf(abilities);
             behavior = behavior == null ? Behavior.BRUISER : behavior;
+        }
+
+        public MobProfile(String mob, Role role, List<String> abilities, int forces, String title, Behavior behavior) {
+            this(mob, role, abilities, forces, title, behavior, null);
         }
 
         public MobProfile(String mob, Role role, List<String> abilities, int forces, String title) {
@@ -354,7 +393,7 @@ public record ExpeditionDefinition(
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
     /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
-    public enum EntranceStyle { RISE, REANIMATE }
+    public enum EntranceStyle { RISE, REANIMATE, SUMMON }
 
     /**
      * How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds}

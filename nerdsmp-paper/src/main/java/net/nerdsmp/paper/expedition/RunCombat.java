@@ -187,7 +187,7 @@ final class RunCombat {
         }
         for (Player player : online) {
             int count = counts.getOrDefault(player.getUniqueId(), 0);
-            if (count > 0) player.sendActionBar(Chat.render("<red>" + count + (count == 1 ? " enemy is" : " enemies are") + " on you</red>"));
+            if (count > 0) Chat.bar(player, "<red>" + count + (count == 1 ? " enemy is" : " enemies are") + " on you</red>");
         }
     }
 
@@ -218,7 +218,7 @@ final class RunCombat {
         enemy.getWorld().spawnParticle(Particle.CRIT, enemy.getLocation().add(0, enemy.getHeight() / 2, 0), 24, .4, .5, .4, .2);
         enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 3, false, false));
         for (Player member : host.online())
-            member.sendActionBar(Chat.render("<aqua>" + Chat.escape(player.getName()) + " interrupted " + Chat.escape(cast.info.title()) + "</aqua>"));
+            Chat.bar(member, "<aqua>" + Chat.escape(player.getName()) + " interrupted " + Chat.escape(cast.info.title()) + "</aqua>");
         host.logAbility(player.getName() + " interrupted " + cast.info.id());
         endCast(enemy.getUniqueId(), true);
     }
@@ -234,7 +234,7 @@ final class RunCombat {
         long now = System.currentTimeMillis();
         long ready = taunts.getOrDefault(player.getUniqueId(), 0L);
         if (now < ready) {
-            player.sendActionBar(Chat.render("<gray>Taunt ready in " + Math.max(1, (ready - now + 999) / 1000) + "s</gray>"));
+            Chat.bar(player, "<gray>Taunt ready in " + Math.max(1, (ready - now + 999) / 1000) + "s</gray>");
             return false;
         }
         int taunted = 0;
@@ -253,7 +253,7 @@ final class RunCombat {
         taunts.put(player.getUniqueId(), now + TAUNT_COOLDOWN_MILLIS);
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1.2F, .7F);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_RAVAGER_ROAR, .5F, 1.6F);
-        player.sendActionBar(Chat.render("<gold>Taunted " + taunted + (taunted == 1 ? " enemy" : " enemies") + "</gold>"));
+        Chat.bar(player, "<gold>Taunted " + taunted + (taunted == 1 ? " enemy" : " enemies") + "</gold>");
         host.logAbility(player.getName() + " taunted " + taunted);
         return true;
     }
@@ -340,7 +340,7 @@ final class RunCombat {
             if (target != null) {
                 Telegraph.ring(caster.getLocation(), 4.5, Telegraph.DANGER);
                 if (target instanceof Player player && (now - cast.started) < TICK * 50 + 10)
-                    player.sendActionBar(Chat.render("<red>" + Chat.escape(cast.info.title()) + " on you! Raise a shield or get out of reach.</red>"));
+                    Chat.bar(player, "<red>" + Chat.escape(cast.info.title()) + " on you! Raise a shield or get out of reach.</red>");
             }
         }
     }

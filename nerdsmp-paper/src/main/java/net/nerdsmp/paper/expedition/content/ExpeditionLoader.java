@@ -112,9 +112,16 @@ public final class ExpeditionLoader {
             Box area = box(hazard, "area", path);
             if (area == null) throw new IllegalArgumentException(path + ".area: the floor it strikes, [x1, y1, z1, x2, y2, z2].");
             hazards.put(entry.getKey(), new ExpeditionDefinition.Hazard(entry.getKey(),
-                enumValue(ExpeditionDefinition.HazardType.class, hazard.getString("type", "rocks"), path + ".type", "rocks, fire, eruption or gas"),
+                enumValue(ExpeditionDefinition.HazardType.class, hazard.getString("type", "rocks"), path + ".type", "rocks, fire, eruption, gas, lane, collapse or vigil"),
                 area, hazard.contains("every") ? integer(hazard, "every") : 8, hazard.contains("count") ? integer(hazard, "count") : 3,
-                hazard.contains("damage") ? hazard.getDouble("damage") : 6));
+                hazard.contains("damage") ? hazard.getDouble("damage") : 6, lanes(hazard, path), points(hazard, "spots", path),
+                lower(hazard.getStringList("devices")), hazard.contains("burn") ? integer(hazard, "burn") : 0, hazard.getBoolean("soul", false)));
+        }
+        Map<String, ExpeditionDefinition.Device> devices = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "devices").entrySet()) {
+            Point at = point(entry.getValue(), "at");
+            if (at == null) throw new IllegalArgumentException("devices." + entry.getKey() + ".at: the block players use, [x, y, z].");
+            devices.put(entry.getKey(), new ExpeditionDefinition.Device(entry.getKey(), at, entry.getValue().getString("title", titleCase(entry.getKey()))));
         }
         Map<String, ExpeditionDefinition.Cutscene> cutscenes = new LinkedHashMap<>();
         ConfigurationSection cutSection = yaml.getConfigurationSection("cutscenes");
@@ -143,7 +150,7 @@ public final class ExpeditionLoader {
                 lower(profile.getStringList("abilities")),
                 profile.contains("forces") ? integer(profile, "forces") : ExpeditionDefinition.MobProfile.defaultForces(role),
                 profile.getString("title"), enumValue(ExpeditionDefinition.Behavior.class, profile.getString("behavior", "bruiser"),
-                    "mobs." + mob + ".behavior", "bruiser or caster")));
+                    "mobs." + mob + ".behavior", "bruiser or caster"), lowerOrNull(profile.getString("on-death"))));
         }
         Map<String, ExpeditionDefinition.LootChest> chests = new LinkedHashMap<>();
         for (var entry : sections(yaml, "chests").entrySet()) {
@@ -174,7 +181,52 @@ public final class ExpeditionLoader {
             yaml.contains("time-bonus-seconds") ? integer(yaml, "time-bonus-seconds") : 0, yaml.getBoolean("raid", false),
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
             lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
-            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops);
+            packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops, devices, ambience(yaml));
+    }
+
+    /** {@code lanes: [[x1, z1, x2, z2], ...]}. */
+    private static List<ExpeditionDefinition.Lane> lanes(ConfigurationSection hazard, String path) {
+        List<ExpeditionDefinition.Lane> lanes = new ArrayList<>();
+        List<?> raw = hazard.getList("lanes", List.of());
+        for (int index = 0; index < raw.size(); index++) {
+            if (!(raw.get(index) instanceof List<?> lane) || lane.size() != 4 || lane.stream().anyMatch(value -> !(value instanceof Number)))
+                throw new IllegalArgumentException(path + ".lanes[" + (index + 1) + "]: a lane is [x1, z1, x2, z2].");
+            lanes.add(new ExpeditionDefinition.Lane(((Number) lane.get(0)).intValue(), ((Number) lane.get(1)).intValue(),
+                ((Number) lane.get(2)).intValue(), ((Number) lane.get(3)).intValue()));
+        }
+        return lanes;
+    }
+
+    private static List<Point> points(ConfigurationSection section, String key, String path) {
+        List<Point> points = new ArrayList<>();
+        List<?> raw = section.getList(key, List.of());
+        for (int index = 0; index < raw.size(); index++) points.add(point(raw.get(index), path + "." + key + "[" + (index + 1) + "]"));
+        return points;
+    }
+
+    /** {@code ambience: [{sound: ambient.cave, every: 40, volume: .6, pitch: .7, area: [...]}]}. */
+    @SuppressWarnings("unchecked")
+    private static List<ExpeditionDefinition.Ambience> ambience(ConfigurationSection yaml) {
+        List<ExpeditionDefinition.Ambience> sounds = new ArrayList<>();
+        List<?> raw = yaml.getList("ambience", List.of());
+        for (int index = 0; index < raw.size(); index++) {
+            String path = "ambience[" + (index + 1) + "]";
+            if (!(raw.get(index) instanceof Map<?, ?> entry) || !(entry.get("sound") instanceof String sound))
+                throw new IllegalArgumentException(path + ": a sound is {sound: ambient.cave, every: 40}.");
+            Map<String, Object> map = (Map<String, Object>) entry;
+            Box area = null;
+            if (map.get("area") instanceof List<?> box && box.size() == 6 && box.stream().allMatch(value -> value instanceof Number)) {
+                int[] c = box.stream().mapToInt(value -> ((Number) value).intValue()).toArray();
+                area = new Box(c[0], c[1], c[2], c[3], c[4], c[5]);
+            } else if (map.get("area") != null) throw new IllegalArgumentException(path + ".area: [x1, y1, z1, x2, y2, z2].");
+            sounds.add(new ExpeditionDefinition.Ambience(sound.toLowerCase(Locale.ROOT), number(map, "every", 30).intValue(),
+                number(map, "volume", .7).floatValue(), number(map, "pitch", 1).floatValue(), area));
+        }
+        return sounds;
+    }
+
+    private static Number number(Map<String, Object> map, String key, Number fallback) {
+        return map.get(key) instanceof Number value ? value : fallback;
     }
 
     private static Map<String, ConfigurationSection> sections(ConfigurationSection yaml, String key) {
@@ -231,7 +283,7 @@ public final class ExpeditionLoader {
         List<?> raw = entrance.getList("sources", List.of());
         for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise or reanimate"), delay, seconds, sources);
+            path + ".entrance.style", "rise, reanimate or summon"), delay, seconds, sources);
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {

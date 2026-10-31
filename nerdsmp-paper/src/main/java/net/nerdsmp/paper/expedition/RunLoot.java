@@ -64,6 +64,7 @@ final class RunLoot {
     }
 
     static final int BUY_SLOT = 49;
+    private static final String BOSS_CHEST = "boss:";
 
     private final NerdSmpPlugin plugin;
     private final ExpeditionRun run;
@@ -79,6 +80,8 @@ final class RunLoot {
     private boolean finished;
     /** Adventurer levels, read as the run starts. */
     private final Map<UUID, Integer> levels = new HashMap<>();
+    /** The chests of fallen bosses, and whose. */
+    private final Map<Block, ExpeditionDefinition.Room> bossChests = new HashMap<>();
 
     RunLoot(NerdSmpPlugin plugin, ExpeditionRun run, ExpeditionLoot.Table table, double luck) {
         this.plugin = plugin;
@@ -156,6 +159,27 @@ final class RunLoot {
             at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
     }
 
+    /** A boss's chest stands where it fell. Everyone gets their own roll from it, as with any chest. */
+    void bossFell(ExpeditionDefinition.Room room, Location at) {
+        Block block = at.getBlock();
+        while (block.isPassable() && block.getRelative(org.bukkit.block.BlockFace.DOWN).isPassable() && block.getY() > at.getWorld().getMinHeight()) block = block.getRelative(org.bukkit.block.BlockFace.DOWN);
+        while (!block.isPassable() && block.getY() < at.getBlockY() + 3) block = block.getRelative(org.bukkit.block.BlockFace.UP);
+        block.setType(Material.CHEST);
+        bossChests.put(block, room);
+        at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, block.getLocation().add(.5, 1, .5), 30, .5, .6, .5, .2);
+        at.getWorld().playSound(block.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 1.2F, .8F);
+        run.broadcast("<gold>A chest stands where the boss fell.</gold> <gray>Each of you has your own share in it.</gray>");
+    }
+
+    private void openBossChest(Player player, ExpeditionDefinition.Room room) {
+        if (!looted.computeIfAbsent(BOSS_CHEST + room.id(), id -> new HashSet<>()).add(player.getUniqueId())) {
+            Chat.notice(player, "You've already taken your share.");
+            return;
+        }
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1F, 1F);
+        show(player, "Spoils: " + room.title(), stacks(ExpeditionLoot.bossChest(table, room.id(), luck, ThreadLocalRandom.current()), player.getUniqueId()), 0);
+    }
+
     /** Everyone present learns from a kill, not only whoever landed the last hit. */
     void enemyLessons(ExpeditionDefinition.Role role, UUID enemy) {
         if (run.test || plugin.skills() == null) return;
@@ -206,6 +230,11 @@ final class RunLoot {
 
     /** A player right-clicked a block: a loot chest or one of the reward chests. */
     boolean interact(Player player, Block block) {
+        var spoils = bossChests.get(block);
+        if (spoils != null) {
+            openBossChest(player, spoils);
+            return true;
+        }
         for (LootChest chest : run.expedition.story().chests().values())
             if (at(chest.at(), block)) {
                 openChest(player, chest, block);
@@ -234,6 +263,9 @@ final class RunLoot {
                 if (chest.kind() == ChestKind.SECRET && player.getLocation().distanceSquared(spot) > 36) continue;
                 player.spawnParticle(Particle.WAX_OFF, spot, 6, .22, .2, .22, .4);
             }
+            for (var spoils : bossChests.entrySet())
+                if (!looted.getOrDefault(BOSS_CHEST + spoils.getValue().id(), Set.of()).contains(id))
+                    player.spawnParticle(Particle.WAX_OFF, spoils.getKey().getLocation().add(.5, 1.3, .5), 6, .22, .2, .22, .4);
             if (!finished || places == null) continue;
             if (rewards.containsKey(id)) player.spawnParticle(Particle.END_ROD, spot(places.free()), 5, .22, .2, .22, .01);
             if (places.bonus() != null && bonuses.containsKey(id)) player.spawnParticle(Particle.WITCH, spot(places.bonus()), 6, .22, .2, .22, 0);

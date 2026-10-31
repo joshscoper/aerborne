@@ -376,16 +376,10 @@ public final class SkillListener implements Listener {
             ? skillFloor : ProgressionService.experienceForLevel(level + 1);
         long skillExperience = Math.max(0L, result.progress().experience() - skillFloor);
         long skillNeeded = Math.max(0L, skillCeiling - skillFloor);
-        String progress = level >= ProgressionService.MAX_LEVEL
-            ? "<gold>MAX</gold>"
-            : VisualFormat.progressBar(skillExperience, skillNeeded, 8)
-                + " <gray>" + VisualFormat.compact(skillExperience) + "/"
-                + VisualFormat.compact(skillNeeded) + "</gray>";
-        player.sendActionBar(miniMessage.deserialize("<aqua>" + skill.displayName() + " " + level
-            + "</aqua> <white>+" + earned + " XP</white> <dark_gray>•</dark_gray> " + progress
-            + (rhythm.bonusPercent() > 0 ? " <dark_gray>•</dark_gray> <green>"
-                + (skill == Skill.FORESTRY ? "Timber" : "Harvest") + " Rhythm " + rhythm.chain()
-                + " (+" + (int) rhythm.bonusPercent() + "%)</green>" : "")));
+        net.nerdsmp.paper.presentation.SkillToasts.show(plugin, player, skill.displayName(), level, earned,
+            level >= ProgressionService.MAX_LEVEL || skillNeeded == 0 ? 1 : skillExperience / (double) skillNeeded,
+            rhythm.bonusPercent() > 0 ? "<green>" + (skill == Skill.FORESTRY ? "Timber" : "Harvest") + " Rhythm " + rhythm.chain()
+                + " (+" + (int) rhythm.bonusPercent() + "%)</green>" : null);
         if (adventurerLeveledUp) {
             boolean rankedUp = adventurer.rank() != previousAdventurer.rank();
             player.showTitle(Title.title(

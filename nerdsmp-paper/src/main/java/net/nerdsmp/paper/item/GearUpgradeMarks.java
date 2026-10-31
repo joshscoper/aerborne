@@ -50,6 +50,20 @@ public final class GearUpgradeMarks implements Listener {
     /** Where a player's gear is worn, one entry per place that slot type can go. */
     public void wornWith(BiFunction<Player, GearSlot, List<ItemStack>> places) { worn = places; }
 
+    /** A player's equipment isn't there to read until their character has loaded. */
+    private boolean loaded(Player player) { return plugin.sessions().account(player.getUniqueId()).isPresent(); }
+
+    /** Everything a player has on, and whatever's in their hand. */
+    public List<ItemStack> worn(Player player) {
+        if (!loaded(player)) return List.of();
+        List<ItemStack> all = new ArrayList<>();
+        all.add(player.getInventory().getItemInMainHand());
+        for (GearSlot slot : GearSlot.values())
+            if (slot != GearSlot.MAIN_HAND && slot != GearSlot.NONE)
+                for (ItemStack item : worn.apply(player, slot)) if (item != null) all.add(item);
+        return all;
+    }
+
     private static List<ItemStack> vanillaSlots(Player player, GearSlot slot) {
         var inventory = player.getInventory();
         List<ItemStack> places = new ArrayList<>();
@@ -104,6 +118,10 @@ public final class GearUpgradeMarks implements Listener {
     }
 
     private void refresh(Player player) {
+        if (!loaded(player)) {
+            queue(player);
+            return;
+        }
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < WORN_END; slot++) {
             ItemStack item = inventory.getItem(slot);

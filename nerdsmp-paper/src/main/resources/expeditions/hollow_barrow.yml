@@ -47,8 +47,61 @@ setpieces:
   warden_tunnel: {box: [-64, 64, 81, -62, 67, 81], block: air, style: crumble}
   king_lid: {box: [-1, 65, 119, 1, 65, 121], block: air, style: crumble}
 
+# Things in the rooms that players use during a fight. A vigil snuffs them; a ward asks players to douse them.
+devices:
+  vigil_nw: {at: [-44, 65, 34], title: Vigil Candle}
+  vigil_ne: {at: [-32, 65, 34], title: Vigil Candle}
+  vigil_sw: {at: [-44, 65, 46], title: Vigil Candle}
+  vigil_se: {at: [-32, 65, 46], title: Vigil Candle}
+  rite_1: {at: [-9, 65, 112], title: Rite Fire}
+  rite_2: {at: [9, 65, 112], title: Rite Fire}
+  rite_3: {at: [11, 65, 120], title: Rite Fire}
+  rite_4: {at: [9, 65, 128], title: Rite Fire}
+  rite_5: {at: [-9, 65, 128], title: Rite Fire}
+  rite_6: {at: [-11, 65, 120], title: Rite Fire}
+
 hazards:
   falling_masonry: {type: rocks, area: [-14, 63, 104, 14, 63, 131], every: 9, count: 3, damage: 5}
+  # A lane rolls from its first [x, z] to its second, and a column or wall stops it. `burn` leaves real fire behind it.
+  soul_lances:
+    type: lane
+    soul: true
+    area: [-76, 64, 56, -53, 64, 80]
+    every: 12
+    count: 1
+    damage: 7
+    lanes: [[-75, 58, -53, 58], [-75, 63, -53, 63], [-75, 68, -53, 68], [-75, 73, -53, 73], [-75, 78, -53, 78]]
+  soul_lances_doubled:
+    type: lane
+    soul: true
+    area: [-76, 64, 56, -53, 64, 80]
+    every: 11
+    count: 2
+    damage: 7
+    lanes: [[-75, 58, -53, 58], [-75, 63, -53, 63], [-75, 68, -53, 68], [-75, 73, -53, 73], [-75, 78, -53, 78]]
+  ember_channels:
+    type: lane
+    area: [-18, 64, 100, 18, 64, 136]
+    every: 10
+    count: 2
+    damage: 7
+    burn: 5
+    lanes: [[0, 120, -9, 112], [0, 120, 9, 112], [0, 120, 11, 120], [0, 120, 9, 128], [0, 120, -9, 128], [0, 120, -11, 120]]
+  # A collapse brings down the next spot each time it's pulsed. Anyone under it is hit; so is a boss, who staggers.
+  king_chandeliers: {type: collapse, area: [-18, 64, 100, 18, 64, 136], damage: 9, spots: [[-8, 73, 118], [8, 73, 118], [0, 72, 106]]}
+  # A vigil snuffs a device; a pool spreads from it until someone lights it again.
+  widow_vigil: {type: vigil, area: [-46, 64, 30, -30, 64, 50], every: 15, count: 1, damage: 2, devices: [vigil_nw, vigil_ne, vigil_sw, vigil_se]}
+
+# Sounds that drift through the dark. `every` is about how many seconds apart; `area` keeps one to a room.
+ambience:
+  - {sound: ambient.cave, every: 40, volume: 0.7, pitch: 0.7}
+  - {sound: ambient.soul_sand_valley.mood, every: 45, volume: 0.9, pitch: 0.8}
+  - {sound: ambient.soul_sand_valley.additions, every: 24, volume: 0.6, pitch: 0.6}
+  - {sound: entity.skeleton.ambient, every: 22, volume: 0.4, pitch: 0.5}
+  - {sound: block.chain.step, every: 26, volume: 0.5, pitch: 0.5}
+  - {sound: block.pointed_dripstone.drip_water, every: 12, volume: 0.5, pitch: 0.8}
+  - {sound: ambient.basalt_deltas.mood, every: 30, volume: 0.9, pitch: 0.6, area: [-18, 64, 100, 18, 78, 136]}
+  - {sound: block.fire.ambient, every: 8, volume: 0.6, pitch: 0.6, area: [-18, 64, 100, 18, 78, 136]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
@@ -67,22 +120,29 @@ cutscenes:
     - {at: [0.5, 69, 102, 0, 8], to: [0.5, 68, 110, 0, 0], seconds: 3, fade: true, lines: ["|And beyond him, the King's Rest. Something there is still awake."]}
   # Timed with the Warden's entrance below: his fires are drawn into the bones through the first shots.
   warden_wakes:
-    - {at: [-55, 69, 68.5, 90, 8], to: [-59, 68, 68.5, 90, 5], seconds: 3, sound: "entity.wither_skeleton.ambient 0.5", lines: ["|One by one, the fires along the wall bow toward the bones."]}
+    - {at: [-55, 69, 68.5, 90, 8], to: [-59, 68, 68.5, 90, 5], seconds: 3, sound: "entity.wither_skeleton.ambient 0.5", lines: ["|One by one, the fires along the wall bow toward the bones. The bones begin to answer."]}
     - {at: [-62, 67, 63, 45, -2], to: [-62, 67, 73, 135, -2], seconds: 6}
     - {at: [-60, 67, 68.5, 90, -4], seconds: 3, title: "<gray>The Warden of Bones</gray>", text: "<gray>Keeper of the south gate</gray>", lines: ["The Warden of Bones|None pass while I stand."]}
   widow_wakes:
     - {at: [-38, 67, 48, 180, 8], to: [-38, 66, 44, 180, 2], seconds: 3, sound: "ambient.cave 0.6", lines: ["|The candles lean, all at once, towards the sarcophagus."]}
     - {at: [-38, 66, 44, 180, 2], to: [-38, 66, 41, 180, -4], seconds: 4, title: "<dark_aqua>The Keening Widow</dark_aqua>", text: "<gray>She waited at the door until the door fell</gray>", lines: ["The Keening Widow|He promised he would come home."]}
+  # Timed with the King's entrance below: the rite's fires catch, the circle turns, and the column rises through the lid.
   king_wakes:
-    - {at: [0.5, 69, 102, 0, 10], to: [0.5, 68, 109, 0, 8], seconds: 3, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|The torches gutter. Bone grinds on stone."]}
-    - {at: [4, 67, 113, 30, 0], to: [-4, 67, 113, -30, 0], seconds: 5, actions: ["break king_lid"]}
-    - {at: [0.5, 67, 112, 0, -4], seconds: 3, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
+    - {at: [0.5, 71, 102, 0, 16], to: [0.5, 70, 108, 0, 13], seconds: 4, text: "<gray>The King's Rest…</gray>", sound: "ambient.cave 0.6", lines: ["|One by one, the old fires catch. Something far below is calling him back."]}
+    - {at: [-8, 67, 113, -45, 6], to: [8, 67, 113, 45, 6], seconds: 4}
+    - {at: [0.5, 67, 110, 0, -14], to: [0.5, 67, 111.5, 0, -22], seconds: 3, actions: ["break king_lid"]}
+    - {at: [0.5, 67, 114, 0, -2], seconds: 3, title: "<dark_red>The Hollow Huntsman</dark_red>", text: "<gray>Hero of the hill road, hollowed by embers</gray>", sound: "entity.skeleton.ambient 0.5", lines: ["The Hollow Huntsman|The road... must be held... none... pass!"]}
 
 mobs:
-  "custom:veil_stalker": {role: elite, abilities: [blink]}
-  "custom:bone_lurcher": {role: elite, abilities: [heavy_blow]}
+  # `on-death` is what a mob does as it falls.
+  "custom:barrow_thrall": {abilities: [grave_grasp], on-death: bone_burst}
+  "custom:crypt_archer": {abilities: [pin_shot, arrow_rain]}
+  "custom:thorn_sentinel": {abilities: [cleave]}
+  "custom:mire_weaver": {abilities: [web, poison_cloud], behavior: caster}
+  "custom:veil_stalker": {role: elite, abilities: [ambush]}
+  "custom:bone_lurcher": {role: elite, abilities: [heavy_blow, bone_throw]}
   "custom:barrow_keener": {abilities: [mend, ward], behavior: caster}
-  "custom:crypt_hexer": {abilities: [bolt, dread_howl], behavior: caster}
+  "custom:crypt_hexer": {abilities: [bolt, cursed_ground], behavior: caster}
   "custom:keening_widow": {behavior: caster}
 
 # Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
@@ -164,11 +224,11 @@ rooms:
     checkpoint: [-56, 64, 68, 270]
     # The south gate at the Crossing lifts when the Warden falls.
     gate: [-2, 64, 81, 2, 67, 81]
-    points: [[-67, 66, 68, 90], [-72, 64, 68], [-60, 64, 68], [-66, 64, 58], [-66, 64, 78]]
+    points: [[-67, 66, 68, 270], [-72, 64, 68], [-60, 64, 68], [-66, 64, 58], [-66, 64, 78]]
     encounter:
       type: boss
       boss: custom:warden_of_bones
-      # The fires along the back wall are drawn into the bone pile, then come back as he rises.
+      # The fires along the back wall are drawn into the scattered bones, which build themselves into his body.
       entrance:
         style: reanimate
         delay: 1
@@ -177,16 +237,18 @@ rooms:
       boss-damage: 0.7
       abilities: [heavy_blow, shield]
       phases:
-        - {at: 50, abilities: [heavy_blow, slam, dread_howl], title: "The Warden stops holding back"}
+        - {at: 50, abilities: [heavy_blow, slam, bone_wave], title: "The Warden stops holding back"}
       enrage-seconds: 240
       adds-at-health: [75, 40]
       waves:
         - {"custom:barrow_thrall": 3}
         - {"custom:crypt_archer": 2, "custom:barrow_thrall": 1}
       scripts:
-        start: ["cutscene warden_wakes"]
-        health-50: ["say The Warden of Bones|The gate will not fall!"]
+        start: ["cutscene warden_wakes", "wait 13", "hazard start soul_lances"]
+        health-50: ["say The Warden of Bones|The gate will not fall!", "hazard stop soul_lances", "hazard start soul_lances_doubled"]
         clear:
+          - "hazard stop soul_lances"
+          - "hazard stop soul_lances_doubled"
           - "break warden_tunnel"
           - "say sexton|He's down! The south gate's lifted, and the wall behind him has given way."
           - "say sexton|That tunnel runs to the antechamber. Save your legs."
@@ -207,8 +269,8 @@ rooms:
         - {at: 40, abilities: [bolt, soul_rend, volatile_mark], title: "Her grief turns outward"}
       enrage-seconds: 200
       scripts:
-        start: ["cutscene widow_wakes", "wait 7", "say sexton|The Widow! When she draws breath for the long wail, hit her hard, all of you, or it'll tear you apart."]
-        clear: ["say sexton|She's quiet at last. I never thought I'd hear that."]
+        start: ["cutscene widow_wakes", "wait 7", "say sexton|The Widow! When she draws breath for the long wail, hit her hard, all of you, or it'll tear you apart.", "wait 4", "say sexton|And keep her candles lit!", "hazard start widow_vigil"]
+        clear: ["hazard stop widow_vigil", "say sexton|She's quiet at last. I never thought I'd hear that."]
   kings_rest:
     title: The King's Rest
     region: [-18, 64, 100, 18, 78, 136]
@@ -216,18 +278,23 @@ rooms:
     requires-packs: [kings_guard]
     seal: [-2, 64, 99, 2, 67, 99]
     # The first point is where the boss rises; adds use the others.
-    points: [[0, 66, 120, 180], [-10, 64, 110], [10, 64, 110], [-10, 64, 128], [10, 64, 128]]
+    points: [[0, 66, 120, 180], [-10, 64, 110], [10, 64, 110], [-11, 64, 130], [11, 64, 130]]
     encounter:
       type: boss
       boss: custom:the_hollow_huntsman
-      entrance: {style: rise, delay: 3, seconds: 5}
+      # The rite's six fires catch, their flames run to a turning circle, and he rises in a column of fire.
+      entrance:
+        style: summon
+        delay: 1
+        seconds: 10
+        sources: [[-9, 65, 112], [9, 65, 112], [11, 65, 120], [9, 65, 128], [-9, 65, 128], [-11, 65, 120]]
       boss-level-bonus: 3
       # The Huntsman is tuned down for a first expedition (1.0 = as authored).
       boss-damage: 0.6
       boss-health: 0.85
-      abilities: [heavy_blow, cleave, summon]
+      abilities: [heavy_blow, cleave, fire_pools, summon]
       phases:
-        - {at: 50, abilities: [heavy_blow, cleave, volatile_mark, tether], title: "The Huntsman calls the hunt"}
+        - {at: 50, abilities: [heavy_blow, cleave, fire_pools, volatile_mark, tether, barrage], title: "The Huntsman calls the hunt"}
       enrage-seconds: 300
       # Each threshold releases the next wave as adds.
       adds-at-health: [66, 33]
@@ -235,10 +302,15 @@ rooms:
         - {"custom:crypt_archer": 3}
         - {"custom:veil_stalker": 2}
       scripts:
-        start: ["cutscene king_wakes"]
-        health-50: ["say The Hollow Huntsman|The hunt is called! Bone answers bone!", "hazard start falling_masonry", "sound entity.wither_skeleton.ambient 0.6"]
+        start: ["cutscene king_wakes", "wait 15", "hazard start ember_channels"]
+        health-75: ["say sexton|Mind the chandeliers! Those chains won't hold. If he's under one when it drops, all the better.", "hazard pulse king_chandeliers"]
+        health-50: ["say The Hollow Huntsman|The hunt is called! Bone answers bone!", "sound entity.wither_skeleton.ambient 0.6", "ward 30 rite_1 rite_2 rite_3 rite_4 rite_5 rite_6"]
+        health-25: ["hazard pulse king_chandeliers"]
+        health-15: ["hazard pulse king_chandeliers"]
+        ward-broken: ["say sexton|That's his hold on the fires broken! Now, while he's down!", "hazard start falling_masonry"]
+        ward-failed: ["say The Hollow Huntsman|Burn, and be still.", "cast wrath", "hazard start falling_masonry"]
         enrage: ["say The Hollow Huntsman|Enough! The King's patience ends!"]
-        clear: ["hazard stop falling_masonry", "npc sexton 0 64 129 180", "say sexton|Rest now, old king. Walk into the light at the far wall to leave."]
+        clear: ["hazard stop ember_channels", "hazard stop falling_masonry", "npc sexton 0 64 129 180", "say sexton|Rest now, old king. Walk into the light at the far wall to leave."]
 
 # Shown in the guide book (/expedition guide hollow_barrow) and on the website.
 guide:
@@ -251,13 +323,14 @@ guide:
     - A red bar with a ring means a heavy blow on whoever it's fighting. Raise a shield or step out of the ring.
     - Walkers patrol the Processional and the Ossuary. Wait for them to turn away, or pull them to you on your terms.
     - Light the fires at the Crossing and the antechamber. If you fall, that's where you run back from, and everything you've killed stays dead.
+    - Thralls come apart when they fall, and the shards fly out a moment later. Step off the red ring around the body.
   rooms:
     lever_vault: Clear the room, then pull the four levers in the order the candles flash. A wrong lever resets them. Solving it lifts the west portcullis at the Crossing.
-    wardens_hall: The door opens once the Ossuary is clear. The Warden shields himself while his helpers live, then hits harder below half health. Killing him lifts the south gate and opens a tunnel to the antechamber.
-    widows_cell: Optional. The Widow keeps her distance and throws bolts. Her Soul Rend takes three charged hits to break, and it hurts everyone if it finishes. Below 40% she marks players; move away from the others when you're marked.
-    kings_rest: The Huntsman rises from his sarcophagus. Light the antechamber brazier first so the party runs back from close by.
-  boss: The Hollow Huntsman winds up heavy blows on whoever he's fighting, cleaves in front of him and calls skeletons. Below half health he marks players to burst on the group and chains one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead.
+    wardens_hall: The door opens once the Ossuary is clear. The Warden shields himself while his helpers live, and the fires on the back wall throw lances down the strips in the floor; step between them. Below half health he sends rings of bone across the room, so jump as they reach you, and the fires throw two lances at once. Killing him lifts the south gate and opens a tunnel to the antechamber.
+    widows_cell: Optional. The Widow keeps her distance and throws bolts. Her Soul Rend takes three charged hits to break, and it hurts everyone if it finishes. She snuffs her vigil candles one at a time, and a pool of grief spreads from each until someone right-clicks it to light it again. Below 40% she marks players; move away from the others when you're marked.
+    kings_rest: The rite's six fires summon the Huntsman. Light the antechamber brazier first so the party runs back from close by.
+  boss: The Hollow Huntsman winds up heavy blows on whoever he's fighting, cleaves in front of him, sets the floor alight under you and calls skeletons, while flame runs down the channels in the floor and leaves them burning. The chandeliers come down as he weakens; lure him under one and it staggers him. At half health the fires lift him out of reach. Right-click the burning rite fires to douse them and he falls, staggered. If they're still burning after 30 seconds, he blasts the room. After that he marks players to burst on the group, chains one player in (break line of sight to snap it), and the ceiling starts to fall. At two-thirds and one-third health he calls more of the dead.
 loot:
   marks: 120
-  items: {iron_ingot: 4, bone: 8, experience_bottle: 3}
+  items: {grave_dust: 6, barrow_wax: 2, experience_bottle: 3}
 # Campaign credit is set in the season file (campaign/season.yml), not here.

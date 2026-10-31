@@ -1,6 +1,7 @@
 # Expedition loot: each expedition's materials (common, uncommon, rare), signature set pieces
-# and boss signatures. Ships inside the plugin; a server can override an expedition here by
-# copying its entry into the data folder's content/expedition-loot.yml.
+# and boss signatures. `bosses` lists what each boss room can give from its chest, likeliest first.
+# Ships inside the plugin; a server can override an expedition here by copying its entry into the
+# data folder's content/expedition-loot.yml.
 expeditions:
   first_flight:
     materials: [skyward_feather]
@@ -8,6 +9,10 @@ expeditions:
     materials: [grave_dust, barrow_wax, huntsmans_antler]
     gear: [barrowguard_helm, barrowguard_cuirass, barrowguard_greaves, barrowguard_boots, sextons_edge]
     signatures: [huntsmans_longbow]
+    bosses:
+      wardens_hall: [ossuary_cleaver, gravewall_bulwark, wardens_soulblade]
+      widows_cell: [keening_dirk, mourning_veil, widows_requiem]
+      kings_rest: [hollow_crown, pyre_greatsword, huntsmans_longbow]
   thornwood_canopy:
     materials: [briar_silk, thornheart_sap, matrons_fang]
     gear: [thornwarden_hood, thornwarden_jerkin, thornwarden_leggings, thornwarden_boots, briarshot_crossbow]

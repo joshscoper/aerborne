@@ -2,6 +2,7 @@ package net.nerdsmp.paper.expedition.content;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -11,14 +12,22 @@ import java.util.Random;
  * and boss signatures; harder tiers raise the odds ({@code luck}).
  */
 public final class ExpeditionLoot {
-    /** One expedition's loot: materials from common to rare, its set pieces and its boss signatures. */
-    public record Table(List<String> materials, List<String> gear, List<String> signatures) {
+    /**
+     * One expedition's loot: materials from common to rare, its set pieces, its boss signatures, and what
+     * each boss room can give besides, listed from likeliest to rarest.
+     */
+    public record Table(List<String> materials, List<String> gear, List<String> signatures, Map<String, List<String>> bossLoot) {
         public static final Table EMPTY = new Table(List.of(), List.of(), List.of());
 
         public Table {
             materials = List.copyOf(materials);
             gear = List.copyOf(gear);
             signatures = List.copyOf(signatures);
+            bossLoot = Map.copyOf(bossLoot);
+        }
+
+        public Table(List<String> materials, List<String> gear, List<String> signatures) {
+            this(materials, gear, signatures, Map.of());
         }
 
         String material(int grade) { return materials.isEmpty() ? null : materials.get(Math.min(grade, materials.size() - 1)); }
@@ -142,6 +151,8 @@ public final class ExpeditionLoot {
         static Line signature(double chance) { return new Line(Kind.ITEM, SIGNATURE, 1, 1, Math.min(1, chance), 0, 0); }
     }
 
+    /** A player's chance at a boss's own loot on Normal; harder tiers raise it. */
+    public static final double BOSS_ITEM_CHANCE = .35;
     public static final String GEAR = "@gear";
     public static final String SIGNATURE = "@signature";
 
@@ -150,14 +161,14 @@ public final class ExpeditionLoot {
         List<Line> lines = new ArrayList<>();
         switch (source) {
             case NORMAL -> {
-                lines.add(Line.item(table.material(0), 1, 2, .20 * luck));
-                lines.add(Line.gear(1, 1, .008 * luck));
+                lines.add(Line.item(table.material(0), 1, 2, .25 * luck));
+                lines.add(Line.gear(1, 1, .012 * luck));
                 lines.add(Line.lamp("plain", 1, 1, .01 * luck));
             }
             case ELITE -> {
                 lines.add(Line.item(table.material(0), 1, 3, .70));
-                lines.add(Line.item(table.material(1), 1, 1, .20 * luck));
-                lines.add(Line.gear(1, 2, .05 * luck));
+                lines.add(Line.item(table.material(1), 1, 1, .25 * luck));
+                lines.add(Line.gear(1, 2, .07 * luck));
                 lines.add(Line.lamp("plain", 1, 1, .05 * luck));
             }
             case MINIBOSS -> {
@@ -175,13 +186,14 @@ public final class ExpeditionLoot {
             case CRATE -> {
                 lines.add(Line.item(table.material(0), 2, 4, 1));
                 lines.add(Line.item(table.material(1), 1, 1, .25 * luck));
+                lines.add(Line.gear(1, 1, .05 * luck));
                 lines.add(Line.lamp("plain", 1, 1, .20));
             }
             case CHEST -> {
                 lines.add(Line.item(table.material(0), 3, 5, 1));
                 lines.add(Line.item(table.material(1), 1, 2, .50 * luck));
                 lines.add(Line.item(table.material(2), 1, 1, .08 * luck));
-                lines.add(Line.gear(1, 2, .10 * luck));
+                lines.add(Line.gear(1, 2, .15 * luck));
                 lines.add(Line.lamp("plain", 1, 2, .30));
                 lines.add(Line.lamp("greater", 1, 1, .05 * luck));
             }
@@ -211,6 +223,31 @@ public final class ExpeditionLoot {
         }
         drops.removeIf(drop -> drop == null || drop.item() == null);
         return merge(drops);
+    }
+
+    /**
+     * What a player finds in a fallen boss's chest: the boss's materials and signature odds, a good
+     * chance at a piece of set gear, and a chance at something of that boss's own.
+     */
+    public static List<Drop> bossChest(Table table, String room, double luck, Random random) {
+        List<Drop> drops = new ArrayList<>(roll(table, Source.BOSS, luck, random));
+        List<String> own = table.bossLoot().getOrDefault(room, List.of());
+        if (!own.isEmpty() && random.nextDouble() < Math.min(1, BOSS_ITEM_CHANCE * luck)) drops.add(new Drop(Kind.GEAR, bossItem(own, random), 1, 2, false));
+        if (!table.gear().isEmpty() && random.nextDouble() < Math.min(1, .5 * luck)) drops.add(gear(table, random, 2, .5));
+        if (random.nextDouble() < .3 * luck) drops.add(Drop.lamp("greater", 1));
+        return merge(drops);
+    }
+
+    /** Earlier items are likelier: with three, about 64%, 29% and 7%. */
+    private static String bossItem(List<String> items, Random random) {
+        int total = 0, size = items.size();
+        for (int index = 0; index < size; index++) total += (size - index) * (size - index);
+        int pick = random.nextInt(total);
+        for (int index = 0; index < size; index++) {
+            pick -= (size - index) * (size - index);
+            if (pick < 0) return items.get(index);
+        }
+        return items.getLast();
     }
 
     /**

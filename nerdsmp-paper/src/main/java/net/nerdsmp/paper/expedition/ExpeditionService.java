@@ -172,11 +172,13 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             "6bb0974b9dfb88ee02a529a45ba0615994c88ddd18a37ff5ee1078769b1a8b0a",
             "3d9bd7d0ba9d95b03480111ce1647ccf19da0d2905c056a1e565b7a5cf8ff658",
             "d302132dbe72606870496c166365aa9de3fffef02217ca09d9ee34c8a9096a99",
-            "d96eee9528e7984a340de9a5624d13b6031a7f7c9800c2431cc0cf3589b54796"),
+            "d96eee9528e7984a340de9a5624d13b6031a7f7c9800c2431cc0cf3589b54796",
+            "fe527944259a82ca2c74dcdc70d52083f844a768a91647b4d0e0c6b64dc8b05d"),
         "cinder_keep", Set.of("99082b410867688a23332d256868dfe20760341d8667b61258fde6936fc1a2a1",
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
             "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
-            "fb3085e71b27aee47b1a1788465423c60fb2a5c8fd9fdf6b73bb12c5aba18dd3"));
+            "fb3085e71b27aee47b1a1788465423c60fb2a5c8fd9fdf6b73bb12c5aba18dd3",
+            "fe527944259a82ca2c74dcdc70d52083f844a768a91647b4d0e0c6b64dc8b05d"));
 
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
@@ -281,9 +283,16 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             if (section == null) continue;
             for (String id : section.getKeys(false))
                 tables.put(id.toLowerCase(Locale.ROOT), new net.nerdsmp.paper.expedition.content.ExpeditionLoot.Table(
-                    section.getStringList(id + ".materials"), section.getStringList(id + ".gear"), section.getStringList(id + ".signatures")));
+                    section.getStringList(id + ".materials"), section.getStringList(id + ".gear"), section.getStringList(id + ".signatures"), bossLoot(section, id)));
         }
         return Map.copyOf(tables);
+    }
+
+    private static Map<String, List<String>> bossLoot(org.bukkit.configuration.ConfigurationSection section, String id) {
+        Map<String, List<String>> rooms = new HashMap<>();
+        var bosses = section.getConfigurationSection(id + ".bosses");
+        if (bosses != null) for (String room : bosses.getKeys(false)) rooms.put(room.toLowerCase(Locale.ROOT), bosses.getStringList(room));
+        return rooms;
     }
 
     /** An expedition's loot table, or an empty one (experience bottles only) for expeditions without one. */
