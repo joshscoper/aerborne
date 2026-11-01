@@ -13,9 +13,9 @@ level: 20
 party: {min: 1, max: 5}
 time-limit-minutes: 45
 # Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
-records-version: 3
+records-version: 4
 spawn: [14, 97, -2, 0]
-exit: [233, 17, 60]
+exit: [286, 17, 34]
 modifiers: []
 requires: [sunken_aqueduct]
 goal: forces
@@ -36,7 +36,7 @@ npcs:
       - "On the Mainline, when the bell rings, you get into a refuge. There's no arguing with a loaded cart."
       - "The Blastmaster runs the Ore Line now. A cart will flatten him same as it'll flatten you, if you can get him on the rails."
       - "Bank the Foundry's dampers and the north door opens. After that it's all downhill, and the water's waiting."
-      - "The Foreman didn't build the Gloomforge. Nobody living did. It was down there in the black water when he broke through, stone kings and all, and the fire still in it."
+      - "The Foreman didn't build the Gloomforge. Nobody living did. It was down there across the black water when he broke through, the old king's face cut into the cliff and the fire still burning behind his eyes."
       - "There's a place off the Foundry's south causeway where the slag boils by itself. My brother swore something took his line there. All he brought home was the grip of the rod."
 
 campfires:
@@ -95,19 +95,19 @@ hazards:
   pit_rockfall: {type: rocks, area: [168, 31, 100, 196, 31, 124], every: 7, count: 3, damage: 5}
   forge_vents:
     type: lane
-    area: [224, 17, 32, 248, 17, 62]
+    area: [250, 17, 20, 288, 17, 48]
     every: 9
     count: 1
     damage: 7
     burn: 5
-    lanes: [[225, 39, 247, 39], [247, 50, 225, 50], [225, 60, 247, 60]]
+    lanes: [[258, 22, 258, 46], [267, 46, 267, 22], [276, 22, 276, 46]]
   ore_skips:
     type: collapse
-    area: [224, 17, 32, 248, 17, 62]
+    area: [250, 17, 20, 288, 17, 48]
     every: 25
     damage: 12
-    spots: [[228, 26, 44], [244, 26, 44], [228, 26, 56], [244, 26, 56]]
-  deep_rockfall: {type: rocks, area: [226, 17, 34, 246, 17, 60], every: 7, count: 4, damage: 6}
+    spots: [[262, 26, 30], [278, 26, 30], [262, 26, 38], [278, 26, 38]]
+  deep_rockfall: {type: rocks, area: [254, 17, 28, 286, 17, 40], every: 7, count: 4, damage: 6}
   molten_rain: {type: rocks, area: [106, 33, 72, 138, 33, 104], every: 8, count: 5, damage: 8}
   molten_vents:
     type: lane
@@ -124,8 +124,8 @@ ambience:
   - {sound: entity.minecart.riding, every: 26, volume: 0.25, pitch: 0.6}
   - {sound: block.anvil.land, every: 34, volume: 0.15, pitch: 0.5}
   - {sound: block.lava.ambient, every: 8, volume: 0.7, pitch: 0.7, area: [80, 28, 44, 200, 80, 128]}
-  - {sound: block.furnace.fire_crackle, every: 6, volume: 0.8, pitch: 0.6, area: [218, 10, 0, 254, 64, 88]}
-  - {sound: ambient.underwater.loop.additions.rare, every: 16, volume: 0.6, pitch: 0.6, area: [172, 2, -8, 300, 64, 90]}
+  - {sound: block.furnace.fire_crackle, every: 6, volume: 0.8, pitch: 0.6, area: [246, 10, 14, 296, 50, 54]}
+  - {sound: ambient.underwater.loop.additions.rare, every: 16, volume: 0.6, pitch: 0.6, area: [172, 2, -12, 246, 84, 92]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
@@ -141,7 +141,7 @@ cutscenes:
     - {at: [32.5, 121, 64, 0, 38], to: [32.5, 112, 70, 0, 44], seconds: 5, fade: true, lines: ["|The Gullet. Two turns of ledge round a drop that swallows the lamps."]}
     - {at: [102, 62, 170, -90, 8], to: [120, 62, 170, -90, 6], seconds: 4, fade: true, lines: ["|Below that, the Ore Line. The carts still run. Nobody's loading them."]}
     - {at: [122.5, 44, 116, 180, 10], to: [122.5, 42, 108, 180, 6], seconds: 4, fade: true, lines: ["|Below that, the Round Foundry, and a heat that doesn't belong in stone."]}
-    - {at: [190, 24, 34, -90, 0], to: [206, 22, 34, -90, -8], seconds: 5, fade: true, lines: ["hesk|And at the bottom, the Gloomforge. The Foreman took a new contract, paid in gold, with orders to dig straight down.", "hesk|He dug until he hit water, and then he found what was under it."]}
+    - {at: [194, 26, 34, -90, -14], to: [214, 24, 34, -90, -22], seconds: 5, fade: true, lines: ["hesk|And at the bottom, the Gloomforge. The Foreman took a new contract, paid in gold, with orders to dig straight down.", "hesk|He dug until he hit water, and then he found what was under it."]}
   grell_wakes:
     - {at: [50.5, 73.5, 127, 0, -38], to: [50.5, 73, 128, 0, -2], seconds: 4, sound: "block.bell.use 0.6", lines: ["|A bell, once, somewhere high in the dark. Then the chain goes."]}
     - {at: [46, 74, 128, -30, 8], to: [47, 74, 128, -24, 8], seconds: 4, title: "<red>Overseer Grell</red>", text: "<gray>He still counts the shift</gray>", lines: ["Overseer Grell|Late. All of you. That's a day's pay."]}
@@ -151,9 +151,9 @@ cutscenes:
   hound_wakes:
     - {at: [171, 34, 112, -90, 6], to: [177, 34, 112, -90, 4], seconds: 6, title: "<red>The Slag Hound</red>", text: "<gray>Something the foundry fed</gray>", sound: "entity.ravager.roar 0.6", lines: ["|The crust of the pit lifts. Something huge shoulders up out of the slag, and shakes it off like water."]}
   foreman_wakes:
-    - {at: [236.5, 23, 34, 0, 14], to: [236.5, 22, 38, 0, 10], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The great hearth wakes after three thousand years, and something pours out of it along the floor."]}
-    - {at: [229, 20, 44, -55, 4], to: [230, 20, 45, -55, 4], seconds: 4, lines: ["|The old hammers of the forge swing down on it, and every blow leaves more of a man."]}
-    - {at: [233, 21, 40, -15, 2], seconds: 3, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
+    - {at: [262.5, 24, 34, -90, 12], to: [264, 23, 34, -90, 9], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The great hearth wakes after three thousand years, and something pours out of it along the floor."]}
+    - {at: [259, 20, 29, -64, 4], to: [260, 20, 29.5, -64, 4], seconds: 4, lines: ["|The old hammers of the forge swing down on it, and every blow leaves more of a man."]}
+    - {at: [261, 21, 34, -90, 4], seconds: 3, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
   colossus_rises:
     - {at: [122.5, 36, 113, -90, 26], to: [125, 35, 113, -90, 20], seconds: 3, sound: "ambient.nether_wastes.mood 0.5", lines: ["|The slag stops moving. Then all of it moves at once."]}
     - {at: [116, 38, 128, -135, 2], to: [119, 37, 125, -135, -10], seconds: 5, lines: ["|It comes up out of the slag on your line, and it keeps coming, and it has hands."]}
@@ -234,8 +234,8 @@ companion-drops:
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [231, 17, 59]
-  bonus: [241, 17, 59]
+  free: [284, 17, 30]
+  bonus: [284, 17, 38]
 
 rooms:
   grells_shaft:
@@ -374,17 +374,17 @@ rooms:
         clear: ["hazard stop molten_rain", "hazard stop molten_vents", "say hesk|You caught that. On a fishing line. My brother is never going to hear the end of this."]
   the_gloomforge:
     title: The Gloomforge
-    region: [218, 10, 0, 254, 64, 88]
+    region: [247, 10, 17, 293, 50, 51]
     requires: [grells_shaft, ore_line, round_foundry]
     requires-packs: [dock_north, dock_south, trestle_walkers]
-    seal: [224, 17, 33, 224, 20, 35]
-    checkpoint: [228, 17, 36, 90]
-    points: [[236, 17, 49, 180], [229, 17, 41], [243, 17, 41], [229, 17, 53], [243, 17, 53]]
+    seal: [250, 17, 30, 250, 24, 38]
+    checkpoint: [254, 17, 34, -90]
+    points: [[270, 17, 34, 90], [262, 17, 30], [262, 17, 38], [278, 17, 30], [278, 17, 38]]
     encounter:
       type: boss
       boss: custom:deep_foreman
       # Poured out of the hearth along the floor and hammered into shape.
-      entrance: {style: forged, seconds: 11, sources: [[236, 17, 32]]}
+      entrance: {style: forged, seconds: 11, sources: [[288, 17, 34]]}
       boss-level-bonus: 4
       abilities: [slam, summon]
       phases:
@@ -396,14 +396,14 @@ rooms:
         - {"custom:drowned_stoker": 3}
         - {"custom:soot_caster": 2, "custom:forge_thrall": 2}
       scripts:
-        start: ["cutscene foreman_wakes", "wait 12", "say hesk|Those ore skips on the old gantry! Bring him under one when the chain goes!", "hazard start ore_skips"]
+        start: ["cutscene foreman_wakes", "wait 12", "say hesk|Those old ore skips, hanging on their chains! Bring him under one when the chain goes!", "hazard start ore_skips"]
         health-66: ["hazard start forge_vents", "say The Deep Foreman|Stoke it! All of it!"]
         health-33: ["hazard start deep_rockfall", "say The Deep Foreman|Bring it ALL down!"]
-        clear: ["hazard stop ore_skips", "hazard stop forge_vents", "hazard stop deep_rockfall", "npc hesk 240 17 54 0", "say hesk|The Gloomforge goes quiet. First time in a hundred years. Come on up, friends."]
+        clear: ["hazard stop ore_skips", "hazard stop forge_vents", "hazard stop deep_rockfall", "npc hesk 272 17 38 0", "say hesk|The Gloomforge goes quiet. First time in a hundred years. Come on up, friends."]
 
 guide:
   lore: "Gloomsteel is the dark ore that drinks light, and the mine has dug it for generations, always downward, always toward the Gloomforge: a dwarven forge-palace older than any record, drowned at the bottom of the world with its fire still burning. Old Miner Hesk worked these levels for forty years. Then the Deep Foreman took a contract from a buyer he never met, paid in old gold, with one instruction: dig straight down. The night shift never came back up."
-  overview: A descent through five levels of the mine. Thin the galleries, walk down the Gullet, beat Overseer Grell, run the Mainline, break the Blastmaster on the Ore Line, bank the Round Foundry, and cross the black water to the Deep Foreman in the Gloomforge, the old dwarven forge-palace he broke through to. The Slag Hound waits off the Foundry if you want it.
+  overview: A descent through five levels of the mine. Thin the galleries, walk down the Gullet, beat Overseer Grell, run the Mainline, break the Blastmaster on the Ore Line, bank the Round Foundry, and cross the black water to the Deep Foreman in the Gloomforge, the dwarven forge-palace cut into the far cliff. The Slag Hound waits off the Foundry if you want it.
   tips:
     - Enemy forces fill as you kill. The door to the Gloomforge stays barred until they reach 100%, so clear more than you strictly have to.
     - When a bell rings and sparks run down a rail, a cart is about two seconds behind them. Get off that track. On the Mainline, that means a refuge in the wall.
@@ -417,8 +417,8 @@ guide:
     ore_line: A rail yard. Carts cross it on seven tracks, faster as the fight goes on, and powder carts blow up at the end of the line. Lure the Blastmaster onto the rails.
     round_foundry: Fight off the forge's thralls and pull the three damper levers to open the north door.
     slag_pits: Optional. The Slag Hound charges and leaps, slag runs across the floor, and rock falls from the roof.
-    the_gloomforge: The Deep Foreman, in the great nave of a dwarven forge-palace older than the mine. Light the Last Dock's fire before you cross. See the boss briefing.
-  boss: The Deep Foreman slams the floor and calls his crew. Ore skips hang from the old gantries on chains and come down one by one, so drag him under one. Below two-thirds he charges and the forge vents fire along the runnels in the floor, and below a third he drops crushing rocks on the party while the roof comes in.
+    the_gloomforge: The Deep Foreman, in the great hall of a dwarven forge-palace older than the mine. Light the Last Dock's fire before you cross. See the boss briefing.
+  boss: The Deep Foreman slams the floor and calls his crew. Ore skips hang on long chains from the roof of the hall and come down one by one, so drag him under one. Below two-thirds he charges and the forge vents fire along the runnels in the floor, and below a third he drops crushing rocks on the party while the roof comes in.
 loot:
   marks: 260
   items: {raw_iron: 12, raw_gold: 6, diamond: 1, experience_bottle: 5}

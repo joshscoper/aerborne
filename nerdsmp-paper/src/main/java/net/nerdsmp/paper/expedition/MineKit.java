@@ -122,6 +122,12 @@ final class MineKit {
         for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) for (int y = floor + 1; y <= floor + high; y++) cut(x, y, z);
     }
 
+    /** The rock takes back everything past this line, so a cave ends in a cliff. */
+    void stopAt(int x) {
+        air.removeIf(cell -> xOf(cell) > x);
+        dressed.removeIf(cell -> xOf(cell) > x);
+    }
+
     /** Clears a cell for good: the rock isn't allowed to weather back across it. */
     void cut(int x, int y, int z) {
         carve(x, y, z);

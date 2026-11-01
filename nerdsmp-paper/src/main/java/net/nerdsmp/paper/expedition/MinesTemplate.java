@@ -105,9 +105,8 @@ final class MinesTemplate {
         kit.tunnel(7, 7, 12, new int[]{122, 32, 47}, new int[]{126, 28, 40}, new int[]{136, 23, 38}, new int[]{150, 18, 36}, new int[]{166, 14, 34});
         // The Drowned Deep.
         kit.door(167, DOCK, 34, true, 5);
-        kit.cavern(234, 1, 40, 62, 46, 58, 30, 13);
-        // The bay she lies in: the bowsprit has clear water and air out ahead of her.
-        kit.cavern(236, 1, 96, 40, 34, 54, 28, 17);
+        kit.cavern(216, 1, 40, 44, 50, 58, 30, 13);
+        GloomforgePalace.dig(kit);
         kit.hall(170, 24, 192, 44, 1, 26);
     }
 
@@ -826,79 +825,38 @@ final class MinesTemplate {
             for (int y = FORGE - 1; y <= FORGE + 6; y++) b.block(pillar[0], y, pillar[1], y % 3 == 0 ? TIMBER : Material.COBBLED_DEEPSLATE, y % 3 == 0 ? "axis=y" : "");
     }
 
-    /** A drowned temple across the far wall of the cavern, older than the mine: columns, arches, and blue light behind them. */
-    private static void temple(BuildCanvas b) {
-        int face = 283;
-        for (int z = 6; z <= 74; z++) for (int y = 2; y <= 48; y++) {
-            int bay = Math.floorMod(z - 40 + 7, 14) - 7;
-            double arch = Math.sqrt(Math.max(0, 25 - bay * bay));
-            int tier = y < 20 ? 0 : y < 36 ? 1 : 2, spring = tier == 0 ? 12 : tier == 1 ? 28 : 41;
-            int foot = tier == 0 ? WATER + 1 : tier == 1 ? 21 : 37;
-            boolean opening = Math.abs(bay) <= 4 && y >= foot && y <= spring + arch * (tier == 2 ? .6 : 1);
-            int roofline = 48 - Math.abs(z - 40) / 2;
-            if (y > roofline) continue;
-            if (opening) {
-                b.block(face, y, z, Material.AIR);
-                b.block(face + 2, y, z, y % 3 == 0 ? Material.SEA_LANTERN : Material.CYAN_STAINED_GLASS);
-                b.block(face + 3, y, z, Material.DARK_PRISMARINE);
-            } else {
-                b.block(face, y, z, Math.abs(bay) >= 6 ? Material.PRISMARINE_BRICKS : Material.DARK_PRISMARINE);
-                b.block(face + 1, y, z, Material.DARK_PRISMARINE);
-                if (Math.abs(bay) >= 6 && y % 5 == 0) b.block(face - 1, y, z, Material.SEA_LANTERN);
-            }
-        }
-    }
-
-    /** The bottom of everything: black water, a trestle out across it, and the Gloomforge at anchor in a blue cathedral. */
+    /** The bottom of everything: black water, the last dock, and the Gloomforge cut into the far cliff. */
     private static void drownedDeep(BuildCanvas b, MineKit kit) {
         kit.shore(b, 176, 34, 11, 17, 2, DOCK, 519);
         kit.shore(b, 198, 6, 9, 7, 2, 11, 520);
         kit.shore(b, 198, 74, 8, 8, 2, 11, 521);
-        kit.shore(b, 280, 18, 10, 13, 2, 12, 522);
-        kit.shore(b, 272, 72, 11, 8, 2, 12, 523);
-        temple(b);
-        // The dock and the trestle out to the ship.
+        // The dock.
         for (int z = 26; z <= 42; z++) for (int x = 172; x <= 187; x++) plank(b, x, DOCK, z);
         for (int z = 26; z <= 42; z += 16) for (int x = 172; x <= 187; x++) b.block(x, DOCK + 1, z, RAIL);
         for (int z = 26; z <= 42; z++) if (z < 33 || z > 35) b.block(187, DOCK + 1, z, RAIL);
         b.block(178, DOCK + 1, 38, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
         crates(b, 174, DOCK + 1, 28);
         crates(b, 183, DOCK + 1, 40);
-        for (int x = 188; x <= 219; x++) {
-            for (int z = 33; z <= 35; z++) plank(b, x, DOCK, z);
-            b.block(x, DOCK + 1, 32, RAIL);
-            b.block(x, DOCK + 1, 36, RAIL);
-            if (x % 6 == 0) {
-                for (int y = 2; y <= DOCK - 1; y++) for (int z : new int[]{32, 36}) b.block(x, y, z, Material.STRIPPED_DARK_OAK_LOG, "axis=y");
-                for (int z : new int[]{32, 36}) {
-                    for (int y = DOCK + 2; y <= DOCK + 3; y++) b.block(x, y, z, RAIL);
-                    b.block(x, DOCK + 4, z, Material.SOUL_LANTERN, "hanging=false");
-                }
-            }
-        }
-        for (int step = 0; step < 4; step++) for (int z = 33; z <= 35; z++) {
-            int x = 220 + step, half = step + 1;
-            b.block(x, DOCK + half / 2, z, Material.SPRUCE_PLANKS);
-            if (half % 2 == 1) b.block(x, DOCK + half / 2 + 1, z, Material.SPRUCE_SLAB, "type=bottom");
-        }
         GloomforgePalace.build(b, kit);
-        MineProps.hoard(b, GloomforgePalace.X, DECK + 4, 69, 3, 650);
+        MineProps.hoard(b, GloomforgePalace.END - 6, DECK + 1, GloomforgePalace.AXIS - 9, 3, 650);
+        MineProps.hoard(b, GloomforgePalace.END - 6, DECK + 1, GloomforgePalace.AXIS + 9, 3, 655);
         // Blue crystal on every shore, and in the water itself.
-        for (int[] burst : new int[][]{{198, 6, 11, 18}, {198, 74, 11, 16}, {280, 18, 12, 22}, {272, 72, 12, 18}, {196, 10, 8, 10}, {286, 44, 8, 14}, {276, 104, 8, 16}, {196, 104, 8, 14}}) MineProps.crystals(b, burst[0], burst[2], burst[1], burst[3], MineProps.BLUE, burst[0] + burst[1]);
+        for (int[] burst : new int[][]{{198, 6, 11, 18}, {198, 74, 11, 16}, {196, 10, 8, 10}, {238, -2, 7, 22}, {232, 74, 7, 18}, {218, 0, 5, 14}, {214, 72, 6, 12}}) MineProps.crystals(b, burst[0], burst[2], burst[1], burst[3], MineProps.BLUE, burst[0] + burst[1]);
         kit.flood(b, Material.WATER, 170, -12, 300, 136, 2, WATER);
-        for (int x = 182; x <= 292; x += 2) for (int z = -2; z <= 124; z += 2) {
+        for (int x = 182; x <= 244; x += 2) for (int z = -8; z <= 90; z += 2) {
             if (noise(x, z, 636) < .06 && b.get(x, 1, z) != null) b.block(x, 1, z, Material.SEA_LANTERN);
             if (noise(z, x, 637) < .05 && b.get(x, 2, z) == Material.WATER) for (int y = 2; y < 6 + noise(x, z, 638) * 5; y++) b.block(x, y, z, Material.KELP_PLANT);
         }
         // The roof comes down in great blue-tipped curtains, and water falls in threads.
         for (int index = 0; index < 46; index++) {
-            int x = 180 + (int) (noise(index, 7, 524) * 110), z = -2 + (int) (noise(7, index, 525) * 84), y = 40;
-            if (x > GloomforgePalace.LEFT && x < GloomforgePalace.RIGHT && z > GloomforgePalace.TOP && z < GloomforgePalace.BOTTOM) continue;
+            int x = 176 + (int) (noise(index, 7, 524) * 52), z = -6 + (int) (noise(7, index, 525) * 92), y = 40;
+            // Nothing hangs on the line of the causeway: the view of the Gloomforge is the point of this cave.
+            if (Math.abs(z - GloomforgePalace.AXIS) < 16 || !kit.open(x, y, z)) continue;
             while (y < 62 && kit.open(x, y, z)) y++;
             if (y < 62) MineProps.curtain(b, x, y, z, 10 + (int) (noise(index, index, 526) * 18), 3 + (int) (noise(z, x, 527) * 4), index % 2 == 0, WET_ROCK, Material.SEA_LANTERN, 640 + index);
         }
-        for (int[] column : new int[][]{{198, 58, 7}, {198, 22, 6}, {274, 58, 7}, {276, 24, 8}, {192, 30, 5}}) MineProps.column(b, column[0], 2, column[1], roof(kit, column[0], 30, column[1], 62), column[2], ICE_ROCK, column[0] + column[1]);
-        for (int[] fall : new int[][]{{190, 12, 3}, {214, 78, 2}, {262, 4, 3}, {288, 66, 2}}) {
+        for (int[] column : new int[][]{{198, 60, 7}, {198, 12, 6}, {226, 72, 7}, {226, -4, 7}}) MineProps.column(b, column[0], 2, column[1], roof(kit, column[0], 30, column[1], 62), column[2], ICE_ROCK, column[0] + column[1]);
+        for (int[] fall : new int[][]{{190, 12, 3}, {214, 78, 2}, {232, -2, 2}}) {
             int y = 34;
             while (y < 62 && kit.open(fall[0], y, fall[1])) y++;
             MineProps.waterfall(b, fall[0], y - 1, fall[1], WATER + 1, fall[2]);

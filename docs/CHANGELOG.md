@@ -6,10 +6,11 @@ date are placed where the README had them. Each linked doc has the detail.
 ## October 2026
 
 ### The Gloomforge, and an entrance for every boss (November 1)
-- **The Gloomforge is a dwarven forge-palace.** The ship is gone. At the bottom of the mine a stepped plinth rises out of the
-  black water, stone kings leaning on their hammers flank the west gate, and inside is a corbelled nave with fire bowls and
-  runnels of light in the floor, a hearth with a king's face over it, gantries for the ore skips, and a throne at the far end.
-  The Foreman's fight, its hazards and its checkpoints are where they were. Best times on the map reset.
+- **The Gloomforge is a dwarven forge-palace cut into the far cliff.** The ship is gone. You come out of the last drift looking
+  straight down a stone causeway, past hooded guards and stacked lamps, to a terrace and a flared stair. Over them the cliff
+  has been carved into a gate in a deep stepped sleeve, two fluted pylons crowned with crystal, lava running down the front,
+  and an old king's face the height of the wall, with fire behind his eyes. The gate opens on a hall of great columns with the
+  hearth at its far end, and the Foreman fights there now. Best times on the map reset.
 - **Every boss in the Mines arrives on stage.** Grell comes down in a hoist cage when the chain goes and kicks the gate open.
   The Blastmaster rides in on a powder cart and jumps clear before it blows. The Slag Hound bursts up through the crust. The
   Deep Foreman pours out of the hearth along the floor and is hammered into shape by the forge's trip hammers.

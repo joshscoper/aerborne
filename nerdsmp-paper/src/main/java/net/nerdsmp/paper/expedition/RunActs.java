@@ -291,6 +291,7 @@ final class RunActs {
         Location floor = home.clone().add(0, .06, 0);
         if (set.isEmpty()) {
             Location start = hearth.clone().add(0, .08, 0);
+            start.setYaw(facing(hearth, home));
             double reach = home.distance(hearth);
             BlockDisplay stream = box(start, Material.SHROOMLIGHT, -.6F, 0, 0, 1.2F, .1F, .1F, 15);
             set.add(stream);

@@ -3,328 +3,448 @@ package net.nerdsmp.paper.expedition;
 import org.bukkit.Material;
 
 import static net.nerdsmp.paper.expedition.SampleKit.noise;
+import static net.nerdsmp.paper.expedition.SampleKit.smooth;
 
 /**
- * The Gloomforge itself: a dwarven forge-palace older than the mine, standing on a stepped plinth in the black water
- * where the Foreman's digging broke through. Everything is square, heavy and symmetrical: a nave of battered walls and
- * corbelled arches under a stepped roof, stone kings leaning on their hammers either side of the gate, a hearth the size
- * of a house with a king's face over it, runnels of light cut through the floor, and a throne at the far end. Blue-black
- * stone, bronze and gold, so it can't be mistaken for the Foreman's black and red fortress up the mine. The nave is
- * the fight's arena: it runs north to south, entered through the west gate.
+ * The Gloomforge: a dwarven forge-palace cut into the far cliff of the Drowned Deep, older than the mine. Everything hangs
+ * on one axis, the line of the causeway. You come out of the last drift looking straight down it, across the black water,
+ * between stone guards, to a terrace and a flared stair, and over them a front carved from the cliff: a gate in a deep
+ * stepped sleeve, two jutting pylons crowned with crystal, lava pouring down either side, and a king's face the height of
+ * the wall, wedged up into the roof of the cave. Behind the gate the same axis runs on through a hall of great columns to
+ * the hearth at the far end. Blue-black stone, tuff and bronze, in blobs and not noise; dark in the recesses, pale on
+ * what stands proud. The hall is the Foreman's arena.
  */
 final class GloomforgePalace {
-    static final int X = 236, FLOOR = MinesTemplate.DECK;
-    /** How far out the plinth runs, for anything that shouldn't grow through it. */
-    static final int LEFT = 208, RIGHT = 264, TOP = -4, BOTTOM = 96;
-    private static final int WEST = 225, EAST = 247, NORTH = 30, SOUTH = 77, DAIS = FLOOR + 3, EAVE = 38, RIDGE = 47;
-    private static final int[] RIBS = {37, 45, 53, 61, 69};
+    static final int FACE = 246, AXIS = 34, FLOOR = MinesTemplate.DECK, END = 292, HALF = 16, CEILING = FLOOR + 30, DOCK = MinesTemplate.DOCK;
+    private static final int GRID = 9, FIRST_COLUMN = FACE + 8, ROW = 9;
     private static final Material BRONZE = Material.WAXED_EXPOSED_CUT_COPPER, VERDIGRIS = Material.WAXED_OXIDIZED_CUT_COPPER, GOLD = Material.GOLD_BLOCK;
-    private static final Material TILE = Material.DEEPSLATE_TILES, BRICK = Material.DEEPSLATE_BRICKS, DRESSED = Material.POLISHED_DEEPSLATE, CARVED = Material.CHISELED_DEEPSLATE;
-    private static final Material GLOW = Material.SHROOMLIGHT, EMBER = Material.MAGMA_BLOCK;
+    private static final Material TILE = Material.DEEPSLATE_TILES, BRICK = Material.DEEPSLATE_BRICKS, DRESSED = Material.POLISHED_DEEPSLATE, CARVED = Material.CHISELED_DEEPSLATE, SHADOW = Material.DEEPSLATE;
+    private static final Material PALE = Material.POLISHED_TUFF, PALE_BRICK = Material.TUFF_BRICKS, CYAN = Material.CYAN_TERRACOTTA;
+    private static final Material GLOW = Material.SHROOMLIGHT, EMBER = Material.MAGMA_BLOCK, PANE = Material.ORANGE_STAINED_GLASS;
 
     private GloomforgePalace() { }
 
-    /** A piece of carving set out from where it stands: {@code a} across, {@code h} up, {@code f} the way it faces. */
+    /** A piece of carving set out from a spot: {@code a} across, {@code h} up, {@code f} the way it faces. */
     private record Frame(BuildCanvas b, int x, int y, int z, int dirX, int dirZ) {
-        void set(int a, int h, int f, Material block) { b.block(x + a * dirZ + f * dirX, y + h, z + a * dirX * -1 + f * dirZ, block); }
+        int wx(int a, int f) { return x + a * dirZ + f * dirX; }
+
+        int wz(int a, int f) { return z - a * dirX + f * dirZ; }
+
+        void set(int a, int h, int f, Material block) { b.block(wx(a, f), y + h, wz(a, f), block); }
+
+        void set(int a, int h, int f, Material block, String state) { b.block(wx(a, f), y + h, wz(a, f), block, state); }
 
         void box(int a1, int a2, int h1, int h2, int f1, int f2, Material block) {
             for (int a = a1; a <= a2; a++) for (int h = h1; h <= h2; h++) for (int f = f1; f <= f2; f++) set(a, h, f, block);
         }
 
-        /** The same box on both sides of the middle. */
+        /** The same box either side of the middle. */
         void both(int a1, int a2, int h1, int h2, int f1, int f2, Material block) {
             box(a1, a2, h1, h2, f1, f2, block);
             box(-a2, -a1, h1, h2, f1, f2, block);
         }
+
+        /** Texture in blobs, so a wall reads as one stone with patches of wear and not as static. */
+        void dress(int a1, int a2, int h1, int h2, int f1, int f2) {
+            for (int a = a1; a <= a2; a++) for (int h = h1; h <= h2; h++) for (int f = f1; f <= f2; f++) set(a, h, f, stone(wx(a, f), y + h, wz(a, f)));
+        }
+    }
+
+    /** The palace's worked stone: blue-black brick, drifting to tile and to a cold cyan where the damp has got at it. */
+    private static Material stone(int x, int y, int z) {
+        double blob = (smooth(x + y, z, 9, 701) + smooth(x, z + y, 9, 702)) / 2, fine = noise(x + y * 3, z, 703);
+        if (blob > .62) return fine < .25 ? CYAN : TILE;
+        if (blob < .4) return fine < .2 ? Material.CRACKED_DEEPSLATE_BRICKS : SHADOW;
+        return fine < .06 ? Material.CRACKED_DEEPSLATE_BRICKS : BRICK;
+    }
+
+    /** Stone that stands proud and catches the light. */
+    private static Material proud(int x, int y, int z) {
+        double blob = smooth(x + y, z, 7, 704);
+        return blob > .6 ? PALE : blob < .38 ? Material.TUFF : PALE_BRICK;
+    }
+
+    /** The cave ends at the cliff, and the hall goes on into the rock behind it. */
+    static void dig(MineKit kit) {
+        // A high vault in front of the cliff: the king has to stand in open air, with the roof well over his head.
+        kit.cavern(FACE - 16, 1, AXIS, 40, 60, 84, 62, 18);
+        kit.stopAt(FACE);
+        kit.hall(FACE + 1, AXIS - HALF, END, AXIS + HALF, FLOOR, CEILING - FLOOR);
     }
 
     static void build(BuildCanvas b, MineKit kit) {
-        plinth(b);
-        floor(b);
-        walls(b);
-        vault(b);
-        hearth(b, kit);
-        dais(b);
-        gate(b);
-        towers(b);
-        gantries(b);
-        for (int cz : new int[]{21, 47}) statue(new Frame(b, 220, FLOOR + 1, cz, -1, 0));
-        lights(b);
+        Frame front = new Frame(b, FACE, FLOOR + 1, AXIS, -1, 0);
+        causeway(b);
+        terrace(front);
+        wings(front);
+        pylon(front, 1);
+        pylon(front, -1);
+        gate(front);
+        king(front);
+        wedge(front, kit);
+        lava(front);
+        hall(b);
+        columns(b);
+        hearth(b);
+        ruin(b);
     }
 
-    private static Material course(int x, int y, int z) {
-        if (Math.floorMod(y, 4) == 0) return DRESSED;
-        double roll = noise(x + y, z, 701);
-        return roll < .12 ? Material.CRACKED_DEEPSLATE_BRICKS : roll < .3 ? TILE : BRICK;
+    // ---------------------------------------------------------------------------------------------
+    // The approach
+    // ---------------------------------------------------------------------------------------------
+
+    /** A stone road on piers, straight at the gate, with a pair of guards every so often and lamps let into stone pylons. */
+    private static void causeway(BuildCanvas b) {
+        for (int x = 188; x <= FACE - 14; x++) {
+            int bay = Math.floorMod(x - 188, 12);
+            boolean pier = bay <= 2;
+            for (int a = -3; a <= 3; a++) {
+                int z = AXIS + a;
+                b.block(x, DOCK, z, Math.abs(a) == 3 ? DRESSED : Math.floorMod(x, 3) == 0 && a == 0 ? BRONZE : Math.abs(a) <= 1 ? TILE : BRICK);
+                b.block(x, DOCK - 1, z, BRICK);
+                // Between the piers the road springs on stepped arches, so it's a bridge and not a wall.
+                int spring = pier ? 2 : DOCK - 2 - Math.min(Math.min(bay - 2, 12 - bay) + 1, 3);
+                if (pier) for (int y = spring; y < DOCK - 1; y++) b.block(x, y, z, stone(x, y, z));
+                else b.block(x, DOCK - 2, z, stone(x, DOCK - 2, z));
+            }
+            if (pier) for (int side : new int[]{-1, 1}) {
+                for (int y = 2; y <= DOCK; y++) {
+                    b.block(x, y, AXIS + side * 4, y >= DOCK - 2 ? DRESSED : stone(x, y, AXIS + side * 4));
+                    if (bay == 1 && y < DOCK - 2) b.block(x, y, AXIS + side * 5, stone(x, y, AXIS + side * 5));
+                }
+            }
+            for (int side : new int[]{-1, 1}) b.block(x, DOCK + 1, AXIS + side * 3, Math.floorMod(x, 2) == 0 ? Material.DEEPSLATE_BRICK_WALL : Material.DEEPSLATE_BRICK_SLAB);
+        }
+        for (int x : new int[]{200, 224}) for (int side : new int[]{-1, 1}) {
+            for (int dx = -5; dx <= 5; dx++) for (int dz = 4; dz <= 11; dz++) {
+                b.block(x + dx, DOCK, AXIS + side * dz, Math.abs(dx) == 5 || dz == 11 ? DRESSED : Math.floorMod(dx + dz, 2) == 0 ? TILE : BRICK);
+                if (Math.abs(dx) == 5 || dz == 11) for (int y = 2; y < DOCK; y++) b.block(x + dx, y, AXIS + side * dz, stone(x + dx, y, AXIS + side * dz));
+            }
+            for (int dx = -2; dx <= 2; dx++) b.block(x + dx, DOCK + 1, AXIS + side * 3, Material.AIR);
+            guard(new Frame(b, x, DOCK + 1, AXIS + side * 8, 0, -side));
+        }
+        for (int x : new int[]{190, 212, 230}) for (int side : new int[]{-1, 1}) lamp(b, x, DOCK + 1, AXIS + side * 3);
     }
 
-    /** The great stepped footing, four courses out of the water. */
-    private static void plinth(BuildCanvas b) {
-        int[][] tiers = {{10, 16}, {12, 11}, {14, 6}, {FLOOR, 1}};
+    /** Stone stacked on stone, stepping out and in, with the light let into it: the avenue's lamps. */
+    private static void lamp(BuildCanvas b, int x, int y, int z) {
+        Frame lamp = new Frame(b, x, y, z, -1, 0);
+        lamp.box(-1, 1, 0, 2, -1, 1, DRESSED);
+        lamp.box(0, 0, 3, 7, 0, 0, BRICK);
+        lamp.box(-1, 1, 4, 4, -1, 1, Material.DEEPSLATE_BRICK_SLAB);
+        lamp.box(-1, 1, 7, 8, -1, 1, proud(x, y, z));
+        lamp.box(0, 0, 7, 8, 0, 0, GLOW);
+        lamp.set(0, 8, 1, GLOW);
+        lamp.set(0, 8, -1, GLOW);
+        lamp.set(1, 8, 0, GLOW);
+        lamp.set(-1, 8, 0, GLOW);
+        lamp.box(-1, 1, 9, 9, -1, 1, Material.DEEPSLATE_BRICK_SLAB);
+        lamp.box(0, 0, 10, 11, 0, 0, BRONZE);
+    }
+
+    /** A hooded stone dwarf, both hands on the head of a hammer planted between his feet. */
+    private static void guard(Frame stone) {
+        stone.box(-3, 3, 0, 1, -3, 3, DRESSED);
+        stone.box(-2, 2, 1, 1, -2, 2, CARVED);
+        for (int h = 2; h <= 9; h++) {
+            int wide = h < 6 ? 3 : 2;
+            stone.box(-wide, wide, h, h, -2, 1, h % 3 == 2 ? TILE : BRICK);
+        }
+        stone.both(3, 3, 7, 10, -1, 1, DRESSED);
+        stone.box(-3, 3, 10, 11, -2, 1, BRICK);
+        stone.box(-3, 3, 9, 9, -2, 1, BRONZE);
+        stone.box(-2, 2, 12, 15, -2, 1, SHADOW);
+        stone.box(-2, 2, 16, 16, -2, 0, BRICK);
+        stone.box(-1, 1, 14, 14, 2, 2, GLOW);
+        stone.box(-2, 2, 12, 12, 2, 2, PALE);
+        stone.box(-1, 1, 10, 11, 2, 2, PALE);
+        stone.box(-1, 1, 8, 9, 2, 3, PALE);
+        stone.box(0, 0, 6, 7, 2, 2, GOLD);
+        stone.box(0, 0, 2, 8, 3, 3, Material.POLISHED_BLACKSTONE);
+        stone.box(-2, 2, 2, 4, 3, 4, Material.POLISHED_BLACKSTONE);
+        stone.box(-1, 1, 3, 3, 5, 5, BRONZE);
+    }
+
+    /** The front court: three steps of plinth out of the water, a flared stair on the axis, and fire raised either side of it. */
+    private static void terrace(Frame front) {
+        int[][] tiers = {{-7, 24, 42}, {-5, 20, 38}, {-3, 16, 34}};
         for (int[] tier : tiers) {
-            int top = tier[0], out = tier[1], x1 = WEST - 2 - out, x2 = EAST + 2 + out, z1 = 12 - out, z2 = 80 + out;
-            for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) {
-                boolean rim = x <= x1 + 1 || x >= x2 - 1 || z <= z1 + 1 || z >= z2 - 1;
-                if (rim) for (int y = 2; y < top; y++) b.block(x, y, z, course(x, y, z));
-                boolean edge = x == x1 || x == x2 || z == z1 || z == z2;
-                b.block(x, top, z, edge ? DRESSED : noise(x, z, 702) < .02 ? Material.MOSS_BLOCK : noise(z, x, 703) < .2 ? BRICK : TILE);
+            int top = tier[0], out = tier[1], wide = tier[2];
+            for (int a = -wide; a <= wide; a++) for (int f = 0; f <= out; f++) {
+                boolean rim = Math.abs(a) >= wide - 1 || f >= out - 1;
+                if (rim) front.dress(a, a, -14, top - 1, f, f);
+                front.set(a, top, f, rim ? DRESSED : TILE);
             }
-            // Dressed stairs round every step, so no corner of it is a raw cube.
-            for (int x = x1 - 1; x <= x2 + 1; x++) for (int z : new int[]{z1 - 1, z2 + 1}) b.block(x, top, z, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
-            for (int z = z1; z <= z2; z++) for (int x : new int[]{x1 - 1, x2 + 1}) b.block(x, top, z, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+            for (int a = -wide - 1; a <= wide + 1; a++) front.set(a, top, out + 1, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+            for (int f = 0; f <= out + 1; f++) for (int side : new int[]{-1, 1}) front.set(side * (wide + 1), top, f, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+        }
+        for (int a = -30; a <= 30; a++) for (int f = 0; f <= 13; f++) {
+            boolean rim = Math.abs(a) == 30 || f == 13;
+            front.set(a, -1, f, rim ? DRESSED : knot(front.wx(a, f), front.wz(a, f)));
+            for (int h = -2; h >= -3; h--) front.set(a, h, f, BRICK);
+        }
+        // The stair: it fans as it comes down, so you feel the whole front open up over you.
+        for (int step = 0; step < 3; step++) {
+            int reach = 6 + step * 2, f = 13 + step, h = -1 - step;
+            for (int a = -reach; a <= reach; a++) {
+                front.set(a, h, f, Material.DEEPSLATE_BRICK_STAIRS, "facing=east,half=bottom,shape=straight");
+                for (int under = h - 1; under >= -14; under--) front.set(a, under, f, BRICK);
+            }
+        }
+        for (int side : new int[]{-1, 1}) {
+            for (int f = 11; f <= 14; f++) for (int a = 11; a <= 13; a++) front.dress(side * a, side * a, -1, 0, f, f);
+            brazier(front, side * 12, 3, 12);
         }
     }
 
-    /** Tile between borders, a runnel of light under glass down each side and across at each vent, and the anvil sigil where the Foreman stands. */
-    private static void floor(BuildCanvas b) {
-        for (int x = WEST; x <= EAST; x++) for (int z = NORTH + 1; z < SOUTH; z++) {
-            boolean border = x == WEST + 1 || x == EAST - 1, seam = Math.floorMod(z - 37, 8) == 0 || Math.floorMod(x - X, 8) == 0;
-            b.block(x, FLOOR, z, border || seam ? DRESSED : Math.floorMod(x + z, 2) == 0 ? TILE : BRICK);
-            boolean along = Math.abs(x - X) == 5 && z < 63, across = (z == 39 || z == 50 || z == 60) && x > WEST + 1 && x < EAST - 1;
-            if (along || across) {
-                b.block(x, FLOOR, z, Material.ORANGE_STAINED_GLASS);
-                b.block(x, FLOOR - 1, z, GLOW);
-            }
-            double from = Math.hypot(x - X, z - 49);
-            if (from > 6.4 && from < 7.4) b.block(x, FLOOR, z, BRONZE);
-            if (from < 1.6) b.block(x, FLOOR, z, GOLD);
-            else if (from < 3.4 && (x == X || z == 49)) b.block(x, FLOOR, z, BRONZE);
-        }
+    /** A bowl of fire on a stem, high enough to be seen over a crowd. */
+    private static void brazier(Frame at, int a, int h, int f) {
+        at.box(a, a, h - 2, h, f, f, Material.POLISHED_BLACKSTONE);
+        at.box(a - 1, a + 1, h + 1, h + 1, f - 1, f + 1, BRONZE);
+        at.box(a - 1, a + 1, h + 2, h + 2, f - 1, f + 1, EMBER);
+        at.set(a, h + 3, f, Material.FIRE);
+        at.set(a - 1, h + 3, f, Material.FIRE);
+        at.set(a + 1, h + 3, f, Material.FIRE);
+        at.set(a, h + 3, f - 1, Material.FIRE);
+        at.set(a, h + 3, f + 1, Material.FIRE);
     }
 
-    /** Side walls: three thick, battered at the foot, with a pilaster at every rib and a tall window in every bay. */
-    private static void walls(BuildCanvas b) {
-        for (int side : new int[]{-1, 1}) for (int z = NORTH; z <= SOUTH; z++) {
-            int inner = side < 0 ? WEST : EAST;
-            for (int y = FLOOR + 1; y <= EAVE; y++) for (int depth = 0; depth < 3; depth++) b.block(inner + side * depth, y, z, course(inner + depth, y, z));
-            boolean pilaster = false;
-            for (int rib : RIBS) pilaster |= Math.abs(z - rib) <= 1;
-            int outer = inner + side * 3;
-            // The foot of the wall spreads, course by course.
-            for (int y = FLOOR + 1; y <= FLOOR + 3; y++) b.block(outer, y, z, y == FLOOR + 3 ? DRESSED : BRICK);
-            b.block(outer, FLOOR + 4, z, Material.DEEPSLATE_BRICK_STAIRS, "facing=" + (side < 0 ? "east" : "west") + ",half=bottom,shape=straight");
-            b.block(inner - side, EAVE - 3, z, DRESSED);
-            b.block(inner + side * 2, EAVE, z, DRESSED);
-            if (pilaster) {
-                for (int y = FLOOR + 1; y <= EAVE; y++) {
-                    b.block(outer, y, z, Math.floorMod(z - 37, 8) == 0 ? DRESSED : BRICK);
-                    b.block(inner - side, y, z, y > FLOOR + 3 && y % 6 == 0 ? CARVED : DRESSED);
+    /** Square knotwork: every tile a key pattern, as if the floor were one long line that never ends. */
+    private static Material knot(int x, int z) {
+        int u = Math.floorMod(x, 12), v = Math.floorMod(z, 12);
+        boolean edge = u == 0 || v == 0;
+        boolean key = u == 2 && v >= 2 && v <= 10 || v == 10 && u >= 2 && u <= 10 || u == 10 && v >= 4 && v <= 10 || v == 4 && u >= 5 && u <= 10 || u == 5 && v >= 4 && v <= 7 || v == 2 && u >= 2 && u <= 8;
+        return edge ? DRESSED : key ? PALE : Math.floorMod(x + z, 2) == 0 ? TILE : BRICK;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The front
+    // ---------------------------------------------------------------------------------------------
+
+    private static Material proudAt(Frame front, int a, int h, int f) { return proud(front.wx(a, f), front.y() + h, front.wz(a, f)); }
+
+    /** The long low arcades either side, dark in the arches, each with a lit window deep in it. */
+    private static void wings(Frame front) {
+        for (int side : new int[]{-1, 1}) {
+            for (int a = 25; a <= 44; a++) {
+                front.dress(side * a, side * a, 0, 20, 0, 3);
+                front.set(side * a, 21, 3, DRESSED);
+                front.set(side * a, 21, 2, BRONZE);
+                for (int h = 22; h <= 24; h++) for (int f = -2; f <= 2 - (h - 22); f++) front.set(side * a, h, f, Math.floorMod(a, 2) == 0 ? TILE : BRICK);
+            }
+            for (int bay = 0; bay < 3; bay++) {
+                int middle = 28 + bay * 6;
+                for (int h = 0; h <= 16; h++) for (int across = -2; across <= 2; across++) {
+                    boolean arch = h <= 12 || Math.abs(across) <= 2 - (h - 13);
+                    if (!arch) continue;
+                    front.set(side * (middle + across), h, 3, Material.AIR);
+                    front.set(side * (middle + across), h, 2, Material.AIR);
+                    front.set(side * (middle + across), h, 1, h < 11 && Math.abs(across) <= 1 ? PANE : SHADOW);
+                    front.set(side * (middle + across), h, 0, h < 11 && Math.abs(across) <= 1 ? GLOW : SHADOW);
                 }
-                b.block(outer, EAVE + 1, z, BRONZE);
-            } else {
-                int off = Math.abs(z - (33 + 8 * Math.floorDiv(z - 29, 8)));
-                if (off <= 1) for (int y = FLOOR + 7; y <= FLOOR + 17 - off * 2; y++) {
-                    if (side < 0 && z >= 33 && z <= 35) continue;
-                    for (int depth = 0; depth < 3; depth++) b.block(inner + side * depth, y, z, depth == 1 ? Material.ORANGE_STAINED_GLASS : Material.AIR);
+                for (int h = 0; h <= 18; h++) front.set(side * (middle + 3), h, 4, proudAt(front, side * (middle + 3), h, 4));
+            }
+        }
+    }
+
+    /** A tower of the front: it juts out from the cliff, its corners stand proud of its faces, and it steps in as it climbs to a crown of crystal. */
+    private static void pylon(Frame front, int side) {
+        int inner = 13, outer = 24, out = 11, eave = 34;
+        for (int a = inner; a <= outer; a++) for (int f = 0; f <= out; f++) {
+            int s = side * a;
+            boolean corner = (a <= inner + 2 || a >= outer - 2) && f >= out - 2;
+            boolean face = a == inner || a == outer || f == out;
+            if (corner) for (int h = 0; h <= eave + 5; h++) front.set(s, h, f, Math.floorMod(h, 7) == 0 ? DRESSED : proudAt(front, s, h, f));
+            else if (face) for (int h = 0; h <= eave; h++) front.set(s, h, f - (f == out ? 1 : 0), stone(front.wx(s, f), front.y() + h, front.wz(s, f)));
+            front.set(s, eave + 1, Math.min(f, out - 1), DRESSED);
+        }
+        // Fluted faces: ribs a block proud, dark between, the way a Moria column reads from a distance.
+        for (int a = inner + 3; a <= outer - 3; a++) for (int h = 2; h <= eave - 1; h++) {
+            boolean rib = Math.floorMod(a, 2) == 0;
+            front.set(side * a, h, out, rib ? (h % 9 == 0 ? BRONZE : proudAt(front, a, h, out)) : Material.AIR);
+            if (!rib) front.set(side * a, h, out - 1, SHADOW);
+        }
+        // Slits of firelight up the front, in a grid.
+        for (int row = 0; row < 3; row++) for (int a : new int[]{inner + 4, outer - 4}) {
+            int low = 6 + row * 9, slit = side * (Math.floorMod(a, 2) == 0 ? a + 1 : a);
+            for (int h = low; h <= low + 4; h++) front.set(slit, h, out - 1, GLOW);
+        }
+        // It steps in, one course at a time, and the eye goes up with it.
+        for (int step = 0; step < 6; step++) {
+            int h = eave + 2 + step;
+            for (int a = inner + step; a <= outer - step; a++) for (int f = 0; f <= out - 1 - step; f++) {
+                boolean rim = a == inner + step || a == outer - step || f == out - 1 - step;
+                if (rim) front.set(side * a, h, f, step % 2 == 0 ? BRICK : TILE);
+            }
+        }
+        int cx = side * (inner + outer) / 2;
+        MineProps.crystals(front.b(), front.wx(cx, 4), front.y() + eave + 8, front.wz(cx, 4), 14, MineProps.BLUE, side + 40);
+        for (int a : new int[]{inner + 1, outer - 1}) brazier(front, side * a, eave + 7, out - 1);
+    }
+
+    /** The gate in its sleeve: frame within frame, each one darker and further in, to the doors and the hammer over them. */
+    private static void gate(Frame front) {
+        // The sleeve, stepping in from the face of the wall.
+        for (int ring = 0; ring < 4; ring++) {
+            int f = 4 - ring * 2, half = 12 - ring * 2, spring = 16 - ring * 2, top = spring + half - 3;
+            for (int a = -half - 1; a <= half + 1; a++) for (int h = 0; h <= top + 2; h++) {
+                int inside = h <= spring ? half : half - (h - spring);
+                if (Math.abs(a) <= inside && inside > 0) {
+                    front.box(a, a, h, h, f - 1, f, Material.AIR);
+                    continue;
                 }
-                if (off == 2) for (int y = FLOOR + 7; y <= FLOOR + 14; y++) b.block(outer, y, z, CARVED);
+                if (Math.abs(a) <= inside + 2) front.box(a, a, h, h, f - 1, f, ring == 0 ? (h > spring ? BRONZE : DRESSED) : ring == 1 ? PALE_BRICK : SHADOW);
             }
-            // A band of runes and a band of bronze along the whole wall.
-            b.block(outer, FLOOR + 6, z, Math.floorMod(z, 3) == 0 ? CARVED : DRESSED);
-            b.block(outer, EAVE - 1, z, BRONZE);
+        }
+        // The wall the doors stand in: dark, with the hammer of the old kings on it.
+        for (int a = -7; a <= 7; a++) for (int h = 0; h <= 16; h++) for (int f = -4; f <= -3; f++) front.set(a, h, f, SHADOW);
+        front.box(-4, 4, 0, 7, -5, -2, Material.AIR);
+        front.box(-5, 5, 8, 8, -3, -2, GOLD);
+        front.both(5, 5, 0, 7, -3, -2, BRONZE);
+        front.box(-3, 3, 11, 13, -2, -2, Material.POLISHED_BLACKSTONE);
+        front.box(-4, 4, 11, 13, -3, -3, GOLD);
+        front.box(0, 0, 9, 10, -2, -2, BRONZE);
+    }
+
+    /** How far the old king stands out of the wall at a spot on his face, in blocks: a relief, carved as one surface. */
+    private static double relief(int a, int h) {
+        double side = Math.abs(a);
+        if (h >= 44) return 3 + 5 * Math.sqrt(Math.max(0, 1 - Math.pow(side / 15, 2) - Math.pow((h - 44) / 15D, 2)));
+        if (h >= 42) return side <= 14 ? 9 - side / 5 : 0;
+        boolean socket = side >= 3 && side <= 9 && h >= 38;
+        if (socket) return 3;
+        if (side <= 2 && h >= 32) return 7 + (42 - h) / 4D - side / 2;
+        if (h >= 36) return side <= 12 ? 6 - side / 4 : 0;
+        if (h >= 34) return side <= 12 ? 8 - side / 3 : 0;
+        double wide = 12 - (34 - h) * .55;
+        return side <= wide ? 7 - (34 - h) / 10D - side / 6 + (Math.floorMod(a, 4) == 0 ? -1 : 0) : 0;
+    }
+
+    /** The old king, carved out of the front, looking down the causeway at whoever's coming. */
+    private static void king(Frame front) {
+        for (int a = -15; a <= 15; a++) for (int h = 24; h <= 59; h++) {
+            int out = (int) Math.round(relief(a, h));
+            if (out <= 0) continue;
+            for (int f = 0; f <= out; f++) {
+                boolean surface = f == out;
+                Material block;
+                if (h >= 44) block = surface && Math.abs(a) <= 1 ? GOLD : surface && Math.floorMod(h, 5) == 0 ? BRONZE : surface ? Material.DEEPSLATE_TILES : DRESSED;
+                else if (h >= 42) block = surface ? BRONZE : DRESSED;
+                else if (h >= 34) block = surface ? PALE : PALE_BRICK;
+                else block = !surface ? PALE_BRICK : Math.floorMod(a, 4) == 0 ? PALE_BRICK : Math.floorMod(h, 4) == 0 ? BRONZE : Material.CALCITE;
+                front.set(a, h, f, block);
+            }
+        }
+        // Fire deep in the sockets, and a line of it for a mouth.
+        for (int side : new int[]{-1, 1}) {
+            for (int a = 4; a <= 8; a++) for (int h = 39; h <= 40; h++) front.set(side * a, h, 3, a >= 5 && a <= 7 ? GLOW : EMBER);
+            for (int a = 3; a <= 9; a++) front.set(side * a, 37, 4, SHADOW);
+        }
+        for (int a = -4; a <= 4; a++) front.set(a, 34, (int) Math.round(relief(a, 34)), EMBER);
+        // Gold clasps on the plaits, a crest on the helm, and horns swept back into the rock.
+        for (int a : new int[]{-6, -2, 2, 6}) front.box(a, a, 27, 28, (int) Math.round(relief(a, 28)) + 1, (int) Math.round(relief(a, 28)) + 1, GOLD);
+        front.box(-1, 1, 59, 63, 1, 5, GOLD);
+        front.both(15, 19, 46, 48, 1, 5, VERDIGRIS);
+        front.both(20, 22, 48, 51, 1, 4, VERDIGRIS);
+        front.both(22, 24, 51, 55, 1, 3, VERDIGRIS);
+        front.both(24, 25, 55, 59, 1, 2, GOLD);
+    }
+
+    /** Masonry shouldered up into the roof of the cave, so the front grows out of the rock and doesn't stand in front of it. */
+    private static void wedge(Frame front, MineKit kit) {
+        for (int a = -60; a <= 60; a++) for (int f = 0; f <= 9; f++) {
+            // Behind the crown of the helm and over the towers it comes down to meet the masonry; out at the sides it falls to the wings.
+            int over = Math.abs(a) <= 28 ? 65 + (int) ((smooth(a + 40, f, 6, 706) - .5) * 8) + f * 2 : 26 + (60 - Math.abs(a)) / 2 + f * 3;
+            for (int h = over; h <= 64; h++) {
+                int x = front.wx(a, f), y = front.y() + h, z = front.wz(a, f);
+                if (kit.open(x, y, z) && CanopyKit.empty(front.b(), x, y, z)) front.b().block(x, y, z, smooth(x + y, z, 8, 705) > .5 ? Material.DEEPSLATE : Material.COBBLED_DEEPSLATE);
+            }
         }
     }
 
-    private static int step(int x) { return Math.min(x - WEST, EAST - x); }
-
-    /** Corbelled ribs that step in to a flat crown, and a stepped roof over them. Dwarves didn't trust the curve. */
-    private static void vault(BuildCanvas b) {
-        for (int x = WEST - 2; x <= EAST + 2; x++) {
-            int up = Math.max(0, step(x));
-            int roof = EAVE + Math.min(RIDGE - EAVE, up);
-            for (int z = NORTH; z <= SOUTH; z++) {
-                b.block(x, roof, z, DRESSED);
-                b.block(x, roof + 1, z, up >= RIDGE - EAVE ? VERDIGRIS : TILE);
-                if (up < RIDGE - EAVE) b.block(x, roof + 2, z, Material.DEEPSLATE_TILE_STAIRS, "facing=" + (x < X ? "east" : "west") + ",half=bottom,shape=straight");
-            }
-            for (int rib : RIBS) for (int dz = 0; dz <= 1; dz++) {
-                int under = EAVE - 4 + Math.min(RIDGE - EAVE, up);
-                for (int y = under; y < roof; y++) b.block(x, y, rib + dz, up % 2 == 0 ? DRESSED : BRICK);
-                if (x > WEST && x < EAST) b.block(x, under - 1, rib + dz, Material.DEEPSLATE_BRICK_STAIRS, "facing=" + (x < X ? "west" : "east") + ",half=top,shape=straight");
-            }
-            if (x >= X - 1 && x <= X + 1) for (int rib : RIBS) for (int dz = 0; dz <= 1; dz++) b.block(x, EAVE - 4 + (RIDGE - EAVE), rib + dz, GOLD);
-        }
-        // Each end closes on a stepped gable.
-        for (int x = WEST - 2; x <= EAST + 2; x++) for (int y = EAVE; y < EAVE + Math.min(RIDGE - EAVE, Math.max(0, step(x))); y++) {
-            b.block(x, y, NORTH, BRICK);
-            b.block(x, y, SOUTH, course(x, y, SOUTH));
+    /** The forge's overflow, running down the front either side of the gate and away along the terrace in stone channels. */
+    private static void lava(Frame front) {
+        for (int side : new int[]{-1, 1}) {
+            int a = side * 12;
+            for (int h = 30; h >= 0; h--) for (int f = 4; f <= 5; f++) front.set(a, h, f, Material.LAVA, h == 30 ? "level=0" : "level=8");
+            front.box(a - 1, a + 1, 31, 32, 3, 6, BRONZE);
+            front.box(a, a, -1, -1, 4, 10, Material.LAVA);
         }
     }
 
-    private static void face(Frame head) {
-        head.box(-5, 5, 0, 8, -3, 1, BRICK);
-        // The helm, its brow and cheek guards.
-        head.box(-6, 6, 7, 10, -3, 2, DRESSED);
-        head.box(-7, 7, 7, 7, -3, 3, BRONZE);
-        head.box(-1, 1, 11, 13, -2, 2, GOLD);
-        head.box(-2, 2, 11, 11, -3, 3, BRONZE);
-        head.both(6, 6, 2, 6, 1, 2, DRESSED);
-        // Deep-set eyes, a heavy nose, and the beard in stepped plaits.
-        head.box(-5, 5, 5, 6, 2, 2, BRICK);
-        head.both(2, 3, 5, 5, 2, 2, EMBER);
-        head.box(-1, 1, 3, 5, 2, 3, DRESSED);
-        for (int down = 0; down < 8; down++) {
-            int wide = Math.max(1, 5 - down / 2);
-            head.box(-wide, wide, 2 - down, 2 - down, 2, 3, down % 3 == 2 ? BRONZE : Material.CALCITE);
-        }
-        head.box(-1, 1, -6, -5, 2, 3, GOLD);
-        head.both(8, 9, 8, 9, -1, 1, VERDIGRIS);
-        head.both(10, 10, 9, 12, -1, 1, VERDIGRIS);
-        head.both(11, 11, 12, 14, 0, 0, VERDIGRIS);
-    }
+    // ---------------------------------------------------------------------------------------------
+    // The hall
+    // ---------------------------------------------------------------------------------------------
 
-    /** The hearth: a block of masonry filling the north end, a fire behind a grate, and an old king's face above it. */
-    private static void hearth(BuildCanvas b, MineKit kit) {
-        for (int x = WEST - 2; x <= EAST + 2; x++) for (int z = 14; z <= NORTH; z++) {
-            boolean rim = x <= WEST - 1 || x >= EAST + 1 || z <= 15 || z == NORTH;
-            for (int y = FLOOR; y <= EAVE + 2; y++) if (rim || y >= EAVE) b.block(x, y, z, course(x, y, z));
-            b.block(x, EAVE + 3, z, Material.DEEPSLATE_TILE_SLAB, "type=bottom");
-        }
-        // The mouth, stepping in at the top as a dwarven door does.
-        for (int y = FLOOR + 1; y <= FLOOR + 10; y++) {
-            int half = y <= FLOOR + 6 ? 6 : 6 - (y - FLOOR - 6);
-            for (int x = X - half; x <= X + half; x++) {
-                b.block(x, y, NORTH, Material.IRON_BARS, "east=true,west=true");
-                for (int z = 22; z < NORTH; z++) b.block(x, y, z, y == FLOOR + 1 ? EMBER : Material.AIR);
+    private static void hall(BuildCanvas b) {
+        for (int x = FACE + 1; x <= END; x++) for (int z = AXIS - HALF; z <= AXIS + HALF; z++) {
+            b.block(x, FLOOR, z, knot(x, z));
+            int off = Math.abs(z - AXIS);
+            if (off == HALF) for (int y = FLOOR + 1; y <= CEILING; y++) {
+                boolean bay = Math.floorMod(x - FIRST_COLUMN, GRID) <= 1;
+                b.block(x, y, z, bay ? (y % 8 == 0 ? BRONZE : DRESSED) : y > FLOOR + 22 ? SHADOW : stone(x, y, z));
             }
-            for (int x : new int[]{X - half - 1, X + half + 1}) b.block(x, y, NORTH, y % 2 == 0 ? BRONZE : DRESSED);
-            for (int x = X - half; x <= X + half; x++) b.block(x, y, 21, y % 3 == 0 ? GLOW : EMBER);
-        }
-        for (int x = X - 8; x <= X + 8; x++) for (int y = FLOOR + 11; y <= FLOOR + 12; y++) b.block(x, y, NORTH, y == FLOOR + 11 ? GOLD : BRONZE);
-        for (int y = FLOOR + 1; y <= FLOOR + 10; y++) for (int side : new int[]{-1, 1}) {
-            b.block(X + side * 8, y, NORTH + 1, y == FLOOR + 10 ? GOLD : y % 4 == 0 ? CARVED : DRESSED);
-            b.block(X + side * 9, y, NORTH + 1, y % 3 == 0 ? BRONZE : DRESSED);
-        }
-        face(new Frame(b, X, FLOOR + 17, NORTH + 1, 0, 1));
-        // Twin bronze bellows pipes, floor to crown, either side of the fire.
-        for (int side : new int[]{-1, 1}) for (int y = FLOOR + 1; y <= EAVE + 4; y++) for (int dx = 0; dx <= 1; dx++) b.block(X + side * 15 + dx, y, NORTH + 1, y % 5 == 0 ? GOLD : VERDIGRIS);
-        // The stack, climbing until it meets the roof of the cavern.
-        for (int y = EAVE + 3; y < 62; y++) {
-            int half = y < 50 ? 6 : 5;
-            boolean through = false;
-            for (int x = X - half; x <= X + half; x++) for (int z = 22 - half; z <= 22 + half; z++) {
-                if (!kit.open(x, y, z)) continue;
-                through = true;
-                boolean wall = Math.abs(x - X) == half || Math.abs(z - 22) == half;
-                if (wall) b.block(x, y, z, Math.floorMod(y, 6) == 0 ? BRONZE : course(x, y, z));
-                else b.block(x, y, z, y > 56 ? Material.AIR : y % 5 == 0 ? EMBER : Material.AIR);
+            // A run of slag down each aisle, behind the columns, so the hall's lit from its edges.
+            if (off == HALF - 2 || off == HALF - 3) {
+                b.block(x, FLOOR, z, Material.LAVA, "level=0");
+                b.block(x, FLOOR - 1, z, EMBER);
             }
-            if (!through) break;
+            b.block(x, CEILING, z, Math.floorMod(x, GRID) == 0 || Math.floorMod(z - AXIS, GRID) == 0 ? DRESSED : SHADOW);
         }
-    }
-
-    /** Three steps up to the far end, the Foreman's heap of gold, and a stone throne with nobody in it for three thousand years. */
-    private static void dais(BuildCanvas b) {
-        for (int step = 0; step < 3; step++) for (int x = WEST; x <= EAST; x++) {
-            b.block(x, FLOOR + step, 63 + step, DRESSED);
-            b.block(x, FLOOR + step + 1, 63 + step, Material.DEEPSLATE_BRICK_STAIRS, "facing=south,half=bottom,shape=straight");
-        }
-        for (int x = WEST; x <= EAST; x++) for (int z = 66; z < SOUTH; z++) {
-            for (int y = FLOOR; y < DAIS; y++) b.block(x, y, z, BRICK);
-            b.block(x, DAIS, z, Math.abs(x - X) <= 2 ? BRONZE : Math.floorMod(x + z, 2) == 0 ? TILE : DRESSED);
-        }
-        Frame throne = new Frame(b, X, DAIS + 1, 74, 0, -1);
-        throne.box(-3, 3, 0, 1, -1, 2, DRESSED);
-        throne.box(-4, 4, 0, 13, -2, -1, BRICK);
-        throne.box(-3, 3, 13, 14, -2, -1, GOLD);
-        throne.box(-1, 1, 15, 17, -2, -1, GOLD);
-        throne.both(4, 5, 0, 4, -1, 3, BRICK);
-        throne.both(4, 5, 5, 5, -1, 3, BRONZE);
-        throne.box(-2, 2, 2, 2, 0, 1, Material.RED_WOOL);
-    }
-
-    /** The west gate, the one way in: a stepped door in a thick frame, with bronze and gold over it. */
-    private static void gate(BuildCanvas b) {
-        for (int z = 29; z <= 39; z++) for (int y = FLOOR + 1; y <= FLOOR + 13; y++) {
-            int off = Math.abs(z - 34);
-            int top = FLOOR + 8 + (off <= 1 ? 1 : 0);
-            boolean opening = off <= 1 && y <= FLOOR + 4;
-            for (int x = WEST - 4; x <= WEST; x++) {
-                if (opening) b.block(x, y, z, Material.AIR);
-                else if (x == WEST - 4 && off <= 4 && y <= top + 3) b.block(x, y, z, off == 4 || y == FLOOR + 5 ? BRONZE : y == FLOOR + 6 ? CARVED : y >= top ? GOLD : DRESSED);
-            }
-        }
-        for (int z = 30; z <= 38; z++) for (int y = FLOOR - 1; y <= FLOOR; y++) if (Math.abs(z - 34) > 1) b.block(WEST - 4, y, z, DRESSED);
-        for (int z = 31; z <= 37; z++) for (int y = FLOOR + 5; y <= FLOOR + 7; y++) b.block(WEST - 5, y, z, y == FLOOR + 6 ? Math.floorMod(z, 2) == 0 ? GOLD : CARVED : BRONZE);
-        // A stepped frame round the opening, in the old way.
-        for (int y = FLOOR + 1; y <= FLOOR + 4; y++) for (int z : new int[]{32, 36}) b.block(WEST - 5, y, z, y == FLOOR + 4 ? BRONZE : DRESSED);
-    }
-
-    /** A square tower at each corner, stepping in as it climbs, with a gold spike on it. */
-    private static void towers(BuildCanvas b) {
-        for (int[] tower : new int[][]{{WEST - 6, 9, 46}, {EAST + 6, 9, 46}, {WEST - 6, 82, 46}, {EAST + 6, 82, 46}, {EAST + 7, 45, 52}}) {
-            int cx = tower[0], cz = tower[1], top = tower[2];
-            for (int y = FLOOR - 1; y <= top + 3; y++) {
-                int half = y < top - 12 ? 4 : y < top ? 3 : top + 3 - y;
-                for (int dx = -half; dx <= half; dx++) for (int dz = -half; dz <= half; dz++) {
-                    boolean wall = Math.abs(dx) == half || Math.abs(dz) == half;
-                    if (!wall) { if (y % 8 == 0) b.block(cx + dx, y, cz + dz, DRESSED); continue; }
-                    boolean slit = y > FLOOR + 5 && y < top - 2 && Math.floorMod(y, 7) < 3 && (dx == 0 || dz == 0);
-                    b.block(cx + dx, y, cz + dz, slit ? Material.ORANGE_STAINED_GLASS : Math.floorMod(y, 12) == 0 ? BRONZE : course(cx + dx, y, cz + dz));
-                }
-            }
-            for (int y = top + 4; y <= top + 9; y++) b.block(cx, y, cz, y >= top + 7 ? GOLD : BRONZE);
-        }
-    }
-
-    /** Bronze gantry rails under the crown, with the ore skips hung from them on chains. */
-    private static void gantries(BuildCanvas b) {
-        for (int x : new int[]{228, 244}) {
-            for (int z = NORTH + 1; z < SOUTH; z++) b.block(x, 34, z, BRONZE);
-            for (int rib : RIBS) for (int y = 35; y <= 36; y++) b.block(x, y, rib, Material.IRON_CHAIN, "axis=y");
-        }
-        for (int[] skip : new int[][]{{228, 44}, {244, 44}, {228, 56}, {244, 56}}) {
-            for (int y = FLOOR + 11; y < 34; y++) b.block(skip[0], y, skip[1], Material.IRON_CHAIN, "axis=y");
+        for (int x = FACE + 4; x <= END; x += 8) for (int z : new int[]{AXIS - 4, AXIS + 4}) b.block(x, FLOOR + 14, z, Material.LIGHT, "level=15");
+        // A low kerb keeps the slag off the floor of the aisles.
+        for (int x = FACE + 1; x <= END - 3; x++) for (int side : new int[]{-1, 1}) b.block(x, FLOOR + 1, AXIS + side * (HALF - 4), Math.floorMod(x, 9) == 0 ? BRONZE : Material.DEEPSLATE_BRICK_WALL);
+        // The ore skips the old masters left hanging, on chains as long as the hall is high.
+        for (int[] skip : new int[][]{{262, 30}, {278, 30}, {262, 38}, {278, 38}}) {
+            for (int y = FLOOR + 11; y < CEILING; y++) b.block(skip[0], y, skip[1], Material.IRON_CHAIN, "axis=y");
             b.block(skip[0], FLOOR + 10, skip[1], Material.RAW_IRON_BLOCK);
         }
     }
 
-    /** One stone king: boots planted, both hands on the pommel of a hammer as tall as a man's chest, looking down the water at whoever's coming. */
-    private static void statue(Frame king) {
-        king.box(-8, 8, -2, -1, -5, 8, DRESSED);
-        king.box(-9, 9, -2, -2, -6, 9, Material.DEEPSLATE_BRICK_SLAB);
-        king.both(2, 6, 0, 2, -4, 4, Material.POLISHED_BLACKSTONE);
-        king.both(2, 6, 3, 3, -3, 4, BRONZE);
-        for (int h = 4; h <= 9; h++) {
-            int wide = 7 - (h - 4) / 3;
-            king.box(-wide, wide, h, h, -3, 3, h % 2 == 0 ? BRICK : TILE);
+    /** Two rows of great columns: a labyrinth at the foot, a narrow fluted shaft, and a capital that opens in steps into the roof. */
+    private static void columns(BuildCanvas b) {
+        for (int x = FIRST_COLUMN; x < END - 8; x += GRID) for (int side : new int[]{-1, 1}) {
+            int z = AXIS + side * ROW;
+            for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
+                b.block(x + dx, FLOOR + 1, z + dz, Math.abs(dx) == 3 || Math.abs(dz) == 3 ? DRESSED : CARVED);
+                if (Math.abs(dx) <= 2 && Math.abs(dz) <= 2) b.block(x + dx, FLOOR + 2, z + dz, BRONZE);
+            }
+            for (int y = FLOOR + 3; y < CEILING; y++) {
+                int flare = y < FLOOR + 21 ? 0 : (y - FLOOR - 19) / 2, shaft = 2 + flare;
+                for (int dx = -shaft; dx <= shaft; dx++) for (int dz = -shaft; dz <= shaft; dz++) {
+                    boolean chamfer = Math.abs(dx) == shaft && Math.abs(dz) == shaft;
+                    if (chamfer && flare == 0) continue;
+                    if (flare > 0 && Math.abs(dx) < shaft && Math.abs(dz) < shaft) continue;
+                    boolean flute = flare == 0 && (Math.floorMod(dx, 2) == 0 && Math.abs(dz) == shaft || Math.floorMod(dz, 2) == 0 && Math.abs(dx) == shaft);
+                    b.block(x + dx, y, z + dz, flare > 0 ? (y % 2 == 0 ? DRESSED : TILE) : flute ? PALE : SHADOW);
+                }
+                if (y == FLOOR + 19) for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) if (Math.abs(dx) == 3 || Math.abs(dz) == 3) b.block(x + dx, y, z + dz, GOLD);
+            }
         }
-        king.box(-6, 6, 10, 11, -4, 4, BRONZE);
-        king.box(-2, 2, 10, 11, 5, 5, GOLD);
-        king.box(-7, 7, 12, 18, -4, 3, BRICK);
-        king.box(-5, 5, 13, 17, 4, 4, DRESSED);
-        king.both(8, 11, 16, 19, -4, 3, DRESSED);
-        king.both(9, 11, 20, 20, -3, 2, VERDIGRIS);
-        king.both(9, 10, 11, 15, -2, 2, BRICK);
-        king.both(9, 10, 11, 11, -2, 2, BRONZE);
-        king.both(3, 9, 10, 12, 3, 6, BRICK);
-        king.box(-3, 3, 10, 13, 6, 8, Material.POLISHED_BLACKSTONE);
-        king.box(-1, 1, 14, 14, 6, 8, GOLD);
-        // The hammer, head on the ground.
-        king.box(-1, 1, 3, 9, 6, 7, DRESSED);
-        king.box(-4, 4, 0, 3, 5, 8, Material.POLISHED_BLACKSTONE);
-        king.box(-5, 5, 1, 2, 5, 8, GOLD);
-        king.box(-5, 5, 19, 22, -3, 3, BRICK);
-        face(new Frame(king.b(), king.x(), king.y() + 18, king.z(), king.dirX(), king.dirZ()));
     }
 
-    private static void lights(BuildCanvas b) {
-        for (int z = 35; z <= 74; z += 8) for (int x = 230; x <= 242; x += 6) b.block(x, 30, z, Material.LIGHT, "level=15");
-        for (int rib : RIBS) for (int side : new int[]{-1, 1}) {
-            int x = (side < 0 ? WEST + 2 : EAST - 2);
-            b.block(x, FLOOR + 8, rib, EMBER);
-            b.block(x, FLOOR + 9, rib, Material.FIRE);
-        }
-        // Great rings of lamps hung down the nave.
-        for (int cz : new int[]{41, 57}) {
-            for (int y = 28; y < RIDGE; y++) b.block(X, y, cz, Material.IRON_CHAIN, "axis=y");
-            for (double angle = 0; angle < Math.TAU; angle += .08) b.block(X + (int) Math.round(Math.cos(angle) * 4), 27, cz + (int) Math.round(Math.sin(angle) * 4), BRONZE);
-            for (int out = -3; out <= 3; out++) {
-                b.block(X + out, 27, cz, BRONZE);
-                b.block(X, 27, cz + out, BRONZE);
+    /** The far end: the great hearth, a grate as tall as a house with the fire behind it. */
+    private static void hearth(BuildCanvas b) {
+        Frame end = new Frame(b, END, FLOOR + 1, AXIS, -1, 0);
+        end.dress(-HALF, HALF, 0, CEILING - FLOOR - 1, 0, 2);
+        for (int h = 0; h <= 12; h++) {
+            int half = h <= 8 ? 8 : 8 - (h - 8);
+            for (int a = -half; a <= half; a++) {
+                end.set(a, h, 2, Material.IRON_BARS, "north=true,south=true");
+                end.box(a, a, h, h, 0, 1, h < 2 ? EMBER : Material.AIR);
+                end.set(a, h, -1, h % 3 == 0 ? GLOW : EMBER);
             }
-            for (double angle = 0; angle < Math.TAU; angle += Math.PI / 4) b.block(X + (int) Math.round(Math.cos(angle) * 4), 26, cz + (int) Math.round(Math.sin(angle) * 4), Material.LANTERN, "hanging=true");
+            for (int side : new int[]{-1, 1}) end.set(side * (half + 1), h, 3, h % 2 == 0 ? BRONZE : DRESSED);
+        }
+        end.box(-10, 10, 13, 14, 3, 3, GOLD);
+    }
+
+    /** Three thousand years: fallen stone along the foot of everything, and the floor broken where it's taken the weight. */
+    private static void ruin(BuildCanvas b) {
+        for (int x = FACE + 1; x <= END - 4; x++) for (int z = AXIS - HALF + 1; z <= AXIS + HALF - 1; z++) {
+            if (b.get(x, FLOOR, z) == Material.LAVA) continue;
+            if (noise(x, z, 706) < .04 && Math.abs(z - AXIS) > 6) b.block(x, FLOOR, z, Material.CRACKED_DEEPSLATE_TILES);
+            if (noise(z, x, 707) < .018 && Math.abs(z - AXIS) > 6 && CanopyKit.empty(b, x, FLOOR + 1, z)) b.block(x, FLOOR + 1, z, Material.COBBLED_DEEPSLATE_SLAB, "type=bottom");
         }
     }
 }
