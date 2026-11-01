@@ -49,7 +49,7 @@ final class ExpeditionCombatListener implements Listener {
             charged = swing != null && swing;
         }
         // A boon comes last of all, after gear and defence have had their say.
-        if (event.getEntity() instanceof LivingEntity enemy && run.tracks(enemy) && source instanceof Player) event.setDamage(event.getDamage() * run.boonDealt());
+        if (event.getEntity() instanceof LivingEntity enemy && run.tracks(enemy) && source instanceof Player) event.setDamage(event.getDamage() * run.boonDealt() * run.exposure(enemy.getUniqueId()));
         else if (event.getEntity() instanceof Player && source instanceof LivingEntity enemy && run.tracks(enemy)) event.setDamage(event.getDamage() * run.boonTaken());
         if (event.getEntity() instanceof LivingEntity enemy && run.tracks(enemy) && (source instanceof Player || run.isAlly(source)))
             run.enemyHit(source, enemy, event.getFinalDamage(), charged);

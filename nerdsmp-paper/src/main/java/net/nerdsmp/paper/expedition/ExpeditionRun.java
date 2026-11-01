@@ -105,6 +105,8 @@ final class ExpeditionRun {
     private final RunPacks packs;
     private final RoomMuster muster = new RoomMuster();
     private final Map<UUID, ExpeditionDefinition.Stance> stances = new HashMap<>();
+    private final Map<UUID, Integer> exposing = new HashMap<>();
+    private final Map<UUID, Long> exposedUntil = new HashMap<>();
     private RunLures lures;
     private RunPortals portals;
     /** Whether each sealed room's door is shut now. */
@@ -664,6 +666,9 @@ final class ExpeditionRun {
 
     double boonDealt() { return lures == null ? 1 : lures.dealt(); }
 
+    /** Double for a boss whose shield has just gone down. */
+    double exposure(java.util.UUID enemy) { return exposedUntil.getOrDefault(enemy, 0L) > System.currentTimeMillis() ? 2 : 1; }
+
     double boonTaken() { return lures == null ? 1 : lures.taken(); }
 
     void fished(org.bukkit.event.player.PlayerFishEvent event) {
@@ -755,6 +760,12 @@ final class ExpeditionRun {
                 shielded.setInvulnerable(false);
                 world.playSound(shielded.getLocation(), Sound.ITEM_SHIELD_BREAK, 1.2F, .8F);
                 broadcast("<yellow>The shield breaks!</yellow>");
+                Integer exposed = exposing.remove(entry.getKey());
+                if (exposed != null) {
+                    exposedUntil.put(entry.getKey(), System.currentTimeMillis() + exposed * 1000L);
+                    broadcast("<gold><bold>" + plainName(shielded) + " is exposed!</bold></gold> <gray>Everything you've got, now.</gray>");
+                    world.spawnParticle(Particle.CLOUD, shielded.getLocation().add(0, 2, 0), 120, 2, 2, 2, .2);
+                }
             }
             return true;
         });
@@ -1327,8 +1338,14 @@ final class ExpeditionRun {
             Set<UUID> ids = new HashSet<>();
             for (LivingEntity helper : helpers) ids.add(helper.getUniqueId());
             shields.put(caster.getUniqueId(), ids);
+            exposing.remove(caster.getUniqueId());
             caster.setInvulnerable(true);
             broadcast("<yellow>" + plainName(caster) + " is shielded!</yellow> <gray>Kill its helpers to break it.</gray>");
+        }
+
+        @Override public void shield(LivingEntity caster, List<LivingEntity> helpers, int exposedSeconds) {
+            shield(caster, helpers);
+            exposing.put(caster.getUniqueId(), exposedSeconds);
         }
 
         @Override public void temporary(Block block, Material type, int ticks) { stage.temporary(block, type, ticks); }

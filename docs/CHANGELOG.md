@@ -5,6 +5,21 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### The Sunken Aqueduct, rebuilt (November 1)
+- **A new map, up a drowned valley.** The Long Span carries the channel away from the quay on three tiers of Roman arches, past a
+  bastion, to the Pump House, a cathedral of beam engines and flywheels. Under it is the Cistern, a forest of columns beneath brick
+  vaults, then the Pressure Gallery, Floodgate Control, and the foot of the Great Dam, with the Tidewarden cut into its face in green
+  bronze, pouring an urn down her robes. Best times on the map reset.
+- **The water really rises.** The Cistern floods block by block while you hold out for the pumps, and it drains when they catch.
+  The Tidewarden's basin floods in the last third of her fight.
+- **New bosses.** Old Bess, a pump engine on piston legs, can't be hurt while her valve drones run, and takes double once they
+  stop. Chief Engineer Hollis feeds on his pressure tanks: break a valve in time, or the tank bursts and he gets stronger. The
+  Silt Mother, optional, down the bastion's west tower, binds two players together with roots and wakes the bed ring by ring.
+  The Tidewarden, in a body of water with a trident, throws geysers, stands in a waterspout until her witches are dead, and
+  sends a wave across the whole floor: get behind a bollard.
+- **New gear and more.** New drowned, 24 pieces of gear with a legendary from the Tidewarden, three secret companions, and a daily
+  from Engineer Cobb, who takes over from Brann.
+
 ### The Hall of the Three Wardens, rebuilt (November 1)
 - **A new map, on one axis.** You land low in the clouds and climb the Long Stair past two landings to the High Gate, between
   colossi of the Ember and Frost Wardens, with the Stone Warden in a great niche over the door. Behind the gate is the Hall of

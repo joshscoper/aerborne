@@ -107,16 +107,50 @@ mobs:
     ability: none
     mark-reward: 6
     equipment: {head: chainmail_helmet, hand: iron_shovel}
-  tidewarden:
-    name: "<gradient:#7ed6df:#130f40><bold>The Tidewarden</bold></gradient>"
+  old_bess:
+    rank: normal
+    name: "<gradient:#e0b050:#4f8a84><bold>Old Bess</bold></gradient>"
+    type: iron_golem
+    boss: true
+    health: 620
+    attack-damage: 8
+    scale: 2
+    speed: 0.2
+    ability: none
+    mark-reward: 90
+  chief_hollis:
+    rank: normal
+    name: "<gradient:#7ed6df:#2d3436><bold>Chief Engineer Hollis</bold></gradient>"
     type: drowned
     boss: true
-    health: 600
+    health: 640
+    attack-damage: 9
+    scale: 2.1
+    speed: 0.22
+    ability: none
+    mark-reward: 100
+    equipment: {head: iron_helmet, chest: iron_chestplate, hand: iron_shovel}
+  silt_mother:
+    rank: normal
+    name: "<gradient:#a3926b:#3c3a24><bold>The Silt Mother</bold></gradient>"
+    type: ravager
+    boss: true
+    health: 620
+    attack-damage: 9
+    scale: 1.3
+    speed: 0.22
+    ability: none
+    mark-reward: 110
+  tidewarden:
+    name: "<gradient:#7ed6df:#130f40><bold>The Tidewarden</bold></gradient>"
+    type: iron_golem
+    boss: true
+    health: 860
     attack-damage: 9
     scale: 2.2
+    speed: 0.2
     ability: none
     mark-reward: 140
-    equipment: {head: turtle_helmet, hand: trident}
 
   # Gloomforge Mines
   gloom_miner:
@@ -475,6 +509,61 @@ mobs:
     ability: none
     mark-reward: 3
     equipment: {head: leather_helmet, chest: leather_chestplate, hand: bow}
+  pump_wright:
+    rank: normal
+    name: "<#7fb5ad>Drowned Pumpwright</#7fb5ad>"
+    type: drowned
+    health: 30
+    attack-damage: 4
+    ability: none
+    mark-reward: 3
+    equipment: {head: leather_helmet, hand: lightning_rod}
+  silt_crawler:
+    rank: normal
+    name: "<#a3926b>Silt Crawler</#a3926b>"
+    type: spider
+    health: 28
+    attack-damage: 5
+    scale: 1.15
+    ability: none
+    mark-reward: 3
+  tide_witch:
+    rank: normal
+    name: "<#7ed6df>Tide Witch</#7ed6df>"
+    type: drowned
+    health: 60
+    attack-damage: 4
+    ability: none
+    mark-reward: 6
+    equipment: {head: turtle_helmet, hand: trident}
+  deep_guard:
+    rank: normal
+    name: "<#7ed6df>Deep Guard</#7ed6df>"
+    type: drowned
+    health: 70
+    attack-damage: 7
+    scale: 1.3
+    ability: none
+    mark-reward: 7
+    equipment: {head: iron_helmet, chest: iron_chestplate, hand: iron_sword}
+  valve_drone:
+    rank: normal
+    name: "<gold>Valve Drone</gold>"
+    type: copper_golem
+    health: 70
+    attack-damage: 3
+    scale: 1.6
+    ability: none
+    mark-reward: 5
+  pressure_valve:
+    rank: normal
+    name: "<gold>Pressure Valve</gold>"
+    type: copper_golem
+    health: 90
+    attack-damage: 1
+    scale: 1.4
+    ability: none
+    mark-reward: 3
   sluicehand:
     name: "<dark_aqua>Drowned Sluicehand</dark_aqua>"
     type: drowned

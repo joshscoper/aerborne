@@ -1124,6 +1124,24 @@ quests:
       xp: {hunting: 750}
       items: ["material:experience_bottle 3"]
 
+  daily_drowned_shift:
+    chain: daily_bounties
+    title: The Drowned Shift
+    giver: engineer_cobb
+    level: 1
+    repeat: daily
+    offer:
+      - "They were good crews, and they're still on shift. Somebody ought to send them home."
+      - "Sluicehands, wrights, whatever's come up out of the silt. I'll be at the foot of the dam, if you get there."
+    complete:
+      - "That's a day's shift stood down. The guild pays what it owes. It always has."
+    objectives:
+      - {type: kill, targets: ["custom:sluicehand", "custom:sluice_keeper", "custom:pump_wright", "custom:silt_crawler", "custom:tide_witch", "custom:deep_guard", "custom:bog_oracle"], count: 25, description: Stand down the drowned shift}
+    rewards:
+      marks: 200
+      xp: {hunting: 550}
+      items: ["material:experience_bottle 2"]
+
   daily_echoes_of_the_hall:
     chain: daily_bounties
     title: Echoes of the Hall

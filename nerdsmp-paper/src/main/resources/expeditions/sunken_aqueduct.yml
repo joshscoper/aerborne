@@ -1,7 +1,8 @@
-# The Sunken Aqueduct: a race through flooded waterworks. The clock is short, but every room you
-# clear adds time. Full reference: docs/EXPEDITIONS.md.
+# The Sunken Aqueduct: a race up the drowned valley, along the Long Span, through the Pump House and the flooded works
+# under it, to the foot of the Great Dam. The clock is short, but every room you clear adds time.
+# Full reference: docs/EXPEDITIONS.md.
 title: The Sunken Aqueduct
-description: The old waterworks are flooding and something drowned is turning the valves. Beat the rising water.
+description: The old waterworks are flooding and something drowned is turning the valves. Beat the rising water to the Great Dam.
 icon: prismarine_bricks
 dimension: overworld
 sample: sunken_aqueduct
@@ -9,163 +10,316 @@ published: true
 difficulty: 3
 level: 16
 party: {min: 1, max: 5}
-time-limit-minutes: 10
-spawn: [0, 64, 4, 0]
-exit: [0, 64, 121]
+time-limit-minutes: 14
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 2
+time: 23400
+spawn: [0, 64, -22, 0]
+exit: [0, 45, 252, 0]
 modifiers: []
 requires: [thornwood_canopy]
 goal: timed
-time-bonus-seconds: 120
+time-bonus-seconds: 150
+# The flood is cold and fast, and it's a long swim. The engineers' lines are the only way out of it.
+falls: {below: 31, damage: 3, message: "One of Cobb's lines finds you in the flood and hauls you out, half drowned."}
 
 npcs:
-  brann:
-    name: Engineer Brann
+  cobb:
+    name: Engineer Cobb
     entity: villager
-    at: [-3, 64, 9, 90]
+    at: [-4, 64, -20, 0]
+    # He offers the daily in content/world-quests.yml, and takes it back at the foot of the dam.
+    quests: engineer_cobb
     lines:
-      - "The whole works is flooding. You've got ten minutes, and every hall you clear buys you two more."
-      - "The sluice valves have to be turned in the right order. Watch the hall: the old mechanism lights them up."
-      - "The floodgates take counterweights. Throw anything heavy on the plates: blocks, tools, your lunch."
-      - "Whatever's down in the basin, it's been turning the valves. Drowned, but clever."
+      - "The whole works is flooding. You've got fourteen minutes, and every hall you clear buys you a little more."
+      - "Old Bess is still running in the Pump House. Nobody's stoking her. When the valve drones are on her she can't be touched, so stop the drones, then hit her with everything while she's wide open."
+      - "Under the pumps is the Cistern. When the water comes up, hold on. The pumps need a minute to catch."
+      - "The chief engineer went down to the Gallery the night the gates shut. If he's still down there, he isn't himself. When a tank starts to go, break its valve fast."
+      - "There's a stair down the west tower of the bastion, to the silt. I wouldn't. Something's been feeding down there."
+      - "When she calls the tide, get behind the bollards. That water won't go round you."
 
 campfires:
-  intake_fire: {at: [4, 64, 8], lit: true, title: Intake Fire}
-  pumphouse_stove: {at: [3, 64, 92], lit: false, title: Pumphouse Stove}
-
-setpieces:
-  sluice_water: {box: [4, 63, 14, 7, 63, 40], block: air, style: crumble}
+  head_fire: {at: [4, 64, -24], lit: true, title: "Cobb's Camp"}
+  bastion_fire: {at: [12, 64, 72], lit: false, title: The Bastion}
+  pump_fire: {at: [-22, 64, 139], lit: false, title: The Pump House}
+  gallery_fire: {at: [-9, 45, 222], lit: false, title: Floodgate Control}
 
 hazards:
-  cistern_geysers: {type: eruption, area: [-9, 63, 44, 9, 63, 64], every: 6, count: 3, damage: 4}
-  basin_geysers: {type: eruption, area: [-9, 63, 100, 9, 63, 118], every: 7, count: 3, damage: 5}
+  # The boilers vent along the drains in the Pump House floor.
+  steam_lanes:
+    type: lane
+    area: [-14, 63, 128, 14, 63, 150]
+    every: 11
+    count: 1
+    damage: 5
+    burn: 2
+    lanes: [[-14, 132, 14, 132], [14, 139, -14, 139], [-14, 146, 14, 146]]
+  # Every pulse brings the water up one more block through the Cistern. It drains when the pumps catch.
+  cistern_flood: {type: flood, area: [-32, 45, 112, 32, 48, 172], every: 13}
+  cistern_geysers: {type: eruption, area: [-30, 44, 114, 30, 44, 170], every: 7, count: 3, damage: 4}
+  gallery_rockfall: {type: rocks, area: [-14, 44, 178, 14, 44, 214], every: 8, count: 3, damage: 5}
+  basin_geysers: {type: eruption, area: [-24, 44, 252, 24, 44, 300], every: 8, count: 3, damage: 5}
+  basin_flood: {type: flood, area: [-28, 45, 249, 28, 46, 304], every: 30}
+  silt_fall: {type: rocks, area: [-60, 32, 38, -30, 32, 82], every: 8, count: 3, damage: 5}
+
+ambience:
+  - {sound: block.water.ambient, every: 9, volume: 0.6, pitch: 0.7}
+  - {sound: block.bubble_column.upwards_ambient, every: 16, volume: 0.5, pitch: 0.7, area: [-34, 42, 110, 34, 62, 174]}
+  - {sound: block.piston.extend, every: 7, volume: 0.25, pitch: 0.5, area: [-28, 62, 108, 28, 100, 174]}
+  - {sound: block.iron_door.close, every: 19, volume: 0.2, pitch: 0.5, area: [-18, 42, 174, 18, 66, 240]}
+  - {sound: weather.rain, every: 12, volume: 0.35, pitch: 0.6, area: [-40, 40, 246, 40, 130, 340]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
 outro:
-  - "The basin drains with a long sigh. Under the silt, the stones are scorched black."
-  - "Engineer Brann: 'Scorch marks. Under water. She wasn't mad: something is burning below. The miners at the Gloomforge will know more.'"
+  - "The Great Dam's gates drop home, the flood drains with a long sigh, and under the silt of the basin the stones are scorched black."
+  - "Engineer Cobb: 'Scorch marks. Under water. She wasn't mad: something is burning below. The miners at the Gloomforge will know more.'"
 
 cutscenes:
+  # The way the water runs, backwards: the span, the pumps, the dam.
   prologue:
-    - {at: [0.5, 67, 2, 0, 5], seconds: 5, title: "<aqua>The Sunken Aqueduct</aqua>", text: "<dark_aqua>Waterworks of the old keep</dark_aqua>", sound: "block.water.ambient", lines: ["|These waterworks carried cold water down to cool the forges beneath Cinder Keep.", "|Engineer Brann's guild kept them running for three hundred years."]}
-    - {at: [0.5, 68, 47, 0, 10], seconds: 5, fade: true, lines: ["brann|Then the Tidewarden sealed the floodgates and drowned the lower halls.", "brann|She says she's drowning a fire. There's no fire down here. Is there?"]}
-    - {at: [0.5, 67, 70, 0, 10], seconds: 4, lines: ["|The water is rising, and the clock with it. Every hall you clear buys a little more time."]}
+    - {at: [0.5, 70, -30, 0, -2], to: [0.5, 74, 6, 0, 0], seconds: 6, title: "<aqua>The Sunken Aqueduct</aqua>", text: "<dark_aqua>Waterworks of the old keep</dark_aqua>", sound: "block.water.ambient", lines: ["|These waterworks carried cold water down from the clouds, to cool the forges beneath Cinder Keep.", "|Engineer Cobb's guild kept them running for three hundred years."]}
+    - {at: [48.5, 46, 40, 150, -6], to: [40.5, 46, 58, 170, -8], seconds: 5, fade: true, lines: ["cobb|Then the Tidewarden sealed the floodgates and drowned the valley."]}
+    - {at: [0.5, 84, 214, 0, -14], to: [0.5, 92, 236, 0, -18], seconds: 6, fade: true, lines: ["cobb|She says she's drowning a fire. There's no fire down here. Is there?", "|The water is rising, and the clock with it. Every hall you clear buys a little more time."]}
+  bess_wakes:
+    - {at: [0.5, 72, 122, 0, 6], to: [0.5, 70, 126, 0, 4], seconds: 5, sound: "block.bell.use 0.5", lines: ["|One by one, with nobody at the doors, the boilers of the Pump House light themselves."]}
+    - {at: [0.5, 67, 129, 0, -8], to: [0.5, 67, 131, 0, -14], seconds: 4, title: "<gold>Old Bess</gold>", text: "<gray>Number One Engine, in steam for three hundred years</gray>", sound: "entity.iron_golem.repair 0.5", lines: ["|The guild never did decide whether she was a machine."]}
+  chief_wakes:
+    - {at: [0.5, 53, 180, 0, 4], to: [0.5, 52, 184, 0, 2], seconds: 5, title: "<dark_aqua>Chief Engineer Hollis</dark_aqua>", text: "<gray>He stayed at his post</gray>", sound: "block.iron_door.close 0.6", lines: ["Chief Engineer Hollis|Pressure's up. Pressure's holding. All hands. All hands to the valves.", "cobb|Hollis? Oh, no. Not you."]}
+  silt_wakes:
+    - {at: [-31, 42, 60, 90, 8], to: [-35, 40, 60, 90, 6], seconds: 5, title: "<dark_green>The Silt Mother</dark_green>", text: "<gray>Three hundred years of what came down the drains</gray>", sound: "entity.warden.dig 0.6", lines: ["|The mud breathes in."]}
   basin:
-    - {at: [0.5, 71, 99, 0, 28], seconds: 3, text: "<aqua>The Tidewarden's Basin</aqua>", sound: "block.water.ambient", lines: ["|The water stills. Something vast moves beneath it."]}
-    - {at: [0.5, 67, 104, 0, 10], seconds: 4, title: "<dark_aqua>The Tidewarden</dark_aqua>", text: "<gray>Keeper of the floodgates, drowning a fire only she can feel</gray>", sound: "entity.elder_guardian.curse 0.8", lines: ["The Tidewarden|Open the gates and let the embers breathe? Then you drown with them!"]}
+    - {at: [0.5, 52, 256, 0, -24], to: [0.5, 52, 262, 0, -34], seconds: 5, sound: "entity.elder_guardian.curse 0.6", lines: ["|Water stops running down the bronze of her statue. All of it, all at once."]}
+    - {at: [0.5, 60, 262, 0, 18], to: [0.5, 56, 268, 0, 6], seconds: 6, lines: ["|Behind the basin, the moat stands up."]}
+    - {at: [10, 57, 262, -20, -8], to: [9, 56, 264, -20, -12], seconds: 4, title: "<dark_aqua>The Tidewarden</dark_aqua>", text: "<gray>Keeper of the floodgates, drowning a fire only she can feel</gray>", sound: "entity.elder_guardian.ambient 0.8", lines: ["The Tidewarden|Open the gates and let the embers breathe? Then you drown with them!"]}
 
 mobs:
-  "custom:bog_oracle": {role: elite, abilities: [mend, poison_cloud]}
+  "custom:bog_oracle": {role: elite, abilities: [mend, poison_cloud], behavior: caster}
   "custom:sluicehand": {role: normal}
   "custom:sluice_keeper": {role: elite, abilities: [tether, frost_nova]}
+  "custom:pump_wright": {abilities: [bolt], behavior: caster}
+  "custom:silt_crawler": {abilities: [leap]}
+  "custom:tide_witch": {abilities: [frost_bolt], behavior: caster}
+  "custom:deep_guard": {role: elite, abilities: [cleave, charge]}
+  "custom:valve_drone": {abilities: [arc_bolt], behavior: caster}
+  "custom:pressure_valve": {abilities: []}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group.
+packs:
+  # The Long Span.
+  span_north: {at: [3, 64, 26], mobs: {"custom:sluicehand": 3, "custom:bog_oracle": 1}, aggro: 9}
+  span_walkers:
+    at: [3, 64, 34]
+    mobs: {"custom:sluicehand": 2, "custom:pump_wright": 1}
+    aggro: 8
+    patrol: [[3, 64, 34], [3, 64, 44]]
+  bastion_west: {at: [-11, 64, 66], mobs: {"custom:pump_wright": 2, "custom:sluicehand": 2}}
+  bastion_east: {at: [11, 64, 52], mobs: {"custom:sluice_keeper": 1, "custom:sluicehand": 2}}
+  span_south: {at: [3, 64, 84], mobs: {"custom:sluicehand": 3, "custom:pump_wright": 1}, aggro: 9}
+  span_end: {at: [-3, 64, 98], mobs: {"custom:sluice_keeper": 1, "custom:bog_oracle": 1}, aggro: 9}
+  # The foot of the stair, in the Cistern's dark.
+  cistern_stair: {at: [18, 45, 171], mobs: {"custom:sluicehand": 2, "custom:pump_wright": 1}, aggro: 7}
+  cistern_columns: {at: [4, 45, 165], mobs: {"custom:sluice_keeper": 1, "custom:sluicehand": 2}}
+  # The silt.
+  silt_flats: {at: [-36, 33, 72], mobs: {"custom:silt_crawler": 3}}
+  silt_reeds: {at: [-38, 33, 48], mobs: {"custom:silt_crawler": 3, "custom:bog_oracle": 1}}
+  # Beyond the Gallery.
+  control_door: {at: [-6, 45, 234], mobs: {"custom:deep_guard": 1, "custom:tide_witch": 1}, aggro: 7}
+  basin_walk: {at: [0, 45, 244], mobs: {"custom:deep_guard": 1, "custom:tide_witch": 2}, aggro: 7}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  sluice_crate: {at: [6, 64, 16], kind: crate, title: Sluice Crate}
-  cistern_strongbox: {at: [-9, 64, 64], kind: chest, title: Cistern Strongbox}
-  drowned_lockbox: {at: [8, 64, 86], kind: secret, title: Drowned Lockbox}
+  bastion_crate: {at: [14, 64, 52], kind: crate, title: Bastion Crate}
+  cistern_strongbox: {at: [-26, 45, 164], kind: chest, title: Cistern Strongbox}
+  drowned_lockbox: {at: [-66, 33, 60], kind: secret, title: Drowned Lockbox}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
+companion-drops:
+  pump_hall: {companion: pipling, chance: 0.01}
+  silt_bed: {companion: siltpup, chance: 0.02}
+  tidewardens_basin: {companion: tidelet, chance: 0.01}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-2, 64, 120]
-  bonus: [2, 64, 120]
+  free: [-2, 45, 258]
+  bonus: [2, 45, 258]
 
 rooms:
-  sluice_hall:
-    title: The Sluice Hall
-    region: [-8, 64, 14, 8, 70, 40]
-    checkpoint: [0, 64, 38, 0]
-    gate: [-1, 64, 41, 1, 66, 41]
-    points: [[-5, 64, 18], [0, 64, 22], [-5, 64, 30], [0, 64, 35], [-3, 64, 26]]
+  pump_hall:
+    title: The Pump House
+    region: [-26, 63, 112, 26, 96, 172]
+    requires-packs: [span_north, span_walkers, bastion_west, bastion_east, span_south, span_end]
+    seal: [-4, 64, 112, 4, 72, 112]
+    gate: [16, 64, 129, 20, 68, 129]
+    checkpoint: [0, 64, 116, 0]
+    # After her own spot, the four marks her valve drones run from.
+    points: [[0, 64, 139, 180], [-12, 64, 133], [12, 64, 133], [-12, 64, 145], [12, 64, 145]]
     puzzles:
       valves:
         type: sequence
         title: Turn the valves in order
-        blocks: [[-8, 65, 19], [-8, 65, 25], [-8, 65, 31]]
+        blocks: [[-25, 65, 124], [-25, 65, 137], [-25, 65, 150]]
         order: [2, 3, 1]
         show: true
     encounter:
-      type: waves
-      waves:
-        - {"custom:sluicehand": 3, "custom:bog_oracle": 1}
-        - {mobs: {"custom:sluicehand": 2, "custom:sluice_keeper": 1}, delay-seconds: 4}
+      type: boss
+      boss: custom:old_bess
+      body: old_bess
+      # The four boilers light in turn, the steam comes up, and she gets to her feet.
+      entrance: {style: stoked, seconds: 9, sources: [[-9, 64, 126], [9, 64, 126], [-9, 64, 152], [9, 64, 152]]}
+      boss-damage: 0.7
+      abilities: [drone_ward, slam, charge]
+      phases:
+        - {at: 50, abilities: [drone_ward, slam, charge, cleave], title: "Old Bess blows her safety valve"}
+      enrage-seconds: 280
       scripts:
-        start: ["say brann|Valves are on the west wall. Watch for the lights, then turn them in that order!"]
-        solved-valves: ["break sluice_water", "message <aqua>The channel drains with a roar.</aqua>"]
-        clear: ["say brann|Sluice is open. Two more minutes on the clock!"]
+        start: ["cutscene bess_wakes", "wait 10", "say cobb|She's still in steam! The drones keep her pressure up. Stop them, then hit her while she's open!"]
+        health-50: ["hazard start steam_lanes", "say cobb|She's venting! Watch the drains in the floor!"]
+        solved-valves: ["sound block.iron_door.open 0.7", "message <aqua>The last valve turns.</aqua>"]
+        clear: ["hazard stop steam_lanes", "npc cobb 22 64 120 0", "message <aqua>The stair gate lifts, and the works below open.</aqua>", "say cobb|She's stopped. Three hundred years. The stair down to the Cistern's in the east aisle."]
   cistern:
     title: The Cistern
-    region: [-10, 64, 43, 10, 72, 65]
-    checkpoint: [0, 64, 63, 0]
-    gate: [-1, 64, 66, 1, 66, 66]
-    points: [[-8, 64, 46], [8, 64, 46], [-8, 64, 62], [8, 64, 62], [0, 64, 54]]
+    region: [-32, 42, 112, 32, 61, 172]
+    requires: [pump_hall]
+    gate: [-2, 45, 174, 2, 50, 174]
+    checkpoint: [18, 45, 171, 0]
+    requires-packs: [cistern_stair, cistern_columns]
+    points: [[-22, 45, 124], [22, 45, 124], [-22, 45, 160], [0, 45, 142], [-5, 45, 120]]
     encounter:
       type: survive
-      survive-seconds: 50
+      survive-seconds: 55
       waves:
         - {"custom:sluicehand": 3}
-        - {mobs: {"custom:bog_oracle": 1, "custom:sluicehand": 2}, delay-seconds: 10}
+        - {mobs: {"custom:bog_oracle": 1, "custom:sluicehand": 2}, delay-seconds: 12}
+        - {mobs: {"custom:sluice_keeper": 1, "custom:pump_wright": 1}, delay-seconds: 14}
       scripts:
-        start: ["title <aqua>Hold the cistern|<gray>The pumps need fifty seconds</gray>", "hazard start cistern_geysers"]
-        timer-35: ["message <yellow>Fifteen seconds! The pumps are catching!</yellow>"]
-        clear: ["hazard stop cistern_geysers"]
+        start: ["title <aqua>Hold the Cistern|<gray>The pumps need a minute</gray>", "say cobb|She's opened the inlets! Hold on, the pumps need a minute to catch!", "hazard start cistern_flood", "hazard start cistern_geysers"]
+        timer-40: ["message <yellow>Fifteen seconds! The pumps are catching!</yellow>"]
+        clear: ["hazard stop cistern_flood", "hazard stop cistern_geysers", "npc cobb 0 45 170 0", "say cobb|There they go! South door's open."]
+  pressure_gallery:
+    title: The Pressure Gallery
+    region: [-16, 42, 176, 16, 64, 216]
+    requires: [cistern]
+    seal: [-2, 45, 176, 2, 50, 176]
+    gate: [-2, 45, 217, 2, 50, 217]
+    checkpoint: [0, 45, 180, 0]
+    # After his own spot, the valves on the four great tanks.
+    points: [[0, 45, 196, 180], [-7, 45, 184], [7, 45, 184], [-7, 45, 208], [7, 45, 208]]
+    encounter:
+      type: boss
+      boss: custom:chief_hollis
+      entrance: {style: rise, delay: 2, seconds: 4}
+      boss-level-bonus: 1
+      boss-damage: 0.75
+      abilities: [overpressure, heavy_blow, tether]
+      phases:
+        - {at: 50, abilities: [overpressure, heavy_blow, tether, frost_nova], title: "Hollis opens every line"}
+      enrage-seconds: 300
+      adds-at-health: [60]
+      waves:
+        - {"custom:pump_wright": 2, "custom:sluicehand": 2}
+      scripts:
+        start: ["cutscene chief_wakes", "wait 6", "say cobb|Those valves! Break one when it starts to go, or the whole tank goes to him!"]
+        health-50: ["hazard start gallery_rockfall", "say Chief Engineer Hollis|All hands! All hands!"]
+        clear: ["hazard stop gallery_rockfall", "say cobb|Rest easy, chief. I'll see the gates shut."]
   floodgate_control:
     title: Floodgate Control
-    region: [-9, 64, 68, 9, 70, 88]
-    checkpoint: [0, 64, 86, 0]
-    gate: [-1, 64, 89, 1, 66, 89]
-    points: [[-6, 64, 71], [6, 64, 71], [-5, 64, 84], [5, 64, 84], [0, 64, 78]]
+    region: [-12, 42, 220, 12, 58, 238]
+    requires: [pressure_gallery]
+    gate: [-2, 45, 240, 2, 50, 240]
+    checkpoint: [0, 45, 222, 0]
+    points: [[-8, 45, 233], [8, 45, 233], [-8, 45, 224], [8, 45, 224], [0, 45, 230]]
     puzzles:
       counterweights:
         type: plates
         title: Weigh down both floodgate plates
-        blocks: [[-6, 65, 75], [6, 65, 75]]
-        supply: [3, 64, 71]
+        blocks: [[-6, 46, 227], [6, 46, 227]]
+        supply: [3, 45, 222]
     encounter:
       type: clear
       waves:
         - {"custom:sluice_keeper": 2, "custom:bog_oracle": 1, "custom:sluicehand": 2}
       scripts:
-        start: ["say brann|Throw anything on those plates. Both of them have to stay down!"]
-        clear: ["say brann|The floodgate's up! Stoke the pumphouse stove; the basin's right after."]
+        start: ["say cobb|Throw anything on those plates. Both of them have to stay down!"]
+        clear: ["npc cobb 8 45 224 0", "say cobb|The gate's up! Light the fire, and then it's her. Good luck, friends."]
+  silt_bed:
+    title: The Silt Bed
+    optional: true
+    # Open from the start: the stair is right there on the span, and the clock is the only reason not to.
+    requires: []
+    region: [-80, 28, 26, -26, 64, 94]
+    requires-packs: [silt_flats, silt_reeds]
+    seal: [-26, 33, 57, -26, 38, 63]
+    checkpoint: [-31, 33, 60, 90]
+    points: [[-46, 33, 60, 90], [-38, 33, 50], [-38, 33, 70], [-52, 33, 44], [-52, 33, 76]]
+    encounter:
+      type: boss
+      boss: custom:silt_mother
+      entrance: {style: erupt, seconds: 6}
+      boss-damage: 0.75
+      abilities: [mudslide, slam, binding_vines]
+      phases:
+        - {at: 50, abilities: [mudslide, slam, binding_vines, awaken_silt], title: "The whole bed is awake"}
+      enrage-seconds: 240
+      adds-at-health: [60]
+      waves:
+        - {"custom:silt_crawler": 4}
+      scripts:
+        start: ["cutscene silt_wakes", "wait 7", "say cobb|What did I say? WHAT did I say?"]
+        health-50: ["hazard start silt_fall"]
+        clear: ["hazard stop silt_fall", "say cobb|You went down there and killed it. On purpose. I'd like that noted in the guild records, and I'd like it noted that I said not to."]
   tidewardens_basin:
     title: The Tidewarden's Basin
-    region: [-12, 64, 97, 12, 74, 122]
-    points: [[0, 64, 110], [-7, 64, 103], [7, 64, 103], [-7, 64, 116], [7, 64, 116]]
+    region: [-30, 42, 248, 30, 96, 306]
+    requires: [pump_hall, cistern, pressure_gallery, floodgate_control]
+    seal: [-3, 45, 247, 3, 49, 247]
+    checkpoint: [0, 45, 252, 0]
+    points: [[0, 45, 276, 180], [-12, 45, 268], [12, 45, 268], [-12, 45, 286], [12, 45, 286]]
     encounter:
       type: boss
       boss: custom:tidewarden
+      body: tidewarden
+      # The moat under the dam stands up in a column, with her in it, and carries her to the middle of the apron.
+      entrance: {style: spout, delay: 1, seconds: 14, sources: [[0, 44, 308, 180]]}
       boss-level-bonus: 3
-      abilities: [tether, frost_nova]
+      boss-damage: 0.8
+      abilities: [geyser, tether, tidal_wave]
       phases:
-        - {at: 50, abilities: [tether, meteor, summon], title: "The tide turns"}
-      enrage-seconds: 240
-      adds-at-health: [70, 35]
+        # At each of these she goes up in a waterspout and stays there until her witches are dead.
+        - {at: 66, abilities: [waterspout], title: "The Tidewarden calls her witches"}
+        - {at: 60, abilities: [geyser, tether, tidal_wave, frost_nova], title: "The tide turns"}
+        - {at: 33, abilities: [waterspout], title: "The Tidewarden calls the deep"}
+        - {at: 28, abilities: [geyser, tether, tidal_wave, frost_nova, meteor], title: "The dam begins to give"}
+      enrage-seconds: 360
       waves:
-        - {"custom:sluicehand": 3}
-        - {"custom:sluice_keeper": 1, "custom:sluicehand": 2}
+        - {"custom:tide_witch": 3}
       scripts:
-        start:
-          - "cutscene basin"
-          - "wait 7"
-          - "say The Tidewarden|The water was here first. It will be here last."
-        health-50: ["hazard start basin_geysers", "say The Tidewarden|Rise!"]
-        clear: ["hazard stop basin_geysers", "say brann|The water's going down! Out through the back, quick."]
+        start: ["cutscene basin", "wait 15", "say The Tidewarden|The water was here first. It will be here last."]
+        health-60: ["hazard start basin_geysers", "say The Tidewarden|Rise!"]
+        health-28: ["hazard start basin_flood", "say cobb|She's opening the sluices! The bollards! Get behind the bollards!"]
+        clear: ["hazard stop basin_geysers", "hazard stop basin_flood", "npc cobb 0 45 256 0", "say cobb|The water's going down! Look at the stones. Look at the stones."]
 
 guide:
-  lore: "The aqueduct was built to carry cold water down from the clouds to the forges beneath Cinder Keep, cooling the stone that holds Pyrrhax asleep. Engineer Brann's guild has kept it running for three centuries. When the Tidewarden, the aqueduct's ancient keeper, felt the deep stone warming, she sealed the floodgates and drowned the lower halls to smother the heat. Brann thinks she has gone mad. The truth is worse."
-  overview: A timed run through flooding waterworks. You start with ten minutes and each cleared room adds two. Turn the valves, hold the cistern, weigh down the floodgates and face the Tidewarden.
+  lore: "The aqueduct was built to carry cold water down from the clouds to the forges beneath Cinder Keep, cooling the stone that holds Pyrrhax asleep. Engineer Cobb's guild has kept it running for three centuries. When the Tidewarden, the aqueduct's ancient keeper, felt the deep stone warming, she sealed the floodgates and drowned the valley to smother the heat. Cobb thinks she has gone mad. The truth is worse."
+  overview: A timed run up a drowned valley. Cross the Long Span, stop Old Bess in the Pump House, hold the Cistern while it floods, get past the chief engineer in the Pressure Gallery, weigh down the floodgates and face the Tidewarden at the foot of the Great Dam. A stair down the bastion's west tower leads to the Silt Bed, if you have the time.
   tips:
-    - The clock is the danger. Don't wait for stragglers; push room to room.
-    - Watch the Sluice Hall when you enter. The valves light up in the order to turn them; a wrong one resets the sequence.
-    - Floodgate plates need weight. Throw blocks or spare items onto them; a dropped item keeps a plate down.
-    - Bog Oracles heal their friends. Hit them hard while they channel to interrupt the heal.
+    - The clock is the danger. You start with fourteen minutes and every cleared room adds more, so don't wait for stragglers.
+    - Old Bess can't be hurt while her valve drones run. When the last one stops she takes double for twelve seconds, so save your big hits for then.
+    - In the Pump House, watch the valves light up in order on the west wall. A wrong one resets the sequence.
+    - The Cistern floods block by block. Keep moving, and step out of the rings.
+    - Throw anything onto the floodgate plates. A dropped item keeps a plate down.
+    - Bog Oracles heal their friends. Hit them hard while they channel to stop the heal.
+    - The bollards in the Tidewarden's basin are there for a reason. Water doesn't go through stone.
   rooms:
-    sluice_hall: Drowned and a Bog Oracle, then a Sluice Keeper. Turn the three valves in the order shown.
-    cistern: Survive fifty seconds while geysers burst from the floor; step out of the orange rings.
+    pump_hall: Old Bess, a pump engine on piston legs. She calls four valve drones and can't be hurt until they stop, then she's open for twelve seconds. Below half, steam vents along the floor. Turn the three valves in the order shown to open the stair.
+    cistern: Hold a minute while the water rises, geysers burst and the drowned keep coming.
+    pressure_gallery: Chief Engineer Hollis. When a tank's valve starts to go, break it within ten seconds, or the tank bursts, hits the whole party and makes him stronger. It stacks.
     floodgate_control: Sluice Keepers chain and freeze you. Weigh down both plates with counterweights from the supply crate.
-    tidewardens_basin: The Tidewarden, a moat of water and geysers in the second half.
-  boss: The Tidewarden chains players to it and freezes anyone close. At two-thirds and one-third health drowned pour in. Below half it drops a crushing wave on one player (share it with them to split the damage), calls helpers, and geysers burst from the floor.
+    silt_bed: Optional. The Silt Mother drags a line of mud through someone, binds two players with roots so they have to stay close, and in the second half wakes the bed ring by ring.
+    tidewardens_basin: The Tidewarden, at the foot of the Great Dam. See the boss briefing.
+  boss: The Tidewarden throws geysers under people and chains them to her. Her Tidal Wave crosses the whole floor, so get behind a bollard. At two-thirds and one-third she stands in a waterspout and can't be hurt until her witches are dead. In the last third the sluices open and the basin floods.
 loot:
-  marks: 220
+  marks: 240
   items: {prismarine_shard: 12, heart_of_the_sea: 1, experience_bottle: 4}

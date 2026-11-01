@@ -1,15 +1,18 @@
 {
-  "version": "11567598e8faf980",
-  "width": 763,
-  "height": 1029,
-  "entrance": {"x": 50.0, "y": 11.2},
+  "version": "89df458db2748aee",
+  "width": 1039,
+  "height": 1400,
+  "entrance": {"x": 50.2, "y": 14.1},
   "pins": [
-    {"name": "The Tidewarden", "room": "The Tidewarden's Basin", "icon": "wave", "color": "#c65642", "optional": false, "x": 50.0, "y": 83.3}
+    {"name": "Old Bess", "room": "The Pump House", "icon": "shield", "color": "#c65642", "optional": false, "x": 50.2, "y": 50.6},
+    {"name": "Chief Engineer Hollis", "room": "The Pressure Gallery", "icon": "wave", "color": "#e2a030", "optional": false, "x": 50.2, "y": 63.5},
+    {"name": "The Silt Mother", "room": "The Silt Bed", "icon": "shield", "color": "#9668b6", "optional": true, "x": 36.1, "y": 32.7},
+    {"name": "The Tidewarden", "room": "The Tidewarden's Basin", "icon": "shield", "color": "#5482a8", "optional": false, "x": 50.2, "y": 81.6}
   ],
   "places": [
-    {"name": "The Sluice Hall", "kind": "room", "x": 50.0, "y": 26.9},
-    {"name": "The Cistern", "kind": "room", "x": 50.0, "y": 45.2},
-    {"name": "Floodgate Control", "kind": "room", "x": 50.1, "y": 61.6},
-    {"name": "Pumphouse Stove", "kind": "fire", "x": 52.8, "y": 71.1}
+    {"name": "The Cistern", "kind": "room", "x": 50.3, "y": 51.3},
+    {"name": "Floodgate Control", "kind": "room", "x": 50.2, "y": 70.9},
+    {"name": "The Bastion", "kind": "fire", "x": 53.8, "y": 35.4},
+    {"name": "The Pump House", "kind": "fire", "x": 43.4, "y": 50.6}
   ]
 }

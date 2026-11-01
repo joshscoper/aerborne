@@ -38,7 +38,7 @@ class SampleTemplatesTest {
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
-    private static final java.util.Set<String> LINEAR = java.util.Set.of("cinder_keep", "sunken_aqueduct");
+    private static final java.util.Set<String> LINEAR = java.util.Set.of("cinder_keep");
 
     @Test void everyStandingSpotHasFloorAndHeadroom() {
         List<String> problems = new java.util.ArrayList<>();
@@ -191,6 +191,10 @@ class SampleTemplatesTest {
     @Test void theMinesCamerasStayClearOfWalls() { camerasStayClearOfWalls("gloomforge_mines"); }
 
     @Test void theHallsCamerasStayClearOfWalls() { camerasStayClearOfWalls("hall_of_wardens"); }
+
+    @Test void theAqueductsCamerasStayClearOfWalls() { camerasStayClearOfWalls("sunken_aqueduct"); }
+
+    @Test void theAqueductCanBeWalkedFromTheHeadToTheDam() { canBeWalked("sunken_aqueduct"); }
 
     @Test void theMinesCanBeWalkedFromTheTopToTheForge() { canBeWalked("gloomforge_mines"); }
 

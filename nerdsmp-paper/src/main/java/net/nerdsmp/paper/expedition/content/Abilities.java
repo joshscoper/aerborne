@@ -75,6 +75,14 @@ public final class Abilities {
         add("eye_of_the_void", "Eye of the Void", "Eyes open in the air and cast until they're killed.", 30);
         add("black_harvest", "Black Harvest", "Rings of black run out across the floor, each with one gap. Stand in the gap.", 40);
         add("void_step", "Void Step", "Steps through nothing three times, and each spot it leaves bursts a moment later.", 22);
+        add("drone_ward", "Drone Ward", "Calls valve drones to run the pumps. It can't be hurt until they're all stopped, and then it takes double for a while.", 45);
+        add("geyser", "Geyser", "A marked circle under someone bursts a few seconds later and throws everyone in it into the air.", 8);
+        add("waterspout", "Waterspout", "Stands in a column of water and calls its guard. Nothing gets through it until they're dead, and it throws back anyone close.", 90);
+        add("tidal_wave", "Tidal Wave", "A wall of water crosses the whole floor. Get behind something solid.", 26);
+        add("overpressure", "Overpressure", "A tank's valve starts to go. Break it in time, or the tank bursts, hits everyone and makes it stronger.", 16);
+        add("binding_vines", "Binding Vines", "Roots tie two players together. Pull too far apart and they drag you back and bite.", 22);
+        add("mudslide", "Mudslide", "A long line of mud down a marked path. Step off it.", 11);
+        add("awaken_silt", "Awaken the Silt", "Rings burst one after another. Move to ground that's already gone off.", 24);
         add("sigil_brand", "Sigil Brand", "Everyone is branded with a seal. Reach that seal's plate before the brand burns in, or be found unworthy.", 26);
         add("spore_burst", "Spore Burst", "It bursts as it dies, and a cloud of spores hangs where it fell. Step away from the body.", 0);
     }

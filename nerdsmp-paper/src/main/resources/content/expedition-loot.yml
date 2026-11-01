@@ -30,6 +30,12 @@ expeditions:
     materials: [tidepearl, sluice_cog, tidewardens_scale]
     gear: [tidebound_helm, tidebound_cuirass, tidebound_greaves, tidebound_boots, sluicebreaker_trident]
     signatures: [tidewardens_trident]
+    finds: [gatekeepers_roundel, plumb_line_pendant, span_walkers_pauldrons, oilskin_cape, gasket_cuffs, wrench_callus_gloves, tool_loop_belt, guild_washer, brass_float]
+    bosses:
+      pump_hall: [stokers_bracers, boilerplate_girdle, beam_engine_greaves, safety_valve, flywheel_maul]
+      pressure_gallery: [chiefs_gauntlets, pressure_collar, boilerplate_girdle, guild_chain]
+      silt_bed: [siltscale_helm, rootbind_band, mudwalkers]
+      tidewardens_basin: [tidebound_mantle, dam_keepers_ring, floodgate_bulwark, urn_of_the_dam, tidewardens_trident]
   gloomforge_mines:
     materials: [gloomsteel_ore, blasting_powder, foremans_lamp]
     gear: [gloomforged_helm, gloomforged_plate, gloomforged_greaves, gloomforged_boots, gloomforged_pick]

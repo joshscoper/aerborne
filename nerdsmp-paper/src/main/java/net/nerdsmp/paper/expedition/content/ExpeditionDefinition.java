@@ -197,7 +197,7 @@ public record ExpeditionDefinition(
      * A {@code GUST} blows along one of its {@code lanes}, pushing anyone in {@code area} without cover.
      */
     public enum HazardType {
-        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL, BROOD, BURNDOWN, GUST, CARTS;
+        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL, BROOD, BURNDOWN, GUST, CARTS, FLOOD;
 
         public boolean usesRoom() { return ordinal() >= LANE.ordinal(); }
     }
@@ -441,7 +441,7 @@ public record ExpeditionDefinition(
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
     /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
-    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM, HOIST, POWDER, ERUPT, FORGED, COLOSSUS, PLUNGE, ICEBOUND, CONVERGE }
+    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM, HOIST, POWDER, ERUPT, FORGED, COLOSSUS, PLUNGE, ICEBOUND, CONVERGE, STOKED, SPOUT }
 
     /** A boss's powers while it's nearer this spot than any other stance: fight it on the wrong side of the room at your cost. */
     public record Stance(Point at, String title, List<String> abilities) {

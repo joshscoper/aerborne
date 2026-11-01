@@ -662,6 +662,94 @@ final class RunActs {
         if (tick == length - 12) body.stance(0, 0);
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Old Bess: the boilers are lit one by one, the steam comes up, and she stands.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double FIRED = .5, STANDS = .78;
+
+    void stoked(List<Display> set, LivingEntity boss, MoltenBody body, Location home, List<Location> boilers, int tick, int length) {
+        double done = tick / (double) length;
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            boss.teleport(home);
+            body.eyes(false);
+            body.stance(-.6F, 3.4F);
+            world.playSound(home, Sound.BLOCK_ANVIL_LAND, 1.4F, .5F);
+        }
+        for (int index = 0; index < boilers.size(); index++) {
+            double from = FIRED * (index + 1) / boilers.size();
+            if (done < from) continue;
+            Location at = boilers.get(index).clone().add(0, 10, 0);
+            world.spawnParticle(Particle.CLOUD, at, 6, .6, .3, .6, .08);
+            world.spawnParticle(Particle.LARGE_SMOKE, at, 3, .4, .3, .4, .05);
+            if (tick == (int) (length * from)) {
+                world.playSound(at, Sound.BLOCK_FIRE_EXTINGUISH, 2F, .5F);
+                world.playSound(at, Sound.BLOCK_BELL_RESONATE, 2F, .6F + index * .1F);
+            }
+        }
+        if (tick % 10 == 0 && done < STANDS) world.playSound(home, Sound.BLOCK_PISTON_EXTEND, 1.6F, .5F + (float) done * .5F);
+        if (done >= FIRED && done < STANDS) {
+            double up = eased((done - FIRED) / (STANDS - FIRED));
+            body.stance((float) (-.6F + up * 2.8F), (float) ((1 - up) * 3.4F));
+            world.spawnParticle(Particle.CLOUD, home.clone().add(0, 1, 0), 16, 3, .4, 3, .1);
+        }
+        if (tick == (int) (length * STANDS)) {
+            body.eyes(true);
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, home, 2, 2, .4, 2, 0);
+            world.spawnParticle(Particle.CLOUD, home.clone().add(0, 3, 0), 200, 6, 3, 6, .25);
+            world.playSound(home, Sound.ENTITY_IRON_GOLEM_REPAIR, 2F, .5F);
+            world.playSound(home, Sound.ENTITY_RAVAGER_ROAR, 1.6F, .6F);
+            shockwave(set, home.clone().subtract(0, .02, 0), Material.WAXED_WEATHERED_COPPER, 20, 14);
+        }
+        if (tick == length - 12) body.stance(0, 0);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The Tidewarden: the water stands up out of the moat, with her in it, and walks to the middle of the basin.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double SWELLS = .3, CARRIES = .72;
+
+    void spout(List<Display> set, LivingEntity boss, MoltenBody body, Location home, Location moat, int tick, int length) {
+        double done = tick / (double) length;
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            body.eyes(false);
+            body.stance(2.4F, 0);
+            set.add(box(moat, Material.LIGHT_BLUE_STAINED_GLASS, -5, 0, -5, 10, .2F, 10, 15));
+            set.add(box(moat, Material.BLUE_STAINED_GLASS, -3, 0, -3, 6, .2F, 6, 15));
+            for (Display column : set) named.put("column" + set.indexOf(column), column);
+            world.playSound(moat, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 3F, .5F);
+        }
+        Location at = moat.clone().add(home.toVector().subtract(moat.toVector()).multiply(eased(clamp((done - SWELLS) / (CARRIES - SWELLS)))));
+        double high = 22 * (done < CARRIES ? clamp(done / SWELLS) : 1 - (done - CARRIES) / (1 - CARRIES));
+        for (Display column : set.subList(0, Math.min(2, set.size()))) {
+            column.teleport(at);
+            Transformation now = column.getTransformation();
+            move(column, new Transformation(now.getTranslation(), now.getLeftRotation(), new Vector3f(now.getScale().x, (float) high, now.getScale().z), new Quaternionf()), 2);
+        }
+        Location top = at.clone().add(0, Math.max(0, high - 3), 0);
+        top.setYaw(facing(moat, home));
+        boss.teleport(top);
+        world.spawnParticle(Particle.SPLASH, at.clone().add(0, high, 0), 40, 3, .5, 3, 0);
+        world.spawnParticle(Particle.BUBBLE_COLUMN_UP, at.clone().add(0, 1, 0), 20, 3, 4, 3, .1);
+        if (tick % 8 == 0) world.playSound(at, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 3F, .6F);
+        if (tick == (int) (length * CARRIES)) {
+            body.eyes(true);
+            world.playSound(home, Sound.ENTITY_GENERIC_SPLASH, 3F, .6F);
+        }
+        if (tick == length - 16) {
+            boss.teleport(home);
+            body.stance(2.2F, 0);
+            world.spawnParticle(Particle.SPLASH, home.clone().add(0, 1, 0), 320, 8, 1, 8, .4);
+            world.playSound(home, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 3F, .6F);
+            world.playSound(home, Sound.ENTITY_ELDER_GUARDIAN_AMBIENT, 3F, .6F);
+            shockwave(set, home.clone().subtract(0, .02, 0), Material.LIGHT_BLUE_STAINED_GLASS, 26, 14);
+        }
+        if (tick == length - 4) body.stance(0, 0);
+    }
+
     private static float facing(Location from, Location to) {
         return (float) Math.toDegrees(Math.atan2(-(to.getX() - from.getX()), to.getZ() - from.getZ()));
     }

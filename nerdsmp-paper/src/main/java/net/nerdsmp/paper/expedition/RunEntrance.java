@@ -58,7 +58,7 @@ final class RunEntrance {
     }
 
     private static final Set<EntranceStyle> ACTS = Set.of(EntranceStyle.HOIST, EntranceStyle.POWDER, EntranceStyle.ERUPT, EntranceStyle.FORGED, EntranceStyle.COLOSSUS,
-        EntranceStyle.PLUNGE, EntranceStyle.ICEBOUND, EntranceStyle.CONVERGE);
+        EntranceStyle.PLUNGE, EntranceStyle.ICEBOUND, EntranceStyle.CONVERGE, EntranceStyle.STOKED, EntranceStyle.SPOUT);
 
     private static final double DEPTH = 3, BODY = 3.6;
     private static final int LOOSE_BONES = 14, WISP_TICKS = 24, FLIGHT_TICKS = 8, CIRCLE_PLATES = 18;
@@ -291,6 +291,8 @@ final class RunEntrance {
             case PLUNGE -> acts.plunge(set, boss, home, marks.getFirst(), tick, length);
             case ICEBOUND -> acts.icebound(set, boss, home, marks, tick, length);
             case CONVERGE -> acts.converge(set, boss, host.body(boss), home, marks, tick, length);
+            case STOKED -> acts.stoked(set, boss, host.body(boss), home, marks, tick, length);
+            case SPOUT -> acts.spout(set, boss, host.body(boss), home, marks.getFirst(), tick, length);
             default -> { }
         }
     }

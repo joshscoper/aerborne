@@ -60,6 +60,8 @@ public final class AbilityCaster {
         default LivingEntity target(LivingEntity caster) { return null; }
         /** Spawns a mob that doesn't move, tracked by the room, or null if it can't. */
         default LivingEntity fixture(String mob, Location at) { return null; }
+        /** Shields as {@link #shield}, then leaves the caster taking double for this long when it breaks. */
+        default void shield(LivingEntity caster, List<LivingEntity> helpers, int exposedSeconds) { shield(caster, helpers); }
         /** The room's marked spots, past the boss's own. */
         default List<Location> marks() { return List.of(); }
     }
@@ -73,6 +75,8 @@ public final class AbilityCaster {
     private static final int SPEAR_STANDS = 50, BLADE_TICKS = 18, CHASE_STEPS = 28, BRAND_STEPS = 16;
     private static final double WELL_PULL = 11, WELL_CORE = 3, RIFT_RADIUS = 2.6, BOND_APART = 14, HARVEST_GAP = .28, STEP_BURST = 4.5;
     private static final int RIFT_PULSES = 16, HARVEST_TICKS = 120, HARVEST_SPACE = 26;
+    private static final double GEYSER_RADIUS = 3.2, SPOUT_REACH = 5, WAVE_REACH = 34, VINE_REACH = 10, SLIDE_REACH = 26, SILT_BURST = 4.5;
+    private static final int EXPOSED_SECONDS = 12, PRESSURE_STEPS = 20;
     private static final String[] ECHOES = {"custom:echo_of_ember", "custom:echo_of_frost", "custom:echo_of_stone"};
     private static final org.bukkit.Color[] SEALS = {Telegraph.FIRE, Telegraph.FROST, Telegraph.POISON};
     private static final String[] SEAL_NAMES = {"<gold><bold>Branded by Ember!</bold></gold> <gray>Reach the fire plate.</gray>",
@@ -147,6 +151,14 @@ public final class AbilityCaster {
             case "eye_of_the_void" -> voidEyes(caster, arena);
             case "black_harvest" -> blackHarvest(caster, arena, power);
             case "void_step" -> voidStep(caster, arena, power);
+            case "drone_ward" -> droneWard(caster, arena);
+            case "geyser" -> geyser(caster, arena, targets, power);
+            case "waterspout" -> waterspout(caster, arena, power);
+            case "tidal_wave" -> tidalWave(caster, arena, power);
+            case "overpressure" -> overpressure(caster, arena, power);
+            case "binding_vines" -> bindingVines(caster, arena, targets, power);
+            case "mudslide" -> mudslide(caster, arena, targets, power);
+            case "awaken_silt" -> awakenSilt(caster, arena, targets, power);
             default -> false;
         };
     }
@@ -1041,6 +1053,212 @@ public final class AbilityCaster {
                 caster.getWorld().playSound(left, Sound.ENTITY_GENERIC_EXPLODE, .8F, 1.4F);
                 for (Player player : arena.near(left, STEP_BURST)) hit(player, caster, 4 * power);
             });
+        }, () -> { });
+        return true;
+    }
+
+    /** Valve drones on their marks. While they run she can't be touched, and when the last one stops she's wide open. */
+    private boolean droneWard(LivingEntity caster, Arena arena) {
+        List<Location> marks = arena.marks();
+        if (marks.size() < 4) return false;
+        hold(caster, 30);
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_BELL_USE, 2F, .6F);
+        List<LivingEntity> drones = new ArrayList<>();
+        for (Location mark : marks.subList(0, 4)) {
+            LivingEntity drone = arena.fixture("custom:valve_drone", mark);
+            if (drone != null) drones.add(drone);
+        }
+        if (drones.isEmpty()) return false;
+        arena.shield(caster, drones, EXPOSED_SECONDS);
+        return true;
+    }
+
+    /** Water under someone's feet, a few seconds' warning, then a column that throws everyone close into the air. */
+    private boolean geyser(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location spot = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        hold(caster, 10);
+        repeat(caster, arena, 10, 5, tick -> {
+            Telegraph.disc(spot, GEYSER_RADIUS, Telegraph.FROST);
+            caster.getWorld().spawnParticle(Particle.BUBBLE_POP, spot.clone().add(0, .3, 0), 16, 1.6, .1, 1.6, .02);
+        }, () -> {
+            caster.getWorld().spawnParticle(Particle.SPLASH, spot.clone().add(0, 3, 0), 200, 1.4, 3, 1.4, .3);
+            caster.getWorld().playSound(spot, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 2F, .7F);
+            for (Player player : arena.near(spot, GEYSER_RADIUS)) {
+                hit(player, caster, 4 * power);
+                player.setVelocity(new Vector(0, 1.1, 0));
+            }
+        });
+        return true;
+    }
+
+    /** She draws the water up round her and calls her guard. Nothing gets through it until they're dead. */
+    private boolean waterspout(LivingEntity caster, Arena arena, double power) {
+        Location center = caster.getLocation();
+        hold(caster, 30);
+        caster.getWorld().playSound(center, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 2.4F, .6F);
+        List<LivingEntity> guard = arena.summon(caster, 3);
+        if (guard.isEmpty()) return false;
+        arena.shield(caster, guard);
+        repeat(caster, arena, 240, 5, tick -> {
+            if (!caster.isInvulnerable()) return;
+            caster.getWorld().spawnParticle(Particle.SPLASH, center.clone().add(0, 3, 0), 40, 2.5, 4, 2.5, .2);
+            caster.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, center.clone().add(0, 1, 0), 24, 2, 3, 2, .1);
+            Telegraph.ring(center, SPOUT_REACH, Telegraph.FROST);
+            for (Player player : arena.near(center, SPOUT_REACH)) {
+                player.setVelocity(player.getLocation().toVector().subtract(center.toVector()).setY(0).normalize().multiply(.9).setY(.35));
+                if (tick % 4 == 0) hit(player, caster, power);
+            }
+        }, () -> { });
+        return true;
+    }
+
+    /** A wall of water crosses the whole floor. Anything solid between you and it will do; nothing else will. */
+    private boolean tidalWave(LivingEntity caster, Arena arena, double power) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        double angle = random.nextInt(4) * Math.PI / 2 + Math.PI / 4;
+        Vector along = new Vector(Math.cos(angle), 0, Math.sin(angle));
+        Location start = caster.getLocation().subtract(along.clone().multiply(WAVE_REACH));
+        for (Player player : arena.near(caster.getLocation(), 45)) bar(player, "<aqua><bold>The tide is coming!</bold></aqua> <gray>Get behind something solid.</gray>");
+        hold(caster, 40);
+        caster.getWorld().playSound(start, Sound.WEATHER_RAIN_ABOVE, 3F, .5F);
+        Vector across = new Vector(-along.getZ(), 0, along.getX());
+        repeat(caster, arena, 8, 5, tick -> {
+            for (double offset = -WAVE_REACH; offset <= WAVE_REACH; offset += 3)
+                caster.getWorld().spawnParticle(Particle.SPLASH, start.clone().add(across.clone().multiply(offset)).add(0, 1, 0), 6, .6, .6, .6, .1);
+        }, () -> {
+            Quaternionf turn = new Quaternionf().rotateY((float) (-angle + Math.PI / 2));
+            BlockDisplay wave = caster.getWorld().spawn(start, BlockDisplay.class, display -> {
+                display.setBlock(Material.LIGHT_BLUE_STAINED_GLASS.createBlockData());
+                display.setPersistent(false);
+                display.setTeleportDuration(1);
+                display.setViewRange(4F);
+                display.setBrightness(new Display.Brightness(14, 14));
+                display.setTransformation(new Transformation(new Vector3f((float) -WAVE_REACH, 0, -.5F), turn, new Vector3f((float) WAVE_REACH * 2, 5, 1.6F), new Quaternionf()));
+            });
+            Set<UUID> struck = new HashSet<>();
+            int[] tick = {0};
+            Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                double reach = tick[0]++ * 1.1;
+                if (!arena.live() || reach > WAVE_REACH * 2) {
+                    wave.remove();
+                    task.cancel();
+                    return;
+                }
+                Location front = start.clone().add(along.clone().multiply(reach));
+                wave.teleport(front);
+                caster.getWorld().spawnParticle(Particle.SPLASH, front.clone().add(0, 4, 0), 30, across.getX() * 14, .4, across.getZ() * 14, .1);
+                for (Player player : arena.near(caster.getLocation(), 45)) {
+                    Vector to = player.getLocation().toVector().subtract(front.toVector());
+                    if (Math.abs(to.dot(along)) > 1.3 || sheltered(player, along) || !struck.add(player.getUniqueId())) continue;
+                    hit(player, caster, 8 * power);
+                    player.setVelocity(along.clone().multiply(1.3).setY(.5));
+                }
+            }, 0L, 1L);
+        });
+        return true;
+    }
+
+    /** Something solid within a few blocks upwind of a player, at knee or chest height. */
+    private static boolean sheltered(Player player, Vector along) {
+        Location at = player.getLocation();
+        for (double back = 1; back <= 5; back += .5) for (double up : new double[]{.5, 1.5}) if (at.clone().subtract(along.clone().multiply(back)).add(0, up, 0).getBlock().isSolid()) return true;
+        return false;
+    }
+
+    /** A tank at the end of its strength. Shut the valve on it in time, or everything in it goes to him. */
+    private boolean overpressure(LivingEntity caster, Arena arena, double power) {
+        List<Location> tanks = arena.marks();
+        if (tanks.isEmpty()) return false;
+        Location tank = tanks.stream().min(Comparator.comparingDouble(spot -> spot.distanceSquared(caster.getLocation()))).orElseThrow();
+        LivingEntity valve = arena.fixture("custom:pressure_valve", tank);
+        if (valve == null) return false;
+        for (Player player : arena.near(tank, 40)) bar(player, "<gold><bold>Overpressure!</bold></gold> <gray>Break the valve before it blows.</gray>");
+        caster.getWorld().playSound(tank, Sound.BLOCK_BELL_USE, 2F, 1.4F);
+        repeat(caster, arena, PRESSURE_STEPS, 5, tick -> {
+            if (!valve.isValid()) return;
+            caster.getWorld().spawnParticle(Particle.CLOUD, tank.clone().add(0, 3, 0), 10 + tick, .6, 1, .6, .1);
+            if (tick % 4 == 0) caster.getWorld().playSound(tank, Sound.BLOCK_FIRE_EXTINGUISH, 1.4F, .6F + tick * .02F);
+        }, () -> {
+            if (!valve.isValid() || valve.isDead()) {
+                caster.getWorld().playSound(tank, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 2F, .6F);
+                return;
+            }
+            valve.remove();
+            caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, tank, 1, 0, 0, 0, 0);
+            caster.getWorld().spawnParticle(Particle.CLOUD, tank.clone().add(0, 2, 0), 200, 4, 2, 4, .25);
+            caster.getWorld().playSound(tank, Sound.ENTITY_GENERIC_EXPLODE, 2F, .7F);
+            for (Player player : arena.near(tank, 40)) hit(player, caster, 3 * power);
+            PotionEffect now = caster.getPotionEffect(PotionEffectType.STRENGTH);
+            caster.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 2400, now == null ? 0 : Math.min(3, now.getAmplifier() + 1)));
+        });
+        return true;
+    }
+
+    /** Roots tie two players together. Stay close and they only bite; pull away and they drag you back. */
+    private boolean bindingVines(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        if (targets.size() < 2) return false;
+        List<Player> pair = new ArrayList<>(targets);
+        java.util.Collections.shuffle(pair);
+        Player one = pair.get(0), two = pair.get(1);
+        for (Player player : List.of(one, two)) bar(player, "<dark_green><bold>Bound by the roots!</bold></dark_green> <gray>Stay near " + player(player == one ? two : one) + ".</gray>");
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_ROOTS_PLACE, 2F, .5F);
+        repeat(caster, arena, 32, 5, tick -> {
+            if (!one.isOnline() || !two.isOnline() || one.getWorld() != two.getWorld()) return;
+            Telegraph.line(one.getLocation().add(0, 1, 0), two.getLocation().add(0, 1, 0), Telegraph.POISON);
+            double apart = one.getLocation().distance(two.getLocation());
+            if (tick % 4 == 0) for (Player player : List.of(one, two)) hit(player, caster, power * .5);
+            if (apart <= VINE_REACH) return;
+            Vector pull = two.getLocation().toVector().subtract(one.getLocation().toVector()).setY(0).normalize().multiply(.9).setY(.25);
+            one.setVelocity(pull);
+            two.setVelocity(pull.clone().multiply(-1).setY(.25));
+            hit(one, caster, power);
+            hit(two, caster, power);
+        }, () -> { });
+        return true;
+    }
+
+    /** A long tongue of mud down a marked line from the caster, through whoever it's picked. */
+    private boolean mudslide(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        Location from = caster.getLocation().add(0, .2, 0);
+        Vector along = target.getLocation().toVector().subtract(from.toVector()).setY(0);
+        if (along.lengthSquared() < 1) return false;
+        along.normalize();
+        Location end = from.clone().add(along.clone().multiply(SLIDE_REACH));
+        hold(caster, 26);
+        caster.getWorld().playSound(from, Sound.BLOCK_MUD_BREAK, 2F, .5F);
+        repeat(caster, arena, 5, 5, tick -> Telegraph.line(from, end, Telegraph.POISON), () -> {
+            for (double reach = 0; reach < SLIDE_REACH; reach += 1) Telegraph.shards(from.clone().add(along.clone().multiply(reach)), 6, .6, Material.MUD);
+            caster.getWorld().playSound(from, Sound.BLOCK_MUD_BREAK, 2F, .7F);
+            for (Player player : arena.near(from.clone().add(along.clone().multiply(SLIDE_REACH / 2)), SLIDE_REACH)) {
+                Vector to = player.getLocation().toVector().subtract(from.toVector()).setY(0);
+                double on = to.dot(along), off = to.clone().subtract(along.clone().multiply(on)).length();
+                if (on < 0 || on > SLIDE_REACH || off > 2.2) continue;
+                hit(player, caster, 5 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+            }
+        });
+        return true;
+    }
+
+    /** The silt wakes in rings, one after another, and only the ground that's already gone off is safe. */
+    private boolean awakenSilt(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        List<Location> spots = new ArrayList<>();
+        for (int index = 0; index < 5; index++) {
+            Location near = targets.get(index % targets.size()).getLocation();
+            spots.add(near.add(random.nextDouble(-7, 7), 0, random.nextDouble(-7, 7)));
+        }
+        hold(caster, 60);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_WARDEN_DIG, 2F, .6F);
+        repeat(caster, arena, 25, 4, tick -> {
+            int going = tick / 5;
+            for (int index = going; index < spots.size(); index++) Telegraph.ring(spots.get(index), SILT_BURST, Telegraph.POISON);
+            if (tick % 5 != 4) return;
+            Location spot = spots.get(going);
+            Telegraph.shards(spot, 40, 3, Material.MUD);
+            caster.getWorld().playSound(spot, Sound.BLOCK_MUD_BREAK, 2F, .6F);
+            for (Player player : arena.near(spot, SILT_BURST)) hit(player, caster, 3.5 * power);
         }, () -> { });
         return true;
     }

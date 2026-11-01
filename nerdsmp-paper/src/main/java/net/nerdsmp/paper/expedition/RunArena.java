@@ -78,6 +78,9 @@ final class RunArena {
         void log(String line);
     }
 
+    private final Map<String, Integer> floodLevel = new java.util.HashMap<>();
+    private final List<Block> flooded = new ArrayList<>();
+
     private static final long TICK = 10;
     /** Blocks a lane's front covers each tick. */
     private static final double LANE_SPEED = 1.3, LANE_WIDTH = 3.2;
@@ -156,6 +159,7 @@ final class RunArena {
 
     /** A wipe: pools dry up, fires and fallen chandeliers go back, and any ward ends with its boss. */
     void reset() {
+        drain();
         endWard();
         for (String device : List.copyOf(pools.keySet())) light(device, true);
         pools.clear();
@@ -206,8 +210,33 @@ final class RunArena {
             case BURNDOWN -> ignite(hazard);
             case GUST -> gust(hazard);
             case CARTS -> carts(hazard);
+            case FLOOD -> flood(hazard);
             default -> { }
         }
+    }
+
+    /** One more layer of water over the room, every open block of it, up to the top of the area. */
+    private void flood(Hazard hazard) {
+        var area = hazard.area();
+        int y = area.minY() + floodLevel.merge(hazard.id(), 1, Integer::sum) - 1;
+        if (y > area.maxY()) return;
+        World world = host.world();
+        org.bukkit.block.data.BlockData water = Material.WATER.createBlockData("[level=0]");
+        for (int x = area.minX(); x <= area.maxX(); x++) for (int z = area.minZ(); z <= area.maxZ(); z++) {
+            Block block = world.getBlockAt(x, y, z);
+            if (!block.getType().isAir()) continue;
+            block.setBlockData(water, false);
+            flooded.add(block);
+        }
+        host.broadcast("<aqua>The water's rising!</aqua>");
+        for (Player player : host.online()) player.playSound(player.getLocation(), Sound.BLOCK_WATER_AMBIENT, 2F, .6F);
+    }
+
+    /** Everything a flood put in the room goes out again. */
+    private void drain() {
+        for (Block block : flooded) if (block.getType() == Material.WATER) block.setType(Material.AIR, false);
+        flooded.clear();
+        floodLevel.clear();
     }
 
     private void lanes(Hazard hazard) {
@@ -552,6 +581,7 @@ final class RunArena {
 
     /** A vigil's script stopped it: the candles it snuffed come back, and their pools dry up. Sacs and fires stop where they are. */
     void stopped(Hazard hazard) {
+        if (hazard.type() == ExpeditionDefinition.HazardType.FLOOD) drain();
         swelling.keySet().removeIf(id -> broods.get(id) == hazard);
         burning.keySet().removeIf(hazard.sections()::contains);
         for (var entry : List.copyOf(pools.entrySet()))

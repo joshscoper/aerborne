@@ -425,3 +425,45 @@ inkling:
     - { block: PEARLESCENT_FROGLIGHT, at: [-1.2, 6.8, 2.6], size: [1, 1, 0.2], glow: true, group: head }
     - { block: PEARLESCENT_FROGLIGHT, at: [1.2, 6.8, 2.6], size: [1, 1, 0.2], glow: true, group: head }
     - { block: GOLD_BLOCK, at: [0, 9, 0], size: [3, 0.5, 3], group: head }
+pipling:
+  bounce: trot
+  pivots:
+    head: [0, 8, 0]
+  parts:
+    - { block: WAXED_OXIDIZED_COPPER, at: [0, 5, 0], size: [5, 5, 4.4] }
+    - { block: POLISHED_BLACKSTONE, at: [0, 6, 0], size: [5.2, 0.5, 4.6] }
+    - { block: GOLD_BLOCK, at: [0, 5, 2.3], size: [2, 2, 0.2] }
+    - { block: SHROOMLIGHT, at: [0, 4.8, 2.45], size: [1.2, 0.8, 0.1], glow: true }
+    - { block: POLISHED_BLACKSTONE, at: [0, 8.8, -0.6], size: [1.4, 2.4, 1.4], group: head }
+    - { block: GOLD_BLOCK, at: [0, 10.2, -0.6], size: [1.8, 0.4, 1.8], group: head }
+    - { block: IRON_BLOCK, at: [-1.6, 1.4, 0], size: [0.8, 2.8, 0.8], group: leg_a }
+    - { block: IRON_BLOCK, at: [1.6, 1.4, 0], size: [0.8, 2.8, 0.8], group: leg_b }
+siltpup:
+  bounce: trot
+  pivots:
+    head: [0, 5, 3]
+  parts:
+    - { block: MUD, at: [0, 4, 0], size: [5, 3.4, 7] }
+    - { block: PACKED_MUD, at: [0, 5.8, -1], size: [4, 0.8, 4] }
+    - { block: MUD, at: [0, 5, 4.2], size: [4, 3, 3], group: head }
+    - { block: MOSS_BLOCK, at: [0, 6.8, 4], size: [3, 0.6, 2.4], group: head }
+    - { block: OCHRE_FROGLIGHT, at: [-1.1, 5.4, 5.8], size: [0.6, 0.6, 0.2], glow: true, group: head }
+    - { block: OCHRE_FROGLIGHT, at: [1.1, 5.4, 5.8], size: [0.6, 0.6, 0.2], glow: true, group: head }
+    - { block: MUD, at: [-1.8, 1.2, 2.2], size: [1.3, 2.4, 1.3], group: leg_a }
+    - { block: MUD, at: [1.8, 1.2, -2.2], size: [1.3, 2.4, 1.3], group: leg_a }
+    - { block: MUD, at: [1.8, 1.2, 2.2], size: [1.3, 2.4, 1.3], group: leg_b }
+    - { block: MUD, at: [-1.8, 1.2, -2.2], size: [1.3, 2.4, 1.3], group: leg_b }
+tidelet:
+  bounce: none
+  pivots:
+    head: [0, 8, 0]
+  parts:
+    - { block: LIGHT_BLUE_STAINED_GLASS, at: [0, 5, 0], size: [5, 3, 5], glow: true }
+    - { block: BLUE_STAINED_GLASS, at: [0, 3, 0], size: [3.4, 2, 3.4], glow: true }
+    - { block: LIGHT_BLUE_STAINED_GLASS, at: [0, 1.6, 0], size: [1.8, 1.4, 1.8], glow: true }
+    - { block: LIGHT_BLUE_STAINED_GLASS, at: [0, 8, 0], size: [3.6, 3, 3.6], glow: true, group: head }
+    - { block: SEA_LANTERN, at: [-0.9, 8.4, 1.9], size: [0.7, 0.7, 0.2], glow: true, group: head }
+    - { block: SEA_LANTERN, at: [0.9, 8.4, 1.9], size: [0.7, 0.7, 0.2], glow: true, group: head }
+    - { block: GOLD_BLOCK, at: [0, 10, 0], size: [2.6, 0.4, 2.6], group: head }
+    - { block: BLUE_STAINED_GLASS, at: [0, 6.6, -2.2], size: [2.4, 1.6, 1.2], glow: true }
+    - { block: LIGHT_BLUE_STAINED_GLASS, at: [0, 5.6, -3.2], size: [1.4, 1.2, 1], glow: true }

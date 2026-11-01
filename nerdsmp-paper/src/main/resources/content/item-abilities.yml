@@ -34,6 +34,15 @@ abilities:
   molten_heart_stone: [ember_aura]
   deep_foremans_cuirass: [last_stand]
   gloomforge_signet: [ember_aura]
+  # The Sunken Aqueduct.
+  safety_valve: [last_stand]
+  flywheel_maul: [thunderclap]
+  guild_chain: [ember_aura]
+  mudwalkers: [fleet_stride]
+  tidebound_mantle: [last_stand]
+  dam_keepers_ring: [ember_aura]
+  floodgate_bulwark: [last_stand]
+  urn_of_the_dam: [ember_aura]
   # The Hall of the Three Wardens.
   orreks_horn: [last_stand]
   gale_treads: [fleet_stride]
@@ -763,6 +772,245 @@ items:
     stats: {max-health: 8, damage-percent: 4}
     lore:
       - "<gray>It turns slowly in the hand, always toward the Keep.</gray>"
+  gatekeepers_roundel:
+    material: shield
+    name: "<green>Gatekeeper's Roundel</green>"
+    slot: off_hand
+    rarity: uncommon
+    item-level: 16
+    stats: {defense: 5}
+    lore:
+      - "<gray>A sluice cover, with a handle bolted on.</gray>"
+  plumb_line_pendant:
+    material: string
+    name: "<green>Plumb Line Pendant</green>"
+    slot: neck
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>It always knows which way is down.</gray>"
+  span_walkers_pauldrons:
+    material: leather
+    name: "<green>Span-Walker's Pauldrons</green>"
+    slot: shoulders
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Salt-stained, and a little too big.</gray>"
+  oilskin_cape:
+    material: phantom_membrane
+    name: "<green>Oilskin Cape</green>"
+    slot: back
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>It keeps off everything but the flood.</gray>"
+  gasket_cuffs:
+    material: iron_nugget
+    name: "<green>Gasket Cuffs</green>"
+    slot: wrists
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Cut from a seal that held for two hundred years.</gray>"
+  wrench_callus_gloves:
+    material: rabbit_hide
+    name: "<green>Wright's Gloves</green>"
+    slot: hands
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {defense: 2, damage-flat: 1}
+    lore:
+      - "<gray>Worn through at exactly the same place on both thumbs.</gray>"
+  tool_loop_belt:
+    material: leather
+    name: "<green>Tool-Loop Belt</green>"
+    slot: waist
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {defense: 2}
+    lore:
+      - "<gray>Every loop stretched to the shape of something now lost.</gray>"
+  guild_washer:
+    material: iron_nugget
+    name: "<green>Guild Washer</green>"
+    slot: ring
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {max-health: 2, damage-percent: 1}
+    lore:
+      - "<gray>A steel washer, with an apprentice's name scratched on the inside.</gray>"
+  brass_float:
+    material: gold_nugget
+    name: "<green>Brass Float</green>"
+    slot: trinket
+    rarity: uncommon
+    item-level: 16
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>It only ever comes up.</gray>"
+  stokers_bracers:
+    material: iron_nugget
+    name: "<blue>Stoker's Bracers</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 18
+    sockets: 1
+    stats: {defense: 3, max-health: 2}
+    lore:
+      - "<gray>Scorched to the elbow.</gray>"
+  boilerplate_girdle:
+    material: leather
+    name: "<blue>Boilerplate Girdle</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 18
+    sockets: 1
+    stats: {defense: 3, max-health: 2}
+    lore:
+      - "<gray>Riveted, and it means it.</gray>"
+  beam_engine_greaves:
+    material: iron_leggings
+    name: "<blue>Beam-Engine Greaves</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 18
+    sockets: 1
+    stats: {defense: 6}
+    lore:
+      - "<gray>They rise and fall on their own a little.</gray>"
+  safety_valve:
+    material: gold_ingot
+    name: "<light_purple>Old Bess's Safety Valve</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 19
+    sockets: 2
+    stats: {max-health: 4, damage-percent: 2}
+    lore:
+      - "<gray>It lifted, once. Nobody who saw it stayed to tell why.</gray>"
+  flywheel_maul:
+    material: iron_axe
+    name: "<light_purple>Flywheel Maul</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 19
+    sockets: 2
+    stats: {damage: 7, damage-percent: 2}
+    lore:
+      - "<gray>Slow to get going. So was she.</gray>"
+  chiefs_gauntlets:
+    material: rabbit_hide
+    name: "<blue>Chief's Gauntlets</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 19
+    sockets: 1
+    stats: {defense: 3, damage-flat: 2}
+    lore:
+      - "<gray>He checked every valve himself, every night.</gray>"
+  pressure_collar:
+    material: gold_nugget
+    name: "<blue>Pressure Collar</blue>"
+    slot: neck
+    rarity: rare
+    item-level: 19
+    sockets: 1
+    stats: {max-health: 5, damage-percent: 1}
+    lore:
+      - "<gray>It's still reading.</gray>"
+  guild_chain:
+    material: gold_ingot
+    name: "<light_purple>Chain of the Water Guild</light_purple>"
+    slot: shoulders
+    rarity: epic
+    item-level: 20
+    sockets: 2
+    stats: {defense: 5, damage-percent: 2}
+    lore:
+      - "<gray>Three hundred years of chiefs, and his name is the last link.</gray>"
+  siltscale_helm:
+    material: turtle_helmet
+    name: "<blue>Siltscale Helm</blue>"
+    slot: head
+    rarity: rare
+    item-level: 19
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>Something grew it. Better not to ask what for.</gray>"
+  rootbind_band:
+    material: gold_nugget
+    name: "<blue>Rootbind Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 19
+    sockets: 1
+    stats: {max-health: 4, defense: 1}
+    lore:
+      - "<gray>It tightens if you walk away.</gray>"
+  mudwalkers:
+    material: leather_boots
+    name: "<light_purple>Mudwalkers</light_purple>"
+    slot: feet
+    rarity: epic
+    item-level: 20
+    sockets: 2
+    stats: {defense: 4, max-health: 3}
+    lore:
+      - "<gray>The mud lets go of these, and only these.</gray>"
+  tidebound_mantle:
+    material: prismarine_shard
+    name: "<light_purple>Mantle of the Tide</light_purple>"
+    slot: back
+    rarity: epic
+    item-level: 20
+    sockets: 2
+    stats: {max-health: 7, defense: 2}
+    lore:
+      - "<gray>Always a little wet.</gray>"
+  dam_keepers_ring:
+    material: gold_nugget
+    name: "<light_purple>Dam-Keeper's Ring</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 20
+    sockets: 2
+    stats: {max-health: 4, damage-percent: 3}
+    lore:
+      - "<gray>She wore it through three hundred years of drowning.</gray>"
+  floodgate_bulwark:
+    material: shield
+    name: "<light_purple>Floodgate Bulwark</light_purple>"
+    slot: off_hand
+    rarity: epic
+    item-level: 20
+    sockets: 2
+    stats: {defense: 7, max-health: 2}
+    lore:
+      - "<gray>A section of the gate itself. Nothing got past it either.</gray>"
+  urn_of_the_dam:
+    material: heart_of_the_sea
+    name: "<gold>Urn of the Great Dam</gold>"
+    slot: trinket
+    rarity: legendary
+    item-level: 21
+    sockets: 3
+    stats: {max-health: 6, damage-percent: 3}
+    lore:
+      - "<gray>However far you carry it, it's never quite empty.</gray>"
   rangers_roundel:
     material: shield
     name: "<green>Ranger's Roundel</green>"

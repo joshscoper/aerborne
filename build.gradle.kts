@@ -24,6 +24,8 @@ subprojects {
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        // Every sample map's plan stays cached for the whole run, and they're big.
+        maxHeapSize = "2g"
         testLogging {
             events("passed", "skipped", "failed")
         }

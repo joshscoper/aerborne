@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class HighcrownContentTest {
     private static final UUID WORLD = UUID.fromString("eeed88d5-e3d0-4b13-a7d4-6cb36df3ae86");
     /** Quest givers who stand inside an expedition, listed by its file rather than the world's NPCs. */
-    private static final Set<String> EXPEDITION_GIVERS = Set.of("sexton_pell", "ranger_ilsa", "old_miner_hesk", "archivist_vell");
+    private static final Set<String> EXPEDITION_GIVERS = Set.of("sexton_pell", "ranger_ilsa", "old_miner_hesk", "archivist_vell", "engineer_cobb");
 
     @Test
     void packZonesAreValidZoneDefinitions() throws IOException {

@@ -145,7 +145,7 @@ and other members need only be allowed into the expedition itself.
 | `first_flight` | The Wardens' Road at sunset, level 2 (tutorial) | 1–5 | The Landing → The Trial Path (cross the islets, Cloudlings) → Trial's End (campfire) → The Guardian Yard (3 waves, a Stonebound Keeper) → The Rune Gate (3 levers) → The Final Test (The Old Sentinel: slam, gusts below 66%, Cinderlings at 50%, frost below 33%) |
 | `hollow_barrow` | Overworld crypt, level 8, rooms | 1–5 | Crypt Gallery (2 waves, Veil Stalker elites) → Ossuary (survive 45 s under bone rain) → Lever Vault (Barrow Warden mini-boss + four levers in the candles' order) → antechamber brazier → King's Rest (The Hollow Huntsman: cleave, summon; below 50% slam, tether, falling masonry) |
 | `thornwood_canopy` | Treetops at night, level 12, forces (80) | 1–5 | Rootgate → Low Boughs → the Fork (hub) → east: Signal Boughs (four boards lower the span), then optional Verrin's Perch (boss in the wind) → west: Silk Walk, then the Briar Matron's Nest (boss; breaks open a catwalk) → the climb → Heart Gate → Thornheart Grove (The Thornheart Shaman) |
-| `sunken_aqueduct` | Flooded waterworks, level 16, timed (10 min, +2 min per room) | 1–5 | Sluice Hall (waves + three valves in the shown order, which drain the channel) → Cistern (survive 50 s, geysers) → Floodgate Control (clear + two counterweight plates) → Pumphouse Stove → Tidewarden's Basin (The Tidewarden: tether, frost nova; below 50% meteor, summon, geysers) |
+| `sunken_aqueduct` | Drowned valley at dawn, level 16, timed | 1–5 | The Long Span → the Pump House (Old Bess, three valves) → the Cistern (hold a minute while it floods) → the Pressure Gallery (Chief Engineer Hollis) → Floodgate Control (two plates) → the Tidewarden at the foot of the Great Dam. Optional: the Silt Mother, down the bastion's west tower |
 | `gloomforge_mines` | Five levels down, level 20, forces | 1–5 | The Pithead → the Upper Galleries → the Gullet (a terraced pit) → Grell's Shaft (Overseer Grell, falling loads) → the Mainline (waves, carts, refuges) → the Ore Line (the Blastmaster, carts on seven tracks) → the Round Foundry (waves + three dampers) → the Slag Pits (optional, the Slag Hound) → the Gloomforge (the Deep Foreman, in the great hall of a dwarven forge-palace cut into the cliff) |
 | `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | The Long Stair → the High Gate (Thane Orrek) → the Hall of Seals, then three wings in any order: the Ash Court (the Keepers, four brazier targets) → Ember Throne; the Rime Stacks (four chimes in the shown order) → Frost Throne; the Court of Kings (four kings, three plates) → Stone Throne. With all three seals broken, a portal over the dais leads to the Unwritten, and Oriveth |
 | `cinder_keep` | **Raid**: Nether (basalt deltas), level 26 | 2–8 | Scorched Descent (clear) → Gorrak's Kiln (Gorrak the Kilnbreaker; opens the Cinder Shelf) → Slagfalls (3 waves, falling slag) → Hound Pens (Skarn and Vesh, linked) → Rune Galleries (clear + three rune valves) → Slag Chapel (Vael, the Slag Priest) → Great Bellows (survive 75 s, vents) → Steward's Hall (Steward Ashkar and his guard; raises the causeway) → Molten Heart (Pyrrhax, the Ashen Sovereign) |
@@ -634,14 +634,19 @@ npcs:
   let loose once every camera is back, and a second attempt takes a second with no wait. Time a
   scene around it. The acts each take their own marks in `sources`: `plunge` a perch the boss stands on,
   sounds its horn and steps off; `icebound` the spots the cold runs in from, closing on a pillar of ice
-  that splits open; `converge` three plates that throw beams up to where the boss comes down.
+  that splits open; `converge` three plates that throw beams up to where the boss comes down; `stoked` the boilers that
+  light in turn before it gets to its feet; `spout` the water the boss rises from and is carried in on.
 - **Stances.** `stances: [{at: [x, y, z], title: The Rite of Ash, abilities: [fire_pools]}]` on a boss
   encounter gives it the powers of whichever spot it stands nearest, and the room is told when it
   changes, so the party chooses where to fight it.
 - **Boons.** `boon: {title: Warden's Favour, damage: 12, guard: 5, speed: 1, fireproof: true}` on a room
   leaves that on the whole party until the run ends, once the room is cleared. Several stack.
-- **Bodies.** `body: colossus` or `body: unwritten` on an encounter hides the boss and hangs that
+- **Bodies.** `body: colossus`, `unwritten`, `old_bess` or `tidewarden` on an encounter hides the boss and hangs that
   display-entity figure on it. `converge` and `colossus` entrances need one.
+- **Rising water.** `type: flood` on a hazard fills its `area` one layer at a time, every `every` seconds, from the bottom up.
+  Stopping the hazard, or a wipe, drains all of it.
+- **Exposed bosses.** The `drone_ward` ability calls `custom:valve_drone` fixtures onto the room's marks. The boss can't be hurt
+  while they run, and takes double for twelve seconds when the last one stops.
 - **Portals.** `portals: {id: {title: ..., at: [x, y, z], to: [x, y, z, yaw], radius: 3, room: far_room, requires: [rooms], feeds: [[x, y, z]], opens: [script lines]}}`
   draws a tear in particles once every room in `requires` is cleared, runs `opens`, and takes anyone who walks into it to
   `to` until `room` is won. `feeds` are spots whose streams run into it. Nothing is built, so it needs no blocks.

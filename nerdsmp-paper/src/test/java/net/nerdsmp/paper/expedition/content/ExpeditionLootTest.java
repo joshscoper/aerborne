@@ -120,6 +120,10 @@ class ExpeditionLootTest {
         assertEquals(Set.of("grells_shaft", "ore_line", "slag_pits", "the_gloomforge", "the_molten_deep"), mines.getKeys(false));
         for (String room : mines.getKeys(false)) for (String item : mines.getStringList(room))
             assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
+        var aqueduct = loot.getConfigurationSection("expeditions.sunken_aqueduct.bosses");
+        assertEquals(Set.of("pump_hall", "pressure_gallery", "silt_bed", "tidewardens_basin"), aqueduct.getKeys(false));
+        for (String room : aqueduct.getKeys(false)) for (String item : aqueduct.getStringList(room))
+            assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
         var hall = loot.getConfigurationSection("expeditions.hall_of_wardens.bosses");
         assertEquals(Set.of("high_gate", "ember_court", "ember_throne", "frost_throne", "stone_throne", "the_unwritten"), hall.getKeys(false));
         for (String room : hall.getKeys(false)) for (String item : hall.getStringList(room))

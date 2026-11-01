@@ -14,7 +14,7 @@ class CosmeticCatalogTest {
     @Test void matchesTheWebsiteCatalog() {
         assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip"),
             catalog.companions().stream().filter(companion -> companion.source() == null).map(CosmeticCatalog.Companion::slug).toList());
-        assertEquals(List.of("rattlebones", "weepling", "hollow-hound", "silkling", "thistlewing", "sproutling", "windpip", "cogling", "embermutt", "lampwick", "smeltling", "kilnling", "rimepup", "pebblewarden", "inkling"),
+        assertEquals(List.of("rattlebones", "weepling", "hollow-hound", "silkling", "thistlewing", "sproutling", "windpip", "pipling", "siltpup", "tidelet", "cogling", "embermutt", "lampwick", "smeltling", "kilnling", "rimepup", "pebblewarden", "inkling"),
             catalog.companions().stream().filter(companion -> companion.source() != null).map(CosmeticCatalog.Companion::slug).toList());
         assertEquals(List.of("cloudstep", "petal-skip", "firefly-drift", "rune-ripple", "bubblehop", "comet-tail",
             "dandelion-drift", "stardust-waltz"), catalog.trailSlugs());

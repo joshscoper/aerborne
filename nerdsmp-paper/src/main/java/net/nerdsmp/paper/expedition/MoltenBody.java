@@ -16,7 +16,8 @@ import java.util.List;
 /**
  * A figure far bigger than any mob's model: the boss itself is hidden and this body is hung round it, swinging its limbs
  * as it walks. {@code colossus} is black rock and running fire; {@code unwritten} is a hooded shape that doesn't touch the
- * ground, with a stone of each seal turning round it. Sizes are in blocks, and each part hangs from a joint of the frame.
+ * ground, with a stone of each seal turning round it; {@code old_bess} is a pump engine on piston legs; {@code tidewarden}
+ * is hooded water with a bronze mantle and a trident. Sizes are in blocks, and each part hangs from a joint of the frame.
  */
 final class MoltenBody {
     private static final int FRAME_TICKS = 3;
@@ -99,6 +100,61 @@ final class MoltenBody {
         new Part(Joint.ORBIT, Material.MOSS_BLOCK, 3.14F, 7F, 4.6F, 1.1F, 1.1F, 1.1F, true),
         new Part(Joint.ORBIT, Material.CRYING_OBSIDIAN, 4.71F, 6.2F, 4.6F, 1.1F, 1.1F, 1.1F, true));
 
+    private static final List<Part> OLD_BESS = List.of(
+        // Two piston legs on iron feet.
+        new Part(Joint.LEFT_LEG, Material.POLISHED_BLACKSTONE, -1.2F, -3.6F, -1.6F, 2.4F, 1F, 3.2F, false),
+        new Part(Joint.LEFT_LEG, Material.IRON_BLOCK, -.45F, -2.7F, -.45F, .9F, 2.7F, .9F, false),
+        new Part(Joint.LEFT_LEG, Material.WAXED_WEATHERED_COPPER, -1F, -.6F, -1F, 2F, 1.3F, 2F, false),
+        new Part(Joint.RIGHT_LEG, Material.POLISHED_BLACKSTONE, -1.2F, -3.6F, -1.6F, 2.4F, 1F, 3.2F, false),
+        new Part(Joint.RIGHT_LEG, Material.IRON_BLOCK, -.45F, -2.7F, -.45F, .9F, 2.7F, .9F, false),
+        new Part(Joint.RIGHT_LEG, Material.WAXED_WEATHERED_COPPER, -1F, -.6F, -1F, 2F, 1.3F, 2F, false),
+        // The boiler for a body, banded, with a firebox door in its chest and a stack on top.
+        new Part(Joint.TRUNK, Material.WAXED_OXIDIZED_COPPER, -3F, 3.4F, -2.4F, 6F, 5.4F, 4.8F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -3.1F, 4.5F, -2.5F, 6.2F, .4F, 5F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -3.1F, 7.4F, -2.5F, 6.2F, .4F, 5F, false),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -1.5F, 5.1F, 2.35F, 3F, 2.1F, .15F, false),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -1.1F, 5.4F, 2.45F, 2.2F, .4F, .1F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -1.1F, 6F, 2.45F, 2.2F, .8F, .1F, true),
+        new Part(Joint.TRUNK, Material.WAXED_WEATHERED_COPPER, -2.4F, 8.8F, -1.8F, 4.8F, .8F, 3.6F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -.8F, 9.5F, -1.4F, 1.6F, 3.8F, 1.6F, false),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -1F, 13.2F, -1.6F, 2F, .3F, 2F, false),
+        // A pressure dial for a face, and a great crank arm either side ending in a valve wheel.
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -.9F, 9F, 1.6F, 1.8F, 1.6F, .2F, false),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -.5F, 9.5F, 1.82F, 1F, .25F, .1F, true),
+        new Part(Joint.LEFT_ARM, Material.IRON_BLOCK, -.5F, -4.6F, -.5F, 1F, 5F, 1F, false),
+        new Part(Joint.LEFT_ARM, Material.WAXED_WEATHERED_COPPER, -1.1F, -.8F, -1.1F, 2.2F, 1.8F, 2.2F, false),
+        new Part(Joint.LEFT_ARM, Material.POLISHED_BLACKSTONE, -1.7F, -6.4F, -1.7F, 3.4F, 2F, 3.4F, false),
+        new Part(Joint.RIGHT_ARM, Material.IRON_BLOCK, -.5F, -4.6F, -.5F, 1F, 5F, 1F, false),
+        new Part(Joint.RIGHT_ARM, Material.WAXED_WEATHERED_COPPER, -1.1F, -.8F, -1.1F, 2.2F, 1.8F, 2.2F, false),
+        new Part(Joint.RIGHT_ARM, Material.POLISHED_BLACKSTONE, -1.7F, -6.4F, -1.7F, 3.4F, 2F, 3.4F, false));
+
+    private static final List<Part> TIDEWARDEN = List.of(
+        // She's the water itself, hooded, with the bronze of her statue on her shoulders and a crown of gold.
+        new Part(Joint.TRUNK, Material.LIGHT_BLUE_STAINED_GLASS, -3F, .2F, -2.8F, 6F, 2.4F, 5.6F, true),
+        new Part(Joint.TRUNK, Material.BLUE_STAINED_GLASS, -2.6F, 2.4F, -2.3F, 5.2F, 2.6F, 4.6F, true),
+        new Part(Joint.TRUNK, Material.LIGHT_BLUE_STAINED_GLASS, -2.1F, 4.9F, -1.8F, 4.2F, 2.4F, 3.6F, true),
+        new Part(Joint.TRUNK, Material.WAXED_OXIDIZED_COPPER, -3F, 7.2F, -1.8F, 6F, 1.1F, 3.6F, false),
+        new Part(Joint.TRUNK, Material.BLUE_STAINED_GLASS, -1.4F, 8.2F, -1.3F, 2.8F, 2.6F, 2.8F, true),
+        new Part(Joint.TRUNK, Material.BLACK_CONCRETE, -.9F, 8.7F, 1.45F, 1.8F, 1.5F, .1F, false),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -.7F, 9.5F, 1.57F, .5F, .25F, .1F, true),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, .2F, 9.5F, 1.57F, .5F, .25F, .1F, true),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -1.6F, 10.6F, -1.5F, 3.2F, .3F, 3.2F, true),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -.2F, 10.8F, 1.2F, .4F, 1.4F, .3F, true),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -1.2F, 10.8F, .9F, .35F, 1F, .3F, true),
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, .85F, 10.8F, .9F, .35F, 1F, .3F, true),
+        new Part(Joint.LEFT_ARM, Material.LIGHT_BLUE_STAINED_GLASS, -1.5F, -4.6F, -.8F, 1.6F, 5.2F, 1.6F, true),
+        new Part(Joint.RIGHT_ARM, Material.LIGHT_BLUE_STAINED_GLASS, .1F, -4.6F, -.8F, 1.6F, 5.2F, 1.6F, true),
+        // Her trident, carried upright.
+        new Part(Joint.RIGHT_ARM, Material.WAXED_OXIDIZED_COPPER, .7F, -7F, .9F, .35F, 13F, .35F, false),
+        new Part(Joint.RIGHT_ARM, Material.GOLD_BLOCK, .1F, 5.8F, .9F, 1.5F, .35F, .35F, true),
+        new Part(Joint.RIGHT_ARM, Material.GOLD_BLOCK, .1F, 5.8F, .9F, .3F, 1.4F, .3F, true),
+        new Part(Joint.RIGHT_ARM, Material.GOLD_BLOCK, .7F, 5.9F, .9F, .35F, 2F, .35F, true),
+        new Part(Joint.RIGHT_ARM, Material.GOLD_BLOCK, 1.3F, 5.8F, .9F, .3F, 1.4F, .3F, true),
+        // Globes of water, turning.
+        new Part(Joint.ORBIT, Material.LIGHT_BLUE_STAINED_GLASS, 0F, 6F, 5F, 1.3F, 1.3F, 1.3F, true),
+        new Part(Joint.ORBIT, Material.LIGHT_BLUE_STAINED_GLASS, 2.09F, 4.5F, 5F, 1F, 1F, 1F, true),
+        new Part(Joint.ORBIT, Material.LIGHT_BLUE_STAINED_GLASS, 4.19F, 7F, 5F, 1.1F, 1.1F, 1.1F, true));
+
     private final LivingEntity boss;
     private final List<Part> parts;
     private final Material glow;
@@ -111,12 +167,34 @@ final class MoltenBody {
     /** Held poses for an entrance: both arms raised or thrown back, and how far it's crouched. */
     private float arms, crouch;
 
-    private MoltenBody(LivingEntity boss, boolean unwritten) {
+    private MoltenBody(LivingEntity boss, String look) {
         this.boss = boss;
-        parts = unwritten ? UNWRITTEN : PARTS;
-        glow = unwritten ? Material.PEARLESCENT_FROGLIGHT : Material.SHROOMLIGHT;
-        trail = unwritten ? Particle.REVERSE_PORTAL : Particle.LAVA;
-        hover = unwritten ? .35F : .08F;
+        switch (look) {
+            case "unwritten" -> {
+                parts = UNWRITTEN;
+                glow = Material.PEARLESCENT_FROGLIGHT;
+                trail = Particle.REVERSE_PORTAL;
+                hover = .35F;
+            }
+            case "old_bess" -> {
+                parts = OLD_BESS;
+                glow = Material.SHROOMLIGHT;
+                trail = Particle.CLOUD;
+                hover = .08F;
+            }
+            case "tidewarden" -> {
+                parts = TIDEWARDEN;
+                glow = Material.SEA_LANTERN;
+                trail = Particle.SPLASH;
+                hover = .3F;
+            }
+            default -> {
+                parts = PARTS;
+                glow = Material.SHROOMLIGHT;
+                trail = Particle.LAVA;
+                hover = .08F;
+            }
+        }
         last = boss.getLocation();
     }
 
@@ -125,7 +203,7 @@ final class MoltenBody {
         boss.setInvisible(true);
         boss.setCustomNameVisible(false);
         boss.setSilent(false);
-        MoltenBody body = new MoltenBody(boss, "unwritten".equals(look));
+        MoltenBody body = new MoltenBody(boss, look);
         for (Part part : body.parts) body.displays.add(boss.getWorld().spawn(boss.getLocation(), BlockDisplay.class, display -> {
             display.setBlock((part.block() == Material.SHROOMLIGHT ? body.glow : part.block()).createBlockData());
             display.setPersistent(false);
