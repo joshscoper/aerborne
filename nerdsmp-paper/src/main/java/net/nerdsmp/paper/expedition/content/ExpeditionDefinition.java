@@ -170,7 +170,7 @@ public record ExpeditionDefinition(
      * A {@code GUST} blows along one of its {@code lanes}, pushing anyone in {@code area} without cover.
      */
     public enum HazardType {
-        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL, BROOD, BURNDOWN, GUST;
+        ROCKS, FIRE, ERUPTION, GAS, LANE, COLLAPSE, VIGIL, BROOD, BURNDOWN, GUST, CARTS;
 
         public boolean usesRoom() { return ordinal() >= LANE.ordinal(); }
     }

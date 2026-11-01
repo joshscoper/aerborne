@@ -123,7 +123,10 @@ public final class CosmeticCatalog {
                 new Companion("silkling", "Silkling", "Nest spiderling", "silkling", 0.9D, false, "", "white", false, "The Briar Matron, very rarely"),
                 new Companion("thistlewing", "Thistlewing", "Ranger's hawk", "thistlewing", 1.0D, true, "", "dark_green", false, "Verrin, very rarely"),
                 new Companion("sproutling", "Sproutling", "Heart Tree seedling", "sproutling", 0.9D, false, "SPORE_BLOSSOM_AIR", "green", false, "The Thornheart Shaman, very rarely"),
-                new Companion("windpip", "Windpip", "Tame Cloudling", "windpip", 0.9D, true, "CLOUD", "aqua", false, "The Old Sentinel, very rarely")),
+                new Companion("windpip", "Windpip", "Tame Cloudling", "windpip", 0.9D, true, "CLOUD", "aqua", false, "The Old Sentinel, very rarely"),
+                new Companion("cogling", "Cogling", "Runaway mine engine", "cogling", 0.9D, false, "", "gold", false, "The Blastmaster, very rarely"),
+                new Companion("embermutt", "Embermutt", "Slag hound pup", "embermutt", 0.9D, false, "SMALL_FLAME", "red", false, "The Slag Hound, very rarely"),
+                new Companion("lampwick", "Lampwick", "The last miner's lamp", "lampwick", 0.8D, true, "", "yellow", false, "The Deep Foreman, very rarely")),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),

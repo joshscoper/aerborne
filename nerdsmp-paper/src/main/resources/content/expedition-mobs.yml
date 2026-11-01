@@ -130,7 +130,8 @@ mobs:
   grell_overseer:
     name: "<gradient:#e17055:#2d3436>Overseer Grell</gradient>"
     type: vindicator
-    health: 140
+    boss: true
+    health: 420
     attack-damage: 9
     scale: 1.4
     ability: none
@@ -139,7 +140,8 @@ mobs:
   blastmaster:
     name: "<gradient:#fdcb6e:#d63031>The Blastmaster</gradient>"
     type: pillager
-    health: 120
+    boss: true
+    health: 480
     attack-damage: 6
     scale: 1.4
     ability: none
@@ -148,7 +150,8 @@ mobs:
   slag_hound:
     name: "<gradient:#ff7675:#2d3436>Slag Hound</gradient>"
     type: ravager
-    health: 160
+    boss: true
+    health: 460
     attack-damage: 8
     scale: 0.75
     ability: none
@@ -157,7 +160,7 @@ mobs:
     name: "<gradient:#fab1a0:#2d3436><bold>The Deep Foreman</bold></gradient>"
     type: zombie
     boss: true
-    health: 750
+    health: 950
     attack-damage: 10
     scale: 2.2
     speed: 0.21
@@ -422,6 +425,49 @@ mobs:
     ability: none
     mark-reward: 3
     equipment: {head: iron_helmet, hand: iron_axe}
+  pit_brute:
+    rank: normal
+    name: "<#b0a18c>Pit Brute</#b0a18c>"
+    type: vindicator
+    health: 62
+    attack-damage: 8
+    ability: none
+    mark-reward: 5
+    equipment: {head: iron_helmet, hand: iron_axe}
+  cave_lurker:
+    rank: normal
+    name: "<dark_gray>Cave Lurker</dark_gray>"
+    type: cave_spider
+    health: 16
+    attack-damage: 4
+    ability: none
+    mark-reward: 1
+  forge_thrall:
+    rank: normal
+    name: "<#c8703a>Forge Thrall</#c8703a>"
+    type: husk
+    health: 46
+    attack-damage: 7
+    ability: none
+    mark-reward: 3
+    equipment: {head: iron_helmet, hand: iron_shovel}
+  soot_caster:
+    rank: normal
+    name: "<#7d6a5a>Soot Caster</#7d6a5a>"
+    type: witch
+    health: 34
+    attack-damage: 3
+    ability: none
+    mark-reward: 5
+  drowned_stoker:
+    rank: normal
+    name: "<#4f8a84>Drowned Stoker</#4f8a84>"
+    type: drowned
+    health: 48
+    attack-damage: 7
+    ability: none
+    mark-reward: 3
+    equipment: {hand: iron_shovel}
   powder_sapper:
     name: "<gold>Powder Sapper</gold>"
     type: pillager

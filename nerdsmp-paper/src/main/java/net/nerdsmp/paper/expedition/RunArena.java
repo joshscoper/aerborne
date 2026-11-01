@@ -24,6 +24,7 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.PoweredMinecart;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -50,8 +51,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * chandeliers come down and can be baited onto the boss, vigil candles spread a pool until someone
  * lights them again, and a ward holds the boss out of reach until the party douses the room's fires.
  * Brood sacs hatch unless they're burst, floors burn away unless someone reaches their cistern, and
- * gusts throw anyone without cover. Every piece is telegraphed, and everything it changes goes back
- * when the party wipes.
+ * gusts throw anyone without cover. Runaway carts come down the rails and flatten whatever stands on
+ * them, boss included. Every piece is telegraphed, and everything it changes goes back when the party wipes.
  */
 final class RunArena {
     interface Host {
@@ -89,6 +90,10 @@ final class RunArena {
     private static final long SAC_MILLIS = 9_000, BURN_MILLIS = 13_000;
     private static final int HATCHLINGS = 2, GUST_WARNING_TICKS = 50, GUST_TICKS = 16;
     private static final double GUST_PUSH = .5, GUST_COVER = 5;
+    /** Blocks a cart covers each tick, a little over three times a sprint. */
+    private static final double CART_SPEED = .85, CART_REACH = 1.5, CART_BOSS_SHARE = .05, CART_BLAST = 3.5;
+    private static final int CART_WARNING_TICKS = 40, CART_STUN_TICKS = 70, CART_CREW_DAMAGE = 40;
+    private static final Material[] CARGO = {Material.RAW_IRON_BLOCK, Material.COAL_BLOCK, Material.RAW_COPPER_BLOCK, Material.COBBLED_DEEPSLATE};
 
     /** A snuffed vigil device and the pool spreading from it. */
     private static final class Pool {
@@ -127,6 +132,7 @@ final class RunArena {
     private final Set<String> spent = new HashSet<>();
     private final Map<Block, BlockData> wreckage = new HashMap<>();
     private final List<Display> falling = new ArrayList<>();
+    private final Set<PoweredMinecart> carts = new HashSet<>();
     private BukkitTask task;
     private Ward ward;
     private int beat;
@@ -145,6 +151,7 @@ final class RunArena {
         endWard();
         falling.forEach(Display::remove);
         falling.clear();
+        clearCarts();
     }
 
     /** A wipe: pools dry up, fires and fallen chandeliers go back, and any ward ends with its boss. */
@@ -161,6 +168,7 @@ final class RunArena {
         burning.clear();
         lost.clear();
         spent.clear();
+        clearCarts();
         nextBeat = 0;
     }
 
@@ -197,6 +205,7 @@ final class RunArena {
             case BROOD -> swell(hazard);
             case BURNDOWN -> ignite(hazard);
             case GUST -> gust(hazard);
+            case CARTS -> carts(hazard);
             default -> { }
         }
     }
@@ -284,6 +293,121 @@ final class RunArena {
         for (int y = at.getBlockY(); y < at.getBlockY() + 3; y++)
             if (!world.getBlockAt(at.getBlockX(), y, at.getBlockZ()).getType().isSolid()) return new Location(world, at.getX(), y, at.getZ());
         return at;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Carts
+    // ---------------------------------------------------------------------------------------------
+
+    /** A bell and a line of sparks down the rails, then a loaded cart at full tilt. */
+    private void carts(Hazard hazard) {
+        List<Lane> shuffled = new ArrayList<>(hazard.lanes());
+        Collections.shuffle(shuffled);
+        for (Lane lane : shuffled.subList(0, Math.min(hazard.count(), shuffled.size()))) cart(hazard, lane);
+    }
+
+    private void cart(Hazard hazard, Lane lane) {
+        World world = host.world();
+        double rail = hazard.area().minY();
+        Location from = new Location(world, lane.x1() + .5, rail, lane.z1() + .5), to = new Location(world, lane.x2() + .5, rail, lane.z2() + .5);
+        double length = from.distance(to);
+        Vector along = to.toVector().subtract(from.toVector()).normalize();
+        boolean powder = hazard.trail() != null;
+        world.playSound(from, Sound.BLOCK_BELL_USE, 1.6F, powder ? 1.4F : .8F);
+        int[] tick = {0};
+        double[] run = {0};
+        PoweredMinecart[] cart = {null};
+        Set<UUID> struck = new HashSet<>();
+        Bukkit.getScheduler().runTaskTimer(plugin, roll -> {
+            if (!host.live()) { roll.cancel(); return; }
+            int now = tick[0]++;
+            if (now < CART_WARNING_TICKS) {
+                if (now % 5 == 0) Telegraph.line(from.clone().add(0, .1, 0), to.clone().add(0, .1, 0), powder ? Telegraph.FIRE : Telegraph.HOLY);
+                if (now % 10 == 0) world.playSound(from, Sound.ENTITY_MINECART_RIDING, 1.1F, .7F + now * .01F);
+                return;
+            }
+            if (cart[0] == null) {
+                cart[0] = launch(from, along, powder ? Material.TNT : CARGO[ThreadLocalRandom.current().nextInt(CARGO.length)]);
+            }
+            run[0] += CART_SPEED;
+            Location at = from.clone().add(along.clone().multiply(run[0]));
+            if (!cart[0].isValid() || run[0] >= length) {
+                wreck(hazard, cart[0], at, powder);
+                roll.cancel();
+                return;
+            }
+            cart[0].teleport(at);
+            if (now % 3 == 0) world.spawnParticle(Particle.CRIT, at.clone().add(0, .15, 0), 3, .3, .05, .3, .05);
+            if (now % 6 == 0) world.playSound(at, Sound.ENTITY_MINECART_INSIDE, .7F, 1.5F);
+            if (ran(hazard, at, along, struck)) {
+                wreck(hazard, cart[0], at, powder);
+                roll.cancel();
+            }
+        }, 0L, 1L);
+    }
+
+    /** A furnace cart underneath, since nothing can climb into one, carrying the load on top. */
+    private PoweredMinecart launch(Location from, Vector along, Material load) {
+        Location start = from.clone().setDirection(along);
+        PoweredMinecart cart = host.world().spawn(start, PoweredMinecart.class, spawned -> {
+            spawned.setPersistent(false);
+            spawned.setInvulnerable(true);
+            spawned.setGravity(false);
+            spawned.setSilent(true);
+            spawned.setDisplayBlockData(load.createBlockData());
+        });
+        carts.add(cart);
+        return cart;
+    }
+
+    /** Whatever is on the rails pays. The boss stops the cart dead, and pays the most. */
+    private boolean ran(Hazard hazard, Location at, Vector along, Set<UUID> struck) {
+        Vector across = new Vector(-along.getZ(), 0, along.getX());
+        for (Player player : host.online()) {
+            if (!exposed(player) || struck.contains(player.getUniqueId())) continue;
+            Vector offset = player.getLocation().toVector().subtract(at.toVector());
+            if (Math.abs(offset.getY()) > 2.2 || offset.clone().setY(0).lengthSquared() > CART_REACH * CART_REACH) continue;
+            struck.add(player.getUniqueId());
+            player.damage(hazard.damage());
+            host.log("cart struck " + player.getName());
+            double side = offset.dot(across) >= 0 ? 1 : -1;
+            player.setVelocity(across.clone().multiply(side * 1.1).add(along.clone().multiply(.5)).setY(.45));
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, .6F);
+        }
+        for (LivingEntity boss : host.bosses()) {
+            if (boss.isInvulnerable() || boss.getLocation().distanceSquared(at) > (CART_REACH + boss.getWidth() / 2) * (CART_REACH + boss.getWidth() / 2)) continue;
+            var health = boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            if (health != null) boss.damage(health.getValue() * CART_BOSS_SHARE);
+            stagger(boss, CART_STUN_TICKS);
+            host.broadcast("<gold>The cart ploughs into the boss!</gold> <gray>Strike while it's staggered.</gray>");
+            return true;
+        }
+        for (var near : host.world().getNearbyEntities(at, CART_REACH, 1.5, CART_REACH)) {
+            if (near instanceof Mob crew && !host.bosses().contains(crew)) crew.damage(CART_CREW_DAMAGE);
+        }
+        return false;
+    }
+
+    /** The end of the line. A powder cart goes up, and anyone beside it knows about it. */
+    private void wreck(Hazard hazard, PoweredMinecart cart, Location at, boolean powder) {
+        World world = host.world();
+        carts.remove(cart);
+        cart.remove();
+        Telegraph.shards(at.clone().add(0, .5, 0), 18, .8, Material.SPRUCE_PLANKS);
+        world.playSound(at, Sound.BLOCK_ANVIL_LAND, 1.1F, .6F);
+        if (!powder) return;
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1);
+        world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 1.4F, .8F);
+        for (Player player : host.online())
+            if (exposed(player) && player.getLocation().distanceSquared(at) <= CART_BLAST * CART_BLAST) {
+                player.damage(hazard.damage() * .75);
+                player.setFireTicks(40);
+            }
+    }
+
+    private void clearCarts() {
+        carts.forEach(PoweredMinecart::remove);
+        carts.clear();
     }
 
     // ---------------------------------------------------------------------------------------------

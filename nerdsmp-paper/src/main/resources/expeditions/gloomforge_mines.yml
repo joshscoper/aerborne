@@ -1,182 +1,362 @@
-# Gloomforge Mines: a gauntlet of three mini-bosses through the deep galleries, then the Deep
-# Foreman himself. Full reference: docs/EXPEDITIONS.md.
+# Gloomforge Mines: a descent through five levels of the deep galleries, past Grell, along the Ore Line with
+# the Blastmaster's carts, through the Round Foundry and down to the Gloomforge itself.
+# Full reference: docs/EXPEDITIONS.md.
 title: Gloomforge Mines
-description: The night shift never came back up. Fight through the foremen of the deep and silence the Gloomforge.
+description: The night shift never came back up. Go down after them, level by level, and silence the Gloomforge.
 icon: iron_pickaxe
 dimension: overworld
+# Built from code. Delete this line if you rebuild the template by hand.
 sample: gloomforge_mines
 published: true
 difficulty: 4
 level: 20
 party: {min: 1, max: 5}
-time-limit-minutes: 35
-spawn: [0, 64, 5, 0]
-exit: [0, 64, 139]
+time-limit-minutes: 45
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 2
+spawn: [14, 97, -2, 0]
+exit: [236, 17, 64]
 modifiers: []
 requires: [sunken_aqueduct]
+goal: forces
+forces: 70
+# Black water at the bottom of the mine. Hesk's lines are the only way out of it.
+falls: {below: 11, damage: 3, message: "A miner's line hauls you out of the black water, coughing. Don't drink it."}
 
 npcs:
   hesk:
     name: Old Miner Hesk
     entity: villager
-    at: [-3, 64, 9, 90]
+    at: [11, 97, 8, 90]
+    # He offers the daily in content/world-quests.yml, and takes it back at the far end of the run.
+    quests: old_miner_hesk
     lines:
-      - "Three bosses ran the Gloomforge: Grell, the Blastmaster and that slag-fed hound. Now they answer to the Foreman."
-      - "Ring the alarms in the galleries. Shoot the targets on the three bell posts, quick as you can."
-      - "The Blastmaster's carts need loading before the far door opens. There's a crate of counterweights by the door: throw them on the plates."
-      - "When the Foreman's angry the whole delve shakes. Stay off the pillars."
+      - "Forty years I worked these levels. Five of them, each deeper and hotter than the last. Nobody's come back up from the bottom one."
+      - "Past the galleries is the Gullet. Walk the ledge round the wall and don't look down. Well. Look down once."
+      - "On the Mainline, when the bell rings, you get into a refuge. There's no arguing with a loaded cart."
+      - "The Blastmaster runs the Ore Line now. A cart will flatten him same as it'll flatten you, if you can get him on the rails."
+      - "Bank the Foundry's dampers and the north door opens. After that it's all downhill, and the water's waiting."
 
 campfires:
-  lift_fire: {at: [4, 64, 8], lit: true, title: Lift Station Fire}
-  miners_rest: {at: [3, 64, 109], lit: false, title: "Miners' Rest"}
-
-setpieces:
-  west_pillars: {box: [-7, 66, 121, -6, 76, 134], block: air, style: crumble}
+  lift_fire: {at: [18, 97, 12], lit: true, title: Lift Station Fire}
+  gullet_fire: {at: [24, 71, 98], lit: false, title: Foot of the Gullet}
+  miners_rest: {at: [116, 33, 101], lit: false, title: "Miners' Rest"}
+  dock_fire: {at: [178, 15, 38], lit: false, title: The Last Dock}
 
 hazards:
-  blast_charges: {type: fire, area: [-9, 63, 62, 9, 63, 81], every: 8, count: 3, damage: 4}
-  pit_rockfall: {type: rocks, area: [-9, 63, 86, 9, 63, 103], every: 6, count: 3, damage: 5}
-  delve_rockfall: {type: rocks, area: [-12, 63, 115, 12, 63, 132], every: 6, count: 4, damage: 6}
+  # Timbers hung from the roof of Grell's cave. Bait him under one.
+  grells_loads:
+    type: collapse
+    area: [34, 71, 122, 66, 71, 146]
+    every: 18
+    damage: 10
+    spots: [[44, 77, 130], [56, 77, 130], [44, 77, 139], [56, 77, 139]]
+  # `carts` send a loaded cart down a line of rails after a bell. Anything on the rails pays, and that includes
+  # the boss, who is stunned by it. A `trail` makes them powder carts, which go up at the end of the line.
+  mainline_carts:
+    type: carts
+    area: [60, 53, 169, 96, 53, 171]
+    every: 6
+    count: 1
+    damage: 7
+    lanes: [[61, 170, 98, 170]]
+  ore_line_carts:
+    type: carts
+    area: [99, 53, 155, 149, 53, 185]
+    every: 6
+    count: 1
+    damage: 9
+    lanes: [[100, 160, 170, 160], [170, 165, 100, 165], [100, 170, 170, 170], [170, 175, 100, 175], [100, 180, 170, 180], [112, 142, 112, 198], [136, 198, 136, 142]]
+  ore_line_rush:
+    type: carts
+    area: [99, 53, 155, 149, 53, 185]
+    every: 5
+    count: 2
+    damage: 9
+    lanes: [[170, 160, 100, 160], [100, 165, 170, 165], [170, 170, 100, 170], [100, 175, 170, 175], [170, 180, 100, 180], [112, 198, 112, 142], [136, 142, 136, 198]]
+  powder_carts:
+    type: carts
+    trail: tnt
+    area: [99, 53, 155, 149, 53, 185]
+    every: 11
+    count: 1
+    damage: 12
+    lanes: [[170, 165, 100, 165], [100, 175, 170, 175], [136, 142, 136, 198]]
+  slag_flows:
+    type: lane
+    area: [168, 31, 100, 196, 31, 124]
+    every: 9
+    count: 2
+    damage: 6
+    burn: 4
+    lanes: [[170, 106, 194, 106], [194, 118, 170, 118], [178, 102, 178, 122], [186, 122, 186, 102]]
+  pit_rockfall: {type: rocks, area: [168, 31, 100, 196, 31, 124], every: 7, count: 3, damage: 5}
+  forge_vents:
+    type: lane
+    area: [220, 17, 32, 252, 17, 64]
+    every: 9
+    count: 1
+    damage: 7
+    burn: 5
+    lanes: [[222, 38, 250, 38], [250, 50, 222, 50], [224, 60, 248, 60]]
+  ore_skips:
+    type: collapse
+    area: [220, 17, 32, 252, 17, 64]
+    every: 25
+    damage: 12
+    spots: [[228, 26, 44], [244, 26, 44], [228, 26, 56], [244, 26, 56]]
+  deep_rockfall: {type: rocks, area: [222, 17, 34, 250, 17, 62], every: 7, count: 4, damage: 6}
+
+ambience:
+  - {sound: block.pointed_dripstone.drip_water, every: 7, volume: 0.6, pitch: 0.7}
+  - {sound: ambient.cave, every: 30, volume: 0.7, pitch: 0.7}
+  - {sound: entity.minecart.riding, every: 26, volume: 0.25, pitch: 0.6}
+  - {sound: block.anvil.land, every: 34, volume: 0.15, pitch: 0.5}
+  - {sound: block.lava.ambient, every: 8, volume: 0.7, pitch: 0.7, area: [80, 28, 44, 200, 80, 128]}
+  - {sound: block.furnace.fire_crackle, every: 6, volume: 0.8, pitch: 0.6, area: [216, 10, 10, 256, 62, 84]}
+  - {sound: ambient.underwater.loop.additions.rare, every: 16, volume: 0.6, pitch: 0.6, area: [172, 2, -8, 300, 64, 90]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
 outro:
+  - "The Gloomforge goes cold. For the first time in a hundred years the deep levels are quiet."
   - "Among the Foreman's papers: a contract sealed with a burning crown, signed 'Ashkar, Steward of the Sovereign'."
   - "Old Miner Hesk: 'The Archivist up in the sky citadel will know that seal. Take it to the Hall of the Wardens.'"
 
 cutscenes:
+  # The whole way down, one level at a time.
   prologue:
-    - {at: [0.5, 67, 3, 0, 5], seconds: 5, title: "<gold>Gloomforge Mines</gold>", text: "<gray>The deep galleries</gray>", sound: "block.anvil.land 0.5", lines: ["|The Gloomforge was dug for gloomsteel, the dark ore that drinks the light.", "hesk|Forty years I worked these galleries. Never dug this deep. Never wanted to."]}
-    - {at: [0.5, 68, 20, 0, 10], seconds: 5, fade: true, lines: ["hesk|The Deep Foreman took a new contract. Paid in gold, with orders to dig straight down.", "hesk|Down towards the old keep. Towards the heat."]}
-    - {at: [0.5, 70, 118, 0, 20], seconds: 4, lines: ["|At the bottom of the delve, the Foreman's lamp burns with a flame that isn't his own."]}
-  foreman:
-    - {at: [0.5, 73, 116, 0, 25], seconds: 3, text: "<gold>The Foreman's Delve</gold>", sound: "block.anvil.land 0.6", lines: ["|The picks fall silent. The pillars groan."]}
-    - {at: [0.5, 68, 125, 0, 5], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.7", lines: ["The Deep Foreman|The Steward pays in gold, and gold doesn't ask questions. Get off my site!"]}
+    - {at: [14.5, 103, -14, 0, 6], to: [14.5, 102, -4, 0, 2], seconds: 5, title: "<gold>Gloomforge Mines</gold>", text: "<gray>Five levels down</gray>", sound: "block.anvil.land 0.5", lines: ["hesk|The night shift went down and the lift came back empty. That was the last anyone saw of them."]}
+    - {at: [32.5, 121, 64, 0, 38], to: [32.5, 112, 70, 0, 44], seconds: 5, fade: true, lines: ["|The Gullet. Two turns of ledge round a drop that swallows the lamps."]}
+    - {at: [102, 62, 170, -90, 8], to: [120, 62, 170, -90, 6], seconds: 4, fade: true, lines: ["|Below that, the Ore Line. The carts still run. Nobody's loading them."]}
+    - {at: [122.5, 44, 116, 180, 10], to: [122.5, 42, 108, 180, 6], seconds: 4, fade: true, lines: ["|Below that, the Round Foundry, and a heat that doesn't belong in stone."]}
+    - {at: [192, 27, 34, -90, 6], to: [208, 25, 34, -90, 4], seconds: 5, fade: true, lines: ["hesk|And at the bottom, the Gloomforge. The Foreman took a new contract, paid in gold, with orders to dig straight down.", "hesk|He dug until he hit water, and he kept going."]}
+  grell_wakes:
+    - {at: [50.5, 76, 124, 0, 18], to: [50.5, 75, 127, 0, 12], seconds: 4, title: "<red>Overseer Grell</red>", text: "<gray>He still counts the shift</gray>", sound: "block.bell.use 0.6", lines: ["Overseer Grell|Late. All of you. That's a day's pay."]}
+  ore_line_wakes:
+    - {at: [102, 60, 170, -90, 14], to: [112, 59, 170, -90, 10], seconds: 4, title: "<gold>The Blastmaster</gold>", text: "<gray>Keeper of the Ore Line</gray>", sound: "block.bell.use 0.8", lines: ["The Blastmaster|Mind the rails! Ha! No, don't. Stand right there."]}
+  hound_wakes:
+    - {at: [171, 34, 112, -90, 6], to: [177, 34, 112, -90, 4], seconds: 4, title: "<red>The Slag Hound</red>", text: "<gray>Something the foundry fed</gray>", sound: "entity.ravager.roar 0.6", lines: ["|Something huge shoulders up out of the slag, and shakes it off like water."]}
+  foreman_wakes:
+    - {at: [226, 24, 42, -40, 8], to: [230, 23, 47, -30, 4], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The furnace roars. The whole hull shudders against its chains."]}
+    - {at: [231, 21, 36, -20, 4], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
 
 mobs:
-  "custom:gloom_miner": {role: normal}
-  "custom:grell_overseer": {role: miniboss, abilities: [charge, cleave]}
-  "custom:blastmaster": {role: miniboss, abilities: [barrage, fire_pools]}
-  "custom:slag_hound": {role: miniboss, abilities: [charge, leap]}
-  "custom:powder_sapper": {role: elite, abilities: [barrage]}
+  "custom:gloom_miner": {forces: 1}
+  "custom:cave_lurker": {forces: 1, abilities: [leap]}
+  "custom:powder_sapper": {forces: 2, abilities: [barrage], behavior: caster}
+  "custom:pit_brute": {forces: 3, abilities: [cleave]}
+  "custom:forge_thrall": {forces: 2, abilities: [charge]}
+  "custom:soot_caster": {forces: 3, abilities: [fire_pools, mend], behavior: caster}
+  "custom:drowned_stoker": {forces: 2, abilities: [charge]}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group.
+packs:
+  # Level one: the Upper Galleries.
+  pit_drift: {at: [12, 97, 30], mobs: {"custom:gloom_miner": 3}, aggro: 8}
+  crosscut_west: {at: [17, 96, 47], mobs: {"custom:gloom_miner": 3, "custom:powder_sapper": 1}}
+  crosscut_east: {at: [31, 96, 49], mobs: {"custom:cave_lurker": 4}}
+  crosscut_walkers:
+    at: [24, 96, 42]
+    mobs: {"custom:gloom_miner": 2, "custom:pit_brute": 1}
+    aggro: 7
+    patrol: [[24, 96, 42], [24, 96, 53]]
+  east_drift: {at: [48, 95, 40], mobs: {"custom:powder_sapper": 2, "custom:gloom_miner": 2}}
+  south_drift: {at: [24, 95, 56], mobs: {"custom:pit_brute": 1, "custom:cave_lurker": 3}}
+  # Level two: the ledges of the Gullet, and the drift to Grell.
+  ledge_top: {at: [58, 93, 92], mobs: {"custom:gloom_miner": 3}, aggro: 7}
+  ledge_middle: {at: [12, 82, 100], mobs: {"custom:powder_sapper": 2, "custom:cave_lurker": 2}, aggro: 7}
+  ledge_low: {at: [50, 82, 96], mobs: {"custom:pit_brute": 1, "custom:gloom_miner": 2}, aggro: 7}
+  shaft_foot: {at: [36, 71, 92], mobs: {"custom:pit_brute": 1, "custom:powder_sapper": 2}}
+  grell_guard: {at: [42, 71, 112], mobs: {"custom:gloom_miner": 3, "custom:pit_brute": 1}, aggro: 7}
+  # Level three: the incline down to the Mainline.
+  incline_high: {at: [42, 67, 158], mobs: {"custom:gloom_miner": 2, "custom:powder_sapper": 2}}
+  incline_low: {at: [48, 56, 174], mobs: {"custom:pit_brute": 1, "custom:cave_lurker": 3}}
+  # Down from the Ore Line.
+  foundry_incline: {at: [114, 42, 134], mobs: {"custom:forge_thrall": 3, "custom:soot_caster": 1}}
+  foundry_approach: {at: [122, 33, 117], mobs: {"custom:forge_thrall": 2, "custom:pit_brute": 1}, aggro: 7}
+  # Level five: the last drift and the dock.
+  north_drift: {at: [126, 27, 40], mobs: {"custom:forge_thrall": 3, "custom:soot_caster": 1}}
+  wet_drift: {at: [150, 18, 36], mobs: {"custom:drowned_stoker": 3}}
+  dock_north: {at: [180, 15, 30], mobs: {"custom:drowned_stoker": 2, "custom:soot_caster": 1}}
+  dock_south: {at: [176, 15, 40], mobs: {"custom:drowned_stoker": 2, "custom:forge_thrall": 2}}
+  trestle_walkers:
+    at: [192, 15, 34]
+    mobs: {"custom:drowned_stoker": 3}
+    aggro: 7
+    patrol: [[192, 15, 34], [212, 15, 34]]
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  ore_crate: {at: [-8, 64, 36], kind: crate, title: Ore Crate}
-  grells_strongbox: {at: [7, 64, 57], kind: chest, title: "Grell's Strongbox"}
-  lost_miners_stash: {at: [-9, 64, 103], kind: secret, title: "Lost Miner's Stash"}
+  ore_crate: {at: [30, 96, 42], kind: crate, title: Ore Crate}
+  grells_strongbox: {at: [47, 71, 143], kind: chest, title: "Grell's Strongbox"}
+  lost_miners_stash: {at: [66, 94, 32], kind: secret, title: "Lost Miner's Stash"}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
+companion-drops:
+  ore_line: {companion: cogling, chance: 0.005}
+  slag_pits: {companion: embermutt, chance: 0.01}
+  the_gloomforge: {companion: lampwick, chance: 0.005}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-6, 64, 136]
-  bonus: [6, 64, 136]
+  free: [232, 17, 62]
+  bonus: [240, 17, 62]
 
 rooms:
-  ore_galleries:
-    title: The Ore Galleries
-    region: [-10, 64, 14, 10, 70, 38]
-    checkpoint: [0, 64, 36, 0]
-    gate: [-1, 64, 39, 1, 66, 39]
-    points: [[-5, 64, 18], [4, 64, 18], [-5, 64, 30], [4, 64, 30], [0, 64, 24]]
-    puzzles:
-      alarms:
-        type: targets
-        title: Shoot the three alarm targets
-        blocks: [[-6, 66, 19], [5, 66, 29], [-6, 66, 35]]
-        supply: [3, 64, 16]
-        seconds: 25
-    encounter:
-      type: waves
-      waves:
-        - {"custom:gloom_miner": 4}
-        - {mobs: {"custom:gloom_miner": 2, "custom:powder_sapper": 1}, delay-seconds: 4}
-      scripts:
-        start: ["say hesk|Shoot the targets on the bell posts, all three, quick! That raises the gate."]
-        solved-alarms: ["sound block.bell.use 0.8", "message <yellow>The alarm bells clang down the galleries.</yellow>"]
   grells_shaft:
     title: "Grell's Shaft"
-    region: [-8, 64, 41, 8, 70, 58]
-    checkpoint: [0, 64, 56, 0]
-    gate: [-1, 64, 59, 1, 66, 59]
-    points: [[-4, 64, 50], [-6, 64, 43], [5, 64, 56], [-6, 64, 56], [0, 64, 44]]
+    region: [30, 68, 119, 70, 90, 149]
+    requires-packs: [ledge_top, ledge_middle, ledge_low, shaft_foot, grell_guard]
+    seal: [48, 71, 118, 50, 74, 118]
+    gate: [49, 71, 150, 51, 74, 150]
+    checkpoint: [49, 71, 124, 0]
+    # The first point is where the boss stands; adds use the others.
+    points: [[50, 71, 135, 180], [42, 71, 128], [58, 71, 128], [42, 71, 141], [58, 71, 141]]
+    encounter:
+      type: boss
+      boss: custom:grell_overseer
+      boss-damage: 0.75
+      abilities: [charge, cleave]
+      phases:
+        - {at: 50, abilities: [charge, cleave, slam], title: "Grell stops counting"}
+      enrage-seconds: 240
+      adds-at-health: [60]
+      waves:
+        - {"custom:gloom_miner": 3}
+      scripts:
+        start: ["cutscene grell_wakes", "wait 5", "say hesk|Those loads on the chains! They come down when the rope frays. Get him under one!", "hazard start grells_loads"]
+        clear: ["hazard stop grells_loads", "say hesk|Grell's down. South door's open, and it's a long way down from there. Listen for the bell on the Mainline."]
+  the_mainline:
+    title: The Mainline
+    region: [60, 50, 164, 94, 62, 176]
+    requires: [grells_shaft]
+    checkpoint: [62, 53, 170, 270]
+    points: [[92, 53, 170], [85, 53, 170], [78, 53, 170], [71, 53, 170], [94, 53, 170]]
     encounter:
       type: waves
       waves:
-        - {"custom:grell_overseer": 1, "custom:gloom_miner": 2}
+        - {"custom:gloom_miner": 3}
+        - {mobs: {"custom:pit_brute": 1, "custom:gloom_miner": 2}, delay-seconds: 5}
       scripts:
-        start: ["say Overseer Grell|Back to work, the lot of you! Or down the shaft!"]
-        clear: ["say hesk|Grell's down. The Blastmaster's next; mind his charges."]
-  blasting_hall:
-    title: The Blasting Hall
-    region: [-10, 64, 61, 10, 71, 82]
-    checkpoint: [0, 64, 80, 0]
-    gate: [-1, 64, 83, 1, 66, 83]
-    points: [[0, 64, 72], [-4, 64, 64], [4, 64, 64], [-4, 64, 79], [4, 64, 79]]
+        start: ["say hesk|That's the bell! Get in a refuge, quick! They don't stop for anyone, not even their own.", "hazard start mainline_carts"]
+        clear: ["hazard stop mainline_carts", "say hesk|Through the door at the end and you're on the Ore Line. Watch the rails, and use them."]
+  ore_line:
+    title: The Ore Line
+    region: [95, 28, 142, 164, 72, 198]
+    requires: [the_mainline]
+    seal: [98, 53, 169, 98, 56, 171]
+    gate: [123, 53, 153, 125, 56, 153]
+    checkpoint: [102, 53, 168, 270]
+    points: [[130, 53, 168, 90], [112, 53, 163], [136, 53, 163], [112, 53, 178], [136, 53, 178]]
+    encounter:
+      type: boss
+      boss: custom:blastmaster
+      boss-damage: 0.7
+      abilities: [barrage, fire_pools]
+      phases:
+        - {at: 60, abilities: [barrage, fire_pools, charge], title: "The Blastmaster opens every switch"}
+        - {at: 30, abilities: [barrage, fire_pools, charge], title: "The Blastmaster sends the powder down"}
+      enrage-seconds: 300
+      adds-at-health: [75, 40]
+      waves:
+        - {"custom:powder_sapper": 2}
+        - {"custom:gloom_miner": 2, "custom:powder_sapper": 1}
+      scripts:
+        start: ["cutscene ore_line_wakes", "wait 5", "say hesk|Listen for the bell, watch for the sparks on the rail. And get him on the tracks, a cart'll knock the fight out of him!", "hazard start ore_line_carts"]
+        health-60: ["hazard start ore_line_rush", "say The Blastmaster|Every switch! Every line! Run, little miners!"]
+        health-30: ["hazard start powder_carts", "say The Blastmaster|Fire in the hole!"]
+        clear: ["hazard stop ore_line_carts", "hazard stop ore_line_rush", "hazard stop powder_carts", "say hesk|He's down, and the north door with him. Past that it's the Foundry. You'll feel it before you see it."]
+  round_foundry:
+    title: The Round Foundry
+    region: [100, 30, 66, 144, 54, 112]
+    requires: [ore_line]
+    requires-packs: [foundry_incline, foundry_approach]
+    gate: [121, 33, 67, 123, 36, 67]
+    checkpoint: [122, 33, 100, 180]
+    points: [[110, 33, 92], [134, 33, 92], [114, 33, 78], [130, 33, 78], [122, 33, 98]]
     puzzles:
-      ore_carts:
-        type: plates
-        title: Load both ore carts
-        blocks: [[-6, 64, 66], [6, 64, 66]]
-        supply: [-3, 64, 63]
+      dampers:
+        type: levers
+        title: Bank the three dampers
+        blocks: [[108, 35, 82], [136, 35, 82], [122, 35, 74]]
     encounter:
       type: waves
       waves:
-        - {"custom:blastmaster": 1, "custom:powder_sapper": 2}
+        - {"custom:forge_thrall": 4}
+        - {mobs: {"custom:soot_caster": 2, "custom:forge_thrall": 2}, delay-seconds: 4}
       scripts:
-        start: ["say The Blastmaster|Fire in the hole!", "hazard start blast_charges"]
-        clear: ["hazard stop blast_charges", "say hesk|Load those carts if you haven't. The door won't budge till they're full."]
+        start: ["say hesk|The Round Foundry. Bank the dampers, all three, and the forge lets go of the north door."]
+        solved-dampers: ["sound block.iron_door.open 0.7", "message <yellow>The forge falls to a sullen red.</yellow>"]
+        clear: ["say hesk|There's a side door east to the Slag Pits, if you've the stomach. Otherwise north, and down to the water."]
   slag_pits:
     title: The Slag Pits
-    region: [-10, 64, 85, 10, 71, 104]
-    checkpoint: [0, 64, 102, 0]
-    gate: [-1, 64, 105, 1, 66, 105]
-    points: [[0, 64, 94], [-4, 64, 88], [4, 64, 88], [-4, 64, 101], [4, 64, 101]]
+    region: [160, 26, 84, 203, 50, 130]
+    requires: [round_foundry]
+    optional: true
+    seal: [160, 33, 87, 160, 36, 89]
+    checkpoint: [164, 33, 88, 90]
+    points: [[182, 31, 112, 270], [174, 31, 109], [190, 31, 109], [174, 31, 116], [190, 31, 116]]
     encounter:
-      type: waves
-      waves:
-        - {"custom:slag_hound": 1, "custom:gloom_miner": 2}
+      type: boss
+      boss: custom:slag_hound
+      boss-damage: 0.8
+      abilities: [charge, leap]
+      phases:
+        - {at: 50, abilities: [charge, leap, slam], title: "The Slag Hound rears out of the pit"}
+      enrage-seconds: 200
       scripts:
-        start: ["message <red>Something huge snorts in the dark. The ceiling groans.</red>", "hazard start pit_rockfall"]
-        clear: ["hazard stop pit_rockfall", "say hesk|That's the last of them. Rest at the miners' fire; the Foreman's below."]
-  foremans_delve:
-    title: "The Foreman's Delve"
-    region: [-13, 64, 114, 13, 76, 140]
-    points: [[0, 64, 127], [-9, 64, 118], [9, 64, 118], [-9, 64, 130], [9, 64, 130]]
+        start: ["cutscene hound_wakes", "wait 5", "hazard start slag_flows", "hazard start pit_rockfall"]
+        clear: ["hazard stop slag_flows", "hazard stop pit_rockfall", "say hesk|You went looking for that? Well. It won't be eating anyone else."]
+  the_gloomforge:
+    title: The Gloomforge
+    region: [216, 10, 10, 256, 62, 84]
+    requires: [grells_shaft, ore_line, round_foundry]
+    requires-packs: [dock_north, dock_south, trestle_walkers]
+    seal: [220, 17, 33, 220, 20, 35]
+    checkpoint: [224, 17, 35, 90]
+    points: [[236, 17, 46, 180], [228, 17, 40], [244, 17, 40], [228, 17, 54], [244, 17, 54]]
     encounter:
       type: boss
       boss: custom:deep_foreman
       boss-level-bonus: 4
       abilities: [slam, summon]
       phases:
-        - {at: 50, abilities: [slam, meteor, summon, charge], title: "The Foreman brings the roof down"}
-      enrage-seconds: 360
+        - {at: 66, abilities: [slam, summon, charge], title: "The Foreman opens the vents"}
+        - {at: 33, abilities: [slam, meteor, summon, charge], title: "The Foreman brings the roof down"}
+      enrage-seconds: 420
       adds-at-health: [75, 40]
       waves:
-        - {"custom:gloom_miner": 3}
-        - {"custom:powder_sapper": 2, "custom:gloom_miner": 1}
+        - {"custom:drowned_stoker": 3}
+        - {"custom:soot_caster": 2, "custom:forge_thrall": 2}
       scripts:
-        start:
-          - "cutscene foreman"
-          - "wait 7"
-          - "say The Deep Foreman|Shift's over when I say it's over."
-        health-50: ["break west_pillars", "hazard start delve_rockfall", "say The Deep Foreman|Bring it ALL down!"]
-        clear: ["hazard stop delve_rockfall", "say hesk|The Gloomforge goes quiet. First time in years. Out past the gold vein, friends."]
+        start: ["cutscene foreman_wakes", "wait 9", "say hesk|Those ore skips over the deck! Bring him under one when the chain goes!", "hazard start ore_skips"]
+        health-66: ["hazard start forge_vents", "say The Deep Foreman|Stoke it! All of it!"]
+        health-33: ["hazard start deep_rockfall", "say The Deep Foreman|Bring it ALL down!"]
+        clear: ["hazard stop ore_skips", "hazard stop forge_vents", "hazard stop deep_rockfall", "npc hesk 241 17 55 0", "say hesk|The Gloomforge goes quiet. First time in a hundred years. Come on up, friends."]
 
 guide:
-  lore: "Gloomsteel is the dark ore that drinks light, and the Gloomforge has mined it for generations. Old Miner Hesk worked these galleries for forty years. Then the Deep Foreman took a new contract: payment in gold from a buyer who signs with a burning crown, and orders to dig straight down towards the old keep. Overseer Grell, the Blastmaster and the slag-fed hound follow the Foreman now, and the deeper they dig, the hotter the stone runs."
-  overview: A gauntlet through the deep galleries. Ring the alarms, then beat three mini-bosses (Overseer Grell, the Blastmaster and the Slag Hound) before the Deep Foreman.
+  lore: "Gloomsteel is the dark ore that drinks light, and the Gloomforge has mined it for generations. Old Miner Hesk worked these levels for forty years. Then the Deep Foreman took a contract from a buyer he never met, paid in old gold, with one instruction: dig straight down. The night shift never came back up."
+  overview: A descent through five levels of the mine. Thin the galleries, walk down the Gullet, beat Overseer Grell, run the Mainline, break the Blastmaster on the Ore Line, bank the Round Foundry, and cross the black water to the Deep Foreman on the Gloomforge. The Slag Hound waits off the Foundry if you want it.
   tips:
-    - The supply crate by the galleries' entrance hands out a bow and arrows. The alarm targets have to be hit within 25 seconds of the first.
-    - Throw anything heavy onto the Blasting Hall's two cart plates; an item on each keeps them down.
-    - Each mini-boss gets the boss bar. Kill its helpers first if you're struggling.
-    - In the Foreman's second half the west pillars collapse and rocks fall all through the delve. Keep moving.
+    - Enemy forces fill as you kill. The door to the Gloomforge stays barred until they reach 100%, so clear more than you strictly have to.
+    - When a bell rings and sparks run down a rail, a cart is about two seconds behind them. Get off that track. On the Mainline, that means a refuge in the wall.
+    - Carts hit anything on the rails. They kill the crews outright, and they stun a boss and take a slice of its health.
+    - Light every fire you pass. If you fall in a fight, that's where you run back from, and everything you've killed stays dead.
+    - The black water at the bottom won't kill you, but it stings on the way out.
+    - The east drift off the first crosscut goes nowhere useful, which is why nobody ever found what's at the end of it.
   rooms:
-    ore_galleries: Gloom miners and a pillager while you shoot the targets on three alarm posts.
-    grells_shaft: Overseer Grell charges and cleaves. Don't get knocked into the open shaft.
-    blasting_hall: The Blastmaster fires volleys and sets the floor alight, and blasting charges go off around the hall. Load both ore carts with counterweights from the supply crate.
-    slag_pits: The Slag Hound charges and leaps while rock falls from the ceiling. Stay off the glowing slag.
-    foremans_delve: The Deep Foreman, his miners, and a cave-in.
-  boss: The Deep Foreman slams the ground and calls his miners; at three-quarters and two-fifths health more arrive. Below half he charges, drops a crushing rock on one player (stand with them to share it), the west pillars collapse and rocks fall throughout the delve.
+    grells_shaft: Overseer Grell charges and cleaves, and the timber loads over his cave come down one at a time. Bait him under one for a free stun.
+    the_mainline: One long tunnel with rails down the middle. Fight down it, and dive into a refuge when the bell rings.
+    ore_line: A rail yard. Carts cross it on seven tracks, faster as the fight goes on, and powder carts blow up at the end of the line. Lure the Blastmaster onto the rails.
+    round_foundry: Fight off the forge's thralls and pull the three damper levers to open the north door.
+    slag_pits: Optional. The Slag Hound charges and leaps, slag runs across the floor, and rock falls from the roof.
+    the_gloomforge: The Deep Foreman, on the deck of the furnace barge. Light the Last Dock's fire before you cross. See the boss briefing.
+  boss: The Deep Foreman slams the deck and calls his crew. Ore skips hang over the deck on chains and come down one by one, so drag him under one. Below two-thirds he charges and the forge vents fire across the deck, and below a third he drops crushing rocks on the party while the roof comes in.
 loot:
   marks: 260
   items: {raw_iron: 12, raw_gold: 6, diamond: 1, experience_bottle: 5}
+# Campaign credit is set in the season file (campaign/season.yml), not here.
+

@@ -319,6 +319,7 @@ public final class ExpeditionValidator {
                     for (var section : hazard.sections())
                         if (!story.devices().containsKey(section.device())) error(issues, "Hazard '" + hazard.id() + "' names unknown device '" + section.device() + "'.", where + ".sections");
                 }
+                case CARTS -> { if (hazard.lanes().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no rails.", "lanes: [[x1, z1, x2, z2], ...], each straight along one track"); }
                 case GUST -> { if (hazard.lanes().isEmpty()) error(issues, "Hazard '" + hazard.id() + "' has no wind to blow.", "lanes: [[x1, z1, x2, z2], ...]"); }
                 default -> { }
             }

@@ -34,6 +34,12 @@ expeditions:
     materials: [gloomsteel_ore, blasting_powder, foremans_lamp]
     gear: [gloomforged_helm, gloomforged_plate, gloomforged_greaves, gloomforged_boots, gloomforged_pick]
     signatures: [deep_foremans_pick]
+    finds: [timbered_buckler, lamp_cord, shift_pauldrons, soot_cloak, ore_cuffs, prospectors_mitts, miners_toolbelt, gloomsteel_loop, canary_whistle]
+    bosses:
+      grells_shaft: [overseers_bracers, tally_keepers_gloves, timberset_girdle, overseers_axe, overtime_band, grells_shift_ledger]
+      ore_line: [blasters_goggles, cartbreakers_shoulders, powder_stained_mantle, fuse_cord_belt, switchmans_boots, ore_line_bell, blastmasters_repeater]
+      slag_pits: [slagscale_leggings, emberhide_mantle, slag_collar, hounds_tooth_band, molten_heart_stone]
+      the_gloomforge: [foremans_gauntlets, deep_collar, last_shift_treads, gloomsteel_bulwark, deep_foremans_cuirass, gloomforge_signet, deep_foremans_pick]
   hall_of_wardens:
     materials: [sigil_shard, wardens_seal, archive_key]
     gear: [wardensworn_helm, wardensworn_plate, wardensworn_greaves, wardensworn_boots, tri_seal_blade]

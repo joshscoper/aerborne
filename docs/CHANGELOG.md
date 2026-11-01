@@ -5,6 +5,20 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Gloomforge Mines rebuilt (October 31)
+- **A descent, with a look for every level.** A timbered mine portal in a green valley; the Gullet, a terraced pit open to
+  the sky with a tree grown up from its floor; a cavern of blue crystal; a rail yard on trestles over a dark drop; a
+  platform in a sea of lava before a fortress with fire running down its face; and a drowned blue cathedral.
+- **The Gloomforge is a ship.** A tiered vessel under curved copper roofs, with the forge burning in its windows, two
+  masts and a web of rigging. Its deck is the Deep Foreman's arena, and the black water around it throws you back out.
+- **Carts.** A new hazard sends loaded carts down the rails, a bell and sparks first. On the Mainline you dive into a
+  refuge in the wall. On the Ore Line carts cross the yard on seven tracks, faster as the fight goes on, and powder
+  carts go up at the end of the line. They flatten crews, and they stun a boss and take a slice of its health, so
+  luring the Blastmaster onto the rails is how the fight is won.
+- **Bosses and rewards.** Overseer Grell, the Blastmaster, the optional Slag Hound and the Deep Foreman each have their
+  own room and drops. There's gear for every slot, five new enemies, and a daily from Old Miner Hesk.
+- **Best times reset** on the new map. Clears and keys are kept.
+
 ### Sealed weapons, vanilla experience and map sizes (October 31)
 - **Unidentified weapons can't be used.** A sealed bow, crossbow, trident, shield or rod won't draw, load or block, and
   a sealed melee weapon won't strike, until it's identified. Doors and chests still open with one in hand.

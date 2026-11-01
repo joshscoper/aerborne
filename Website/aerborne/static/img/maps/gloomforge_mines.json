@@ -1,16 +1,20 @@
 {
-  "version": "4be2591cb2c22608",
-  "width": 861,
-  "height": 1155,
-  "entrance": {"x": 50.0, "y": 10.6},
+  "version": "0543cabb6f84b7b6",
+  "width": 1400,
+  "height": 1021,
+  "entrance": {"x": 12.2, "y": 11.1},
   "pins": [
-    {"name": "The Deep Foreman", "room": "The Foreman's Delve", "icon": "skull", "color": "#c65642", "optional": false, "x": 50.0, "y": 84.5}
+    {"name": "Overseer Grell", "room": "Grell's Shaft", "icon": "staff", "color": "#c65642", "optional": false, "x": 22.8, "y": 66.3},
+    {"name": "The Blastmaster", "room": "The Ore Line", "icon": "bow", "color": "#e2a030", "optional": false, "x": 46.3, "y": 79.6},
+    {"name": "Slag Hound", "room": "The Slag Pits", "icon": "shield", "color": "#9668b6", "optional": true, "x": 61.6, "y": 57.1},
+    {"name": "The Deep Foreman", "room": "The Gloomforge", "icon": "skull", "color": "#5482a8", "optional": false, "x": 77.5, "y": 30.4}
   ],
   "places": [
-    {"name": "The Ore Galleries", "kind": "room", "x": 50.0, "y": 23.3},
-    {"name": "Grell's Shaft", "kind": "room", "x": 48.9, "y": 37.7},
-    {"name": "The Blasting Hall", "kind": "room", "x": 50.0, "y": 50.9},
-    {"name": "The Slag Pits", "kind": "room", "x": 50.0, "y": 64.9},
-    {"name": "Miners' Rest", "kind": "fire", "x": 52.4, "y": 73.6}
+    {"name": "The Mainline", "kind": "room", "x": 30.2, "y": 80.4},
+    {"name": "The Round Foundry", "kind": "room", "x": 44.0, "y": 47.5},
+    {"name": "Lift Station Fire", "kind": "fire", "x": 13.4, "y": 16.7},
+    {"name": "Foot of the Gullet", "kind": "fire", "x": 15.1, "y": 51.4},
+    {"name": "Miners' Rest", "kind": "fire", "x": 42.2, "y": 52.6},
+    {"name": "The Last Dock", "kind": "fire", "x": 60.4, "y": 27.2}
   ]
 }

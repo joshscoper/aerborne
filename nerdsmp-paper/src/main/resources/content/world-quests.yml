@@ -1106,6 +1106,24 @@ quests:
       xp: {hunting: 550}
       items: ["material:experience_bottle 2"]
 
+  daily_night_shift:
+    chain: daily_bounties
+    title: The Night Shift
+    giver: old_miner_hesk
+    level: 1
+    repeat: daily
+    offer:
+      - "They keep coming up out of the deep levels, whatever we do. Clear a shift's worth for me."
+      - "Miners, thralls, whatever's crawled out of the water. I'll see you at the bottom, if you get there."
+    complete:
+      - "That's a shift's work, and more than the Foreman ever paid for. Take this."
+    objectives:
+      - {type: kill, targets: ["custom:gloom_miner", "custom:cave_lurker", "custom:powder_sapper", "custom:pit_brute", "custom:forge_thrall", "custom:soot_caster", "custom:drowned_stoker"], count: 30, description: Work the night shift}
+    rewards:
+      marks: 300
+      xp: {hunting: 750}
+      items: ["material:experience_bottle 3"]
+
   daily_gnawer_cull:
     chain: daily_bounties
     title: Gnawer Cull

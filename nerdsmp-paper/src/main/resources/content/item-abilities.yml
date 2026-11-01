@@ -27,6 +27,13 @@ abilities:
   heartwood_band: [ember_aura]
   heart_seed: [last_stand]
   thornheart_cuirass: [ember_aura]
+  grells_shift_ledger: [grave_sight]
+  switchmans_boots: [fleet_stride]
+  ore_line_bell: [last_stand]
+  blastmasters_repeater: [ember_brand]
+  molten_heart_stone: [ember_aura]
+  deep_foremans_cuirass: [last_stand]
+  gloomforge_signet: [ember_aura]
   # The other dungeons.
   briarshot_crossbow: [grave_chill]
   thornheart_rapier: [shadow_step]
@@ -81,6 +88,335 @@ items:
     stats: {max-health: 2}
     lore:
       - "<gray>It chipped off in the fight. It seems proud of you.</gray>"
+  timbered_buckler:
+    material: shield
+    name: "<green>Timbered Buckler</green>"
+    slot: off_hand
+    rarity: uncommon
+    item-level: 20
+    stats: {defense: 6}
+    lore:
+      - "<gray>A pit prop, cut down and strapped to an arm.</gray>"
+  lamp_cord:
+    material: string
+    name: "<green>Lamp Cord</green>"
+    slot: neck
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {max-health: 4}
+    lore:
+      - "<gray>It held a lamp round someone's neck. The lamp's gone.</gray>"
+  shift_pauldrons:
+    material: leather
+    name: "<green>Shift Pauldrons</green>"
+    slot: shoulders
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {defense: 3}
+    lore:
+      - "<gray>Worn smooth where the ore sacks sat.</gray>"
+  soot_cloak:
+    material: phantom_membrane
+    name: "<green>Soot Cloak</green>"
+    slot: back
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {max-health: 4}
+    lore:
+      - "<gray>No amount of washing will ever get it clean.</gray>"
+  ore_cuffs:
+    material: iron_nugget
+    name: "<green>Ore Cuffs</green>"
+    slot: wrists
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {defense: 3}
+    lore:
+      - "<gray>Riveted on. The rivets were meant to stay.</gray>"
+  prospectors_mitts:
+    material: rabbit_hide
+    name: "<green>Prospector's Mitts</green>"
+    slot: hands
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {defense: 2, damage-flat: 1}
+    lore:
+      - "<gray>Holes in the fingertips, for feeling the seam.</gray>"
+  miners_toolbelt:
+    material: leather
+    name: "<green>Miner's Toolbelt</green>"
+    slot: waist
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {defense: 3}
+    lore:
+      - "<gray>One loop is still holding a stub of candle.</gray>"
+  gloomsteel_loop:
+    material: iron_nugget
+    name: "<green>Gloomsteel Loop</green>"
+    slot: ring
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {max-health: 3}
+    lore:
+      - "<gray>Dark enough that it seems to be a hole in your finger.</gray>"
+  canary_whistle:
+    material: feather
+    name: "<green>Canary Whistle</green>"
+    slot: trinket
+    rarity: uncommon
+    item-level: 20
+    sockets: 1
+    stats: {life-steal-percent: 1}
+    lore:
+      - "<gray>They kept a canary on every level. Hesk still whistles to his.</gray>"
+  overseers_bracers:
+    material: iron_chain
+    name: "<blue>Overseer's Bracers</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>He counted the shift on these, one notch a man.</gray>"
+  tally_keepers_gloves:
+    material: rabbit_hide
+    name: "<blue>Tally-Keeper's Gloves</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 3, damage-flat: 2}
+    lore:
+      - "<gray>Inked black from the thumb to the first knuckle.</gray>"
+  timberset_girdle:
+    material: leather
+    name: "<blue>Timberset Girdle</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>Braced like a pit prop, and about as comfortable.</gray>"
+  overseers_axe:
+    material: iron_axe
+    name: "<blue>Overseer's Axe</blue>"
+    slot: main_hand
+    rarity: rare
+    item-level: 22
+    sockets: 2
+    stats: {damage: 13}
+    lore:
+      - "<gray>For cutting props. Mostly for cutting props.</gray>"
+  overtime_band:
+    material: gold_nugget
+    name: "<blue>Overtime Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {max-health: 5}
+    lore:
+      - "<gray>Paid to whoever stayed past the bell.</gray>"
+  grells_shift_ledger:
+    material: book
+    name: "<light_purple>Grell's Shift Ledger</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 24
+    sockets: 2
+    stats: {max-health: 5, damage-percent: 3}
+    lore:
+      - "<gray>Every name is crossed out but one, and the ink on that is wet.</gray>"
+  blasters_goggles:
+    material: leather_helmet
+    name: "<blue>Blaster's Goggles</blue>"
+    slot: head
+    rarity: rare
+    item-level: 22
+    sockets: 2
+    stats: {defense: 5}
+    lore:
+      - "<gray>The lenses are smoked. The eyebrows are extra.</gray>"
+  cartbreakers_shoulders:
+    material: leather
+    name: "<blue>Cartbreaker's Shoulders</blue>"
+    slot: shoulders
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>Whoever wore them stopped a loaded cart. Once.</gray>"
+  powder_stained_mantle:
+    material: phantom_membrane
+    name: "<blue>Powder-Stained Mantle</blue>"
+    slot: back
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {max-health: 6}
+    lore:
+      - "<gray>Keep it well away from anything lit.</gray>"
+  fuse_cord_belt:
+    material: leather
+    name: "<blue>Fuse-Cord Belt</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 4, damage-flat: 2}
+    lore:
+      - "<gray>Three feet of fuse, cut and waiting.</gray>"
+  switchmans_boots:
+    material: leather_boots
+    name: "<light_purple>Switchman's Boots</light_purple>"
+    slot: feet
+    rarity: epic
+    item-level: 24
+    sockets: 2
+    stats: {defense: 7}
+    lore:
+      - "<gray>Worn by the only man who ever outran the Mainline.</gray>"
+  ore_line_bell:
+    material: gold_ingot
+    name: "<light_purple>Ore Line Bell</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 24
+    sockets: 2
+    stats: {max-health: 4, damage-percent: 3}
+    lore:
+      - "<gray>When it rings, somebody had better move.</gray>"
+  blastmasters_repeater:
+    material: crossbow
+    name: "<light_purple>The Blastmaster's Repeater</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 24
+    sockets: 3
+    stats: {damage: 17}
+    lore:
+      - "<gray>He kept it loaded. He kept everything loaded.</gray>"
+  slagscale_leggings:
+    material: chainmail_leggings
+    name: "<blue>Slagscale Leggings</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 22
+    sockets: 2
+    stats: {defense: 8}
+    lore:
+      - "<gray>Scabs of cooled slag, sewn onto hide.</gray>"
+  emberhide_mantle:
+    material: leather
+    name: "<blue>Emberhide Mantle</blue>"
+    slot: shoulders
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>Still warm, whatever the weather.</gray>"
+  slag_collar:
+    material: iron_chain
+    name: "<blue>Slag Collar</blue>"
+    slot: neck
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {max-health: 6}
+    lore:
+      - "<gray>Too big for any hound that ought to exist.</gray>"
+  hounds_tooth_band:
+    material: bone_meal
+    name: "<blue>Hound's Tooth Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 22
+    sockets: 1
+    stats: {damage-flat: 2}
+    lore:
+      - "<gray>A ring cut from a single tooth.</gray>"
+  molten_heart_stone:
+    material: magma_cream
+    name: "<light_purple>Molten Heart-Stone</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 24
+    sockets: 2
+    stats: {life-steal-percent: 2, max-health: 4}
+    lore:
+      - "<gray>It beats, slowly, when you sleep.</gray>"
+  foremans_gauntlets:
+    material: chainmail_boots
+    name: "<blue>Foreman's Gauntlets</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 24
+    sockets: 2
+    stats: {defense: 5, damage-flat: 2}
+    lore:
+      - "<gray>He dug the last forty feet with these.</gray>"
+  deep_collar:
+    material: iron_ingot
+    name: "<blue>Deep Collar</blue>"
+    slot: neck
+    rarity: rare
+    item-level: 24
+    sockets: 1
+    stats: {max-health: 7}
+    lore:
+      - "<gray>A contract in gold thread, stitched inside. No signature.</gray>"
+  last_shift_treads:
+    material: iron_boots
+    name: "<blue>Last Shift Treads</blue>"
+    slot: feet
+    rarity: rare
+    item-level: 24
+    sockets: 2
+    stats: {defense: 7}
+    lore:
+      - "<gray>The soles are worn through on the way down, and untouched on the way up.</gray>"
+  gloomsteel_bulwark:
+    material: shield
+    name: "<blue>Gloomsteel Bulwark</blue>"
+    slot: off_hand
+    rarity: rare
+    item-level: 24
+    sockets: 2
+    stats: {defense: 9}
+    lore:
+      - "<gray>Torchlight goes into it and doesn't come back out.</gray>"
+  deep_foremans_cuirass:
+    material: iron_chestplate
+    name: "<light_purple>The Deep Foreman's Cuirass</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 26
+    sockets: 3
+    stats: {defense: 13}
+    lore:
+      - "<gray>Dented from the inside.</gray>"
+  gloomforge_signet:
+    material: gold_nugget
+    name: "<light_purple>Gloomforge Signet</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 26
+    sockets: 2
+    stats: {max-health: 6, damage-percent: 3}
+    lore:
+      - "<gray>A burning crown, pressed into the gold by someone else's hand.</gray>"
   rangers_roundel:
     material: shield
     name: "<green>Ranger's Roundel</green>"

@@ -1,16 +1,16 @@
 {
   "version": "de25611b38fad1c2",
-  "width": 1038,
+  "width": 1039,
   "height": 1400,
-  "entrance": {"x": 49.7, "y": 11.0},
+  "entrance": {"x": 48.2, "y": 16.6},
   "pins": [
-    {"name": "The Old Sentinel", "room": "The Final Test", "icon": "shield", "color": "#c65642", "optional": false, "x": 49.7, "y": 84.4}
+    {"name": "The Old Sentinel", "room": "The Final Test", "icon": "shield", "color": "#c65642", "optional": false, "x": 48.2, "y": 85.4}
   ],
   "places": [
-    {"name": "The Trial Path", "kind": "room", "x": 50.1, "y": 38.3},
-    {"name": "The Guardian Yard", "kind": "room", "x": 49.4, "y": 53.8},
-    {"name": "The Rune Gate", "kind": "room", "x": 49.7, "y": 61.0},
-    {"name": "The Landing", "kind": "fire", "x": 52.0, "y": 20.2},
-    {"name": "Trial's End", "kind": "fire", "x": 51.4, "y": 45.6}
+    {"name": "The Trial Path", "kind": "room", "x": 48.5, "y": 42.2},
+    {"name": "The Guardian Yard", "kind": "room", "x": 47.9, "y": 56.7},
+    {"name": "The Rune Gate", "kind": "room", "x": 48.2, "y": 63.4},
+    {"name": "The Landing", "kind": "fire", "x": 50.3, "y": 25.2},
+    {"name": "Trial's End", "kind": "fire", "x": 49.7, "y": 49.0}
   ]
 }

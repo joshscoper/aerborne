@@ -34,7 +34,7 @@ class SampleTemplatesTest {
 
     private static boolean solid(Map<Cell, Material> blocks, int x, int y, int z) {
         Material material = blocks.getOrDefault(new Cell(x, y, z), Material.AIR);
-        return material != Material.AIR && material != Material.CANDLE && material != Material.COBWEB && material != Material.MOSS_CARPET;
+        return material != Material.AIR && material != Material.CANDLE && material != Material.COBWEB && material != Material.MOSS_CARPET && material != Material.RAIL;
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
@@ -138,6 +138,7 @@ class SampleTemplatesTest {
 
     private static boolean seeThrough(Material material) {
         return material == Material.AIR || material == Material.COBWEB || material == Material.HANGING_ROOTS || material == Material.IRON_CHAIN
+            || material == Material.RAIL || material == Material.VINE
             || material.name().endsWith("CANDLE") || material.name().endsWith("LANTERN") || material.name().endsWith("CAMPFIRE");
     }
 
@@ -186,6 +187,39 @@ class SampleTemplatesTest {
     @Test void theCanopysCamerasStayClearOfWalls() { camerasStayClearOfWalls("thornwood_canopy"); }
 
     @Test void firstFlightsCamerasStayClearOfWalls() { camerasStayClearOfWalls("first_flight"); }
+
+    @Test void theMinesCamerasStayClearOfWalls() { camerasStayClearOfWalls("gloomforge_mines"); }
+
+    /** Walks the Mines from the spawn on foot, with every gate up: drops of three at most, steps of one, no jumps across a gap. */
+    @Test void theMinesCanBeWalkedFromTheTopToTheBarge() {
+        var mines = definition("gloomforge_mines");
+        Map<Cell, Material> blocks = new HashMap<>(blocks("gloomforge_mines"));
+        blocks.values().removeIf(material -> material == Material.IRON_BARS);
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
+        open.add(new Cell(mines.spawn().x(), mines.spawn().y(), mines.spawn().z()));
+        while (!open.isEmpty()) {
+            Cell at = open.poll();
+            if (!seen.add(at)) continue;
+            for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) for (int dy = -3; dy <= 1; dy++) {
+                int x = at.x() + step[0], y = at.y() + dy, z = at.z() + step[1];
+                if (!solid(blocks, x, y, z) && !solid(blocks, x, y + 1, z) && solid(blocks, x, y - 1, z)
+                    && !blocks.getOrDefault(new Cell(x, y - 1, z), Material.AIR).name().endsWith("FENCE")) open.add(new Cell(x, y, z));
+            }
+        }
+        var targets = new java.util.ArrayList<>(List.of(mines.exit()));
+        for (var room : mines.roomList()) targets.add(room.checkpoint());
+        for (var fire : mines.story().campfires().values()) targets.add(fire.at());
+        for (var pack : mines.story().packs().values()) targets.add(pack.at());
+        List<String> stranded = new java.util.ArrayList<>();
+        for (var target : targets) {
+            boolean reached = false;
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
+                reached |= seen.contains(new Cell(target.x() + dx, target.y() + dy, target.z() + dz));
+            if (!reached) stranded.add(target.x() + "," + target.y() + "," + target.z());
+        }
+        assertTrue(stranded.isEmpty(), "can't be reached on foot: " + stranded);
+    }
 
     private static boolean walkThrough(Material material) {
         return seeThrough(material) || material == Material.MOSS_CARPET || material == Material.RED_MUSHROOM || material == Material.SWEET_BERRY_BUSH;
@@ -478,7 +512,7 @@ class SampleTemplatesTest {
         for (String id : ExpeditionService.SAMPLES) {
             assertSame(SampleTemplates.plan(id), SampleTemplates.plan(id));
             assertTrue(SampleTemplates.plan(id).size() > 5_000, id);
-            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> Math.abs(p.cell().x()) < 128 && p.cell().z() > -128 && p.cell().z() < 256), id);
+            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> p.cell().x() > -128 && p.cell().x() < 320 && p.cell().z() > -128 && p.cell().z() < 256), id);
         }
         assertNull(SampleTemplates.plan("nope"));
         assertTrue(blocks("cinder_keep").containsValue(Material.MAGMA_BLOCK));

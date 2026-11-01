@@ -41,6 +41,8 @@ final class ExpeditionMapPainter {
     private final Map<Cell, Material> blocks;
     private final Map<String, Map<String, String>> mobs;
     private final Set<Long> floor = new HashSet<>();
+    /** Open water nobody is meant to stand in: anything a fall would catch them from. */
+    private final Set<Long> lake = new HashSet<>();
     private final Set<Cell> walked = new HashSet<>();
     private int minX, minZ, maxX, maxZ;
     private double scale;
@@ -53,6 +55,7 @@ final class ExpeditionMapPainter {
         this.mobs = mobs;
         open();
         walk();
+        drown();
         bounds();
         mark();
     }
@@ -83,7 +86,25 @@ final class ExpeditionMapPainter {
             || name.endsWith("CAMPFIRE") || name.endsWith("SKULL") || name.endsWith("BANNER");
     }
 
+    private boolean belowTheFalls(int y) {
+        var falls = expedition.story().falls();
+        return falls != null && y < falls.below();
+    }
+
+    /** The water, and anything built out over it, such as a ship's cabins, which nobody walks on but which aren't lake. */
+    private void drown() {
+        for (var entry : blocks.entrySet())
+            if (entry.getValue() == Material.WATER && belowTheFalls(entry.getKey().y())) lake.add(key(entry.getKey().x(), entry.getKey().z()));
+        var falls = expedition.story().falls();
+        if (falls == null) return;
+        for (var entry : blocks.entrySet()) {
+            var at = entry.getKey();
+            if (at.y() >= falls.below() && at.y() <= falls.below() + 8 && lake.contains(key(at.x(), at.z())) && !open(entry.getValue())) floor.add(key(at.x(), at.z()));
+        }
+    }
+
     private boolean stands(Cell at) {
+        if (belowTheFalls(at.y())) return false;
         Material below = blocks.get(new Cell(at.x(), at.y() - 1, at.z()));
         boolean ground = below == Material.WATER || !open(below) && !below.name().endsWith("FENCE") && !below.name().endsWith("WALL");
         return ground && open(blocks.get(at)) && open(blocks.get(new Cell(at.x(), at.y() + 1, at.z())));
@@ -131,7 +152,9 @@ final class ExpeditionMapPainter {
     private void bounds() {
         minX = minZ = Integer.MAX_VALUE;
         maxX = maxZ = Integer.MIN_VALUE;
-        for (long cell : floor) {
+        Set<Long> drawn = new HashSet<>(floor);
+        drawn.addAll(lake);
+        for (long cell : drawn) {
             int x = (int) (cell >> 32), z = (int) cell;
             minX = Math.min(minX, x);
             maxX = Math.max(maxX, x);
@@ -300,12 +323,12 @@ final class ExpeditionMapPainter {
         for (int py = 0; py < height; py++) for (int px = 0; px < width; px++) {
             int x = minX + (int) (px / scale), z = minZ + (int) (py / scale);
             // Narrow bridges would vanish in the blur, so the floor is drawn a little fat.
-            boolean on = floor.contains(key(x, z)) || floor.contains(key(x + 1, z)) || floor.contains(key(x, z + 1));
-            mask[py * width + px] = on ? 1 : 0;
+            boolean walked = floor.contains(key(x, z)) || floor.contains(key(x + 1, z)) || floor.contains(key(x, z + 1));
+            mask[py * width + px] = walked || lake.contains(key(x, z)) ? 1 : 0;
             zones[py * width + px] = -1;
             for (int index = 0; index < regions.size(); index++) {
                 var region = regions.get(index);
-                if (region != null && x >= region.minX() && x <= region.maxX() && z >= region.minZ() && z <= region.maxZ()) zones[py * width + px] = index;
+                if (region != null && walked && x >= region.minX() && x <= region.maxX() && z >= region.minZ() && z <= region.maxZ()) zones[py * width + px] = index;
             }
         }
         float[] field = blur(mask, width, height, Math.max(2, (int) (block * .55))), wall = blur(mask, width, height, Math.max(3, (int) (block * 1.15)));
@@ -339,6 +362,13 @@ final class ExpeditionMapPainter {
             if (f > .5) {
                 double inside = Math.clamp((f - .5) * 3.5, 0D, 1D), light = .9 + grain * .17;
                 double fr = 234 * light, fg = 214 * light, fb = 164 * light;
+                int cellX = minX + (int) (px / scale), cellZ = minZ + (int) (py / scale);
+                if (lake.contains(key(cellX, cellZ)) && !floor.contains(key(cellX, cellZ))) {
+                    double swell = .86 + SampleKit.smooth(px, py, 26, 13) * .3;
+                    fr = 74 * swell;
+                    fg = 108 * swell;
+                    fb = 132 * swell;
+                }
                 int index = zones[at];
                 if (index >= 0 || zoneField[at] > .1) {
                     int[] color = ZONES[Math.max(index, nearestZone(zones, at, width, height)) % ZONES.length];
