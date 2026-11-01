@@ -5,6 +5,17 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Gloomforge detail and Mines fixes (November 1)
+- **You can't walk out past your own loot.** The exit waits while you still have a boss chest or reward chest to open, and it now
+  stands at the far end of the hall from the chests. This is what took a player out of the run after the final boss.
+- **The tunnels are lit and read as tunnels.** Every drift has hung lamps, including the steep ones, and its sides bank up
+  instead of leaving a trench. Timber sets only stand in actual drifts, with both legs on the floor, and rails stop cleanly.
+- **Fences join up** round the Gullet's terraces, broken slopes are bare rock instead of specks of dirt, and the hill sits level
+  at the head of the portal.
+- **The Gloomforge is detailed.** Parapets, window hoods and rune bands on the front, buttresses of rock down the cliff, new
+  causeway lamps, bronze doors, ribs and chandeliers in the hall, niches with small stone kings, a great anvil, a second
+  king over the hearth, and a fallen column in the south aisle.
+
 ### The Gloomforge, and an entrance for every boss (November 1)
 - **The Gloomforge is a dwarven forge-palace cut into the far cliff.** The ship is gone. You come out of the last drift looking
   straight down a stone causeway, past hooded guards and stacked lamps, to a terrace and a flared stair. Over them the cliff

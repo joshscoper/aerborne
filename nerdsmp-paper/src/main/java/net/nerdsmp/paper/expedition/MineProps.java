@@ -80,10 +80,7 @@ final class MineProps {
             b.block(x + dx, y + 1, z - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
             b.block(x + dx, y + 1, z + 3, Material.SPRUCE_TRAPDOOR, "facing=south,half=bottom,open=true");
         }
-        for (int dz : new int[]{0, 2}) {
-            b.block(x - 1, y, z + dz, Material.GRINDSTONE, "face=wall,facing=west");
-            b.block(x + 2, y, z + dz, Material.GRINDSTONE, "face=wall,facing=east");
-        }
+        for (int dz : new int[]{0, 2}) for (int side : new int[]{x - 1, x + 2}) b.block(side, y, z + dz, Material.DARK_OAK_TRAPDOOR, "facing=" + (side < x ? "west" : "east") + ",half=top,open=true");
     }
 
     /** One long shard of crystal, leaning a little, with a glowing heart. */

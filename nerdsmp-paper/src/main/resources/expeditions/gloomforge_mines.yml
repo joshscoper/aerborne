@@ -15,7 +15,7 @@ time-limit-minutes: 45
 # Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
 records-version: 4
 spawn: [14, 97, -2, 0]
-exit: [286, 17, 34]
+exit: [287, 17, 34]
 modifiers: []
 requires: [sunken_aqueduct]
 goal: forces
@@ -234,8 +234,8 @@ companion-drops:
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [284, 17, 30]
-  bonus: [284, 17, 38]
+  free: [272, 17, 30]
+  bonus: [272, 17, 38]
 
 rooms:
   grells_shaft:

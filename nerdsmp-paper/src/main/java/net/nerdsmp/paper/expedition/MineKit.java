@@ -45,7 +45,7 @@ final class MineKit {
     /** A block of rock has to be part of something at least this big to stay. */
     private static final int CRUMB = 400;
     private static final double DRIFT_CLEAR = 2.5;
-    private static final int SET_EVERY = 11, REACH = 4;
+    private static final int SET_EVERY = 11, REACH = 4, SET_WIDEST = 8, LAMP_EVERY = 9;
 
     private record Door(int x, int floor, int z, boolean alongX, int length) { }
 
@@ -124,7 +124,11 @@ final class MineKit {
 
     /** The rock takes back everything past this line, so a cave ends in a cliff. */
     void stopAt(int x) {
-        air.removeIf(cell -> xOf(cell) > x);
+        // Not a ruled line: great buttresses of rock run down the cliff, and it leans back as it climbs.
+        air.removeIf(cell -> {
+            int y = yOf(cell), z = zOf(cell);
+            return xOf(cell) > x - smooth(z, y / 6, 12, 530) * 12 + Math.max(0, y - 50) / 3;
+        });
         dressed.removeIf(cell -> xOf(cell) > x);
     }
 
@@ -281,8 +285,12 @@ final class MineKit {
     void close(BuildCanvas b) {
         weather();
         // The drifts are the way through: however the rock settled, a party walks them two abreast with room to swing.
-        for (List<int[]> drift : drifts) for (int[] at : drift) for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++)
-            if (Math.hypot(dx, dz) <= DRIFT_CLEAR) for (int y = at[1] + 1; y <= at[1] + 5; y++) carve(at[0] + dx, y, at[2] + dz);
+        for (List<int[]> drift : drifts) for (int[] at : drift) for (int dx = -5; dx <= 5; dx++) for (int dz = -5; dz <= 5; dz++) {
+            // The sides bank up a step at a time, so a drift cut down through a floor doesn't read as a trench.
+            double out = Math.hypot(dx, dz);
+            int bank = out <= DRIFT_CLEAR ? 1 : (int) Math.ceil(out - DRIFT_CLEAR) + 1;
+            if (out <= DRIFT_CLEAR + 2) for (int y = at[1] + bank; y <= at[1] + 5; y++) carve(at[0] + dx, y, at[2] + dz);
+        }
         Set<Long> solid = new HashSet<>();
         for (long cell : air) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
@@ -306,6 +314,7 @@ final class MineKit {
         for (List<int[]> drift : drifts) rails(b, drift);
         ease(b);
         for (List<int[]> drift : drifts) sets(b, drift);
+        for (List<int[]> drift : drifts) lamps(b, drift);
         for (Door door : doors) frame(b, door);
     }
 
@@ -389,6 +398,8 @@ final class MineKit {
         for (int index = 1; index + 1 < cells.size(); index++) {
             int[] before = cells.get(index - 1), at = cells.get(index), after = cells.get(index + 1);
             if (at[1] == Integer.MIN_VALUE || before[1] == Integer.MIN_VALUE || after[1] == Integer.MIN_VALUE) continue;
+            // A rail can climb one block at a time. Where the floor drops further, the line stops rather than breaking off in the air.
+            if (Math.abs(at[1] - before[1]) > 1 || Math.abs(at[1] - after[1]) > 1) continue;
             String shape = shape(before, at, after);
             if (shape != null) b.block(at[0], at[1], at[2], Material.RAIL, "shape=" + shape);
         }
@@ -424,7 +435,8 @@ final class MineKit {
             while (right < 8 && open(at[0] + stepX * (right + 1), floor, at[2] + stepZ * (right + 1))) right++;
             int cap = floor + 3;
             // Both legs have to reach a wall and the ground, or it's not holding anything up.
-            if (left >= 8 || right >= 8 || !grounded(at[0] - stepX * left, floor, at[2] - stepZ * left) || !grounded(at[0] + stepX * right, floor, at[2] + stepZ * right)) continue;
+            // And only in a drift: out in a wider room it's a beam standing on its own.
+            if (left + right > SET_WIDEST || !leg(at[0] - stepX * left, floor, at[2] - stepZ * left, cap) || !leg(at[0] + stepX * right, floor, at[2] + stepZ * right, cap)) continue;
             for (int offset = -left; offset <= right; offset++) {
                 int x = at[0] + stepX * offset, z = at[2] + stepZ * offset;
                 if (open(x, cap, z)) b.block(x, cap, z, TIMBER, acrossX ? "axis=x" : "axis=z");
@@ -441,7 +453,26 @@ final class MineKit {
         }
     }
 
-    private boolean grounded(int x, int floor, int z) { return !open(x, floor - 1, z); }
+    /** A leg stands on the floor and runs clear all the way up to the cap. */
+    private boolean leg(int x, int floor, int z, int cap) {
+        if (open(x, floor - 1, z)) return false;
+        for (int y = floor; y <= cap; y++) if (!open(x, y, z)) return false;
+        return true;
+    }
+
+    /** A hung lamp down every drift, because a steep one gets no timber sets to carry them. */
+    private void lamps(BuildCanvas b, List<int[]> drift) {
+        for (int index = 4; index < drift.size(); index += LAMP_EVERY) {
+            int[] at = drift.get(index);
+            int floor = standing(at[0], at[1] + 1, at[2]);
+            if (floor == Integer.MIN_VALUE) continue;
+            int top = floor;
+            while (top < floor + 7 && open(at[0], top + 1, at[2])) top++;
+            if (top < floor + 3 || open(at[0], top + 1, at[2]) || !CanopyKit.empty(b, at[0], top, at[2]) || !CanopyKit.empty(b, at[0], top - 1, at[2])) continue;
+            b.block(at[0], top, at[2], Material.IRON_CHAIN, "axis=y");
+            b.block(at[0], top - 1, at[2], Material.LANTERN, "hanging=true");
+        }
+    }
 
     private void frame(BuildCanvas b, Door door) {
         for (int along = 0; along < door.length(); along += door.length() - 1) {

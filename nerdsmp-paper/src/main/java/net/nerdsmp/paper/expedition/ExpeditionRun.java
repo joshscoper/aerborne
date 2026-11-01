@@ -594,7 +594,8 @@ final class ExpeditionRun {
                 }
         } else if (state == State.ENDING && completed && expedition.exit() != null
             && expedition.exit().distanceSquared(to.getX(), to.getY(), to.getZ()) <= 6.25) {
-            service.sendHome(player, this, "<green>You leave " + Chat.escape(expedition.title()) + " with your spoils.</green>");
+            if (loot.owed(player.getUniqueId())) Chat.bar(player, "<gold>You still have a chest to open.</gold>");
+            else service.sendHome(player, this, "<green>You leave " + Chat.escape(expedition.title()) + " with your spoils.</green>");
         }
     }
 

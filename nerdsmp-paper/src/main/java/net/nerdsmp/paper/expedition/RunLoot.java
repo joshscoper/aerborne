@@ -432,6 +432,14 @@ final class RunLoot {
         show(player, "Bonus Chest", items, bonusPrice);
     }
 
+    /** Whether a player still has a chest here to open: nobody should walk out past their own loot. */
+    boolean owed(UUID player) {
+        if (rewards.containsKey(player)) return true;
+        for (ExpeditionDefinition.Room room : bossChests.values())
+            if (!looted.getOrDefault(BOSS_CHEST + room.id(), Set.of()).contains(player)) return true;
+        return false;
+    }
+
     /** At the close, an untaken free chest goes with the player rather than being lost. */
     List<ItemStack> unclaimed(UUID player) {
         List<ItemStack> items = rewards.remove(player);

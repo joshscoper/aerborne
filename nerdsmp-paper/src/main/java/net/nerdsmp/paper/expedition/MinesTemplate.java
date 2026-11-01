@@ -137,8 +137,9 @@ final class MinesTemplate {
         // The hill stands up as a crag behind the mine's mouth, so the portal is cut into something.
         double crag = Math.clamp((z - 15) * 2.6, 0, 26) * Math.exp(-Math.pow((x - 14) / 24D, 2)) * (z > 44 ? Math.max(0, 1 - (z - 44) / 18D) : 1);
         int rise = Math.max(1, (int) Math.round(Math.max(climb, crag + (smooth(x, z, 4, 616) - .5) * 5)));
-        // The roof of the mine's throat has to stay under the hill.
-        return PIT + (z >= 14 && z <= 26 && Math.abs(x - 14) <= 9 ? Math.max(rise, 8) : rise);
+        // Round the mine's mouth the hill is a level bank at the head of the portal, and it climbs away behind it.
+        boolean mouth = z >= 14 && z <= 24 && Math.abs(x - 14) <= 11;
+        return PIT + (mouth ? Math.max(11, z > 19 ? rise : 11) : rise);
     }
 
     /** Bare hillside in beds of stone, dark low down in the cracks and pale on the faces. */
@@ -164,7 +165,7 @@ final class MinesTemplate {
             boolean bare = top - lowest >= 2;
             boolean trampled = nearPit && (kit.open(x + 3, top, z) || kit.open(x - 3, top, z) || kit.open(x, top, z + 3) || kit.open(x, top, z - 3));
             if (bare) b.block(x, top, z, bed(x, top, z));
-            else if (trampled) b.block(x, top, z, smooth(x, z, 3, 619) < .5 ? Material.COARSE_DIRT : smooth(z, x, 3, 619) < .5 ? Material.ROOTED_DIRT : Material.GRAVEL);
+            else if (trampled) b.block(x, top, z, lowest < top ? bed(x, top, z) : smooth(x, z, 6, 619) < .5 ? Material.COARSE_DIRT : Material.GRAVEL);
             else b.block(x, top, z, Material.GRASS_BLOCK, "snowy=false");
             for (int y = top - 1; y >= Math.min(lowest, top - 4); y--) if (!kit.open(x, y, z)) b.block(x, y, z, top - y <= 1 && !bare ? Material.DIRT : bed(x, y, z));
             if (bare || trampled) continue;
@@ -226,13 +227,20 @@ final class MinesTemplate {
 
     /** A timber fence along the inner edge of a terrace, wherever the floor drops away. */
     private static void terraceRail(BuildCanvas b, MineKit kit, int y, double from, double to, double gapAt) {
+        int lastX = 0, lastZ = 0;
+        boolean first = true;
         for (double angle = 0; angle < Math.TAU; angle += .012) {
             double off = Math.abs(Math.IEEEremainder(angle - gapAt, Math.TAU));
-            if (off < .28) continue;
+            if (off < .28) { first = true; continue; }
             for (double r = from; r <= to; r += .4) {
                 int x = GULLET_X + (int) Math.round(Math.cos(angle) * r), z = GULLET_Z + (int) Math.round(Math.sin(angle) * r);
                 if (kit.open(x, y, z) || !kit.open(x, y + 1, z)) continue;
                 if (CanopyKit.empty(b, x, y + 1, z)) b.block(x, y + 1, z, RAIL);
+                // Fences only join square on, so a diagonal step needs a post in the corner or it's a row of sticks.
+                if (!first && Math.abs(x - lastX) == 1 && Math.abs(z - lastZ) == 1 && !kit.open(lastX, y, z) && kit.open(lastX, y + 1, z) && CanopyKit.empty(b, lastX, y + 1, z)) b.block(lastX, y + 1, z, RAIL);
+                lastX = x;
+                lastZ = z;
+                first = false;
                 break;
             }
         }
@@ -266,7 +274,7 @@ final class MinesTemplate {
             int edgeX = GULLET_X + (int) Math.round(Math.cos(angle) * (radius - 2.2)), edgeZ = GULLET_Z + (int) Math.round(Math.sin(angle) * (radius - 2.2));
             if (height > bottom + 1) b.block(edgeX, whole + (half ? 2 : 1), edgeZ, RAIL);
             // A leg every so often, down to whatever's under it.
-            if (step % 110 == 0) for (int y = whole - 1; y > DEEP - 2 && kit.open(edgeX, y, edgeZ); y--) b.block(edgeX, y, edgeZ, TIMBER, "axis=y");
+            if (step % 170 == 0) for (int y = whole - 1; y > DEEP - 2 && kit.open(edgeX, y, edgeZ); y--) b.block(edgeX, y, edgeZ, TIMBER, "axis=y");
         }
     }
 
@@ -413,7 +421,7 @@ final class MinesTemplate {
     /** One straight run of rails, and the refuges men jumped into when a cart came. */
     private static void mainline(BuildCanvas b) {
         straightRail(b, 60, 170, 96, 170, LINE + 1);
-        for (int x = 60; x <= 88; x += 6) {
+        for (int x = 66; x <= 88; x += 6) {
             b.block(x, LINE + 5, 170, Material.IRON_CHAIN, "axis=y");
             b.block(x, LINE + 4, 170, Material.LANTERN, "hanging=true");
             for (int side : new int[]{-1, 1}) b.block(x, LINE + 5, 170 + side, TIMBER, "axis=x");

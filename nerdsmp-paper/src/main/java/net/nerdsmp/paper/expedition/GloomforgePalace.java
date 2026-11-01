@@ -83,9 +83,13 @@ final class GloomforgePalace {
         king(front);
         wedge(front, kit);
         lava(front);
+        doors(front);
         hall(b);
         columns(b);
+        vaultRibs(b);
+        niches(b);
         hearth(b);
+        anvil(b);
         ruin(b);
     }
 
@@ -128,18 +132,26 @@ final class GloomforgePalace {
 
     /** Stone stacked on stone, stepping out and in, with the light let into it: the avenue's lamps. */
     private static void lamp(BuildCanvas b, int x, int y, int z) {
-        Frame lamp = new Frame(b, x, y, z, -1, 0);
-        lamp.box(-1, 1, 0, 2, -1, 1, DRESSED);
-        lamp.box(0, 0, 3, 7, 0, 0, BRICK);
-        lamp.box(-1, 1, 4, 4, -1, 1, Material.DEEPSLATE_BRICK_SLAB);
-        lamp.box(-1, 1, 7, 8, -1, 1, proud(x, y, z));
-        lamp.box(0, 0, 7, 8, 0, 0, GLOW);
-        lamp.set(0, 8, 1, GLOW);
-        lamp.set(0, 8, -1, GLOW);
-        lamp.set(1, 8, 0, GLOW);
-        lamp.set(-1, 8, 0, GLOW);
-        lamp.box(-1, 1, 9, 9, -1, 1, Material.DEEPSLATE_BRICK_SLAB);
-        lamp.box(0, 0, 10, 11, 0, 0, BRONZE);
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            b.block(x + dx, y, z + dz, DRESSED);
+            if (dx != 0 && dz != 0) b.block(x + dx, y + 1, z + dz, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+        }
+        for (int up = 1; up <= 7; up++) b.block(x, y + up, z, up % 3 == 0 ? BRONZE : Material.POLISHED_DEEPSLATE_WALL);
+        String[][] sides = {{"1", "0", "west"}, {"-1", "0", "east"}, {"0", "1", "north"}, {"0", "-1", "south"}};
+        for (String[] side : sides) {
+            int dx = Integer.parseInt(side[0]), dz = Integer.parseInt(side[1]);
+            b.block(x + dx, y + 1, z + dz, Material.POLISHED_DEEPSLATE_STAIRS, "facing=" + side[2] + ",half=bottom,shape=straight");
+            b.block(x + dx, y + 7, z + dz, Material.DEEPSLATE_BRICK_STAIRS, "facing=" + side[2] + ",half=top,shape=straight");
+            b.block(x + dx, y + 9, z + dz, Material.DEEPSLATE_TILE_STAIRS, "facing=" + side[2] + ",half=bottom,shape=straight");
+        }
+        for (int dx : new int[]{-1, 1}) for (int dz : new int[]{-1, 1}) {
+            b.block(x + dx, y + 8, z + dz, Material.TUFF_BRICK_WALL);
+            b.block(x + dx, y + 9, z + dz, Material.DEEPSLATE_TILE_SLAB, "type=bottom");
+        }
+        b.block(x, y + 8, z, GLOW);
+        b.block(x, y + 9, z, DRESSED);
+        b.block(x, y + 10, z, Material.POLISHED_DEEPSLATE_WALL);
+        b.block(x, y + 11, z, GOLD);
     }
 
     /** A hooded stone dwarf, both hands on the head of a hammer planted between his feet. */
@@ -232,8 +244,19 @@ final class GloomforgePalace {
                 front.set(side * a, 21, 2, BRONZE);
                 for (int h = 22; h <= 24; h++) for (int f = -2; f <= 2 - (h - 22); f++) front.set(side * a, h, f, Math.floorMod(a, 2) == 0 ? TILE : BRICK);
             }
+            // Merlons along the parapet, a bronze string course under them, and buttresses at the bays.
+            for (int a = 25; a <= 44; a++) {
+                front.set(side * a, 22, 4, Math.floorMod(a, 3) == 0 ? PALE_BRICK : Material.DEEPSLATE_BRICK_SLAB, Math.floorMod(a, 3) == 0 ? "" : "type=bottom");
+                if (Math.floorMod(a, 3) == 0) front.set(side * a, 23, 4, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+                front.set(side * a, 21, 4, BRONZE);
+                front.set(side * a, 0, 4, DRESSED);
+                front.set(side * a, 1, 4, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+            }
             for (int bay = 0; bay < 3; bay++) {
                 int middle = 28 + bay * 6;
+                // A window hood, and a sill you could stand a lamp on.
+                for (int across = -3; across <= 3; across++) front.set(side * (middle + across), 17, 4, Math.abs(across) == 3 ? DRESSED : Material.DEEPSLATE_BRICK_SLAB, Math.abs(across) == 3 ? "" : "type=top");
+                front.set(side * middle, 18, 4, GOLD);
                 for (int h = 0; h <= 16; h++) for (int across = -2; across <= 2; across++) {
                     boolean arch = h <= 12 || Math.abs(across) <= 2 - (h - 13);
                     if (!arch) continue;
@@ -277,6 +300,14 @@ final class GloomforgePalace {
                 if (rim) front.set(side * a, h, f, step % 2 == 0 ? BRICK : TILE);
             }
         }
+        // Bands of rune stone across the corners, so the long verticals have a rhythm.
+        for (int h : new int[]{9, 18, 27}) for (int a = inner; a <= outer; a++) if (a <= inner + 2 || a >= outer - 2) {
+            front.set(side * a, h, out + 1, Math.floorMod(a, 2) == 0 ? Material.CHISELED_TUFF_BRICKS : BRONZE);
+            front.set(side * a, h + 1, out + 1, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+        }
+        // Stone kings' axes hung on the outer faces, a little brazier of colour on all that dark.
+        for (int h = 12; h <= 22; h++) front.set(side * (outer + 1), h, 6, Material.POLISHED_BLACKSTONE);
+        front.box(side * (outer + 1), side * (outer + 1), 20, 23, 4, 8, BRONZE);
         int cx = side * (inner + outer) / 2;
         MineProps.crystals(front.b(), front.wx(cx, 4), front.y() + eave + 8, front.wz(cx, 4), 14, MineProps.BLUE, side + 40);
         for (int a : new int[]{inner + 1, outer - 1}) brazier(front, side * a, eave + 7, out - 1);
@@ -362,13 +393,28 @@ final class GloomforgePalace {
         }
     }
 
+    /** Bronze doors standing open: they've been open since the Foreman broke them, and one hangs off true. */
+    private static void doors(Frame front) {
+        for (int h = 0; h <= 7; h++) for (int depth = 0; depth < 5; depth++) for (int side : new int[]{-1, 1}) {
+            boolean skew = side > 0 && depth >= 3;
+            front.set(side * 5 + (side > 0 ? 0 : 0), h, -6 - depth, h % 3 == 0 ? BRONZE : Math.floorMod(depth, 2) == 0 ? VERDIGRIS : BRONZE);
+            if (h == 7 && skew) front.set(side * 5, h, -6 - depth, Material.AIR);
+        }
+        for (int side : new int[]{-1, 1}) for (int h = 1; h <= 6; h += 2) front.set(side * 4, h, -7, Material.POLISHED_BLACKSTONE_BUTTON, "face=wall,facing=" + (side < 0 ? "south" : "north"));
+    }
+
     /** The forge's overflow, running down the front either side of the gate and away along the terrace in stone channels. */
     private static void lava(Frame front) {
         for (int side : new int[]{-1, 1}) {
             int a = side * 12;
             for (int h = 30; h >= 0; h--) for (int f = 4; f <= 5; f++) front.set(a, h, f, Material.LAVA, h == 30 ? "level=0" : "level=8");
+            // It comes out of a bronze spout, and lands in a basin with a stone lip.
             front.box(a - 1, a + 1, 31, 32, 3, 6, BRONZE);
-            front.box(a, a, -1, -1, 4, 10, Material.LAVA);
+            front.box(a - 1, a + 1, 33, 33, 3, 5, Material.DEEPSLATE_BRICK_SLAB);
+            front.box(a - 2, a + 2, -1, -1, 3, 10, DRESSED);
+            front.box(a - 1, a + 1, -1, -1, 4, 9, Material.LAVA);
+            for (int f = 3; f <= 10; f++) for (int across : new int[]{-2, 2}) front.set(a + across, 0, f, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
+            for (int across = -2; across <= 2; across++) front.set(a + across, 0, 10, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
         }
     }
 
@@ -398,6 +444,40 @@ final class GloomforgePalace {
         for (int[] skip : new int[][]{{262, 30}, {278, 30}, {262, 38}, {278, 38}}) {
             for (int y = FLOOR + 11; y < CEILING; y++) b.block(skip[0], y, skip[1], Material.IRON_CHAIN, "axis=y");
             b.block(skip[0], FLOOR + 10, skip[1], Material.RAW_IRON_BLOCK);
+        }
+    }
+
+    /** Ribs from capital to capital, along the roof and across it, so the columns carry something. */
+    private static void vaultRibs(BuildCanvas b) {
+        for (int side : new int[]{-1, 1}) for (int x = FIRST_COLUMN; x <= END - 10; x++) for (int y = CEILING - 2; y < CEILING; y++) b.block(x, y, AXIS + side * ROW, y == CEILING - 2 ? BRONZE : DRESSED);
+        for (int x = FIRST_COLUMN; x < END - 8; x += GRID) for (int z = AXIS - ROW; z <= AXIS + ROW; z++) {
+            int arch = (int) Math.round(2 * Math.pow((ROW - Math.abs(z - AXIS)) / (double) ROW, .6));
+            for (int y = CEILING - 3 + arch; y < CEILING; y++) b.block(x, y, z, Math.abs(z - AXIS) <= 1 ? GOLD : DRESSED);
+        }
+        // Lamps on long chains down the nave, each with a crown of bronze.
+        for (int x = FIRST_COLUMN + 4; x < END - 8; x += GRID * 2) {
+            for (int y = FLOOR + 17; y < CEILING; y++) b.block(x, y, AXIS, Material.IRON_CHAIN, "axis=y");
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) if (Math.abs(dx) + Math.abs(dz) <= 3) b.block(x + dx, FLOOR + 16, AXIS + dz, Math.abs(dx) + Math.abs(dz) == 3 ? BRONZE : DRESSED);
+            b.block(x, FLOOR + 15, AXIS, GLOW);
+            for (int[] arm : new int[][]{{2, 0}, {-2, 0}, {0, 2}, {0, -2}}) b.block(x + arm[0], FLOOR + 15, AXIS + arm[1], Material.LANTERN, "hanging=true");
+        }
+    }
+
+    /** A niche in every bay of the side walls, with a small stone king in it and a slit of fire over his head. */
+    private static void niches(BuildCanvas b) {
+        for (int x = FIRST_COLUMN + 4; x < END - 4; x += GRID) for (int side : new int[]{-1, 1}) {
+            int z = AXIS + side * HALF;
+            Frame wall = new Frame(b, x, FLOOR + 1, z, 0, -side);
+            wall.box(-2, 2, 2, 10, -1, 0, SHADOW);
+            wall.box(-3, 3, 11, 11, 0, 0, BRONZE);
+            wall.box(-1, 1, 12, 15, 0, 0, Material.AIR);
+            wall.box(-1, 1, 12, 15, -1, -1, GLOW);
+            wall.both(3, 3, 1, 10, 0, 0, DRESSED);
+            wall.box(-2, 2, 1, 1, -1, 1, DRESSED);
+            wall.box(0, 0, 2, 3, -1, -1, PALE_BRICK);
+            wall.box(-1, 1, 4, 6, -1, -1, PALE_BRICK);
+            wall.box(0, 0, 7, 8, -1, -1, PALE);
+            wall.box(0, 0, 5, 6, 0, 0, Material.CALCITE);
         }
     }
 
@@ -437,6 +517,26 @@ final class GloomforgePalace {
             for (int side : new int[]{-1, 1}) end.set(side * (half + 1), h, 3, h % 2 == 0 ? BRONZE : DRESSED);
         }
         end.box(-10, 10, 13, 14, 3, 3, GOLD);
+        // Steps up to the grate, the old masters' floor, and two forge-guards in bronze either side.
+        for (int step = 0; step < 2; step++) for (int a = -10; a <= 10; a++) end.set(a, step - 1, 3 + (1 - step), Material.DEEPSLATE_BRICK_STAIRS, "facing=east,half=bottom,shape=straight");
+        // An old king over the fire, as he is on the front: the forge is his and always was.
+        for (int a = -9; a <= 9; a++) for (int h = 15; h <= 29; h++) {
+            double side = Math.abs(a), brow = 24, out = h >= brow + 1 ? 2 - side / 9 + (h < 27 ? 1 : 0) : h >= brow - 3 ? (side >= 2 && side <= 6 ? 1 : 2) : side <= 8 - (brow - 3 - h) * .6 ? 3 - (brow - 3 - h) / 5D : 0;
+            int reach = (int) Math.round(out);
+            for (int f = 3; f < 3 + reach; f++) end.set(a, h, f, h >= brow + 1 ? DRESSED : h == (int) brow ? BRONZE : h >= brow - 3 ? PALE_BRICK : Math.floorMod(a, 3) == 0 ? PALE_BRICK : Material.CALCITE);
+        }
+        for (int side : new int[]{-1, 1}) for (int a = 3; a <= 5; a++) end.set(side * a, 22, 3, GLOW);
+    }
+
+    /** The great anvil of the hall, before the hearth, with the Foreman's tools still on it. */
+    private static void anvil(BuildCanvas b) {
+        Frame anvil = new Frame(b, END - 12, FLOOR + 1, AXIS, -1, 0);
+        anvil.box(-2, 2, 0, 0, -3, 3, DRESSED);
+        anvil.box(-1, 1, 1, 1, -2, 2, Material.POLISHED_BLACKSTONE);
+        anvil.box(0, 0, 2, 2, -1, 1, Material.POLISHED_BLACKSTONE);
+        anvil.box(-1, 1, 3, 3, -3, 3, Material.POLISHED_BLACKSTONE);
+        anvil.box(-1, 1, 4, 4, -2, 2, BRONZE);
+        anvil.set(0, 4, 3, GOLD);
     }
 
     /** Three thousand years: fallen stone along the foot of everything, and the floor broken where it's taken the weight. */
@@ -446,5 +546,13 @@ final class GloomforgePalace {
             if (noise(x, z, 706) < .04 && Math.abs(z - AXIS) > 6) b.block(x, FLOOR, z, Material.CRACKED_DEEPSLATE_TILES);
             if (noise(z, x, 707) < .018 && Math.abs(z - AXIS) > 6 && CanopyKit.empty(b, x, FLOOR + 1, z)) b.block(x, FLOOR + 1, z, Material.COBBLED_DEEPSLATE_SLAB, "type=bottom");
         }
+        // A column came down, long ago, across the south aisle, and nobody ever moved it.
+        for (int x = FACE + 10; x <= FACE + 22; x++) for (int dy = 0; dy <= 2; dy++) for (int dz = -1; dz <= 1; dz++) {
+            if (Math.abs(dz) == 1 && (dy == 0 || dy == 2) || noise(x, dy, 708) < .12) continue;
+            int z = AXIS + HALF - 5 + dz, y = FLOOR + 1 + dy;
+            if (CanopyKit.empty(b, x, y, z)) b.block(x, y, z, dy == 2 && dz == 0 ? PALE : SHADOW);
+        }
+        // Webs high in the corners, and a little dust where nobody walks.
+        for (int x = FACE + 2; x < END - 3; x += 3) for (int side : new int[]{-1, 1}) if (noise(x, side + 3, 709) < .45) b.block(x, CEILING - 1, AXIS + side * (HALF - 1), Material.COBWEB);
     }
 }
