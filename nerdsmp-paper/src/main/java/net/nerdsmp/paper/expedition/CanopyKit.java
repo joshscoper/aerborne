@@ -152,10 +152,12 @@ final class CanopyKit {
      * Fences are placed without their neighbours being told, so left alone each stands as a thin post
      * with gaps a player fits through. This sets every side that touches something to hold on to.
      */
-    static void joinRails(BuildCanvas b) {
+    static void joinRails(BuildCanvas b) { joinRails(b, RAIL); }
+
+    static void joinRails(BuildCanvas b, Material rail) {
         List<ExpeditionLayout.Cell> rails = new ArrayList<>();
-        for (var entry : b.blocks().entrySet()) if (entry.getValue().material() == RAIL) rails.add(entry.getKey());
-        for (var at : rails) b.block(at.x(), at.y(), at.z(), RAIL, "east=" + joins(b.get(at.x() + 1, at.y(), at.z())) + ",west=" + joins(b.get(at.x() - 1, at.y(), at.z()))
+        for (var entry : b.blocks().entrySet()) if (entry.getValue().material() == rail) rails.add(entry.getKey());
+        for (var at : rails) b.block(at.x(), at.y(), at.z(), rail, "east=" + joins(b.get(at.x() + 1, at.y(), at.z())) + ",west=" + joins(b.get(at.x() - 1, at.y(), at.z()))
             + ",north=" + joins(b.get(at.x(), at.y(), at.z() - 1)) + ",south=" + joins(b.get(at.x(), at.y(), at.z() + 1)) + ",waterlogged=false");
     }
 

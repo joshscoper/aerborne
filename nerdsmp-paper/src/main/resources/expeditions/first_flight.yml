@@ -1,22 +1,28 @@
-# First Flight: the tutorial expedition. A short, gentle run across the sky islands that shows
-# every part of an expedition: a jump course, a lever puzzle, a campfire, waves with an elite,
-# and a boss with a telegraphed attack. Full reference: docs/EXPEDITIONS.md.
+# First Flight: the tutorial expedition. A short, gentle run along the Wardens' Road at sunset that
+# shows every part of an expedition, and teaches one skill at a time before the Old Sentinel tests them
+# all. Full reference: docs/EXPEDITIONS.md.
 title: First Flight
-description: Your first expedition. Captain Wren shows you the ropes across the sky islands.
+description: A training expedition along the Wardens' Road. Fly with Captain Wren, learn the path, and prove you're ready for greater skies.
 icon: feather
 dimension: overworld
+# Built from code. Delete this line if you rebuild the template by hand.
 sample: first_flight
 published: true
 difficulty: 1
 level: 2
 party: {min: 1, max: 5}
-time-limit-minutes: 20
+time-limit-minutes: 25
 lives: 12
-# Just after sunset: the islands glow and nothing undead burns.
-time: 13600
-spawn: [0, 64, 0, 0]
-exit: [0, 64, 128]
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 1
+# Sunset: the islands glow and nothing undead burns.
+time: 12700
+spawn: [0, 67, -6, 0]
+exit: [0, 64, 192]
 modifiers: []
+# Below this, Wren's lines catch you and put you back where you last stood. It costs nothing.
+falls: {below: 52, damage: 0, message: "Captain Wren's safety line catches you. \"Everyone falls once. Up you come!\""}
+motes: cherry_leaves
 # The tutorial has one tier; Heroic and Mythic come with the real expeditions.
 tiers:
   heroic: {enabled: false}
@@ -26,135 +32,190 @@ npcs:
   wren:
     name: Captain Wren
     entity: villager
-    at: [2, 64, 3, 90]
+    at: [2, 64, 12, 90]
     lines:
-      - "Welcome aboard! This is your first expedition: a private run for you and your party."
+      - "Welcome to the Landing! This is your first expedition: a private run for you and your party."
       - "Your sidebar shows the clock, your party's lives and what to do next."
-      - "Falling off the stepping stones only sends you back to the start. No lives lost."
+      - "Fall off and my lines will catch you. No lives lost, so try every jump."
       - "Campfires heal you between fights and become your respawn point. Light every one you find."
       - "A ring on the ground means an attack is coming. Step out of it!"
+      - "Cloudlings throw slow gusts. Watch them come, and sidestep."
 
 campfires:
-  wayfarers_fire: {at: [3, 64, 68], lit: false, title: "Wayfarer's Fire"}
+  landing_fire: {at: [4, 64, 16], lit: true, title: The Landing}
+  trial_fire: {at: [3, 64, 77], lit: false, title: Trial's End}
+
+# Things in the rooms that a script changes.
+setpieces: {}
+
+hazards:
+  # Blue fire runs down the rune strips in the floor. They're the same three lanes every time, so learn them.
+  rune_lanes:
+    type: lane
+    soul: true
+    area: [-22, 64, 150, 22, 64, 190]
+    every: 11
+    count: 1
+    damage: 3
+    lanes: [[-15, 160, 15, 160], [15, 170, -15, 170], [-15, 180, 15, 180]]
+
+# Sounds that drift across the sky. `every` is about how many seconds apart; `area` keeps one to a room.
+ambience:
+  - {sound: item.elytra.flying, every: 22, volume: 0.14, pitch: 0.7}
+  - {sound: entity.parrot.ambient, every: 26, volume: 0.25, pitch: 1.2}
+  - {sound: block.water.ambient, every: 11, volume: 0.4, pitch: 0.8}
+  - {sound: entity.phantom.flap, every: 30, volume: 0.25, pitch: 0.6}
+  - {sound: block.amethyst_block.chime, every: 14, volume: 0.4, pitch: 0.7, area: [-22, 60, 145, 22, 90, 195]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
 outro:
-  - "The Old Sentinel lowers its blade and steps aside. The road is open."
+  - "The Old Sentinel lowers its fists and steps aside. The road is open."
   - "Captain Wren grins. 'You've got sky-legs. They need help at the Hollow Barrow: start there.'"
 
 cutscenes:
+  # The airship comes in over the islands, then the road ahead. `to` moves the camera; `fade` cuts to it.
   prologue:
-    - {at: [0.5, 80, -12, 0, 20], seconds: 5, title: "<aqua>First Flight</aqua>", text: "<gray>The skyways of Aerborne</gray>", sound: "entity.phantom.flap 0.6", lines: ["|Long before the islands flew, the world below burned.", "|The Wardens lifted what they could save into the sky. We call it Aerborne."]}
-    - {at: [12.5, 70, 26, 90, 15], seconds: 5, fade: true, lines: ["wren|Stay on the stones and mind the gaps. The wind up here doesn't forgive."]}
-    - {at: [0.5, 78, 90, 0, 25], seconds: 5, fade: true, lines: ["|At the far end, the Old Sentinel still keeps the Wardens' road.", "wren|Show it you're worth the sky, and it'll let you pass."]}
+    - {at: [-36, 76, 20, -118, -6], to: [-24, 74, 13, -138, -8], seconds: 5, title: "<gold>First Flight</gold>", text: "<gray>A training expedition along the Wardens' Road</gray>", sound: "entity.phantom.flap 0.6", lines: ["|Long before the islands flew, the world below burned. The Wardens lifted what they could save into the sky."]}
+    - {at: [0.5, 70, 27, 180, 3], to: [0.5, 69, 21, 180, 1], seconds: 4, fade: true, lines: ["wren|Welcome to the Landing. Mind the step: the first one's a long way down."]}
+    - {at: [1, 74, 46, 0, 24], to: [1, 73, 58, 0, 18], seconds: 4, fade: true, lines: ["wren|Past the square is the Trial Path. Learn your feet there."]}
+    - {at: [0.5, 74, 92, 0, 16], to: [0.5, 73, 100, 0, 12], seconds: 4, fade: true, lines: ["wren|Then the Guardian Yard. It'll test whether you can fight as a party."]}
+    - {at: [0.5, 74, 132, 0, 10], to: [0.5, 72, 142, 0, 4], seconds: 4, fade: true, lines: ["|And at the end of the road, the Old Sentinel still keeps the Wardens' gate. It's a rite of passage, not a grudge."]}
+  # Timed with the Sentinel's entrance below: blue fire is drawn into the rubble, which builds itself into a body.
   sentinel_wakes:
-    - {at: [0.5, 70, 105, 0, 22], seconds: 3, text: "<gray>Something stirs atop the plinth…</gray>", sound: "block.stone.break 0.5", lines: ["|Dust falls from the Sentinel's shoulders."]}
-    - {at: [0.5, 67, 113, 0, 8], seconds: 4, title: "<gold>The Old Sentinel</gold>", text: "<gray>Last guardian of the Wardens' road</gray>", sound: "entity.iron_golem.repair 0.6", lines: ["The Old Sentinel|Who walks the Wardens' road? Prove your hands are steady."]}
+    - {at: [0.5, 70, 154, 0, 12], to: [0.5, 69, 158, 0, 8], seconds: 3, sound: "block.stone.break 0.5", lines: ["|The fires around the gate lean towards the rubble. The stones begin to answer."]}
+    - {at: [-9, 69, 164, -30, 6], to: [9, 69, 164, 30, 6], seconds: 6}
+    - {at: [0.5, 69, 163, 0, 2], seconds: 3, title: "<gold>The Old Sentinel</gold>", text: "<gray>Last guardian of the Wardens' Road</gray>", sound: "entity.iron_golem.repair 0.6", lines: ["The Old Sentinel|Who walks the Wardens' road? Prove your hands are steady."]}
 
 mobs:
-  "custom:gale_raider":
-    role: elite
-    abilities: [cleave]
-    title: Drillmaster
+  "custom:cloudling": {abilities: [gust_shot], behavior: caster}
+  "custom:cinderling": {abilities: [ember_burst]}
+  "custom:frostbound_watcher": {abilities: [frost_bolt], behavior: caster}
+  "custom:stonebound_keeper": {role: elite, abilities: [slam], title: Road Warden}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group.
+packs:
+  road_embers: {at: [0, 64, 35], mobs: {"custom:cinderling": 2}, aggro: 9}
+  trial_east: {at: [9, 64, 62], mobs: {"custom:cloudling": 2}, aggro: 10}
+  trial_west: {at: [-7, 64, 61], mobs: {"custom:cloudling": 2}, aggro: 10}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  wren_crate: {at: [-9, 64, 80], kind: crate, title: "Wren's Supply Crate"}
-  skyfarer_chest: {at: [7, 64, 93], kind: chest, title: "Skyfarer's Chest"}
+  wren_crate: {at: [-7, 64, 22], kind: crate, title: "Wren's Supply Crate"}
+  skyfarer_chest: {at: [3, 64, 79], kind: chest, title: "Skyfarer's Chest"}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+companion-drops:
+  final_test: {companion: windpip, chance: 0.01}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-2, 64, 126]
-  bonus: [2, 64, 126]
+  free: [-3, 64, 188]
+  bonus: [3, 64, 188]
 
 rooms:
-  skyhop:
-    title: Skyhop Crossing
-    region: [-9, 40, 13, 9, 75, 38]
+  trial_path:
+    title: The Trial Path
+    region: [-14, 40, 41, 16, 75, 76]
     puzzles:
       crossing:
         type: reach
-        title: Hop across to the watchpost
-        area: [-4, 63, 40, 4, 67, 45]
-        start: [0, 64, 11, 0]
-        fail-below: 58
+        title: Cross to the far islet
+        area: [-5, 63, 73, 5, 67, 81]
+        start: [0, 64, 45, 0]
     encounter:
       type: puzzle
       scripts:
-        start: ["say wren|Hop from stone to stone. Take your time; a fall just sends you back."]
-        clear: ["say wren|Nicely done! The watchpost is ahead. Its gate is locked."]
-  lever_lock:
-    title: The Lever Lock
-    region: [-10, 60, 39, 10, 75, 58]
-    checkpoint: [0, 64, 56, 0]
-    gate: [-1, 64, 59, 1, 66, 59]
-    puzzles:
-      levers:
-        type: levers
-        title: Pull the three old levers
-        blocks: [[-6, 65, 50], [6, 65, 50], [-4, 65, 56]]
-    encounter:
-      type: puzzle
-      scripts:
-        start: ["say wren|Three levers work the gate. Look around the ruins and pull every one."]
-        solved-levers: ["sound block.iron_door.open 0.7"]
-        clear: ["say wren|The gate's open. There's a campfire across the bridge: light it before the training yard."]
-  training_yard:
-    title: The Training Yard
-    region: [-12, 60, 76, 12, 75, 97]
-    checkpoint: [0, 64, 95, 0]
-    gate: [-1, 64, 98, 1, 66, 98]
-    points: [[-6, 64, 81], [6, 64, 81], [-6, 64, 91], [6, 64, 91], [0, 64, 86]]
+        start: ["say wren|Stone to stone, then across the bridge. Cloudlings throw slow gusts: watch them come, and sidestep."]
+        clear: ["say wren|Nicely done! Light that campfire. It heals you, and it's where you'll come back to."]
+  guardian_yard:
+    title: The Guardian Yard
+    region: [-20, 60, 85, 20, 80, 107]
+    requires: [trial_path]
+    seal: [-2, 64, 85, 2, 67, 85]
+    checkpoint: [0, 64, 88, 0]
+    points: [[-8, 64, 97], [8, 64, 97], [-8, 64, 105], [8, 64, 105], [0, 64, 103]]
     encounter:
       type: waves
       waves:
-        - {"custom:skyway_brigand": 3}
-        - {mobs: {"custom:cloudline_archer": 2, "custom:gale_raider": 1}, delay-seconds: 4}
+        - {"custom:cinderling": 3}
+        - {mobs: {"custom:frostbound_watcher": 2, "custom:cinderling": 1}, delay-seconds: 4}
+        - {mobs: {"custom:stonebound_keeper": 1}, delay-seconds: 4}
       scripts:
-        start: ["say wren|Training dummies? No, these ones bite. Clear both waves."]
-        wave-2: ["say wren|See the husk? It's an elite: tougher, with an ability. Watch for the red arc in front of it and step aside."]
-        clear: ["say wren|Well fought. One last stop: the old watch statue. They say it still guards the islands."]
-  sentinels_rest:
-    title: The Sentinel's Rest
-    region: [-13, 60, 104, 13, 80, 129]
-    points: [[0, 64, 119], [-7, 64, 111], [7, 64, 111], [-7, 64, 121], [7, 64, 121]]
+        start: ["say wren|Cinderlings! When one glows, it's about to burst. Back off, then hit it."]
+        wave-2: ["say wren|Frostbound Watchers. They fire frost you can see coming, and it leaves ice on the ground. Keep moving, and stay off the ice."]
+        wave-3: ["say wren|A Stonebound Keeper! It's an elite: tougher, with an ability. When the ring spreads around it, get out."]
+        clear: ["say wren|Well fought, all of you. The gate's held by three rune stones. Wake them."]
+  rune_gate:
+    title: The Rune Gate
+    region: [-20, 60, 108, 20, 80, 122]
+    requires: [guardian_yard]
+    checkpoint: [0, 64, 112, 0]
+    gate: [-1, 64, 123, 1, 67, 123]
+    puzzles:
+      runes:
+        type: levers
+        title: Wake the three rune stones
+        blocks: [[-12, 66, 110], [12, 66, 110], [0, 66, 118]]
+    encounter:
+      type: puzzle
+      scripts:
+        start: ["say wren|Each stone has a lever on top. Pull all three."]
+        solved-runes: ["sound block.iron_door.open 0.7"]
+        clear: ["say wren|That's the road open. Walk it to the end. The Old Sentinel will want a word."]
+  final_test:
+    title: The Final Test
+    region: [-22, 60, 149, 22, 90, 192]
+    requires: [rune_gate]
+    seal: [-2, 64, 149, 2, 67, 149]
+    checkpoint: [0, 64, 153, 0]
+    # The first point is where the rubble lies; adds use the others.
+    points: [[0, 64, 170, 180], [-8, 64, 163], [8, 64, 163], [-8, 64, 176], [8, 64, 176]]
     encounter:
       type: boss
       boss: custom:old_sentinel
+      # The fires round the gate are drawn into the rubble, which builds itself into a body of stone.
+      entrance:
+        style: reanimate
+        block: chiseled_stone_bricks
+        delay: 1
+        seconds: 8
+        sources: [[-13, 65, 170], [13, 65, 170], [-9, 65, 178], [9, 65, 178], [0, 65, 181]]
       boss-level-bonus: 1
-      # Gentle on purpose: the tutorial boss teaches the slam, it shouldn't punish standing still.
-      boss-damage: 0.25
+      # Gentle on purpose: it tests what the run taught, and shouldn't punish a mistake twice.
+      boss-damage: 0.3
       boss-health: 0.8
       abilities: [slam]
       phases:
-        - {at: 50, abilities: [slam, summon], title: "The Sentinel calls its stone guards"}
-      adds-at-health: [35]
+        - {at: 66, abilities: [slam, gust_shot], title: "The Sentinel throws the wind"}
+        - {at: 33, abilities: [slam, gust_shot, frost_bolt], title: "The Sentinel tests everything"}
+      adds-at-health: [50]
       waves:
-        - {"custom:skyway_brigand": 2}
+        - {"custom:cinderling": 2}
       scripts:
-        start:
-          - "cutscene sentinel_wakes"
-          - "wait 7"
-          - "say wren|When the ground glows red around it, get out of the ring!"
-        health-50: ["say The Old Sentinel|Guards! To me!"]
-        clear: ["say wren|Well flown! Walk into the light behind the plinth to head home. Real expeditions await."]
+        start: ["cutscene sentinel_wakes", "wait 13", "say wren|Everything you've learned, all at once. When the ground glows around it, get out of the ring!", "hazard start rune_lanes"]
+        health-66: ["say wren|Gusts! Sidestep them, same as the Cloudlings."]
+        health-50: ["say The Old Sentinel|Embers of the old world, to me!"]
+        health-33: ["say wren|Frost now. Keep moving and stay off the ice. You've done this."]
+        clear: ["hazard stop rune_lanes", "npc wren 0 64 184 0", "say wren|Well flown! Walk through the gate to head home. Greater skies await."]
 
 guide:
-  lore: "Aerborne was not always in the sky. When Pyrrhax, the Ashen Sovereign, set the old world burning, the three Wardens of Ember, Frost and Stone bound him beneath Cinder Keep and tore the survivors' lands free, raising them above the smoke. The Wardens' road still links the islands, kept by guardians like the Old Sentinel. Captain Wren flies new adventurers along it, so they learn the sky before it tests them."
-  overview: The tutorial. A gentle run that shows how expeditions work, from jump courses and puzzles to campfires, elites and a boss. Talk to Captain Wren at the pier for tips.
+  lore: "Aerborne was not always in the sky. When Pyrrhax, the Ashen Sovereign, set the old world burning, the three Wardens of Ember, Frost and Stone bound him beneath Cinder Keep and tore the survivors' lands free, raising them above the smoke. The Wardens' Road still links the islands, kept by guardians like the Old Sentinel, who challenges new adventurers as a rite of passage rather than out of hostility. Captain Wren flies them along it, so they learn the sky before it tests them."
+  overview: The tutorial. A training run along the Wardens' Road that teaches one skill at a time, then tests them all at once. Step off Captain Wren's airship, cross the Trial Path, hold the Guardian Yard and face the Old Sentinel at the ruined gate.
   tips:
     - Your sidebar shows the clock, the party's lives and your objectives.
-    - Falling on a jump course puts you back at its start without spending a life.
-    - Campfires heal you out of combat and become your respawn point.
-    - A red ring or arc on the ground is an attack about to land. Step out of it.
+    - If you fall, Wren's safety line puts you back where you last stood. It costs nothing, so try every jump.
+    - Campfires heal you out of combat and become your respawn point. Light every one you find.
+    - A ring on the ground is an attack about to land. Step out of it.
+    - Cloudlings teach dodging, Cinderlings teach reading a glow, Frostbound Watchers teach moving, and Stonebound Keepers teach the ring. The Old Sentinel asks for all of it.
   rooms:
-    skyhop: Hop across the stepping stones to the watchpost island.
-    lever_lock: Pull the three levers hidden around the ruins to open the gate.
-    training_yard: Two easy waves. The husk is an elite with a frontal cleave.
-    sentinels_rest: The Old Sentinel slams the ground; a red ring shows where. At half health it calls two guards.
-  boss: The Old Sentinel is slow but hits hard. Every few seconds a red ring spreads around it, then it slams the ground; step outside the ring. Below half health it also summons two stone guards.
+    trial_path: Stepping stones and a rope bridge. Cloudlings throw slow gusts that push you a little. Watch them come, and sidestep.
+    guardian_yard: Three waves in the yard. Cinderlings glow before they burst, Frostbound Watchers fire frost that leaves ice underfoot, and the Stonebound Keeper is an elite that slams the ground.
+    rune_gate: Pull the lever on top of each of the three rune stones to open the south gate.
+    final_test: The fires round the gate build the Old Sentinel out of rubble. Light Trial's End first. See the boss briefing.
+  boss: The Old Sentinel tests everything the road taught. A ring spreads around it before it slams the ground, so step outside. Blue fire runs down the three rune strips in the floor, always the same three. At two-thirds it adds gusts to sidestep, at half it calls Cinderlings, and at one-third it adds frost bolts that leave ice underfoot.
 
 loot:
   marks: 60
-  items: {bread: 8, iron_ingot: 3, experience_bottle: 3, torch: 16}
+  items: {bread: 8, skyward_feather: 4, experience_bottle: 3}

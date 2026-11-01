@@ -2,208 +2,221 @@ package net.nerdsmp.paper.expedition;
 
 import org.bukkit.Material;
 
-import static net.nerdsmp.paper.expedition.SampleKit.*;
+import static net.nerdsmp.paper.expedition.SampleKit.noise;
+import static net.nerdsmp.paper.expedition.SampleKit.pick;
+import static net.nerdsmp.paper.expedition.SampleKit.stone;
+import static net.nerdsmp.paper.expedition.SkyKit.*;
 
 /**
- * First Flight, the tutorial expedition: a chain of small sky islands at dusk. The party lands at
- * an airship pier, hops across stepping stones, pulls the levers of an old watchpost, lights a
- * campfire, drills in a training yard and wakes the Old Sentinel. Runs south (+Z); floors at Y63.
- * The shipped {@code expeditions/first_flight.yml} marks the same coordinates.
+ * First Flight, second edition: a training run along the Wardens' Road at sunset. The party steps off
+ * Captain Wren's airship at the Landing, crosses the Trial Path, holds the Guardian Yard, wakes the rune
+ * stones that open its gate, and walks the road on its arches to the Final Test at the ruined gate.
+ *
+ * <p>Runs south (+Z); ground at Y63, the airship's deck at Y66. Anyone who falls is caught
+ * ({@code falls:} in {@code expeditions/first_flight.yml}), which marks the same coordinates.
  */
 final class FirstFlightTemplate {
-    static final int Y = 63;
+    static final int Y = 63, DECK = 66;
+    private static final int LANDING_Z = 22, YARD_Z = 103, GATE_Z = 170;
+    private static final Material[] PAVING = {Material.STONE_BRICKS, Material.STONE_BRICKS, Material.ANDESITE, Material.POLISHED_ANDESITE, Material.MOSSY_STONE_BRICKS, Material.CRACKED_STONE_BRICKS};
+    private static final int[][] LEVERS = {{-12, 110}, {12, 110}, {0, 118}};
+    private static final int[][] RITE_FIRES = {{-13, 170}, {13, 170}, {-9, 178}, {9, 178}, {0, 181}};
 
     private FirstFlightTemplate() { }
 
     static BuildCanvas.Plan build() {
         BuildCanvas b = new BuildCanvas();
-        pier(b);
-        skyhop(b);
-        watchpost(b);
+        sky(b);
         landing(b);
+        trialPath(b);
         yard(b);
-        sentinel(b);
+        road(b, 123, 147, Y);
+        finalTest(b);
+        SkyRuins.overgrow(b, -26, Y + 1, 82, 26, Y + 34, 124, .07, Y + 5, 391);
+        SkyRuins.overgrow(b, -28, Y + 1, 146, 28, Y + 32, 196, .34, Y + 4, 392);
+        SkyRuins.overgrow(b, -20, Y + 1, 0, 20, Y + 18, 44, .12, Y + 3, 393);
         SampleChests.place(b, "first_flight");
+        CanopyKit.joinRails(b);
+        CanopyKit.joinRails(b, SkyShip.RAIL);
         return b.freeze();
     }
 
-    /** The landing pier on the first island, with a mast and sail behind it. */
-    private static void pier(BuildCanvas b) {
-        island(b, 0, Y, 6, 7, 8, MEADOW);
-        meadow(b, 0, Y, 6, 7, 31);
-        path(b, Y, 2, 13);
-        for (int z = -3; z <= 1; z++) for (int x = -2; x <= 2; x++) b.block(x, Y, z, Material.SPRUCE_PLANKS);
-        for (int z = -3; z <= 1; z++) for (int x : new int[]{-3, 3}) {
-            b.block(x, Y, z, Material.SPRUCE_PLANKS);
-            b.block(x, Y + 1, z, Material.SPRUCE_FENCE);
+    /** Clouds below, and far islands with their waterfalls, so the road always has somewhere to look. */
+    private static void sky(BuildCanvas b) {
+        for (int x = -90; x <= 90; x += 22) for (int z = -50; z <= 230; z += 22) {
+            if (noise(x, z, 301) < .25) continue;
+            int nudge = (int) (noise(z, x, 302) * 11) - 5;
+            cloud(b, x + nudge, 34 + (int) (noise(x, z, 303) * 8), z - nudge, 10, 4, 304 + x + z);
         }
-        for (int x = -3; x <= 3; x++) {
-            b.block(x, Y, -4, Material.SPRUCE_PLANKS);
-            b.block(x, Y + 1, -4, Material.SPRUCE_FENCE);
+        int[][] far = {{-46, 36, 80, 8}, {48, 20, 74, 7}, {52, 90, 84, 9}, {-52, 130, 72, 7}, {46, 150, 78, 8}, {-44, 190, 86, 9}, {-62, -36, 72, 7}, {60, -30, 86, 6}};
+        for (int index = 0; index < far.length; index++) {
+            int[] isle = far[index];
+            isle(b, isle[0], isle[2], isle[1], isle[3], isle[3] + 6, true);
+            blossom(b, isle[0] - 2, isle[2] + 1, isle[1] + 1, 5, 310 + index);
         }
-        lamp(b, -3, Y + 2, 1, 0, Material.SPRUCE_FENCE);
-        lamp(b, 3, Y + 2, 1, 0, Material.SPRUCE_FENCE);
-        airship(b, -9, Y, -2);
-        // Crates and a barrel by the pier.
-        b.block(4, Y + 1, 3, Material.BARREL, "facing=up");
-        b.block(4, Y + 1, 4, Material.BARREL, "facing=up");
-        b.block(-4, Y + 1, 5, Material.HAY_BLOCK, "axis=y");
-        lamp(b, 4, Y + 1, 9, 2, Material.SPRUCE_FENCE);
-        lamp(b, -4, Y + 1, 9, 2, Material.SPRUCE_FENCE);
-    }
-
-    /**
-     * The airship that brought the party, moored off the west side of the pier: a plank hull with a
-     * rail, a mast, and a gas envelope roped above it. {@code (cx, deck, cz)} is the middle of the deck.
-     */
-    private static void airship(BuildCanvas b, int cx, int deck, int cz) {
-        int half = 6;
-        for (int dz = -half; dz <= half; dz++) {
-            int width = dz == -half || dz == half ? 1 : Math.abs(dz) >= half - 1 ? 2 : 3;
-            for (int dx = -width; dx <= width; dx++) {
-                b.block(cx + dx, deck, cz + dz, Material.SPRUCE_PLANKS);
-                b.block(cx + dx, deck - 1, cz + dz, Math.abs(dx) == width ? Material.DARK_OAK_PLANKS : Material.SPRUCE_PLANKS);
-                if (Math.abs(dx) < width) b.block(cx + dx, deck - 2, cz + dz, Material.DARK_OAK_PLANKS);
-                if (Math.abs(dx) <= width - 2) b.block(cx + dx, deck - 3, cz + dz, Material.DARK_OAK_LOG, "axis=z");
-                if (Math.abs(dx) == width) b.block(cx + dx, deck + 1, cz + dz, Material.SPRUCE_FENCE);
+        // A broken viaduct strides past the Landing, as on the old maps.
+        for (int z = 8; z <= 58; z++) {
+            int along = Math.floorMod(z, 12), spring = (int) Math.round(Math.sqrt(36 - (along - 6) * (along - 6)) * 1.6);
+            int foot = along == 0 ? 22 : spring;
+            boolean gap = z > 30 && z < 36;
+            if (gap) continue;
+            for (int x = 34; x <= 37; x++) {
+                b.block(x, 74, z, pick(PAVING, x, z, 321));
+                for (int down = 1; down <= foot; down++) b.block(x, 74 - down, z, pick(PAVING, x, z + down, 322));
             }
         }
-        // The bow rises a little, the stern has a wheel.
-        b.block(cx, deck + 1, cz - half, Material.SPRUCE_FENCE);
-        b.block(cx, deck + 2, cz - half - 1, Material.SPRUCE_FENCE);
-        b.block(cx, deck + 1, cz + half - 1, Material.SPRUCE_FENCE);
-        b.block(cx, deck + 2, cz + half - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=top,open=true");
-        // Gangplank onto the pier.
-        for (int x = cx + 4; x <= -3; x++) b.block(x, deck, cz + 1, Material.SPRUCE_SLAB, "type=top");
-        // Mast with a crow's nest.
-        for (int y = deck + 1; y <= deck + 8; y++) b.block(cx, y, cz, Material.STRIPPED_SPRUCE_LOG, "axis=y");
-        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) if (dx != 0 || dz != 0) b.block(cx + dx, deck + 6, cz + dz, Material.SPRUCE_SLAB, "type=bottom");
-        // Gas envelope: a long ellipsoid of pale wool with a darker seam.
-        int ey = deck + 12;
-        double rx = 3.6, ry = 3.2, rz = 8.2;
-        for (int dx = -4; dx <= 4; dx++) for (int dy = -4; dy <= 4; dy++) for (int dz = -9; dz <= 9; dz++) {
-            double inside = dx * dx / (rx * rx) + dy * dy / (ry * ry) + dz * dz / (rz * rz);
-            if (inside > 1 || inside < .55) continue;
-            Material wool = dy == 0 ? Material.LIGHT_GRAY_WOOL : Math.abs(dz) % 4 == 0 ? Material.BROWN_WOOL : Material.WHITE_WOOL;
-            b.block(cx + dx, ey + dy, cz + dz, wool);
-        }
-        // Ropes from the envelope down to the rail.
-        for (int[] rope : new int[][]{{-2, -4}, {2, -4}, {-2, 4}, {2, 4}})
-            for (int y = deck + 2; y <= ey - 3; y++) b.block(cx + rope[0], y, cz + rope[1], Material.IRON_CHAIN, "axis=y");
-        // A small propeller at the stern.
-        for (int[] blade : new int[][]{{0, 1}, {0, -1}, {1, 0}, {-1, 0}})
-            b.block(cx + blade[0], deck + 4 + blade[1], cz + half + 2, Material.SPRUCE_TRAPDOOR, "facing=south,half=top,open=true");
-        b.block(cx, deck + 4, cz + half + 1, Material.SPRUCE_FENCE);
     }
 
-    /** Stepping stones over the drop to the watchpost island. */
-    private static void skyhop(BuildCanvas b) {
-        int[][] stones = {{0, 16}, {2, 20}, {0, 24}, {-2, 28}, {0, 32}, {1, 36}};
-        for (int[] spot : stones) stone(b, spot[0], Y, spot[1], spot[1] % 8 == 0 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
-        // Hanging lanterns on chains above each stone, so the way reads in the dusk.
-        for (int[] spot : stones) b.block(spot[0] + (spot[0] >= 0 ? 1 : -1), Y + 1, spot[1] + 1, Material.LANTERN);
+    private static void paved(BuildCanvas b, int cx, int cz, int radius) {
+        for (int x = cx - radius; x <= cx + radius; x++) for (int z = cz - radius; z <= cz + radius; z++)
+            if (Math.hypot(x - cx, z - cz) <= radius + (noise(x, z, 331) - .5) * 2.5) b.block(x, Y, z, pick(PAVING, x, z, 332));
     }
 
-    /** The ruined watchpost: three levers open the iron gate in its south wall. */
-    private static void watchpost(BuildCanvas b) {
-        island(b, 0, Y, 50, 10, 11, MOSSY);
-        meadow(b, 0, Y, 50, 10, 41);
-        path(b, Y, 39, 60);
-        ruinWall(b, -8, 43, -8, 57, Y + 1, 4, 51);
-        ruinWall(b, 8, 43, 8, 57, Y + 1, 4, 52);
-        ruinWall(b, -7, 42, -3, 42, Y + 1, 3, 53);
-        ruinWall(b, 3, 42, 7, 42, Y + 1, 3, 54);
-        // The south wall with the gate.
-        for (int x = -7; x <= 7; x++) for (int y = Y + 1; y <= Y + 5; y++) {
-            if (Math.abs(x) <= 1 && y <= Y + 3) b.block(x, y, 59, Material.IRON_BARS, "east=true,west=true");
-            else b.block(x, y, 59, pick(new Material[]{Material.STONE_BRICKS, Material.MOSSY_STONE_BRICKS, Material.CRACKED_STONE_BRICKS}, x, y, 55));
-        }
-        b.box(-2, Y + 4, 59, 2, Y + 4, 59, Material.CHISELED_STONE_BRICKS);
-        // Lever posts.
-        for (int[] post : new int[][]{{-6, 50}, {6, 50}, {-4, 56}}) {
-            b.block(post[0], Y + 1, post[1], Material.CHISELED_STONE_BRICKS);
-            b.block(post[0], Y + 2, post[1], Material.LEVER, "face=floor,facing=south,powered=false");
-        }
-        lamp(b, -5, Y + 1, 45, 2, Material.COBBLESTONE_WALL);
-        lamp(b, 5, Y + 1, 45, 2, Material.COBBLESTONE_WALL);
-        lamp(b, 5, Y + 1, 56, 2, Material.COBBLESTONE_WALL);
-    }
-
-    /** A rope bridge to a small landing with the Wayfarer's Fire. */
+    /** The training outpost: a walled square, stalls, a watchtower, cherry trees, and the airship moored at its pier. */
     private static void landing(BuildCanvas b) {
-        bridge(b, Y, 60, 63, Material.SPRUCE_PLANKS, Material.SPRUCE_FENCE);
-        island(b, 0, Y, 68, 5, 6, MEADOW);
-        path(b, Y, 63, 73);
-        meadow(b, 0, Y, 68, 5, 61);
-        // Logs to sit on round the fire.
-        b.block(5, Y + 1, 68, Material.STRIPPED_OAK_LOG, "axis=z");
-        b.block(3, Y + 1, 70, Material.STRIPPED_OAK_LOG, "axis=x");
-        b.block(3, Y + 1, 66, Material.STRIPPED_OAK_LOG, "axis=x");
-        b.block(3, Y + 1, 68, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
-        bridge(b, Y, 73, 75, Material.SPRUCE_PLANKS, Material.SPRUCE_FENCE);
+        isle(b, 0, Y, LANDING_Z, 18, 30, true);
+        paved(b, 0, LANDING_Z, 13);
+        SkyRuins.rimWall(b, 0, LANDING_Z, 16, -62, 66, Y + 1, 2, 334);
+        SkyRuins.rimWall(b, 0, LANDING_Z, 16, 114, 242, Y + 1, 2, 335);
+        SkyRuins.tower(b, -13, Y + 1, 11, 3, 15, 336);
+        // The road south.
+        for (int z = LANDING_Z; z <= 40; z++) for (int x = -2; x <= 2; x++) b.block(x, Y, z, pick(PAVING, x, z, 333));
+        SkyShip.moor(b, 0, DECK, -12);
+        // The pier, and the gangway down off the ship's side.
+        for (int z = 3; z <= 9; z++) for (int x = -3; x <= 3; x++) b.block(x, Y, z, Math.floorMod(z, 2) == 0 ? Material.SPRUCE_PLANKS : Material.STRIPPED_SPRUCE_WOOD);
+        for (int z = 3; z <= 9; z++) for (int x : new int[]{-3, 3}) b.block(x, Y + 1, z, RAIL_POST);
+        for (int z = -4; z <= 2; z++) {
+            for (int x = -1; x <= 1; x++) b.block(x, DECK, z, Material.SPRUCE_PLANKS);
+            for (int x : new int[]{-2, 2}) { b.block(x, DECK, z, Material.DARK_OAK_PLANKS); b.block(x, DECK + 1, z, RAIL_POST); }
+        }
+        for (int x = -1; x <= 1; x++) {
+            b.block(x, DECK - 1, 3, Material.SPRUCE_STAIRS, "facing=north,half=bottom,shape=straight");
+            b.block(x, DECK - 2, 4, Material.SPRUCE_STAIRS, "facing=north,half=bottom,shape=straight");
+        }
+        for (int[] rail : new int[][]{{-2, DECK, 3}, {2, DECK, 3}, {-2, DECK - 1, 4}, {2, DECK - 1, 4}}) b.block(rail[0], rail[1], rail[2], RAIL_POST);
+        for (int z = 2; z <= 4; z++) for (int x : new int[]{-2, 2}) b.block(x, DECK - 2 - (z - 2) / 2, z, Material.SPRUCE_PLANKS);
+        SkyRuins.gateway(b, 0, Y + 1, 10, 4, 7);
+        SkyRuins.gateway(b, 0, Y + 1, 39, 3, 6);
+        bannerPost(b, -7, Y + 1, 10, true, Material.RED_WOOL);
+        bannerPost(b, 6, Y + 1, 10, true, Material.RED_WOOL);
+        blossom(b, -11, Y + 1, 30, 9, 341);
+        blossom(b, 11, Y + 1, 14, 7, 342);
+        tent(b, -9, Y + 1, 17, Material.RED_WOOL);
+        tent(b, 9, Y + 1, 27, Material.BLUE_WOOL);
+        crates(b, 8, Y + 1, 14);
+        crates(b, -8, Y + 1, 27);
+        for (int[] light : new int[][]{{-4, 13}, {4, 18}, {-4, 26}, {4, 33}, {-4, 37}, {4, 38}}) stoneLantern(b, light[0], Y + 1, light[1]);
+        b.block(4, Y + 1, 16, Material.CAMPFIRE, "lit=true,signal_fire=false,facing=north");
+        for (int[] seat : new int[][]{{5, 16, 0}, {3, 16, 0}, {4, 15, 1}}) b.block(seat[0], Y + 1, seat[1], Material.STRIPPED_CHERRY_LOG, seat[2] == 0 ? "axis=z" : "axis=x");
     }
 
-    /** The training yard: a walled ring with weapon racks and target blocks. */
+    private static final Material RAIL_POST = Material.SPRUCE_FENCE;
+
+    /** Islets and stepping stones under blue banners. A fall is only a fall: a line catches you. */
+    private static void trialPath(BuildCanvas b) {
+        isle(b, 0, Y, 45, 5, 13, false);
+        stone(b, 4, Y, 51, Material.STONE_BRICKS);
+        SkyRuins.pad(b, 4, Y, 51);
+        stone(b, 7, Y, 55, Material.MOSSY_STONE_BRICKS);
+        SkyRuins.pad(b, 7, Y, 55);
+        isle(b, 9, Y, 61, 5, 15, true);
+        SkyRuins.column(b, 6, Y + 1, 64, 7, false, 352);
+        bannerPost(b, 11, Y + 1, 58, false, Material.BLUE_WOOL);
+        CanopyKit.rope(b, 5, 61, -3, 61, Y, 2);
+        isle(b, -7, Y, 61, 5, 15, false);
+        bannerPost(b, -10, Y + 1, 63, false, Material.BLUE_WOOL);
+        SkyRuins.column(b, -4, Y + 1, 58, 6, false, 353);
+        stone(b, -7, Y, 67, Material.STONE_BRICKS);
+        SkyRuins.pad(b, -7, Y, 67);
+        stone(b, -4, Y, 71, Material.MOSSY_STONE_BRICKS);
+        SkyRuins.pad(b, -4, Y, 71);
+        isle(b, 0, Y, 77, 6, 16, true);
+        SkyRuins.column(b, 4, Y + 1, 74, 8, false, 354);
+        for (int[] light : new int[][]{{-2, 43}, {7, 60}, {-6, 59}, {-3, 77}}) stoneLantern(b, light[0], Y + 1, light[1]);
+        b.block(3, Y + 1, 77, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
+        b.block(4, Y + 1, 77, Material.STRIPPED_SPRUCE_LOG, "axis=z");
+        crystals(b, -4, Y + 1, 75, 351);
+        CanopyKit.rope(b, 0, 81, 0, 84, Y, 0);
+        // Little islets off to the side, too far to reach.
+        for (int[] islet : new int[][]{{-16, 52, 2, 58}, {20, 68, 3, 70}, {-20, 74, 2, 66}, {18, 46, 2, 72}}) isle(b, islet[0], islet[3], islet[1], islet[2] + 1, 10, false);
+    }
+
+    /** The Guardian Yard: a walled round of old paving with a burning rune in its floor and a great gate south. */
     private static void yard(BuildCanvas b) {
-        island(b, 0, Y, 86, 12, 12, MEADOW);
-        for (int x = -10; x <= 10; x++) for (int z = 76; z <= 96; z++) {
-            double dx = x, dz = z - 86;
-            if (dx * dx + dz * dz <= 81) b.block(x, Y, z, noise(x, z, 71) < .6 ? Material.COARSE_DIRT : Material.GRAVEL);
+        isle(b, 0, Y, YARD_Z, 24, 36, true);
+        paved(b, 0, YARD_Z, 20);
+        // The rune in the floor.
+        for (int x = -11; x <= 11; x++) for (int z = YARD_Z - 11; z <= YARD_Z + 11; z++) {
+            double distance = Math.hypot(x, z - YARD_Z), angle = Math.atan2(z - YARD_Z, x);
+            boolean ring = Math.abs(distance - 10) < .6 || Math.abs(distance - 6) < .5, spoke = distance < 10 && Math.abs(Math.sin(angle * 4)) < .08;
+            if (ring || spoke) b.block(x, Y, z, Material.OCHRE_FROGLIGHT, "axis=y");
         }
-        for (int index = 0; index < 40; index++) {
-            double angle = 2 * Math.PI * index / 40;
-            int x = (int) Math.round(Math.cos(angle) * 10.5), z = 86 + (int) Math.round(Math.sin(angle) * 10.5);
-            if (Math.abs(x) <= 1) continue; // North and south openings.
-            b.block(x, Y + 1, z, Material.SPRUCE_FENCE);
+        // An arcade round the court, with a sill that holds a fight in, and the north arch.
+        SkyRuins.arcade(b, 0, YARD_Z, 20, Y + 1, 1, 11, 9, 2, 0, 361);
+        arch(b, 0, Y + 1, 84, 8, 15, true, 364);
+        gatehouse(b);
+        for (int[] lever : LEVERS) {
+            runeStone(b, lever[0], Y + 1, lever[1]);
+            b.block(lever[0], Y + 3, lever[1], Material.LEVER, "face=floor,facing=south,powered=false");
         }
-        for (int[] rack : new int[][]{{-8, 82}, {8, 82}, {-8, 90}, {8, 90}}) {
-            b.block(rack[0], Y + 1, rack[1], Material.BARREL, "facing=up");
-            b.block(rack[0], Y + 2, rack[1], Material.TARGET);
-        }
-        for (int[] bale : new int[][]{{-5, 79}, {5, 79}, {-5, 93}, {5, 93}}) b.block(bale[0], Y + 1, bale[1], Material.HAY_BLOCK, "axis=y");
-        lamp(b, -9, Y + 1, 86, 3, Material.SPRUCE_FENCE);
-        lamp(b, 9, Y + 1, 86, 3, Material.SPRUCE_FENCE);
-        // The exit arch and its gate.
-        for (int x = -4; x <= 4; x++) for (int y = Y + 1; y <= Y + 5; y++) {
-            if (Math.abs(x) <= 1 && y <= Y + 3) b.block(x, y, 98, Material.IRON_BARS, "east=true,west=true");
-            else if (Math.abs(x) >= 2 || y >= Y + 4) b.block(x, y, 98, Material.STONE_BRICKS);
-        }
-        bridge(b, Y, 99, 103, Material.SPRUCE_PLANKS, Material.SPRUCE_FENCE);
+        bannerPost(b, -12, Y + 1, 88, true, Material.RED_WOOL);
+        bannerPost(b, 11, Y + 1, 88, true, Material.RED_WOOL);
+        for (int[] light : new int[][]{{-15, 96}, {15, 96}, {-15, 112}, {15, 112}}) stoneLantern(b, light[0], Y + 1, light[1]);
+        crates(b, -15, Y + 1, 106);
+        crystals(b, 16, Y + 1, 104, 368);
+        blossom(b, -14, Y + 1, 92, 6, 369);
     }
 
-    /** The Sentinel's island: a ring of broken pillars round a plinth at the back. */
-    private static void sentinel(BuildCanvas b) {
-        island(b, 0, Y, 116, 13, 14, MOSSY);
-        for (int x = -9; x <= 9; x++) for (int z = 107; z <= 125; z++) {
-            double dx = x, dz = z - 116;
-            if (dx * dx + dz * dz <= 72) b.block(x, Y, z, pick(new Material[]{Material.STONE_BRICKS, Material.MOSSY_STONE_BRICKS, Material.CRACKED_STONE_BRICKS}, x, z, 81));
+    /** The south side of the yard: two tiers of arches between round towers, and the gate shut until the rune stones wake. */
+    private static void gatehouse(BuildCanvas b) {
+        int top = 22;
+        for (int x = -13; x <= 13; x++) for (int rel = 1; rel <= top; rel++) for (int z = 122; z <= 123; z++) {
+            int bay = Math.floorMod(x + 12, 5) - 2, peak = 20 - Math.abs(bay);
+            boolean upper = rel >= 13 && rel <= peak && Math.abs(bay) <= 1 && Math.abs(x) <= 11;
+            int niche = Math.abs(Math.abs(x) - 9), head = 8 - niche;
+            boolean recess = z == 122 && niche <= 2 && rel <= head;
+            boolean way = z == 122 && Math.abs(x) <= 1 && rel <= 4;
+            if (upper || recess || way) continue;
+            boolean trim = rel == 11 || rel == 12 || rel == top || Math.abs(x) == 2 && rel <= 5 || rel == 5 && Math.abs(x) <= 2;
+            b.block(x, Y + rel, z, trim ? Material.CHISELED_STONE_BRICKS : pick(PAVING, x + rel, z, 366));
         }
-        pillarRing(b, 0, Y + 1, 116, 10, 12, 6, 83);
-        // Two henge arches flank the arena, their lintels still standing.
-        for (int side : new int[]{-1, 1}) {
-            int x = side * 8;
-            for (int z : new int[]{111, 121}) for (int y = Y + 1; y <= Y + 6; y++)
-                b.block(x, y, z, y % 3 == 0 ? Material.CHISELED_STONE_BRICKS : Material.STONE_BRICKS);
-            for (int z = 110; z <= 122; z++) b.block(x, Y + 7, z, z % 4 == 0 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
-            b.block(x, Y + 8, 116, Material.STONE_BRICK_WALL);
-            b.block(x, Y + 9, 116, Material.SOUL_LANTERN);
+        for (int x = -13; x <= 13; x += 2) b.block(x, Y + top + 1, 122, pick(PAVING, x, 122, 367));
+        for (int x = -1; x <= 1; x++) for (int y = Y + 1; y <= Y + 4; y++) b.block(x, y, 123, Material.IRON_BARS, "east=true,west=true");
+        banner(b, -10, Y + 7, 122, true, Material.RED_WOOL);
+        banner(b, 8, Y + 7, 122, true, Material.RED_WOOL);
+        SkyRuins.tower(b, -15, Y + 1, 120, 3, 26, 368);
+        SkyRuins.tower(b, 15, Y + 1, 120, 3, 26, 369);
+    }
+
+    /** The ruined gate of the Wardens' Road, where the Old Sentinel lies in pieces on its round. */
+    private static void finalTest(BuildCanvas b) {
+        isle(b, 0, Y, GATE_Z, 25, 38, true);
+        paved(b, 0, GATE_Z, 21);
+        for (int x = -16; x <= 16; x++) for (int z = GATE_Z - 16; z <= GATE_Z + 16; z++) {
+            double distance = Math.hypot(x, z - GATE_Z);
+            if (Math.abs(distance - 15) < .6) b.block(x, Y, z, Material.CHISELED_STONE_BRICKS);
+            else if (distance < 3.5) b.block(x, Y, z, Material.POLISHED_DEEPSLATE);
         }
-        // A pillar that already fell, and rubble from the rest.
-        for (int z = 109; z <= 113; z++) b.block(-5, Y + 1, z, z == 109 ? Material.CHISELED_STONE_BRICKS : Material.CRACKED_STONE_BRICKS);
-        for (int x = 4; x <= 6; x++) b.block(x, Y + 1, 112, Material.MOSSY_STONE_BRICKS);
-        for (int x = -9; x <= 9; x++) for (int z = 106; z <= 126; z++) {
-            if (Math.abs(x) <= 2 || (x * x + (z - 116) * (z - 116)) > 90) continue;
-            double roll = noise(x, z, 91);
-            if (roll < .05) b.block(x, Y + 1, z, Material.COBBLESTONE_SLAB, "type=bottom");
-            else if (roll < .09) b.block(x, Y + 1, z, Material.MOSS_CARPET);
-            else if (roll < .11) b.block(x, Y + 1, z, Material.ANDESITE_WALL);
+        // Rune strips across the floor, where the Sentinel's power runs.
+        for (int z : new int[]{160, 170, 180}) for (int x = -15; x <= 15; x++) b.block(x, Y, z, x % 3 == 0 ? Material.SEA_LANTERN : Material.POLISHED_DEEPSLATE);
+        arch(b, 0, Y + 1, 148, 8, 15, true, 371);
+        arch(b, 0, Y + 1, 190, 10, 22, true, 372);
+        // What's left of the colonnade that ringed the round.
+        SkyRuins.arcade(b, 0, GATE_Z, 23, Y + 1, 2, 11, 11, 0, .62, 373);
+        for (int[] pillar : new int[][]{{-18, 162, 14}, {18, 162, 9}, {-18, 178, 7}, {18, 178, 13}, {-13, 154, 8}, {13, 186, 11}}) SkyRuins.column(b, pillar[0], Y + 1, pillar[1], pillar[2], false, 374);
+        for (int x = -21; x <= 21; x++) for (int z = GATE_Z - 21; z <= GATE_Z + 21; z++) {
+            double distance = Math.hypot(x, z - GATE_Z);
+            if (distance > 16.5 && distance < 22 && Math.abs(x) > 3 && CanopyKit.empty(b, x, Y + 1, z) && noise(x, z, 375) < .16)
+                b.block(x, Y + 1, z, noise(z, x, 376) < .5 ? Material.MOSS_CARPET : Material.COBBLESTONE_SLAB, noise(z, x, 376) < .5 ? "" : "type=bottom");
         }
-        b.box(-2, Y + 1, 123, 2, Y + 1, 125, Material.CHISELED_STONE_BRICKS);
-        b.box(-1, Y + 2, 124, 1, Y + 2, 125, Material.POLISHED_ANDESITE);
-        for (int x : new int[]{-4, 4}) b.block(x, Y + 1, 124, Material.SOUL_LANTERN);
-        // The way home: a pale stone circle behind the plinth.
-        b.disk(0, Y, 128, 1, Material.CALCITE);
-        lamp(b, -3, Y + 1, 127, 2, Material.COBBLESTONE_WALL);
-        lamp(b, 3, Y + 1, 127, 2, Material.COBBLESTONE_WALL);
+        for (int[] fire : RITE_FIRES) {
+            b.block(fire[0], Y + 1, fire[1], Material.CHISELED_STONE_BRICKS);
+            b.block(fire[0], Y + 2, fire[1], Material.SOUL_CAMPFIRE, "lit=true,signal_fire=false,facing=north");
+        }
+        for (int[] spot : new int[][]{{-15, 154}, {15, 154}, {-16, 184}, {16, 184}}) crystals(b, spot[0], Y + 1, spot[1], 375 + spot[0]);
+        for (int[] light : new int[][]{{-6, 152}, {6, 152}, {-5, 186}, {5, 186}}) stoneLantern(b, light[0], Y + 1, light[1]);
+        blossom(b, 15, Y + 1, 150, 6, 379);
+        // The way home: the road running on through the gate.
+        for (int z = 186; z <= 194; z++) for (int x = -2; x <= 2; x++) b.block(x, Y, z, Material.CHISELED_STONE_BRICKS);
     }
 }

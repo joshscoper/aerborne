@@ -153,7 +153,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
 
     /** SHA-256 of sample files as earlier releases shipped them; an exact match is safe to replace. */
     static final Map<String, Set<String>> PREVIOUS_SAMPLES = Map.of(
-        "first_flight", Set.of("5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad",
+        "first_flight", Set.of("3f10666df03f7b76e033323e94ec3cebd0eb7101c186c30aec5c3a3135dfabcc",
+            "5930e8755e216bd2a32f176825bada635ec4d26cd0f407c99d799bd1cfa08bad",
             "cd56c677ebc280c6fe935fa0510d8114edd81d34d4d3b1de04c682ac87fa52be"),
         "thornwood_canopy", Set.of("e207030fa70486f54b4d714dc4b4b5eedc2398eb0ac25f4530a303268730d209",
             "042b840b5c20b097c5228ede4602ab168c7f59d79b1fb8ea767f569d69ff4188",
@@ -1280,6 +1281,12 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCloud(org.bukkit.event.entity.AreaEffectCloudApplyEvent event) {
         if (runIn(event.getEntity().getWorld()) != null) event.getAffectedEntities().removeIf(entity -> !(entity instanceof Player));
+    }
+
+    /** A breeze's own wind charges throw people into the void, so in a run it only attacks with its abilities. */
+    @EventHandler(ignoreCancelled = true)
+    public void onLaunch(org.bukkit.event.entity.ProjectileLaunchEvent event) {
+        if (event.getEntity() instanceof org.bukkit.entity.BreezeWindCharge && runIn(event.getEntity().getWorld()) != null) event.setCancelled(true);
     }
 
     /** Campfires and puzzle blocks. Levers and buttons still work as normal; the run reads them. */

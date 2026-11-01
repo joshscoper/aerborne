@@ -38,7 +38,7 @@ class SampleTemplatesTest {
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
-    private static final java.util.Set<String> LINEAR = java.util.Set.of("first_flight", "cinder_keep", "sunken_aqueduct");
+    private static final java.util.Set<String> LINEAR = java.util.Set.of("cinder_keep", "sunken_aqueduct");
 
     @Test void everyStandingSpotHasFloorAndHeadroom() {
         List<String> problems = new java.util.ArrayList<>();
@@ -184,6 +184,8 @@ class SampleTemplatesTest {
     @Test void theBarrowsCamerasStayClearOfWalls() { camerasStayClearOfWalls("hollow_barrow"); }
 
     @Test void theCanopysCamerasStayClearOfWalls() { camerasStayClearOfWalls("thornwood_canopy"); }
+
+    @Test void firstFlightsCamerasStayClearOfWalls() { camerasStayClearOfWalls("first_flight"); }
 
     private static boolean walkThrough(Material material) {
         return seeThrough(material) || material == Material.MOSS_CARPET || material == Material.RED_MUSHROOM || material == Material.SWEET_BERRY_BUSH;

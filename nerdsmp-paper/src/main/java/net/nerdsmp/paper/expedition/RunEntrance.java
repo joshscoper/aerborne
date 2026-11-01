@@ -101,6 +101,7 @@ final class RunEntrance {
         Bone skull;
         Quaternionf facing;
         double height = BODY;
+        Material body = Material.BONE_BLOCK;
 
         Figure(Location root) { this.root = root; }
 
@@ -131,14 +132,17 @@ final class RunEntrance {
             if (entrance == null || entrance.style() != EntranceStyle.REANIMATE || room.points().isEmpty()) continue;
             Point at = room.points().getFirst();
             Figure figure = new Figure(new Location(host.world(), at.x() + .5, at.y(), at.z() + .5));
+            Material stone = entrance.block() == null ? null : Material.matchMaterial(entrance.block());
+            if (stone != null) figure.body = stone;
             figure.facing = new Quaternionf().rotateY((float) Math.toRadians(-at.yaw()));
             ThreadLocalRandom random = ThreadLocalRandom.current();
             for (double[] shape : SKELETON) {
                 Transformation rest = lying(shape, random);
-                figure.bones.add(new Bone(bone(figure.root, rest), shape, rest));
+                figure.bones.add(new Bone(bone(figure.root, rest, figure.body), shape, rest));
             }
-            figure.skull = new Bone(item(figure.root, new ItemStack(Material.WITHER_SKELETON_SKULL), restingSkull(random)), null, restingSkull(random));
-            for (int index = 0; index < LOOSE_BONES; index++) figure.extras.add(item(figure.root, new ItemStack(DEBRIS.get(index % DEBRIS.size())), debris(random)));
+            figure.skull = new Bone(item(figure.root, new ItemStack(stone == null ? Material.WITHER_SKELETON_SKULL : stone), restingSkull(random)), null, restingSkull(random));
+            List<Material> scraps = stone == null ? DEBRIS : List.of(Material.COBBLESTONE, Material.STONE_BRICKS, Material.CRACKED_STONE_BRICKS);
+            for (int index = 0; index < LOOSE_BONES; index++) figure.extras.add(item(figure.root, new ItemStack(scraps.get(index % scraps.size())), debris(random)));
             figures.put(room.id(), figure);
         }
     }
@@ -174,9 +178,9 @@ final class RunEntrance {
         return new Transformation(new Vector3f(center).sub(new Vector3f(size).mul(.5F).rotate(turn)), new Quaternionf(turn), new Vector3f(size), new Quaternionf());
     }
 
-    private BlockDisplay bone(Location root, Transformation rest) {
+    private BlockDisplay bone(Location root, Transformation rest, Material body) {
         return host.world().spawn(root, BlockDisplay.class, display -> {
-            display.setBlock(Material.BONE_BLOCK.createBlockData());
+            display.setBlock(body.createBlockData());
             display.setPersistent(false);
             display.setBrightness(new Display.Brightness(11, 11));
             display.setTransformation(rest);
@@ -398,7 +402,7 @@ final class RunEntrance {
         int count = figure.bones.size();
         for (int index = 0; index < count; index++) {
             if (since != index * over / count || !(figure.bones.get(index).display instanceof BlockDisplay rod)) continue;
-            rod.setBlock(Material.BLACKSTONE.createBlockData());
+            rod.setBlock((figure.body == Material.BONE_BLOCK ? Material.BLACKSTONE : Material.WARPED_WART_BLOCK).createBlockData());
             Location at = figure.root.clone().add(0, figure.bones.get(index).shape[1] * figure.height, 0);
             host.world().spawnParticle(Particle.SOUL_FIRE_FLAME, at, 8, .3, .1, .3, .02);
         }

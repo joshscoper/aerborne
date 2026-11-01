@@ -414,10 +414,15 @@ public record ExpeditionDefinition(
 
     /**
      * How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds}
-     * into the fight. {@code sources} are the fires a reanimation draws on.
+     * into the fight. {@code sources} are the fires a reanimation draws on, and {@code block} is what its
+     * body is made of, if not bone.
      */
-    public record Entrance(EntranceStyle style, int delaySeconds, int seconds, List<Point> sources) {
+    public record Entrance(EntranceStyle style, int delaySeconds, int seconds, List<Point> sources, String block) {
         public Entrance { sources = sources == null ? List.of() : List.copyOf(sources); }
+
+        public Entrance(EntranceStyle style, int delaySeconds, int seconds, List<Point> sources) {
+            this(style, delaySeconds, seconds, sources, null);
+        }
     }
 
     /**

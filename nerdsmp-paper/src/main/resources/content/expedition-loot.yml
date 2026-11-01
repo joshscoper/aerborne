@@ -6,6 +6,8 @@
 expeditions:
   first_flight:
     materials: [skyward_feather]
+    bosses:
+      final_test: [skyfarers_boots, wrens_flight_cap, road_wardens_blade, sentinels_pebble]
   hollow_barrow:
     materials: [grave_dust, barrow_wax, huntsmans_antler]
     gear: [barrowguard_helm, barrowguard_cuirass, barrowguard_greaves, barrowguard_boots, sextons_edge]

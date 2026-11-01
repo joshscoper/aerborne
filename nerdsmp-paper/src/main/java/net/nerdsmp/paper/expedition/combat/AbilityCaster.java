@@ -55,6 +55,9 @@ public final class AbilityCaster {
         default LivingEntity fixture(String mob, Location at) { return null; }
     }
 
+    /** Frost's patch of ice: how wide it is and how long it stays. */
+    private static final double ICE_RADIUS = 2.4;
+    private static final int ICE_TICKS = 100;
     /** How long silk holds a player if nobody breaks the cocoon. */
     private static final int WRAP_TICKS = 120;
 
@@ -108,6 +111,9 @@ public final class AbilityCaster {
             case "venom_spit" -> venomSpit(caster, arena, power);
             case "root_snare" -> rootSnare(caster, arena, targets, power);
             case "web_wrap" -> webWrap(caster, arena, targets, power);
+            case "gust_shot" -> gustShot(caster, arena, targets, power);
+            case "ember_burst" -> emberBurst(caster, arena, power);
+            case "frost_bolt" -> frostBolt(caster, arena, targets, power);
             default -> false;
         };
     }
@@ -554,6 +560,95 @@ public final class AbilityCaster {
                     wrapped.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 25, 0));
                 }
             }, 0L, 5L);
+        });
+        return true;
+    }
+
+    /** Something slow and visible flies from the caster to a spot, stopping at walls; {@code landed} gets where it stopped. */
+    private void fly(LivingEntity caster, Arena arena, Location to, double speed, java.util.function.Consumer<Location> trail, java.util.function.Predicate<Location> arrive, java.util.function.Consumer<Location> landed) {
+        Location at = caster.getEyeLocation();
+        Vector along = to.toVector().subtract(at.toVector());
+        double length = Math.min(30, along.length());
+        along.normalize().multiply(speed);
+        int[] tick = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!arena.live()) { task.cancel(); return; }
+            at.add(along);
+            trail.accept(at);
+            if (++tick[0] * speed >= length || at.getBlock().getType().isSolid() || arrive.test(at)) {
+                task.cancel();
+                landed.accept(at);
+            }
+        }, 1L, 1L);
+    }
+
+    /** A slow ball of wind. It pushes, it doesn't throw: a gust that hits you near an edge shouldn't put you over it. */
+    private boolean gustShot(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_BREEZE_INHALE, 1.2F, 1.4F);
+        Location aim = target.getLocation().add(0, 1, 0);
+        Vector push = aim.toVector().subtract(caster.getEyeLocation().toVector()).setY(0);
+        if (push.lengthSquared() > 1e-3) push.normalize().multiply(.42).setY(.16);
+        Set<UUID> struck = new HashSet<>();
+        fly(caster, arena, aim.clone().add(aim.clone().subtract(caster.getEyeLocation()).toVector().normalize().multiply(6)), .42, at -> {
+            at.getWorld().spawnParticle(Particle.CLOUD, at, 4, .18, .18, .18, 0);
+            at.getWorld().spawnParticle(Particle.GUST, at, 1, 0, 0, 0, 0);
+        }, at -> {
+            boolean hit = false;
+            for (Player player : arena.near(at, 1.5)) if (struck.add(player.getUniqueId())) {
+                hit(player, caster, 1.5 * power);
+                player.setVelocity(push);
+                hit = true;
+            }
+            return hit;
+        }, at -> at.getWorld().playSound(at, Sound.ENTITY_BREEZE_WIND_BURST, .9F, 1.5F));
+        return true;
+    }
+
+    /** It glows and a ring shows the reach, then a small burst of flame. */
+    private boolean emberBurst(LivingEntity caster, Arena arena, double power) {
+        hold(caster, 26);
+        caster.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 26, 0, false, false));
+        Location center = caster.getLocation();
+        caster.getWorld().playSound(center, Sound.BLOCK_FIRE_AMBIENT, 1.4F, 1.4F);
+        repeat(caster, arena, 5, 5, tick -> {
+            Telegraph.ring(center, 2.8, Telegraph.FIRE);
+            caster.getWorld().spawnParticle(Particle.SMALL_FLAME, center.clone().add(0, .5, 0), 8, .4, .3, .4, .01);
+        }, () -> {
+            caster.getWorld().spawnParticle(Particle.FLAME, center.clone().add(0, .4, 0), 40, 1.2, .3, 1.2, .08);
+            caster.getWorld().playSound(center, Sound.ENTITY_BLAZE_SHOOT, 1F, 1.5F);
+            for (Player player : arena.near(center, 3)) {
+                hit(player, caster, 3 * power);
+                player.setFireTicks(20);
+            }
+        });
+        return true;
+    }
+
+    /** A bolt you can watch fly to a marked spot, and ice there for a few seconds after. */
+    private boolean frostBolt(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location spot = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_EVOKER_PREPARE_ATTACK, 1F, 1.6F);
+        hold(caster, 16);
+        repeat(caster, arena, 3, 5, tick -> Telegraph.disc(spot, ICE_RADIUS, Telegraph.FROST), () -> {
+            fly(caster, arena, spot.clone().add(0, .4, 0), .6, at -> {
+                at.getWorld().spawnParticle(Particle.SNOWFLAKE, at, 6, .12, .12, .12, 0);
+                Telegraph.disc(spot, ICE_RADIUS, Telegraph.FROST);
+            }, at -> false, at -> {
+                at.getWorld().playSound(spot, Sound.BLOCK_GLASS_BREAK, 1.2F, 1.5F);
+                for (Player player : arena.near(spot, ICE_RADIUS)) hit(player, caster, 2 * power);
+                for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+                    Block floor = spot.clone().add(dx, 0, dz).getBlock();
+                    if (dx * dx + dz * dz <= ICE_RADIUS * ICE_RADIUS && floor.getType().isAir() && floor.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid())
+                        arena.temporary(floor, Material.SNOW, ICE_TICKS);
+                }
+                int[] tick = {0};
+                Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                    if (!arena.live() || (tick[0] += 10) > ICE_TICKS) { task.cancel(); return; }
+                    Telegraph.ring(spot, ICE_RADIUS, Telegraph.FROST);
+                    for (Player player : arena.near(spot, ICE_RADIUS)) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 25, 1));
+                }, 0L, 10L);
+            });
         });
         return true;
     }

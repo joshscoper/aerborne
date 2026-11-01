@@ -14,7 +14,7 @@ final class SampleChests {
     record Spot(int x, int y, int z, Material block) { }
 
     private static final Map<String, List<Spot>> SPOTS = Map.of(
-        "first_flight", List.of(new Spot(-9, 64, 80, Material.BARREL), new Spot(7, 64, 93, Material.CHEST)),
+        "first_flight", List.of(new Spot(-7, 64, 22, Material.BARREL), new Spot(3, 64, 79, Material.CHEST)),
         "hollow_barrow", List.of(new Spot(-14, 64, 15, Material.BARREL), new Spot(-51, 64, 84, Material.CHEST),
             new Spot(-16, 64, 30, Material.CHEST)),
         "thornwood_canopy", List.of(new Spot(-18, 64, 33, Material.BARREL), new Spot(47, 64, 68, Material.CHEST),

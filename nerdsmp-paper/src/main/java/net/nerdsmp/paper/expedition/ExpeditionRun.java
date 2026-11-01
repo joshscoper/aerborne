@@ -1320,6 +1320,8 @@ final class ExpeditionRun {
             * service.scaling().healthFactor(effectiveSize(), expedition.maxParty())
             * (asBoss ? room.encounter().bossHealth() : 1) * roleHealth;
         LivingEntity entity = plugin.mobs().spawnEncounter(mob, at, level, spawned -> {
+            // Bigger ones split as they die, into things nobody is tracking.
+            if (spawned instanceof org.bukkit.entity.Slime slime) slime.setSize(1);
             spawned.setRemoveWhenFarAway(false);
             spawned.setPersistent(true);
             spawned.setCanPickupItems(false); // Counterweights thrown on plates stay where they land.

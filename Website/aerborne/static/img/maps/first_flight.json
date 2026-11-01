@@ -1,15 +1,16 @@
 {
-  "version": "3035078518b4c032",
-  "width": 819,
-  "height": 1099,
-  "entrance": {"x": 50.0, "y": 9.9},
+  "version": "de25611b38fad1c2",
+  "width": 1038,
+  "height": 1400,
+  "entrance": {"x": 49.7, "y": 11.0},
   "pins": [
-    {"name": "The Old Sentinel", "room": "The Sentinel's Rest", "icon": "skull", "color": "#c65642", "optional": false, "x": 50.0, "y": 85.7}
+    {"name": "The Old Sentinel", "room": "The Final Test", "icon": "shield", "color": "#c65642", "optional": false, "x": 49.7, "y": 84.4}
   ],
   "places": [
-    {"name": "Skyhop Crossing", "kind": "room", "x": 50.2, "y": 25.9},
-    {"name": "The Lever Lock", "kind": "room", "x": 50.0, "y": 41.6},
-    {"name": "The Training Yard", "kind": "room", "x": 50.0, "y": 64.9},
-    {"name": "Wayfarer's Fire", "kind": "fire", "x": 52.6, "y": 53.2}
+    {"name": "The Trial Path", "kind": "room", "x": 50.1, "y": 38.3},
+    {"name": "The Guardian Yard", "kind": "room", "x": 49.4, "y": 53.8},
+    {"name": "The Rune Gate", "kind": "room", "x": 49.7, "y": 61.0},
+    {"name": "The Landing", "kind": "fire", "x": 52.0, "y": 20.2},
+    {"name": "Trial's End", "kind": "fire", "x": 51.4, "y": 45.6}
   ]
 }

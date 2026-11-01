@@ -45,6 +45,42 @@ abilities:
   astral_covenant_blade: [shadow_step]
 
 items:
+  wrens_flight_cap:
+    material: leather_helmet
+    name: "<green>Wren's Flight Cap</green>"
+    slot: head
+    rarity: uncommon
+    item-level: 4
+    stats: {defense: 2, max-health: 1}
+    lore:
+      - "<gray>Goggles sold separately.</gray>"
+  skyfarers_boots:
+    material: leather_boots
+    name: "<green>Skyfarer's Boots</green>"
+    slot: feet
+    rarity: uncommon
+    item-level: 4
+    stats: {defense: 2}
+    lore:
+      - "<gray>Soles worn smooth by a thousand gangplanks.</gray>"
+  road_wardens_blade:
+    material: iron_sword
+    name: "<green>Road Warden's Blade</green>"
+    slot: main_hand
+    rarity: uncommon
+    item-level: 5
+    stats: {damage: 6}
+    lore:
+      - "<gray>Issued to whoever passes the gate.</gray>"
+  sentinels_pebble:
+    material: flint
+    name: "<blue>Sentinel's Pebble</blue>"
+    slot: trinket
+    rarity: rare
+    item-level: 6
+    stats: {max-health: 2}
+    lore:
+      - "<gray>It chipped off in the fight. It seems proud of you.</gray>"
   rangers_roundel:
     material: shield
     name: "<green>Ranger's Roundel</green>"

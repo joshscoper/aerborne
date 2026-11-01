@@ -8,15 +8,14 @@
 mobs:
   old_sentinel:
     name: "<gradient:#a4b0be:#57606f><bold>The Old Sentinel</bold></gradient>"
-    type: husk
+    type: iron_golem
     boss: true
-    health: 140
+    health: 170
     attack-damage: 5
     speed: 0.19
-    scale: 1.8
+    scale: 1.15
     ability: none
     mark-reward: 25
-    equipment: {head: chainmail_helmet, chest: iron_chestplate, legs: chainmail_leggings, hand: stone_axe}
 
   # The Hollow Barrow
   barrow_warden:
@@ -30,6 +29,43 @@ mobs:
     equipment: {head: iron_helmet, chest: chainmail_chestplate, hand: iron_sword, off-hand: shield}
 
   # Thornwood Canopy
+  cloudling:
+    rank: normal
+    name: "<aqua>Cloudling</aqua>"
+    type: breeze
+    health: 10
+    attack-damage: 2
+    scale: .7
+    ability: none
+    mark-reward: 2
+  cinderling:
+    rank: normal
+    name: "<gold>Cinderling</gold>"
+    type: magma_cube
+    health: 12
+    attack-damage: 2
+    scale: 1.3
+    ability: none
+    mark-reward: 2
+  frostbound_watcher:
+    rank: normal
+    name: "<#9fd8ff>Frostbound Watcher</#9fd8ff>"
+    type: stray
+    health: 16
+    attack-damage: 2
+    ability: none
+    mark-reward: 3
+    equipment: {head: chainmail_helmet, chest: chainmail_chestplate}
+  stonebound_keeper:
+    rank: elite
+    name: "<gray>Stonebound Keeper</gray>"
+    type: iron_golem
+    health: 60
+    attack-damage: 4
+    scale: .7
+    speed: .17
+    ability: none
+    mark-reward: 8
   briar_matron:
     rank: normal
     name: "<gradient:#6ab04c:#2d3436><bold>The Briar Matron</bold></gradient>"

@@ -71,13 +71,14 @@ public final class ItemAbilityService implements Listener, AutoCloseable {
         if (task != null) task.cancel();
     }
 
-    private static boolean hostile(Entity entity) {
-        return entity instanceof Enemy && entity instanceof LivingEntity living && !living.isDead() && !living.isInvulnerable();
+    private boolean hostile(Entity entity) {
+        // A custom mob counts whatever it's made from: a stone guardian is an iron golem to the game.
+        return entity instanceof LivingEntity living && (entity instanceof Enemy || plugin.mobs() != null && plugin.mobs().isCustomMob(living)) && !living.isDead() && !living.isInvulnerable();
     }
 
     private List<LivingEntity> enemies(Location at, double radius) {
         return at.getWorld().getNearbyLivingEntities(at, radius, Math.max(2, radius / 2), radius).stream()
-            .filter(ItemAbilityService::hostile).filter(enemy -> enemy.getLocation().distanceSquared(at) <= radius * radius).toList();
+            .filter(this::hostile).filter(enemy -> enemy.getLocation().distanceSquared(at) <= radius * radius).toList();
     }
 
     /** Ability damage is the player's, but not a swing: weapon stats and reach don't apply, and it sets off nothing further. */

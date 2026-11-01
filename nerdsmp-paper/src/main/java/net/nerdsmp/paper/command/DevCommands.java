@@ -340,7 +340,7 @@ final class DevCommands implements Listener {
         }
         int killed = 0;
         for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
-            if (!(entity instanceof Enemy) || !(entity instanceof LivingEntity living) || entity.isInvulnerable() || living.isDead()) continue;
+            if (!(entity instanceof LivingEntity living) || !(entity instanceof Enemy || plugin.mobs().isCustomMob(living)) || entity.isInvulnerable() || living.isDead()) continue;
             // As an effect, not a swing: a swing would count for whatever the player is holding, not this.
             net.nerdsmp.paper.anticheat.ArcaneEffectScope.run(player.getUniqueId(), "dev-kill", living.getUniqueId(), 2_000_000D, () -> {
                 living.damage(1_000_000D, player);

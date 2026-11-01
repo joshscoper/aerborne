@@ -57,6 +57,9 @@ public final class Abilities {
         add("venom_spit", "Venom Spit", "A green line marks the shot, then venom flies down it and poisons whoever it hits. Sidestep.", 8);
         add("root_snare", "Root Snare", "Roots burst from the deck under a player. Step off the ring or be held.", 11);
         add("web_wrap", "Web Wrap", "Wraps a player in silk, poisoning them until the cocoon at their feet is broken. Anyone can break it, the player included.", 18);
+        add("gust_shot", "Gust", "Throws a slow ball of wind that pushes whoever it hits a little. Watch it come, and sidestep.", 6);
+        add("ember_burst", "Ember Burst", "It glows, and a ring shows how far the flame will reach. Back away before it bursts.", 9);
+        add("frost_bolt", "Frost Bolt", "Fires a bolt of frost you can see coming at a marked spot. It leaves ice that slows anyone on it.", 7);
         add("spore_burst", "Spore Burst", "It bursts as it dies, and a cloud of spores hangs where it fell. Step away from the body.", 0);
     }
 

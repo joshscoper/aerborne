@@ -5,6 +5,21 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### First Flight rebuilt (October 31)
+- **The Wardens' Road at sunset.** The tutorial is rebuilt as four stops: the Landing, the Trial Path, the Guardian
+  Yard and the Final Test, along a road on stone arches. A fall costs a little damage and nothing else: Wren's
+  safety line puts you back.
+- **The Swallow.** Captain Wren's airship moors side-on at the pier: a deep hull with a teal strake, a lit
+  two-tier sterncastle, and a slim canvas bag in a wooden harness. Every run starts on its deck.
+- **Ruins with weight.** Rock and vines hang under every island. The Landing has a walled square and a watchtower,
+  the Yard an arcade and a two-tier gatehouse between towers, and the Final Test a colonnade gone to ivy.
+- **Five enemies, one lesson each.** Cloudlings throw slow gusts that can't knock you off. Cinderlings glow before
+  they burst. Frostbound Watchers fire frost bolts that leave slowing ice. Stonebound Keepers are slow, armoured
+  elites that telegraph a slam. The Old Sentinel builds itself from the rubble and tests all of it.
+- **Three rune stones** hold the yard's south gate; pull a lever on each to open the road.
+- **New drops:** Wren's Flight Cap, Skyfarer's Boots, the Road Warden's Blade and the Sentinel's Pebble.
+- `/dev kill` and item abilities now count custom mobs built on golems as enemies.
+
 ### Dungeon maps on the website (October 31)
 - **Every expedition page has a parchment map.** Each is drawn from the dungeon's real template, with its boss
   rooms in colour, a medallion for each boss, its fires and rooms, and a legend. A test fails if one goes stale.
