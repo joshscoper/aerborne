@@ -236,6 +236,55 @@ class SampleTemplatesTest {
         }
     }
 
+    /** Walks every deck: past each edge there's a rail, floor or a wall, everywhere but the windward side of the perch and the way to the hidden hollow. */
+    @Test void theCanopysDecksAreRailed() {
+        var canopy = definition("thornwood_canopy");
+        Map<Cell, Material> blocks = new HashMap<>(blocks("thornwood_canopy"));
+        for (String piece : List.of("heart_span", "span_west", "span_east")) {
+            var box = canopy.story().setpieces().get(piece).box();
+            for (int x = box.minX(); x <= box.maxX(); x++) for (int y = box.minY(); y <= box.maxY(); y++) for (int z = box.minZ(); z <= box.maxZ(); z++) blocks.put(new Cell(x, y, z), Material.SPRUCE_PLANKS);
+        }
+        java.util.function.Predicate<Cell> stand = at -> walkThrough(blocks.getOrDefault(at, Material.AIR)) && walkThrough(blocks.getOrDefault(new Cell(at.x(), at.y() + 1, at.z()), Material.AIR))
+            && standsOn(blocks, at.x(), at.y() - 1, at.z());
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
+        open.add(new Cell(canopy.spawn().x(), canopy.spawn().y(), canopy.spawn().z()));
+        int[][] steps = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        while (!open.isEmpty()) {
+            Cell at = open.poll();
+            if (!seen.add(at)) continue;
+            for (int[] step : steps) for (int dy = -1; dy <= 1; dy++) {
+                Cell next = new Cell(at.x() + step[0], at.y() + dy, at.z() + step[1]);
+                if (stand.test(next)) open.add(next);
+            }
+        }
+        assertTrue(seen.size() > 4000, seen.size() + " cells walked");
+        List<String> gaps = new java.util.ArrayList<>();
+        for (Cell at : seen) for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}}) {
+            int x = at.x() + step[0], z = at.z() + step[1];
+            boolean windward = at.y() == 71 && x >= 33 && z <= 43, hiddenWay = at.y() == 64 && x < -19 && Math.abs(z - 27) <= 2;
+            if (windward || hiddenWay) continue;
+            // A diagonal is only a way through if neither side of the corner is shut.
+            boolean past = walkThrough(blocks.getOrDefault(new Cell(x, at.y(), z), Material.AIR));
+            if (step[0] != 0 && step[1] != 0) past &= walkThrough(blocks.getOrDefault(new Cell(x, at.y(), at.z()), Material.AIR)) && walkThrough(blocks.getOrDefault(new Cell(at.x(), at.y(), z), Material.AIR));
+            boolean ground = false;
+            for (int down = 1; down <= 4; down++) ground |= !walkThrough(blocks.getOrDefault(new Cell(x, at.y() - down, z), Material.AIR));
+            if (past && !ground) gaps.add(at.x() + "," + at.y() + "," + at.z() + " on " + blocks.get(new Cell(at.x(), at.y() - 1, at.z())) + " to " + x + "," + z);
+        }
+        assertTrue(gaps.isEmpty(), gaps.size() + " gaps: " + gaps.stream().sorted().limit(200).toList());
+    }
+
+    /** A fence left to itself is a thin post with gaps a player fits through, so each has to know its neighbours. */
+    @Test void theCanopysRailsAreJoinedUp() {
+        int joined = 0, loose = 0;
+        for (var placement : SampleTemplates.plan("thornwood_canopy").placements()) {
+            if (placement.block().material() != Material.SPRUCE_FENCE) continue;
+            if (placement.block().properties().contains("=true")) joined++;
+            else loose++;
+        }
+        assertTrue(joined > 500 && loose < joined / 8, joined + " joined, " + loose + " loose");
+    }
+
     /** Sacs are wool, cisterns hold water, and the rot the Shaman's fire runs from is really in the bark. */
     @Test void theCanopysDevicesAreRealBlocks() {
         Map<Cell, Material> blocks = blocks("thornwood_canopy");

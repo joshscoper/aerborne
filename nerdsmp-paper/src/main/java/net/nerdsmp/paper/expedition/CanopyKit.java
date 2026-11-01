@@ -2,8 +2,9 @@ package net.nerdsmp.paper.expedition;
 
 import org.bukkit.Material;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
-import java.util.function.BiPredicate;
 
 import static net.nerdsmp.paper.expedition.SampleKit.noise;
 import static net.nerdsmp.paper.expedition.SampleKit.smooth;
@@ -100,14 +101,62 @@ final class CanopyKit {
         return run < .14 ? Material.DARK_OAK_PLANKS : run < .24 ? Material.STRIPPED_SPRUCE_WOOD : Material.SPRUCE_PLANKS;
     }
 
-    /** A round deck, railed where {@code open} doesn't say otherwise. */
-    static void platform(BuildCanvas b, int cx, int cz, int radius, int y, BiPredicate<Integer, Integer> open) {
+    /** A round deck. Rails come last, from {@link #railEdges}, once the shape of everything is known. */
+    static void platform(BuildCanvas b, int cx, int cz, int radius, int y) {
         for (int x = cx - radius - 1; x <= cx + radius + 1; x++) for (int z = cz - radius - 1; z <= cz + radius + 1; z++) {
             double distance = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
             if (distance > radius + .4) continue;
             b.block(x, y, z, board(x, z, distance, radius));
-            if (distance > radius - .6 && !open.test(x, z)) b.block(x, y + 1, z, RAIL);
         }
+    }
+
+    /** A place a deck's edge should stay open. */
+    interface Gap {
+        boolean at(int x, int y, int z);
+    }
+
+    static boolean empty(BuildCanvas b, int x, int y, int z) {
+        Material block = b.get(x, y, z);
+        return block == null || block == Material.AIR;
+    }
+
+    private static boolean walkway(Material block) { return boarded(block) || block == Material.SPRUCE_SLAB || block == Material.SPRUCE_STAIRS; }
+
+    /** Moss and mushrooms give way to a rail. */
+    private static boolean railable(Material block) {
+        return block == null || block == Material.AIR || block == Material.MOSS_CARPET || block == Material.RED_MUSHROOM || block == Material.SWEET_BERRY_BUSH || block == Material.COBWEB;
+    }
+
+    /** Rails along every edge of every deck, corners included, so there's no way between them. */
+    static void railEdges(BuildCanvas b, Gap gap) {
+        List<ExpeditionLayout.Cell> edges = new ArrayList<>();
+        for (var entry : b.blocks().entrySet()) {
+            var at = entry.getKey();
+            if (!boarded(entry.getValue().material()) || !railable(b.get(at.x(), at.y() + 1, at.z())) || gap.at(at.x(), at.y(), at.z())) continue;
+            boolean edge = false;
+            // Something a step up or down is the way on, as on a bridge's sag or a stair, not an edge.
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++)
+                edge |= empty(b, at.x() + dx, at.y(), at.z() + dz) && !walkway(b.get(at.x() + dx, at.y() - 1, at.z() + dz)) && !walkway(b.get(at.x() + dx, at.y() + 1, at.z() + dz));
+            if (edge) edges.add(at);
+        }
+        for (var at : edges) b.block(at.x(), at.y() + 1, at.z(), RAIL);
+    }
+
+    private static boolean joins(Material block) {
+        if (block == null) return false;
+        String name = block.name();
+        return name.endsWith("FENCE") || name.endsWith("PLANKS") || name.endsWith("_LOG") || name.endsWith("_WOOD");
+    }
+
+    /**
+     * Fences are placed without their neighbours being told, so left alone each stands as a thin post
+     * with gaps a player fits through. This sets every side that touches something to hold on to.
+     */
+    static void joinRails(BuildCanvas b) {
+        List<ExpeditionLayout.Cell> rails = new ArrayList<>();
+        for (var entry : b.blocks().entrySet()) if (entry.getValue().material() == RAIL) rails.add(entry.getKey());
+        for (var at : rails) b.block(at.x(), at.y(), at.z(), RAIL, "east=" + joins(b.get(at.x() + 1, at.y(), at.z())) + ",west=" + joins(b.get(at.x() - 1, at.y(), at.z()))
+            + ",north=" + joins(b.get(at.x(), at.y(), at.z() - 1)) + ",south=" + joins(b.get(at.x(), at.y(), at.z() + 1)) + ",waterlogged=false");
     }
 
     /** What holds a round deck up and what hangs from it: joists, braces back to the trunk, moss, and strands of glow berries. */
@@ -159,9 +208,10 @@ final class CanopyKit {
                 int x = x1 + dx * step + (alongX ? 0 : side), z = z1 + dz * step + (alongX ? side : 0);
                 if (Math.abs(side) == 2) {
                     b.block(x, level, z, Material.STRIPPED_SPRUCE_WOOD);
+                    // Two high, so rails a step apart overlap where the bridge sags.
                     b.block(x, level + 1, z, RAIL);
-                    if (step % 4 == 0) b.block(x, level + 2, z, step == 0 || step == length ? Material.LANTERN : RAIL);
-                    if (step % 8 == 4) b.block(x, level + 3, z, Material.LANTERN);
+                    b.block(x, level + 2, z, RAIL);
+                    if (step % 4 == 0) b.block(x, level + 3, z, Material.LANTERN);
                 } else if (drop % 2 == 1) {
                     b.block(x, level, z, Material.SPRUCE_SLAB, "type=bottom");
                 } else {
@@ -221,7 +271,7 @@ final class CanopyKit {
     /** A hut on its own round platform, hung with vines. */
     static void pod(BuildCanvas b, int cx, int y, int cz, int radius, int height, Roof roof, int door, int salt) {
         int deck = radius + 2;
-        platform(b, cx, cz, deck, y, (x, z) -> false);
+        platform(b, cx, cz, deck, y);
         underside(b, cx, cz, deck, y, 1, salt);
         hut(b, cx, y, cz, radius, height, roof, door);
     }

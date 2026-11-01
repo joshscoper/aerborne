@@ -552,15 +552,22 @@ final class ExpeditionRun {
         logAbility(player.getName() + " caught");
     }
 
-    /** Enemies off the edge go back to the middle of the room they're fighting in. */
+    /** Enemies off the edge go back to the middle of the room they're fighting in. Anything held for an entrance or a ward is left alone. */
     private void catchEnemies() {
         var falls = expedition.story().falls();
         Room room = progress.activeRoom();
         if (falls == null || room == null || room.points().isEmpty()) return;
         Point home = room.points().getFirst();
-        for (UUID uuid : engaged())
-            if (Bukkit.getEntity(uuid) instanceof LivingEntity enemy && enemy.getY() < falls.below() && !packs.member(uuid))
-                enemy.teleport(new Location(world, home.x() + .5, home.y(), home.z() + .5));
+        double floor = room.region() == null ? falls.below() : Math.max(falls.below(), room.region().minY() - 1);
+        for (UUID uuid : engaged()) {
+            if (!(Bukkit.getEntity(uuid) instanceof LivingEntity enemy) || enemy.getY() >= floor || packs.member(uuid) || enemy.isInvulnerable()) continue;
+            Location back = new Location(world, home.x() + .5, home.y(), home.z() + .5, home.yaw(), 0);
+            enemy.teleport(back);
+            enemy.setFallDistance(0);
+            enemy.setVelocity(new org.bukkit.util.Vector());
+            world.spawnParticle(Particle.CLOUD, back.clone().add(0, 1, 0), 24, .5, .8, .5, .03);
+            logAbility(plainName(enemy) + " caught");
+        }
     }
 
     void moved(Player player, Location to) {

@@ -50,8 +50,19 @@ final class ThornwoodTemplate {
         catwalk(b);
         climb(b);
         grove(b);
+        railEdges(b, ThornwoodTemplate::leftOpen);
         SampleChests.place(b, "thornwood_canopy");
+        joinRails(b);
         return b.freeze();
+    }
+
+    /** Where a deck's edge has no rail: the way onto something, or a drop that's meant to be there. */
+    private static boolean leftOpen(int x, int y, int z) {
+        boolean windward = y == PERCH && x >= 34 && z <= 42, perchStair = x >= 39 && x <= 43 && z >= 45 && z <= 53;
+        boolean span = y == Y && Math.abs(x) <= 2 && (z == 79 || z == 84), hiddenWay = y == Y && x < -19 && Math.abs(z - 27) <= 1;
+        boolean stair = x >= 1 && z > 84 && y <= HIGH && Math.hypot(x, z - STAIR_Z) <= 11.6;
+        boolean catwalk = x < -3 && z >= 84 && z <= 87 && y <= Y;
+        return windward || perchStair || span || hiddenWay || stair || catwalk;
     }
 
     /** Treetops a long way down, so a fall has something to fall into. */
@@ -84,7 +95,7 @@ final class ThornwoodTemplate {
     /** A ring of deck round a trunk, well out of reach, with a hut on it and lanterns hung beneath. */
     private static void perched(BuildCanvas b, int cx, int cz, int radius, int y, Roof roof, int side) {
         int deck = radius + 5;
-        platform(b, cx, cz, deck, y, (x, z) -> false);
+        platform(b, cx, cz, deck, y);
         underside(b, cx, cz, deck, y, radius, cx + cz);
         trunk(b, cx, cz, y - 2, y + 8, radius, cx);
         int[][] sides = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
@@ -120,7 +131,7 @@ final class ThornwoodTemplate {
     }
 
     private static void rootgate(BuildCanvas b) {
-        platform(b, 0, 3, 10, Y, (x, z) -> z > 11 && Math.abs(x) <= 2 || x < -7 && z < 3);
+        platform(b, 0, 3, 10, Y);
         underside(b, 0, 3, 10, Y, 1, 3);
         // The ranger's lodge on the north side.
         pod(b, 0, Y, -9, 4, 4, THATCH, 1, 5);
@@ -134,11 +145,10 @@ final class ThornwoodTemplate {
         b.block(7, Y + 1, 2, Material.TARGET);
         post(b, -7, Y + 1, 9, 3);
         post(b, 7, Y + 1, 9, 3);
-        // The branch out west to the lookout tree, and the watch hut on it.
-        limb(b, -9, Y - 1, 1, -14, Y + 4, -2, 2.5, 3, 11);
+        // The watch hut up on the lookout tree.
         limb(b, -14, 76, -2, -2, 86, 4, 2.5, 1, 13);
         limb(b, -14, 80, -2, -24, 86, 12, 2.5, 1, 15);
-        platform(b, -14, -2, 9, 74, (x, z) -> false);
+        platform(b, -14, -2, 9, 74);
         underside(b, -14, -2, 9, 74, 4, 17);
         trunk(b, -14, -2, 72, 84, 4, 18);
         hut(b, -21, 74, -2, 2, 3, MOSSY, 0);
@@ -147,15 +157,8 @@ final class ThornwoodTemplate {
 
     /** Two round decks, each about its own great trunk, merged into one winding walk. */
     private static void lowBoughs(BuildCanvas b) {
-        platform(b, -8, 27, 14, Y, (x, z) -> z < 16 && Math.abs(x) <= 2 || x < -20 && Math.abs(z - 27) <= 1 || x + z * .4 > 2 && z > 17);
-        platform(b, 8, 37, 14, Y, (x, z) -> z > 47 && Math.abs(x) <= 2 || x - z * .4 < -8 && z < 44 || z > 45 && x < 2);
-        // Where the two rings cross, no rail.
-        for (int x = -6; x <= 7; x++) for (int z = 22; z <= 46; z++)
-            if (Math.hypot(x + 8, z - 27) <= 14.4 && Math.hypot(x - 8, z - 37) <= 14.4) {
-                if (b.get(x, Y + 1, z) == RAIL) b.block(x, Y + 1, z, Material.AIR);
-            }
-        for (int x = -2; x <= 2; x++) for (int z = 14; z <= 22; z++) if (b.get(x, Y + 1, z) == RAIL && z > 17) b.block(x, Y + 1, z, Material.AIR);
-        for (int x = -2; x <= 2; x++) for (int z = 40; z <= 47; z++) if (b.get(x, Y + 1, z) == RAIL) b.block(x, Y + 1, z, Material.AIR);
+        platform(b, -8, 27, 14, Y);
+        platform(b, 8, 37, 14, Y);
         underside(b, -8, 27, 14, Y, 3, 21);
         underside(b, 8, 37, 14, Y, 3, 23);
         trunk(b, -8, 27, FOREST_FLOOR, CROWN_LINE, 4, 24);
@@ -179,7 +182,7 @@ final class ThornwoodTemplate {
 
     private static void high(BuildCanvas b, int cx, int cz, int radius, int y, Roof roof, int side) {
         int deck = radius + 5;
-        platform(b, cx, cz, deck, y, (x, z) -> false);
+        platform(b, cx, cz, deck, y);
         underside(b, cx, cz, deck, y, radius, cx + y);
         int[][] sides = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
         hut(b, cx + sides[side][0] * (deck - 2), y, cz + sides[side][1] * (deck - 2), 2, 3, roof, side);
@@ -208,7 +211,7 @@ final class ThornwoodTemplate {
 
     /** The hub: a round deck, a fire to run back to, a way off it each way, and a hut in each corner. */
     private static void fork(BuildCanvas b) {
-        platform(b, 0, 65, 14, Y, (x, z) -> Math.abs(x) <= 2 || Math.abs(z - 65) <= 2);
+        platform(b, 0, 65, 14, Y);
         underside(b, 0, 65, 14, Y, 1, 33);
         b.block(0, Y + 1, 65, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
         for (int[] seat : new int[][]{{-2, 65, 0}, {2, 65, 0}, {0, 63, 1}, {0, 67, 1}}) b.block(seat[0], Y + 1, seat[1], Material.STRIPPED_DARK_OAK_LOG, seat[2] == 0 ? "axis=z" : "axis=x");
@@ -231,7 +234,7 @@ final class ThornwoodTemplate {
     }
 
     private static void signalBoughs(BuildCanvas b) {
-        platform(b, 36, 65, 14, Y, (x, z) -> x < 26 && Math.abs(z - 65) <= 2 || z < 54 && Math.abs(x - 41) <= 1);
+        platform(b, 36, 65, 14, Y);
         underside(b, 36, 65, 14, Y, 4, 47);
         trunk(b, 36, 65, FOREST_FLOOR, CROWN_LINE, 4.5, 48);
         crown(b, 36, CROWN_LINE, 65, 15, 49);
@@ -263,13 +266,13 @@ final class ThornwoodTemplate {
             for (int x : new int[]{39, 43}) {
                 b.block(x, y, z, Material.STRIPPED_SPRUCE_WOOD);
                 b.block(x, y + 1, z, RAIL);
+                b.block(x, y + 2, z, RAIL);
             }
         }
         for (int x = 26; x <= 56; x++) for (int z = 24; z <= 48; z++) {
             double across = (x - 41) / 14.4, along = (z - 36) / 11.4, inside = across * across + along * along;
             if (inside > 1) continue;
             b.block(x, PERCH, z, board(x, z, Math.hypot(x - 41, (z - 36) * 1.26), 14.4));
-            if (inside > .87 && (x < 34 || z > 42) && !(z >= 46 && Math.abs(x - 41) <= 1)) b.block(x, PERCH + 1, z, RAIL);
         }
         underside(b, 41, 36, 11, PERCH, 2, 57);
         for (int[] stump : new int[][]{{34, 32}, {48, 32}, {34, 41}, {48, 41}, {41, 29}}) for (int x = stump[0] - 1; x <= stump[0] + 1; x++) for (int z = stump[1] - 1; z <= stump[1] + 1; z++)
@@ -284,7 +287,7 @@ final class ThornwoodTemplate {
     }
 
     private static void silkWalk(BuildCanvas b) {
-        platform(b, -31, 65, 10, Y, (x, z) -> Math.abs(z - 65) <= 2);
+        platform(b, -31, 65, 10, Y);
         underside(b, -31, 65, 10, Y, 1, 63);
         for (int[] prop : new int[][]{{-29, 60}, {-35, 70}}) for (int y = Y + 1; y <= Y + 12; y++) for (int x = prop[0]; x <= prop[0] + 1; x++) for (int z = prop[1]; z <= prop[1] + 1; z++) b.block(x, y, z, WOOD);
         // A hut the brood took, with the silk still on it.
@@ -339,9 +342,11 @@ final class ThornwoodTemplate {
         for (int x = -60; x <= -4; x++) {
             int drop = (int) Math.round(Math.sin((x + 60) / 56D * Math.PI));
             for (int z = 85; z <= 86; z++) b.block(x, Y - drop, z, x % 2 == 0 ? Material.SPRUCE_PLANKS : Material.STRIPPED_SPRUCE_WOOD);
-            if (x > -50) b.block(x, Y + 1 - drop, 84, RAIL);
-            b.block(x, Y + 1 - drop, 87, RAIL);
-            if (x % 8 == 0) b.block(x, Y + 2 - drop, 87, Material.LANTERN);
+            for (int up = 1; up <= 2; up++) {
+                if (x > -50) b.block(x, Y + up - drop, 84, RAIL);
+                b.block(x, Y + up - drop, 87, RAIL);
+            }
+            if (x % 8 == 0) b.block(x, Y + 3 - drop, 87, Material.LANTERN);
         }
     }
 
@@ -356,16 +361,21 @@ final class ThornwoodTemplate {
         // The stair winds up the east side, half a block at a time, between the trunk and a rail.
         for (int x = -1; x <= 11; x++) for (int z = 84; z <= 106; z++) {
             double dx = x, dz = z - STAIR_Z, distance = Math.hypot(dx, dz);
-            if (distance < 6.6 || distance > 10.6 || dx < 0) continue;
+            // Inside the stair's width, the boards run on until they meet the bark.
+            boolean bark = b.get(x, Y + 8, z) != null;
+            if (distance < 4.6 || distance > 10.6 || dx < 0) continue;
             double turned = (Math.atan2(dz, dx) + Math.PI / 2) / Math.PI;
             int half = (int) Math.round(Math.clamp(turned, 0D, 1D) * 28);
             int y = Y + half / 2;
+            if (distance < 6.6 && (bark || !empty(b, x, y + 1, z))) continue;
             if (half % 2 == 1) b.block(x, y + 1, z, Material.SPRUCE_SLAB, "type=bottom");
             b.block(x, y, z, Material.SPRUCE_PLANKS);
             b.block(x, y - 1, z, Material.STRIPPED_DARK_OAK_WOOD);
-            if (distance > 9.7) {
+            boolean landing = x <= 2 && (z <= 87 || z >= 103);
+            if (distance > 9.2 && !landing) {
                 b.block(x, y + 1 + half % 2, z, RAIL);
-                if (Math.floorMod(x * 3 + z, 9) == 0) b.block(x, y + 2 + half % 2, z, Material.LANTERN);
+                b.block(x, y + 2 + half % 2, z, RAIL);
+                if (Math.floorMod(x * 3 + z, 9) == 0) b.block(x, y + 3 + half % 2, z, Material.LANTERN);
             }
             if (noise(x, z, 177) < .12) strand(b, x, y - 2, z, 2 + (int) (noise(z, x, 178) * 6), true);
         }
@@ -374,10 +384,8 @@ final class ThornwoodTemplate {
             double round = Math.hypot(Math.max(0, Math.abs(x) - 8), Math.max(0, ANTE + 4 - z));
             if (round > 4.4) continue;
             b.block(x, HIGH, z, (x + z * 3) % 5 == 0 ? Material.DARK_OAK_PLANKS : Material.SPRUCE_PLANKS);
-            boolean rim = round > 3.5 || Math.abs(x) == 12;
-            if (rim && !(z <= ANTE + 1 && x >= 0 && x <= 10)) b.block(x, HIGH + 1, z, RAIL);
         }
-        underside(b, 0, 110, 9, HIGH, 1, 73);
+        underside(b, 0, 112, 6, HIGH, 1, 73);
         b.block(6, HIGH + 1, 110, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
         b.block(7, HIGH + 1, 110, Material.STRIPPED_DARK_OAK_LOG, "axis=z");
         // The gatehouse: two huts and a lintel of living root.
@@ -395,7 +403,7 @@ final class ThornwoodTemplate {
      * mark where the thorns run.
      */
     private static void grove(BuildCanvas b) {
-        platform(b, 0, GROVE_Z, 22, HIGH, (x, z) -> z < GROVE_Z - 18 && Math.abs(x) <= 2);
+        platform(b, 0, GROVE_Z, 22, HIGH);
         trunk(b, 0, HEART_Z, FOREST_FLOOR, 124, 12, 81);
         // Buttress roots coming down to the deck on the far side, clear of the fight.
         for (int[] root : new int[][]{{-14, 100, 150, -24, 76, 150}, {14, 100, 150, 24, 76, 150}, {-10, 104, 170, -20, 70, 176}, {10, 104, 170, 20, 70, 176}, {0, 104, 174, 0, 66, 182}})

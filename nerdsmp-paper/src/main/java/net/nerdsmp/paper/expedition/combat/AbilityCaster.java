@@ -218,7 +218,8 @@ public final class AbilityCaster {
     private boolean blink(LivingEntity caster, Arena arena, List<Player> targets) {
         Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
         Location behind = target.getLocation().clone().add(target.getLocation().getDirection().setY(0).normalize().multiply(-2));
-        if (!behind.getBlock().isPassable() || !behind.clone().add(0, 1, 0).getBlock().isPassable()) behind = target.getLocation();
+        boolean floor = !behind.clone().subtract(0, 1, 0).getBlock().isPassable();
+        if (!floor || !behind.getBlock().isPassable() || !behind.clone().add(0, 1, 0).getBlock().isPassable()) behind = target.getLocation();
         Location to = behind;
         caster.getWorld().spawnParticle(Particle.LARGE_SMOKE, caster.getLocation().add(0, 1, 0), 20, .3, .6, .3, .02);
         repeat(caster, arena, 2, 5, tick -> caster.getWorld().spawnParticle(Particle.PORTAL, to.clone().add(0, 1, 0), 20, .3, .6, .3, .3), () -> {

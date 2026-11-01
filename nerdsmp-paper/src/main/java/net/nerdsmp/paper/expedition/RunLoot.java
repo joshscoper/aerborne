@@ -64,6 +64,8 @@ final class RunLoot {
     }
 
     static final int BUY_SLOT = 49;
+    /** How far under something the floor can be and still be the floor it was standing on. */
+    private static final int FLOOR_REACH = 5;
     private static final String BOSS_CHEST = "boss:";
 
     private final NerdSmpPlugin plugin;
@@ -154,16 +156,42 @@ final class RunLoot {
     /** An enemy fell: drop its role's loot where it died. */
     void enemyDied(ExpeditionDefinition.Role role, Location at) {
         List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source(role), luck, ThreadLocalRandom.current()), null);
-        for (ItemStack drop : drops) at.getWorld().dropItemNaturally(at, drop);
+        Location spot = reachable(at);
+        for (ItemStack drop : drops) spot.getWorld().dropItemNaturally(spot, drop);
         if (role == ExpeditionDefinition.Role.BOSS && !drops.isEmpty())
             at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
     }
 
+    /** The floor under a spot, if there is any close enough to count, and it isn't a rail. */
+    private static Block floorUnder(Location at) {
+        Block block = at.getBlock();
+        for (int drop = 0; drop < FLOOR_REACH && block.isPassable(); drop++) block = block.getRelative(org.bukkit.block.BlockFace.DOWN);
+        return block.isPassable() || block.getType().name().endsWith("FENCE") ? null : block;
+    }
+
+    /** Something that dies over a drop leaves its loot beside the nearest player, not down in the dark. */
+    private Location reachable(Location at) {
+        if (floorUnder(at) != null) return at;
+        return run.online().stream().filter(player -> player.getWorld() == at.getWorld()).map(Player::getLocation)
+            .min(java.util.Comparator.comparingDouble(spot -> spot.distanceSquared(at))).orElse(at);
+    }
+
+    /** Where a boss's chest goes: where it fell, unless that's off the floor of its room, and then the middle of the room. */
+    private Block chestSpot(ExpeditionDefinition.Room room, Location at) {
+        Block floor = floorUnder(at);
+        boolean inRoom = floor != null && (room.region() == null || room.region().contains(floor.getX() + .5, floor.getY() + 1, floor.getZ() + .5));
+        if (!inRoom && !room.points().isEmpty()) {
+            Point middle = room.points().getFirst();
+            return at.getWorld().getBlockAt(middle.x(), middle.y(), middle.z());
+        }
+        Block block = floor == null ? at.getBlock() : floor.getRelative(org.bukkit.block.BlockFace.UP);
+        while (!block.isPassable() && block.getY() < at.getBlockY() + 3) block = block.getRelative(org.bukkit.block.BlockFace.UP);
+        return block;
+    }
+
     /** A boss's chest stands where it fell. Everyone gets their own roll from it, as with any chest. */
     void bossFell(ExpeditionDefinition.Room room, Location at) {
-        Block block = at.getBlock();
-        while (block.isPassable() && block.getRelative(org.bukkit.block.BlockFace.DOWN).isPassable() && block.getY() > at.getWorld().getMinHeight()) block = block.getRelative(org.bukkit.block.BlockFace.DOWN);
-        while (!block.isPassable() && block.getY() < at.getBlockY() + 3) block = block.getRelative(org.bukkit.block.BlockFace.UP);
+        Block block = chestSpot(room, at);
         block.setType(Material.CHEST);
         bossChests.put(block, room);
         at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, block.getLocation().add(.5, 1, .5), 30, .5, .6, .5, .2);

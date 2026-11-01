@@ -45,6 +45,8 @@ campfires:
 
 setpieces:
   heart_span: {box: [-2, 63, 80, 2, 63, 83], block: spruce_planks, style: rise}
+  span_west: {box: [-3, 63, 80, -3, 65, 83], block: spruce_planks, style: rise}
+  span_east: {box: [3, 63, 80, 3, 65, 83], block: spruce_planks, style: rise}
   nest_wall: {box: [-62, 64, 82, -54, 67, 85], block: air, style: crumble}
 
 # Things in the rooms that players use during a fight.
@@ -223,7 +225,7 @@ rooms:
       type: puzzle
       scripts:
         start: ["say ilsa|Four boards. Hit them all before the first one drops back. There's a bow in the barrel by the rail."]
-        clear: ["build heart_span", "sound block.wooden_door.open 0.5", "say ilsa|That's the span down, south of the Fork. Now the way up is open."]
+        clear: ["build heart_span", "build span_west", "build span_east", "sound block.wooden_door.open 0.5", "say ilsa|That's the span down, south of the Fork. Now the way up is open."]
   matrons_nest:
     title: The Briar Matron
     region: [-78, 60, 46, -42, 88, 84]
@@ -261,7 +263,7 @@ rooms:
     optional: true
     seal: [40, 71, 47, 42, 74, 47]
     checkpoint: [41, 71, 44, 180]
-    points: [[41, 71, 36, 0], [31, 71, 30], [51, 71, 30], [31, 71, 43], [51, 71, 43]]
+    points: [[41, 71, 36, 0], [31, 71, 30], [51, 71, 30], [35, 71, 44], [50, 71, 43]]
     encounter:
       type: boss
       boss: custom:verrin_the_lost

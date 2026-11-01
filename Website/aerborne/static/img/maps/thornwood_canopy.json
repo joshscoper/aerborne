@@ -1,16 +1,16 @@
 {
-  "version": "ca3273080377b052",
+  "version": "4c2fdd9158df81af",
   "width": 1106,
-  "height": 1288,
-  "entrance": {"x": 57.3, "y": 11.1},
+  "height": 1302,
+  "entrance": {"x": 57.3, "y": 12.6},
   "pins": [
-    {"name": "The Briar Matron", "room": "", "icon": "spider", "color": "#c65642", "optional": false, "x": 19.3, "y": 44.3},
-    {"name": "Verrin", "room": "Verrin's Perch", "icon": "bow", "color": "#e2a030", "optional": true, "x": 83.2, "y": 28.5},
-    {"name": "The Thornheart Shaman", "room": "The Thornheart Grove", "icon": "staff", "color": "#9668b6", "optional": false, "x": 57.3, "y": 83.4}
+    {"name": "The Briar Matron", "room": "", "icon": "spider", "color": "#c65642", "optional": false, "x": 19.3, "y": 45.4},
+    {"name": "Verrin", "room": "Verrin's Perch", "icon": "bow", "color": "#e2a030", "optional": true, "x": 83.2, "y": 29.8},
+    {"name": "The Thornheart Shaman", "room": "The Thornheart Grove", "icon": "staff", "color": "#9668b6", "optional": false, "x": 57.3, "y": 84.1}
   ],
   "places": [
-    {"name": "The Signal Boughs", "kind": "room", "x": 80.1, "y": 44.3},
-    {"name": "The Fork", "kind": "fire", "x": 57.3, "y": 44.3},
-    {"name": "Heart Gate", "kind": "fire", "x": 61.1, "y": 68.8}
+    {"name": "The Signal Boughs", "kind": "room", "x": 80.5, "y": 45.4},
+    {"name": "The Fork", "kind": "fire", "x": 57.3, "y": 45.4},
+    {"name": "Heart Gate", "kind": "fire", "x": 61.1, "y": 69.6}
   ]
 }

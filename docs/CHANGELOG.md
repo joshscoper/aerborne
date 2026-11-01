@@ -22,6 +22,9 @@ date are placed where the README had them. Each linked doc has the detail.
   the deck burns away a stretch at a time unless someone reaches its rain cistern.
 - **Its own trash.** Sporebacks burst as they die, Rotbark Acolytes mend and snare, and Weavers spit venom.
 - **Its own loot.** 28 new pieces, with gear for all 14 slots, a chest from each boss, and companions to find.
+- **Railings that work.** Rails are joined up and run along every deck edge, and a test walks them. Only
+  Verrin's windward side stays open. A boss off its platform is put back, and a boss that dies off the
+  floor leaves its chest in the middle of the room.
 - **The engine learned new tricks.** `brood`, `burndown` and `gust` hazards, lanes that leave webs or
   thorns, `falls:`, `motes:`, and `descend` and `bloom` entrances, all usable from any expedition file.
 
