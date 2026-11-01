@@ -5,6 +5,17 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### The Gloomforge, and an entrance for every boss (November 1)
+- **The Gloomforge is a dwarven forge-palace.** The ship is gone. At the bottom of the mine a stepped plinth rises out of the
+  black water, stone kings leaning on their hammers flank the west gate, and inside is a corbelled nave with fire bowls and
+  runnels of light in the floor, a hearth with a king's face over it, gantries for the ore skips, and a throne at the far end.
+  The Foreman's fight, its hazards and its checkpoints are where they were. Best times on the map reset.
+- **Every boss in the Mines arrives on stage.** Grell comes down in a hoist cage when the chain goes and kicks the gate open.
+  The Blastmaster rides in on a powder cart and jumps clear before it blows. The Slag Hound bursts up through the crust. The
+  Deep Foreman pours out of the hearth along the floor and is hammered into shape by the forge's trip hammers.
+- **Timber stands on something now.** Shoring posts no longer break through rock or float, ramp legs reach the ground, drift
+  sets are left out on steep drops, and the ore carts look like carts.
+
 ### Mines playtest notes, and Nyra's bench (November 1)
 - **Nyra's Bench replaces Arcane Identification's three buttons.** `/identify` (or `/scrap`) shows your gear as cards on two
   tabs, Identify and Scrap. Pick pieces one at a time or use Select All, see the running cost or yield, and review before

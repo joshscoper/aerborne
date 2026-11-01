@@ -191,7 +191,7 @@ class SampleTemplatesTest {
     @Test void theMinesCamerasStayClearOfWalls() { camerasStayClearOfWalls("gloomforge_mines"); }
 
     /** Walks the Mines from the spawn on foot, with every gate up: drops of three at most, steps of one, no jumps across a gap. */
-    @Test void theMinesCanBeWalkedFromTheTopToTheBarge() {
+    @Test void theMinesCanBeWalkedFromTheTopToTheForge() {
         var mines = definition("gloomforge_mines");
         Map<Cell, Material> blocks = new HashMap<>(blocks("gloomforge_mines"));
         blocks.values().removeIf(material -> material == Material.IRON_BARS);

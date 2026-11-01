@@ -43,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * flames run along the floor to a turning circle, and the boss rises in a column of fire and slams down.
  * {@code DESCEND} lowers the boss on a single thread from high overhead. {@code BLOOM} sends fire from the
  * room's sources to a cage of roots that grows up around the spot and bursts open with the boss inside.
+ * The rest are acts staged in {@link RunActs}, each with props of its own.
  */
 final class RunEntrance {
     interface Host {
@@ -52,7 +53,11 @@ final class RunEntrance {
         void log(String line);
         /** The boss is free to fight. */
         void loose(Room room, String id, LivingEntity boss);
+        /** The body hung on this boss, if it has one. */
+        MoltenBody body(LivingEntity boss);
     }
+
+    private static final Set<EntranceStyle> ACTS = Set.of(EntranceStyle.HOIST, EntranceStyle.POWDER, EntranceStyle.ERUPT, EntranceStyle.FORGED, EntranceStyle.COLOSSUS);
 
     private static final double DEPTH = 3, BODY = 3.6;
     private static final int LOOSE_BONES = 14, WISP_TICKS = 24, FLIGHT_TICKS = 8, CIRCLE_PLATES = 18;
@@ -119,6 +124,7 @@ final class RunEntrance {
     private final Map<String, Figure> figures = new HashMap<>();
     /** The flames, plates and columns of a ritual in progress, by room. */
     private final Map<String, List<Display>> rituals = new HashMap<>();
+    private RunActs acts;
 
     RunEntrance(Plugin plugin, Host host) {
         this.plugin = plugin;
@@ -220,6 +226,7 @@ final class RunEntrance {
         Figure figure = first && entrance.style() == EntranceStyle.REANIMATE ? figures.get(room.id()) : null;
         boolean ritual = first && entrance.style() == EntranceStyle.SUMMON;
         boolean thread = first && entrance.style() == EntranceStyle.DESCEND, bloom = first && entrance.style() == EntranceStyle.BLOOM;
+        boolean act = first && ACTS.contains(entrance.style());
         Location home = boss.getLocation();
         boolean showName = named.remove(boss.getUniqueId());
         boss.setInvulnerable(true);
@@ -244,6 +251,7 @@ final class RunEntrance {
                 else if (ritual) summon(room, entrance, boss, home, tick, length, wisps);
                 else if (thread) descend(room, boss, home, tick, length);
                 else if (bloom) bloom(room, entrance, boss, home, tick, length, wisps);
+                else if (act) act(room, entrance, boss, home, tick, length);
                 else rise(boss, home, tick, length);
             }
             if (tick == length) {
@@ -251,7 +259,7 @@ final class RunEntrance {
                 boss.teleport(home);
                 if (ritual) slam(home);
                 else if (thread) touchdown(home);
-                else if (!bloom) arrive(home);
+                else if (!bloom && !act) arrive(home);
                 clear(room, entrance);
             }
             if (tick < length || host.cutsceneRunning() && tick < length + 400) return;
@@ -266,6 +274,22 @@ final class RunEntrance {
     }
 
     private static double eased(double t) { return t * t * (3 - 2 * t); }
+
+    /** One tick of an act. {@code sources} says where it starts: the lane of a cart, the mouth of a hearth, the spot in the slag. */
+    private void act(Room room, Entrance entrance, LivingEntity boss, Location home, int tick, int length) {
+        if (acts == null) acts = new RunActs(plugin, host.world());
+        List<Display> set = rituals.computeIfAbsent(room.id(), ignored -> new ArrayList<>());
+        List<Location> marks = new ArrayList<>();
+        for (Point at : entrance.sources()) marks.add(new Location(host.world(), at.x() + .5, at.y(), at.z() + .5, at.yaw(), 0));
+        switch (entrance.style()) {
+            case HOIST -> acts.hoist(set, boss, home, tick, length);
+            case POWDER -> acts.powder(set, boss, home, marks, tick, length);
+            case ERUPT -> acts.erupt(set, boss, home, tick, length);
+            case FORGED -> acts.forged(set, boss, home, marks.getFirst(), tick, length);
+            case COLOSSUS -> acts.colossus(set, boss, host.body(boss), home, marks.getFirst(), tick, length);
+            default -> { }
+        }
+    }
 
     private void rise(LivingEntity boss, Location home, int tick, int length) {
         double done = tick / (double) length;

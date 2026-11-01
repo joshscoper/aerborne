@@ -72,6 +72,8 @@ final class MoltenBody {
     private Location last;
     private double stride;
     private int tick;
+    /** Held poses for an entrance: both arms raised or thrown back, and how far it's crouched. */
+    private float arms, crouch;
 
     private MoltenBody(LivingEntity boss) {
         this.boss = boss;
@@ -79,7 +81,7 @@ final class MoltenBody {
     }
 
     /** Hides the boss and hangs the body on it. It goes when the boss goes. */
-    static void dress(Plugin plugin, LivingEntity boss) {
+    static MoltenBody dress(Plugin plugin, LivingEntity boss) {
         boss.setInvisible(true);
         boss.setCustomNameVisible(false);
         boss.setSilent(false);
@@ -95,6 +97,21 @@ final class MoltenBody {
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {
             if (!body.step()) task.cancel();
         }, 1L, 1L);
+        return body;
+    }
+
+    /** Holds a pose until told otherwise: {@code arms} in radians, up from hanging, and {@code crouch} in blocks. */
+    void stance(float arms, float crouch) {
+        this.arms = arms;
+        this.crouch = crouch;
+    }
+
+    /** Eyes dark until it wakes. */
+    void eyes(boolean lit) {
+        for (int index = 0; index < PARTS.size(); index++) {
+            Part part = PARTS.get(index);
+            if (part.block() == Material.SHROOMLIGHT && part.high() < .5F) displays.get(index).setBlock((lit ? Material.SHROOMLIGHT : Material.BLACKSTONE).createBlockData());
+        }
     }
 
     /** False once the boss is gone. */
@@ -108,7 +125,8 @@ final class MoltenBody {
         }
         Location at = boss.getLocation();
         at.setPitch(0);
-        at.setYaw(boss.getBodyYaw());
+        // Held for an entrance, it faces where it was put.
+        if (boss instanceof org.bukkit.entity.Mob mob && mob.hasAI()) at.setYaw(boss.getBodyYaw());
         if (at.getWorld() == last.getWorld()) stride += Math.min(.5, at.distance(last)) * .9;
         last = at;
         for (BlockDisplay display : displays) display.teleport(at);
@@ -122,11 +140,14 @@ final class MoltenBody {
         for (int index = 0; index < PARTS.size(); index++) {
             Part part = PARTS.get(index);
             float swing = switch (part.joint()) {
-                case LEFT_ARM, RIGHT_LEG -> walk;
-                case RIGHT_ARM, LEFT_LEG -> -walk;
+                case LEFT_ARM -> walk - arms;
+                case RIGHT_ARM -> -walk - arms;
+                case RIGHT_LEG -> walk;
+                case LEFT_LEG -> -walk;
                 case TRUNK -> 0;
             };
-            float lift = part.joint() == Joint.TRUNK || part.joint() == Joint.LEFT_ARM || part.joint() == Joint.RIGHT_ARM ? breath : 0;
+            boolean upper = part.joint() == Joint.TRUNK || part.joint() == Joint.LEFT_ARM || part.joint() == Joint.RIGHT_ARM;
+            float lift = upper ? breath - crouch : 0;
             Matrix4f shape = new Matrix4f().translate(part.joint().x, part.joint().y + lift, 0).rotateX(swing)
                 .translate(part.x(), part.y(), part.z()).scale(part.wide(), part.high(), part.deep());
             BlockDisplay display = displays.get(index);

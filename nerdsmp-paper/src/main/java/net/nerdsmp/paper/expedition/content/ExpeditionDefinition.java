@@ -148,9 +148,13 @@ public record ExpeditionDefinition(
 
     /**
      * A hidden fishing spot in lava. Whoever lands the bite, at {@code fishingLevel} or better, starts {@code room},
-     * which should be {@code hidden}. {@code body} names a model hung on the boss; null leaves its own.
+     * which should be {@code hidden}. {@code body} names a model hung on the boss; null leaves its own. Killing the
+     * boss gives the party {@code boon} for the rest of the run, if it has one.
      */
-    public record Lure(String id, Point at, int radius, int fishingLevel, String room, String body) { }
+    public record Lure(String id, Point at, int radius, int fishingLevel, String room, String body, Boon boon) { }
+
+    /** A blessing on the whole party until the run ends: {@code damage} percent more dealt, {@code guard} percent less taken. */
+    public record Boon(String title, int damage, int guard) { }
 
     /** A rare companion a boss can drop: each player rolls {@code chance} (0-1) for themselves, raised on harder tiers. */
     public record CompanionDrop(String companion, double chance) { }
@@ -420,7 +424,7 @@ public record ExpeditionDefinition(
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
     /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
-    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM }
+    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM, HOIST, POWDER, ERUPT, FORGED, COLOSSUS }
 
     /**
      * How a boss arrives: held out of reach, then brought up over {@code seconds}, {@code delaySeconds}

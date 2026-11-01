@@ -252,7 +252,7 @@ final class MinesTemplate {
     }
 
     /** A timber stair sweeping down round the wall from one terrace to the next. */
-    private static void ramp(BuildCanvas b, double start, double span, double radius, int top, int bottom) {
+    private static void ramp(BuildCanvas b, MineKit kit, double start, double span, double radius, int top, int bottom) {
         int steps = 900;
         for (int step = 0; step <= steps; step++) {
             double t = step / (double) steps, angle = start + span * t, height = top - (top - bottom) * t;
@@ -266,7 +266,8 @@ final class MinesTemplate {
             }
             int edgeX = GULLET_X + (int) Math.round(Math.cos(angle) * (radius - 2.2)), edgeZ = GULLET_Z + (int) Math.round(Math.sin(angle) * (radius - 2.2));
             if (height > bottom + 1) b.block(edgeX, whole + (half ? 2 : 1), edgeZ, RAIL);
-            if (step % 110 == 0) for (int under = 1; under <= height - bottom + 1; under++) b.block(edgeX, whole - under, edgeZ, TIMBER, "axis=y");
+            // A leg every so often, down to whatever's under it.
+            if (step % 110 == 0) for (int y = whole - 1; y > DEEP - 2 && kit.open(edgeX, y, edgeZ); y--) b.block(edgeX, y, edgeZ, TIMBER, "axis=y");
         }
     }
 
@@ -299,18 +300,28 @@ final class MinesTemplate {
             }
             if (!found || !CanopyKit.empty(b, foot, y + 1, footZ)) { first = true; continue; }
             b.block(foot, y + 1, footZ, Material.COBBLESTONE_WALL);
-            for (int up = 2; up <= rise; up++) if (kit.open(foot, y + up, footZ) && CanopyKit.empty(b, foot, y + up, footZ)) b.block(foot, y + up, footZ, TIMBER, "axis=y");
-            if (!first && Math.hypot(foot - lastX, footZ - lastZ) < 9) MineProps.line(b, lastX, y + rise + 1, lastZ, foot, y + rise + 1, footZ, TIMBER, "axis=y");
+            // A post only stands where it can run clear from sill to head; rock in the way means there's no set here.
+            boolean clear = true;
+            for (int up = 2; up <= rise + 1; up++) clear &= kit.open(foot, y + up, footZ) && CanopyKit.empty(b, foot, y + up, footZ);
+            if (!clear) { first = true; continue; }
+            for (int up = 2; up <= rise; up++) b.block(foot, y + up, footZ, TIMBER, "axis=y");
+            if (!first && Math.hypot(foot - lastX, footZ - lastZ) < 9 && lineClear(kit, lastX, y + rise + 1, lastZ, foot, footZ)) MineProps.line(b, lastX, y + rise + 1, lastZ, foot, y + rise + 1, footZ, TIMBER, "axis=y");
             lastX = foot;
             lastZ = footZ;
             first = false;
         }
     }
 
+    private static boolean lineClear(MineKit kit, int x1, int y, int z1, int x2, int z2) {
+        int steps = Math.max(Math.abs(x2 - x1), Math.abs(z2 - z1));
+        for (int step = 0; step <= steps; step++) if (!kit.open(x1 + (x2 - x1) * step / Math.max(1, steps), y, z1 + (z2 - z1) * step / Math.max(1, steps))) return false;
+        return true;
+    }
+
     /** The great open pit: terraces and working camps, stairs of timber, gold lamps on the rock, and a tree grown up from the floor to find the light. */
     private static void gullet(BuildCanvas b, MineKit kit) {
-        ramp(b, FIRST_RAMP, FIRST_SWEEP, FIRST_RADIUS, RING_HIGH, RING_LOW);
-        ramp(b, SECOND_RAMP, SECOND_SWEEP, SECOND_RADIUS, RING_LOW, DEEP);
+        ramp(b, kit, FIRST_RAMP, FIRST_SWEEP, FIRST_RADIUS, RING_HIGH, RING_LOW);
+        ramp(b, kit, SECOND_RAMP, SECOND_SWEEP, SECOND_RADIUS, RING_LOW, DEEP);
         terraceRail(b, kit, RING_HIGH, 18, 30, FIRST_RAMP);
         terraceRail(b, kit, RING_LOW, 12, 23, SECOND_RAMP);
         earth(b, kit, RING_HIGH, 24, 34, .46);
@@ -841,8 +852,8 @@ final class MinesTemplate {
     /** The bottom of everything: black water, a trestle out across it, and the Gloomforge at anchor in a blue cathedral. */
     private static void drownedDeep(BuildCanvas b, MineKit kit) {
         kit.shore(b, 176, 34, 11, 17, 2, DOCK, 519);
-        kit.shore(b, 206, 6, 9, 7, 2, 11, 520);
-        kit.shore(b, 203, 74, 8, 8, 2, 11, 521);
+        kit.shore(b, 198, 6, 9, 7, 2, 11, 520);
+        kit.shore(b, 198, 74, 8, 8, 2, 11, 521);
         kit.shore(b, 280, 18, 10, 13, 2, 12, 522);
         kit.shore(b, 272, 72, 11, 8, 2, 12, 523);
         temple(b);
@@ -870,10 +881,10 @@ final class MinesTemplate {
             b.block(x, DOCK + half / 2, z, Material.SPRUCE_PLANKS);
             if (half % 2 == 1) b.block(x, DOCK + half / 2 + 1, z, Material.SPRUCE_SLAB, "type=bottom");
         }
-        GloomforgeShip.build(b);
-        MineProps.hoard(b, GloomforgeShip.X, DECK + 4, 66, 3, 650);
+        GloomforgePalace.build(b, kit);
+        MineProps.hoard(b, GloomforgePalace.X, DECK + 4, 69, 3, 650);
         // Blue crystal on every shore, and in the water itself.
-        for (int[] burst : new int[][]{{206, 6, 11, 18}, {203, 74, 11, 16}, {280, 18, 12, 22}, {272, 72, 12, 18}, {196, 10, 8, 10}, {214, 70, 6, 12}, {286, 44, 8, 14}, {262, 8, 6, 15}, {258, 78, 6, 14}}) MineProps.crystals(b, burst[0], burst[2], burst[1], burst[3], MineProps.BLUE, burst[0] + burst[1]);
+        for (int[] burst : new int[][]{{198, 6, 11, 18}, {198, 74, 11, 16}, {280, 18, 12, 22}, {272, 72, 12, 18}, {196, 10, 8, 10}, {286, 44, 8, 14}, {276, 104, 8, 16}, {196, 104, 8, 14}}) MineProps.crystals(b, burst[0], burst[2], burst[1], burst[3], MineProps.BLUE, burst[0] + burst[1]);
         kit.flood(b, Material.WATER, 170, -12, 300, 136, 2, WATER);
         for (int x = 182; x <= 292; x += 2) for (int z = -2; z <= 124; z += 2) {
             if (noise(x, z, 636) < .06 && b.get(x, 1, z) != null) b.block(x, 1, z, Material.SEA_LANTERN);
@@ -882,11 +893,11 @@ final class MinesTemplate {
         // The roof comes down in great blue-tipped curtains, and water falls in threads.
         for (int index = 0; index < 46; index++) {
             int x = 180 + (int) (noise(index, 7, 524) * 110), z = -2 + (int) (noise(7, index, 525) * 84), y = 40;
-            if (Math.abs(x - GloomforgeShip.X) < 18 && Math.abs(z - GloomforgeShip.Z) < 48) continue;
+            if (x > GloomforgePalace.LEFT && x < GloomforgePalace.RIGHT && z > GloomforgePalace.TOP && z < GloomforgePalace.BOTTOM) continue;
             while (y < 62 && kit.open(x, y, z)) y++;
             if (y < 62) MineProps.curtain(b, x, y, z, 10 + (int) (noise(index, index, 526) * 18), 3 + (int) (noise(z, x, 527) * 4), index % 2 == 0, WET_ROCK, Material.SEA_LANTERN, 640 + index);
         }
-        for (int[] column : new int[][]{{198, 58, 7}, {206, 22, 6}, {270, 58, 7}, {276, 24, 8}, {192, 30, 5}}) MineProps.column(b, column[0], 2, column[1], roof(kit, column[0], 30, column[1], 62), column[2], ICE_ROCK, column[0] + column[1]);
+        for (int[] column : new int[][]{{198, 58, 7}, {198, 22, 6}, {274, 58, 7}, {276, 24, 8}, {192, 30, 5}}) MineProps.column(b, column[0], 2, column[1], roof(kit, column[0], 30, column[1], 62), column[2], ICE_ROCK, column[0] + column[1]);
         for (int[] fall : new int[][]{{190, 12, 3}, {214, 78, 2}, {262, 4, 3}, {288, 66, 2}}) {
             int y = 34;
             while (y < 62 && kit.open(fall[0], y, fall[1])) y++;

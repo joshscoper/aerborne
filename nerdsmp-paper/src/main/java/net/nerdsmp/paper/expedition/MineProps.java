@@ -66,9 +66,24 @@ final class MineProps {
 
     /** A little cart of plated stone with a load in it, standing where it was left. */
     static void cart(BuildCanvas b, int x, int y, int z, Material load) {
-        for (int dz = 0; dz <= 1; dz++) for (int dx = 0; dx <= 1; dx++) b.block(x + dx, y, z + dz, Material.SMOOTH_STONE_SLAB, "type=top");
-        for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) b.block(x + dx, y + 1, z + dz, load);
-        b.block(x + 1, y + 2, z, load);
+        for (int dz = 0; dz <= 2; dz++) for (int dx = 0; dx <= 1; dx++) {
+            // A plank bed on wheels, boarded up the sides, and the load heaped in the middle under loose stuff.
+            b.block(x + dx, y, z + dz, Material.DARK_OAK_SLAB, "type=top");
+            b.block(x + dx, y + 1, z + dz, dz == 1 ? load : Material.GRAVEL);
+            if (dz == 1) b.block(x + dx, y + 2, z + dz, Material.COBBLED_DEEPSLATE_SLAB, "type=bottom");
+        }
+        for (int dz = 0; dz <= 2; dz++) {
+            b.block(x - 1, y + 1, z + dz, Material.SPRUCE_TRAPDOOR, "facing=west,half=bottom,open=true");
+            b.block(x + 2, y + 1, z + dz, Material.SPRUCE_TRAPDOOR, "facing=east,half=bottom,open=true");
+        }
+        for (int dx = 0; dx <= 1; dx++) {
+            b.block(x + dx, y + 1, z - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
+            b.block(x + dx, y + 1, z + 3, Material.SPRUCE_TRAPDOOR, "facing=south,half=bottom,open=true");
+        }
+        for (int dz : new int[]{0, 2}) {
+            b.block(x - 1, y, z + dz, Material.GRINDSTONE, "face=wall,facing=west");
+            b.block(x + 2, y, z + dz, Material.GRINDSTONE, "face=wall,facing=east");
+        }
     }
 
     /** One long shard of crystal, leaning a little, with a glowing heart. */

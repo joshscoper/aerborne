@@ -196,8 +196,9 @@ public final class ExpeditionLoader {
             if (at == null) throw new IllegalArgumentException(path + ".at: the middle of the spot, [x, y, z].");
             String room = lowerOrNull(lure.getString("room"));
             if (room == null) throw new IllegalArgumentException(path + ".room: the hidden room it starts.");
+            ConfigurationSection boon = lure.getConfigurationSection("boon");
             lures.put(entry.getKey(), new ExpeditionDefinition.Lure(entry.getKey(), at, lure.getInt("radius", 4), lure.getInt("fishing-level", 0), room,
-                lowerOrNull(lure.getString("body"))));
+                lowerOrNull(lure.getString("body")), boon == null ? null : new ExpeditionDefinition.Boon(boon.getString("title", titleCase(entry.getKey())), boon.getInt("damage", 0), boon.getInt("guard", 0))));
         }
         return lures;
     }
@@ -323,7 +324,7 @@ public final class ExpeditionLoader {
         List<?> raw = entrance.getList("sources", List.of());
         for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise, reanimate, summon, descend or bloom"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
+            path + ".entrance.style", "rise, reanimate, summon, descend, bloom, hoist, powder, erupt, forged or colossus"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {

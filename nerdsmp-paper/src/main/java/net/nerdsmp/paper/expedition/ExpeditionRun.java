@@ -249,6 +249,7 @@ final class ExpeditionRun {
             @Override public boolean live() { return run.state == State.ACTIVE; }
             @Override public boolean cutsceneRunning() { return run.stage.cutsceneRunning(); }
             @Override public void log(String line) { run.logAbility(line); }
+            @Override public MoltenBody body(LivingEntity boss) { return run.lures.body(boss); }
             @Override public void loose(Room room, String id, LivingEntity boss) { run.announceBoss(room, id, boss); }
         });
         this.fight = new RunCombat(plugin, new RunCombat.Host() {
@@ -646,6 +647,10 @@ final class ExpeditionRun {
         return true;
     }
 
+    double boonDealt() { return lures == null ? 1 : lures.dealt(); }
+
+    double boonTaken() { return lures == null ? 1 : lures.taken(); }
+
     void fished(org.bukkit.event.player.PlayerFishEvent event) {
         if (lures != null && world == event.getPlayer().getWorld()) lures.fished(event);
     }
@@ -865,6 +870,7 @@ final class ExpeditionRun {
                     for (Player player : online()) player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, .5F, 1.4F);
                 }
                 if (!test) service.roomCleared(this, room);
+                lures.cleared(room);
             }
             case Effect.Lives lives -> {
                 Player died = Bukkit.getPlayer(lives.died());
@@ -1790,6 +1796,7 @@ final class ExpeditionRun {
         } else lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
             : "<gray>" + Chat.escape(tier.title()) + "</gray>  " + (left <= 60 ? "<red>" : left <= 300 ? "<yellow>" : "<white>") + clock + "</white>"
                 + "  <red>❤ " + Math.max(0, progress.lives()) + "</red>");
+        if (lures != null && lures.status() != null) lines.add(lures.status());
         Room active = progress.activeRoom();
         List<RunProgress.Objective> all = progress.objectives(now);
         // Only what's in hand: the room running now, else what's open next, and how far along the party is.

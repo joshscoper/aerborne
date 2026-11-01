@@ -3,6 +3,7 @@ package net.nerdsmp.paper.expedition;
 import net.nerdsmp.api.model.Skill;
 import net.nerdsmp.api.service.ProgressionService;
 import net.nerdsmp.paper.NerdSmpPlugin;
+import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Boon;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Lure;
 import net.nerdsmp.paper.expedition.content.ExpeditionDefinition.Room;
 import net.nerdsmp.paper.presentation.Chat;
@@ -11,11 +12,18 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +40,9 @@ final class RunLures {
     private final NerdSmpPlugin plugin;
     private final ExpeditionRun run;
     private final Map<UUID, Line> lines = new HashMap<>();
+    private final Map<UUID, MoltenBody> bodies = new HashMap<>();
+    private final Map<UUID, BlockDisplay> motes = new HashMap<>();
+    private Boon boon;
 
     private static final class Line {
         Lure lure;
@@ -126,11 +137,63 @@ final class RunLures {
             Location at = new Location(run.world, lure.at().x() + .5, lure.at().y() + 1, lure.at().z() + .5);
             if (at.getChunk().isLoaded()) run.world.spawnParticle(Particle.LAVA, at, 3, lure.radius() * .4, 0, lure.radius() * .4, 0);
         }
+        if (boon == null) return;
+        for (Player player : run.online()) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60, 0, true, false, false));
+            motes.computeIfAbsent(player.getUniqueId(), ignored -> mote(player));
+        }
     }
+
+    /** A shard of the thing's heart, turning slowly round its bearer. */
+    private BlockDisplay mote(Player player) {
+        BlockDisplay mote = run.world.spawn(player.getLocation(), BlockDisplay.class, display -> {
+            display.setBlock(Material.SHROOMLIGHT.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(1);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTransformation(new Transformation(new Vector3f(-.09F, -.09F, -.09F), new Quaternionf().rotateXYZ(.6F, .6F, 0), new Vector3f(.18F, .18F, .18F), new Quaternionf()));
+        });
+        int[] tick = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (!player.isOnline() || player.getWorld() != run.world || run.state == ExpeditionRun.State.CLOSED || !mote.isValid()) {
+                mote.remove();
+                motes.remove(player.getUniqueId());
+                task.cancel();
+                return;
+            }
+            double angle = tick[0]++ * .09;
+            mote.teleport(player.getLocation().add(Math.cos(angle) * .85, 1.1 + Math.sin(angle * .7) * .25, Math.sin(angle) * .85));
+            if (tick[0] % 8 == 0) run.world.spawnParticle(Particle.SMALL_FLAME, mote.getLocation(), 1, 0, 0, 0, 0);
+        }, 1L, 1L);
+        return mote;
+    }
+
+    /** A room cleared: if a lure led to it, its boon falls on the party. */
+    void cleared(Room room) {
+        for (Lure lure : run.expedition.story().lures().values()) {
+            if (lure.boon() == null || !room.id().equals(lure.room())) continue;
+            boon = lure.boon();
+            run.broadcast("<gold><bold>" + Chat.escape(boon.title()) + "</bold></gold> <gray>The fire in it passes to you: +" + boon.damage() + "% damage, -" + boon.guard()
+                + "% damage taken and no fear of burning, until the expedition ends.</gray>");
+            for (Player player : run.online()) {
+                player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, .7F, .7F);
+                run.world.spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 60, .5, .8, .5, .08);
+            }
+        }
+    }
+
+    double dealt() { return boon == null ? 1 : 1 + boon.damage() / 100D; }
+
+    double taken() { return boon == null ? 1 : 1 - boon.guard() / 100D; }
+
+    /** The line on the sidebar while the boon lasts, or null. */
+    String status() { return boon == null ? null : "<gold>🔥 " + Chat.escape(boon.title()) + "</gold>"; }
+
+    MoltenBody body(LivingEntity boss) { return bodies.get(boss.getUniqueId()); }
 
     /** A lure's boss has a body of its own. */
     void dress(Room room, LivingEntity boss) {
         for (Lure lure : run.expedition.story().lures().values())
-            if (room.id().equals(lure.room()) && lure.body() != null) MoltenBody.dress(plugin, boss);
+            if (room.id().equals(lure.room()) && lure.body() != null) bodies.put(boss.getUniqueId(), MoltenBody.dress(plugin, boss));
     }
 }

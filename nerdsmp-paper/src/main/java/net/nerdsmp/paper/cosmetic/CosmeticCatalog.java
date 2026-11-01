@@ -126,7 +126,8 @@ public final class CosmeticCatalog {
                 new Companion("windpip", "Windpip", "Tame Cloudling", "windpip", 0.9D, true, "CLOUD", "aqua", false, "The Old Sentinel, very rarely"),
                 new Companion("cogling", "Cogling", "Runaway mine engine", "cogling", 0.9D, false, "", "gold", false, "The Blastmaster, very rarely"),
                 new Companion("embermutt", "Embermutt", "Slag hound pup", "embermutt", 0.9D, false, "SMALL_FLAME", "red", false, "The Slag Hound, very rarely"),
-                new Companion("lampwick", "Lampwick", "The last miner's lamp", "lampwick", 0.8D, true, "", "yellow", false, "The Deep Foreman, very rarely")),
+                new Companion("lampwick", "Lampwick", "The last miner's lamp", "lampwick", 0.8D, true, "", "yellow", false, "The Deep Foreman, very rarely"),
+                new Companion("smeltling", "Smeltling", "A spark of the Colossus", "smeltling", 0.9D, false, "SMALL_FLAME", "gold", false, "Something in the Foundry, very rarely")),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),

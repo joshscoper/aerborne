@@ -411,10 +411,14 @@ final class MineKit {
             int stepX = acrossX ? 1 : 0, stepZ = acrossX ? 0 : 1;
             int floor = standing(at[0], at[1] + 1, at[2]);
             if (floor == Integer.MIN_VALUE) continue;
+            // A set wants a level floor. On a steep drop its cap ends up hanging across the hole.
+            if (Math.abs(ahead[1] - behind[1]) > 2) continue;
             int left = 0, right = 0;
             while (left < 8 && open(at[0] - stepX * (left + 1), floor, at[2] - stepZ * (left + 1))) left++;
             while (right < 8 && open(at[0] + stepX * (right + 1), floor, at[2] + stepZ * (right + 1))) right++;
             int cap = floor + 3;
+            // Both legs have to reach a wall and the ground, or it's not holding anything up.
+            if (left >= 8 || right >= 8 || !grounded(at[0] - stepX * left, floor, at[2] - stepZ * left) || !grounded(at[0] + stepX * right, floor, at[2] + stepZ * right)) continue;
             for (int offset = -left; offset <= right; offset++) {
                 int x = at[0] + stepX * offset, z = at[2] + stepZ * offset;
                 if (open(x, cap, z)) b.block(x, cap, z, TIMBER, acrossX ? "axis=x" : "axis=z");
@@ -430,6 +434,8 @@ final class MineKit {
             if (index % (SET_EVERY * 2) == SET_EVERY / 2 && open(at[0], cap - 1, at[2])) b.block(at[0], cap - 1, at[2], Material.LANTERN, "hanging=true");
         }
     }
+
+    private boolean grounded(int x, int floor, int z) { return !open(x, floor - 1, z); }
 
     private void frame(BuildCanvas b, Door door) {
         for (int along = 0; along < door.length(); along += door.length() - 1) {
