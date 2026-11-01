@@ -5,8 +5,9 @@
 .dungeon-map-banner::before,.dungeon-map-banner::after { content:''; position:absolute; top:50%; width:.5rem; height:.5rem; margin-top:-.25rem; background:#c9a154; transform:rotate(45deg); }
 .dungeon-map-banner::before { left:.9rem; }
 .dungeon-map-banner::after { right:.9rem; }
-.dungeon-map-sheet { position:relative; overflow:hidden; border:3px solid #2e1e0e; border-radius:6px; background:#c6a56a; box-shadow:0 0 0 2px #8a6a34,0 16px 34px #0008; }
-.dungeon-map-sheet > img { display:block; width:100%; height:auto; }
+/* The sheet shrinks round its image, so a tall dungeon fits the screen and the marks stay on it. */
+.dungeon-map-sheet { position:relative; overflow:hidden; width:fit-content; max-width:100%; margin-inline:auto; border:3px solid #2e1e0e; border-radius:6px; background:#c6a56a; box-shadow:0 0 0 2px #8a6a34,0 16px 34px #0008; }
+.dungeon-map-sheet > img { display:block; width:auto; max-width:100%; height:auto; max-height:min(70vh,640px); }
 .dungeon-map-marks { position:absolute; inset:0; width:100%; height:100%; font-family:var(--display,Georgia,serif); }
 .dungeon-map-marks text { text-anchor:middle; paint-order:stroke; stroke-linejoin:round; }
 
@@ -31,6 +32,13 @@
 .dungeon-map-marks .number { display:none; fill:#f1e4c4; font-size:26px; font-weight:800; }
 .dungeon-map-marks .name { fill:#160d05; font-size:22px; font-weight:800; stroke:#f6e9c6; stroke-width:5px; }
 .dungeon-map-marks .room { fill:#56391a; font-size:15px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; stroke:#f6e9c6; stroke-width:4px; }
+
+/* A tall sheet is drawn smaller, so its names are set larger to read the same. */
+.dungeon-map-section.is-tall .dungeon-map-marks .place text { font-size:26px; letter-spacing:.05em; stroke-width:6px; }
+.dungeon-map-section.is-tall .dungeon-map-marks .entrance text { font-size:24px; stroke-width:6px; }
+.dungeon-map-section.is-tall .dungeon-map-marks .name { font-size:32px; stroke-width:7px; }
+.dungeon-map-section.is-tall .dungeon-map-marks .room { font-size:23px; letter-spacing:.04em; stroke-width:6px; }
+.dungeon-map-section.is-tall .dungeon-map-marks .compass text { font-size:28px; }
 
 .dungeon-map-legend { list-style:none; margin:1.4rem 0 0; padding:0; display:grid; gap:.6rem; min-width:0; }
 .dungeon-map-legend li { display:flex; align-items:center; gap:.7rem; padding:.7rem .85rem; border:1px solid var(--j-line,#9fb9da35); border-radius:8px; background:var(--j-panel,#20314b); }

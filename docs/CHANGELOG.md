@@ -5,6 +5,12 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Sealed weapons, vanilla experience and map sizes (October 31)
+- **Unidentified weapons can't be used.** A sealed bow, crossbow, trident, shield or rod won't draw, load or block, and
+  a sealed melee weapon won't strike, until it's identified. Doors and chests still open with one in hand.
+- **Vanilla experience orbs are gone,** from every source. Skill experience and Hunting are unaffected.
+- **Dungeon maps fit the page.** Tall maps stop at a screen's height, with their names set larger to match.
+
 ### First Flight rebuilt (October 31)
 - **The Wardens' Road at sunset.** The tutorial is rebuilt as four stops: the Landing, the Trial Path, the Guardian
   Yard and the Final Test, along a road on stone arches. A fall costs a little damage and nothing else: Wren's

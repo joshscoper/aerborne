@@ -12,8 +12,8 @@
 {%- endmacro %}
 {% if dungeon_map %}
 {% set tall = (1000 * dungeon_map.height / dungeon_map.width) | round | int %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/expedition-map.css', v='2') }}">
-<section id="map" class="dungeon-map-section" aria-label="Map of {{ e.title }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/expedition-map.css', v='3') }}">
+<section id="map" class="dungeon-map-section{{ ' is-tall' if tall > 1100 }}" aria-label="Map of {{ e.title }}">
   <figure class="dungeon-map">
     <figcaption class="dungeon-map-banner"><span>{{ e.title }}</span></figcaption>
     <div class="dungeon-map-sheet">

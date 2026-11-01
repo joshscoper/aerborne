@@ -642,6 +642,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         gearUpgrades = new net.nerdsmp.paper.item.GearUpgradeMarks(this, items);
         plugins.registerEvents(gearUpgrades, this);
         plugins.registerEvents(new net.nerdsmp.paper.item.SealedGearGuard(this, items), this);
+        plugins.registerEvents(new net.nerdsmp.paper.listener.VanillaExperienceGuard(), this);
         new net.nerdsmp.paper.item.ItemAbilityService(this, items).start();
         itemUpdater = new net.nerdsmp.paper.item.ItemUpdater(items, forge);
         itemUpdater.lamps(skillLamps);
