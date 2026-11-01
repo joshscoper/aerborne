@@ -23,9 +23,11 @@ final class MinesTemplate {
     private static final Material RAIL = CanopyKit.RAIL, TIMBER = Material.STRIPPED_SPRUCE_LOG;
     private static final Material[] CRATES = {Material.SPRUCE_PLANKS, Material.STRIPPED_SPRUCE_WOOD, Material.BARREL};
     private static final Material[] DARK_ROCK = {Material.DEEPSLATE, Material.COBBLED_DEEPSLATE, Material.TUFF, Material.DEEPSLATE};
+    private static final Material[] ICE_ROCK = {Material.DEEPSLATE_TILES, Material.COBBLED_DEEPSLATE, Material.DEEPSLATE, Material.CYAN_TERRACOTTA, Material.LIGHT_BLUE_TERRACOTTA};
+    private static final Material[] SLAG_ROCK = {Material.BLACKSTONE, Material.BLACKSTONE, Material.BROWN_TERRACOTTA, Material.RED_TERRACOTTA, Material.TERRACOTTA};
     private static final Material[] HOT_ROCK = {Material.BLACKSTONE, Material.BASALT, Material.SMOOTH_BASALT, Material.BLACKSTONE};
-    private static final Material[] WET_ROCK = {Material.DEEPSLATE, Material.TUFF, Material.DARK_PRISMARINE, Material.DEEPSLATE};
-    private static final Material[] FORT = {Material.POLISHED_BLACKSTONE_BRICKS, Material.DEEPSLATE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
+    private static final Material[] WET_ROCK = {Material.DEEPSLATE, Material.COBBLED_DEEPSLATE, Material.CYAN_TERRACOTTA, Material.DEEPSLATE};
+    private static final Material[] FORT = {Material.CRACKED_POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.DEEPSLATE_TILES, Material.DEEPSLATE_BRICKS};
 
     private MinesTemplate() { }
 
@@ -37,7 +39,7 @@ final class MinesTemplate {
         surface(b, kit);
         pithead(b);
         gullet(b, kit);
-        crystalHollow(b);
+        crystalHollow(b, kit);
         mainline(b);
         oreLine(b, kit);
         foundry(b, kit);
@@ -52,7 +54,7 @@ final class MinesTemplate {
     private static void dig(MineKit kit) {
         // The valley and the mine's mouth.
         kit.cavern(14, PIT, 0, 26, 16, 20, 20, 21);
-        kit.openToSky(14, 0, 62, PIT + 4);
+        kit.openToSky(14, 0, 62, PIT + 4, 15);
         kit.hall(10, 15, 18, 19, PIT, 5);
         kit.hall(12, 19, 16, 23, PIT, 5);
         kit.tunnel(7, 6, 1, new int[]{14, 96, 24}, new int[]{12, 96, 30}, new int[]{22, 95, 38});
@@ -73,7 +75,7 @@ final class MinesTemplate {
         // Crystal Hollow, where Grell stands.
         kit.tunnel(6, 6, 6, new int[]{36, 70, 104}, new int[]{42, 70, 112}, new int[]{49, 70, 116});
         kit.door(49, DEEP, 117, false, 5);
-        kit.cavern(50, DEEP, 134, 19, 12, 20, 7, 7);
+        kit.cavern(50, DEEP, 134, 19, 12, 30, 9, 7);
         kit.door(50, DEEP, 146, false, 7);
         kit.tunnel(6, 6, 8, new int[]{50, 70, 153}, new int[]{42, 66, 160}, new int[]{38, 61, 167}, new int[]{48, 56, 175}, new int[]{60, 52, 170});
         // The Mainline, with refuges in its walls, out onto the trestles of the Ore Line.
@@ -82,7 +84,7 @@ final class MinesTemplate {
             kit.hall(x, 166, x + 2, 168, LINE, 4);
             kit.hall(x + 3, 172, x + 5, 174, LINE, 4);
         }
-        kit.cavern(124, 30, 170, 36, 25, 46, 30, 14);
+        kit.cavern(124, 30, 170, 36, 25, 58, 36, 14);
         for (int z : TRACKS_ALONG) kit.hall(162, z - 1, 176, z + 1, LINE, 4);
         for (int x : TRACKS_ACROSS) {
             kit.hall(x - 1, 134, x + 1, 150, LINE, 4);
@@ -90,7 +92,10 @@ final class MinesTemplate {
         }
         kit.tunnel(6, 6, 9, new int[]{124, 52, 146}, new int[]{122, 47, 138}, new int[]{114, 42, 134}, new int[]{108, 38, 128}, new int[]{114, 35, 124}, new int[]{122, 32, 124});
         // The sea of fire, and the Slag Pits off its east causeway.
-        kit.cavern(FOUNDRY_X, 18, 84, 42, 36, 46, 26, 15);
+        kit.cavern(FOUNDRY_X, 18, 84, 42, 36, 66, 34, 15);
+        // The vault the fortress rises into, high above the road out behind it.
+        kit.cavern(124, 40, 190, 20, 13, 60, 30, 43);
+        kit.cavern(FOUNDRY_X, 40, 52, 44, 24, 66, 24, 41);
         kit.tunnel(6, 6, 10, new int[]{164, 32, 88}, new int[]{172, 31, 98}, new int[]{176, 30, 104});
         kit.cavern(182, 30, 112, 16, 13, 11, 4, 11);
         kit.tunnel(7, 7, 12, new int[]{122, 32, 47}, new int[]{126, 28, 40}, new int[]{136, 23, 38}, new int[]{150, 18, 36}, new int[]{166, 14, 34});
@@ -123,14 +128,23 @@ final class MinesTemplate {
         double valley = Math.hypot((x - 14) / 26D, z / 16D);
         if (valley < 1) return PIT;
         double climb = Math.min(24, (valley - 1) * 34 + (smooth(x, z, 13, 602) - .3) * 14 + smooth(x, z, 5, 603) * 3);
-        return PIT + Math.max(1, (int) Math.round(climb));
+        // The hill stands up as a crag behind the mine's mouth, so the portal is cut into something.
+        double crag = Math.clamp((z - 15) * 2.6, 0, 26) * Math.exp(-Math.pow((x - 14) / 24D, 2)) * (z > 44 ? Math.max(0, 1 - (z - 44) / 18D) : 1);
+        return PIT + Math.max(1, (int) Math.round(Math.max(climb, crag + (smooth(x, z, 4, 616) - .5) * 5)));
+    }
+
+    /** Bare hillside in beds of stone, dark low down in the cracks and pale on the faces. */
+    private static Material bed(int x, int y, int z) {
+        double value = smooth(x, y * 2, 9, 617) * .5 + smooth(z, y * 2, 9, 618) * .5 + (smooth(x + y, z, 4, 615) - .5);
+        return value < .34 ? Material.TUFF : value < .47 ? Material.COBBLESTONE : value < .62 ? Material.ANDESITE : Material.STONE;
     }
 
     /** The hills: grass over dirt in cut terraces, ringing the valley and running back over the mine to the rim of the pit. */
     private static void surface(BuildCanvas b, MineKit kit) {
         for (int x = -46; x <= 92; x++) for (int z = -44; z <= 146; z++) {
             boolean nearValley = Math.hypot((x - 14) / 26D, z / 16D) < 2, nearPit = Math.hypot(x - GULLET_X, z - GULLET_Z) < 58;
-            if (!nearValley && !nearPit) continue;
+            boolean between = z >= 0 && z <= 100 && x >= -30 && x <= 80;
+            if (!nearValley && !nearPit && !between) continue;
             int top = hillHeight(x, z);
             // Where the pit or the valley has eaten the hill, the turf runs down to the lip.
             int lip = nearValley && !nearPit ? PIT : 104;
@@ -138,21 +152,20 @@ final class MinesTemplate {
             if (kit.open(x, top, z) || top <= PIT) continue;
             int lowest = top;
             for (int[] side : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) lowest = Math.min(lowest, hillHeight(x + side[0], z + side[1]));
-            b.block(x, top, z, Material.GRASS_BLOCK, "snowy=false");
-            for (int y = top - 1; y >= Math.min(lowest, top - 4); y--) if (!kit.open(x, y, z)) b.block(x, y, z, top - y <= 2 ? Material.DIRT : smooth(x + y, z, 4, 615) < .5 ? Material.STONE : Material.ANDESITE);
+            // Steep ground sheds its turf. The lip of the pit has been trampled to bare earth.
+            boolean bare = top - lowest >= 2;
+            boolean trampled = nearPit && (kit.open(x + 3, top, z) || kit.open(x - 3, top, z) || kit.open(x, top, z + 3) || kit.open(x, top, z - 3));
+            if (bare) b.block(x, top, z, bed(x, top, z));
+            else if (trampled) b.block(x, top, z, smooth(x, z, 3, 619) < .5 ? Material.COARSE_DIRT : smooth(z, x, 3, 619) < .5 ? Material.ROOTED_DIRT : Material.GRAVEL);
+            else b.block(x, top, z, Material.GRASS_BLOCK, "snowy=false");
+            for (int y = top - 1; y >= Math.min(lowest, top - 4); y--) if (!kit.open(x, y, z)) b.block(x, y, z, top - y <= 1 && !bare ? Material.DIRT : bed(x, y, z));
+            if (bare || trampled) continue;
             double roll = noise(x, z, 604);
             if (roll < .1) b.block(x, top + 1, z, Material.SHORT_GRASS);
             else if (roll < .13) b.block(x, top + 1, z, Material.FERN);
-            else if (roll > .994) tree(b, x, top + 1, z);
-        }
-    }
-
-    private static void tree(BuildCanvas b, int x, int y, int z) {
-        for (int up = 0; up < 8; up++) b.block(x, y + up, z, Material.SPRUCE_LOG, "axis=y");
-        for (int layer = 0; layer < 7; layer++) {
-            int reach = Math.max(1, 4 - layer / 2);
-            for (int dx = -reach; dx <= reach; dx++) for (int dz = -reach; dz <= reach; dz++)
-                if (Math.abs(dx) + Math.abs(dz) <= reach + 1 && (dx != 0 || dz != 0 || layer > 4)) b.block(x + dx, y + 3 + layer, z + dz, Material.SPRUCE_LEAVES, "persistent=true");
+            else if (roll < .14) b.block(x, top + 1, z, Material.SWEET_BERRY_BUSH, "age=2");
+            else if (roll > .988 && lowest >= top - 1) MineProps.pine(b, x, top + 1, z, 11 + (int) (noise(z, x, 605) * 13), x + z);
+            else if (roll > .982 && lowest >= top - 1) MineProps.boulder(b, x, top + 1, z, 2 + (int) (noise(z, x, 606) * 2), 2, 2, x * 3 + z);
         }
     }
 
@@ -169,7 +182,7 @@ final class MinesTemplate {
         for (int z = -6; z <= 23; z++) for (int x = 10; x <= 18; x++) {
             double wander = Math.abs(x - 14) + (noise(x, z, 607) - .5) * 3;
             if (wander > 3.2 + (z > 8 ? 1 : 0)) continue;
-            b.block(x, PIT, z, noise(x * 3, z, 608) < .3 ? Material.ANDESITE : noise(x, z * 3, 609) < .4 ? Material.STONE_BRICKS : Material.POLISHED_ANDESITE);
+            b.block(x, PIT, z, wander > 2.2 ? (noise(x, z, 609) < .5 ? Material.COARSE_DIRT : Material.GRAVEL) : noise(x * 3, z, 608) < .3 ? Material.COARSE_DIRT : noise(x, z * 3, 609) < .4 ? Material.ANDESITE : Material.PACKED_MUD);
             if (b.get(x, PIT + 1, z) == Material.SHORT_GRASS || b.get(x, PIT + 1, z) == Material.FERN) b.block(x, PIT + 1, z, Material.AIR);
         }
         // The throat of the mine: dressed stone, with a stone bench and lamp let into the wall.
@@ -193,6 +206,14 @@ final class MinesTemplate {
         b.block(18, PIT + 1, 13, TIMBER, "axis=x");
         MineProps.shack(b, 27, PIT, 8, 3, 2);
         MineProps.shack(b, 1, PIT, 2, 3, 2);
+        // Big trees and big rocks to frame the mouth, and something small and bright beside them for scale.
+        for (int[] tree : new int[][]{{-5, -4, 20}, {-11, 8, 17}, {33, -6, 22}, {38, 9, 16}, {0, -14, 15}, {24, -15, 18}}) MineProps.pine(b, tree[0], PIT + 1, tree[1], tree[2], tree[0] + tree[1]);
+        for (int[] rock : new int[][]{{-1, 11, 3, 2, 3}, {26, 13, 2, 3, 2}, {35, 2, 3, 3, 4}, {-9, -2, 2, 2, 2}, {8, -12, 3, 2, 3}, {30, -10, 2, 2, 2}}) MineProps.boulder(b, rock[0], PIT + 1, rock[1], rock[2], rock[3], rock[4], rock[0] * 5 + rock[1]);
+        for (int x = -14; x <= 42; x++) for (int z = -16; z <= 14; z++) {
+            if (b.get(x, PIT, z) != Material.GRASS_BLOCK || !CanopyKit.empty(b, x, PIT + 1, z)) continue;
+            double drift = smooth(x, z, 6, 623), roll = noise(x * 5, z * 3, 624);
+            if (drift > .66 && roll < .3) b.block(x, PIT + 1, z, drift > .72 ? Material.BLUE_ORCHID : Material.AZURE_BLUET);
+        }
     }
 
     /** A timber fence along the inner edge of a terrace, wherever the floor drops away. */
@@ -228,6 +249,43 @@ final class MinesTemplate {
         }
     }
 
+    /** Earth trodden over the bare rock of a terrace, thinner the deeper it lies, so a pit isn't all one grey. */
+    private static void earth(BuildCanvas b, MineKit kit, int y, int from, int to, double thin) {
+        for (int x = GULLET_X - to; x <= GULLET_X + to; x++) for (int z = GULLET_Z - to; z <= GULLET_Z + to; z++) {
+            double r = Math.hypot(x - GULLET_X, z - GULLET_Z);
+            if (r < from || r > to || !kit.open(x, y + 1, z) || kit.open(x, y, z) || !CanopyKit.empty(b, x, y + 1, z)) continue;
+            Material here = b.get(x, y, z);
+            if (here == null || here.name().contains("PLANK") || here.name().contains("SLAB") || here.name().contains("STAIRS")) continue;
+            double patch = smooth(x, z, 5, 642), fine = smooth(x, z, 2, 643);
+            if (patch < thin - .22) continue;
+            b.block(x, y, z, patch > thin + .16 && y == RING_HIGH ? Material.MOSS_BLOCK : fine < .4 ? Material.COARSE_DIRT : fine < .6 ? Material.PACKED_MUD : Material.ROOTED_DIRT);
+            double roll = noise(x, z, 644);
+            if (y == RING_HIGH && roll < .12) b.block(x, y + 1, z, roll < .08 ? Material.SHORT_GRASS : Material.FERN);
+        }
+    }
+
+    /** Spruce shoring against the wall of a terrace: posts on sills, a ledger run along their heads, and braces, as if it's all that's holding the rock back. */
+    private static void shoring(BuildCanvas b, MineKit kit, int y, int high, int rise) {
+        int lastX = 0, lastZ = 0;
+        boolean first = true;
+        for (double angle = 0; angle < Math.TAU; angle += 9D / high) {
+            int foot = 0, footZ = 0;
+            boolean found = false;
+            for (double r = high - 4; r < high + 12 && !found; r += .5) {
+                int x = GULLET_X + (int) Math.round(Math.cos(angle) * r), z = GULLET_Z + (int) Math.round(Math.sin(angle) * r);
+                if (kit.open(x, y + 2, z)) { foot = x; footZ = z; }
+                else if (foot != 0) found = true;
+            }
+            if (!found || !CanopyKit.empty(b, foot, y + 1, footZ)) { first = true; continue; }
+            b.block(foot, y + 1, footZ, Material.COBBLESTONE_WALL);
+            for (int up = 2; up <= rise; up++) if (kit.open(foot, y + up, footZ) && CanopyKit.empty(b, foot, y + up, footZ)) b.block(foot, y + up, footZ, TIMBER, "axis=y");
+            if (!first && Math.hypot(foot - lastX, footZ - lastZ) < 9) MineProps.line(b, lastX, y + rise + 1, lastZ, foot, y + rise + 1, footZ, TIMBER, "axis=y");
+            lastX = foot;
+            lastZ = footZ;
+            first = false;
+        }
+    }
+
     /** The great open pit: terraces and working camps, stairs of timber, gold lamps on the rock, and a tree grown up from the floor to find the light. */
     private static void gullet(BuildCanvas b, MineKit kit) {
         double firstRamp = Math.PI * .95, secondRamp = -Math.PI * .1;
@@ -235,13 +293,22 @@ final class MinesTemplate {
         ramp(b, secondRamp, 1.9, 14.5, RING_LOW, DEEP);
         terraceRail(b, kit, RING_HIGH, 18, 30, firstRamp);
         terraceRail(b, kit, RING_LOW, 12, 23, secondRamp);
+        earth(b, kit, RING_HIGH, 24, 34, .46);
+        earth(b, kit, RING_LOW, 17, 24, .6);
+        earth(b, kit, DEEP, 0, 18, .7);
+        shoring(b, kit, RING_HIGH, 26, 9);
+        shoring(b, kit, RING_LOW, 18, 7);
         // The tree. Nothing should grow down here. It grew anyway.
         CanopyKit.trunk(b, GULLET_X, GULLET_Z, DEEP + 1, DEEP + 22, 3.6, 610);
         CanopyKit.crown(b, GULLET_X, DEEP + 22, GULLET_Z, 10, 611);
-        // Camps on the upper terrace, each on its own stretch of rock.
+        // Camps on the upper terrace, each on its own stretch of rock, stacked up the wall where the ground ran out.
         for (double angle : new double[]{-.9, .1, .9, 1.75, 4.3}) {
             int x = GULLET_X + (int) Math.round(Math.cos(angle) * 31), z = GULLET_Z + (int) Math.round(Math.sin(angle) * 31);
             MineProps.shack(b, x, RING_HIGH, z, 2, 2);
+        }
+        for (double angle : new double[]{-.9, .9}) {
+            int x = GULLET_X + (int) Math.round(Math.cos(angle) * 36), z = GULLET_Z + (int) Math.round(Math.sin(angle) * 36);
+            MineProps.shack(b, x, RING_HIGH + 7, z, 2, 2);
         }
         // Gold light on the rock, where the lamps of the old shifts were set into the floor.
         for (double angle = .3; angle < Math.TAU; angle += .75) {
@@ -263,31 +330,49 @@ final class MinesTemplate {
         }
         MineProps.lavafall(b, GULLET_X + 30, 104, GULLET_Z - 8, RING_HIGH + 1, 1);
         b.block(GULLET_X + 29, RING_HIGH, GULLET_Z - 8, Material.MAGMA_BLOCK);
-        for (int out = 0; out <= 9; out++) b.block(GULLET_X - 26 + out, RING_HIGH + 12, GULLET_Z - 14, TIMBER, "axis=x");
-        for (int y = RING_HIGH + 1; y <= RING_HIGH + 11; y++) b.block(GULLET_X - 26, y, GULLET_Z - 14, TIMBER, "axis=y");
-        for (int y = RING_LOW + 4; y <= RING_HIGH + 11; y++) b.block(GULLET_X - 17, y, GULLET_Z - 14, Material.IRON_CHAIN, "axis=y");
-        MineProps.cart(b, GULLET_X - 18, RING_LOW + 2, GULLET_Z - 15, Material.RAW_GOLD_BLOCK);
+        // The great hoist on the upper terrace, its jib out over the drop against the sky, and the headhouse that worked it.
+        MineProps.crane(b, GULLET_X - 27, RING_HIGH + 1, GULLET_Z - 11, 20, 18, 1, 26, Material.RAW_GOLD_BLOCK);
+        MineProps.headhouse(b, GULLET_X - 32, RING_HIGH + 1, GULLET_Z + 8, 4, 3, 641);
         b.block(24, DEEP + 1, 98, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
         spoil(b, GULLET_X + 8, DEEP + 1, GULLET_Z - 6, Material.RAW_IRON_BLOCK);
         spoil(b, GULLET_X - 8, DEEP + 1, GULLET_Z + 7, Material.COAL_BLOCK);
     }
 
-    /** Grell's cave: a seam of blue crystal, ice underfoot, hanging rock, and timber loads swung from the roof that can be cut down on him. */
-    private static void crystalHollow(BuildCanvas b) {
+    /** Grell's cave: a seam of blue crystal, ice underfoot, crystal bursting from every wall, columns floor to roof, and timber loads swung overhead that can be cut down on him. */
+    private static void crystalHollow(BuildCanvas b, MineKit kit) {
         for (int x = 31; x <= 69; x++) for (int z = 122; z <= 146; z++) {
             if (b.get(x, DEEP, z) == null) continue;
             double seam = smooth(x, z, 5, 620);
             b.block(x, DEEP, z, seam > .58 ? Material.PACKED_ICE : seam > .52 ? Material.BLUE_ICE : seam > .44 ? Material.CALCITE : noise(x, z, 622) < .5 ? Material.DEEPSLATE_TILES : Material.COBBLED_DEEPSLATE);
         }
         for (int[] burst : new int[][]{{37, 128, 12}, {63, 128, 14}, {35, 140, 9}, {65, 140, 11}, {42, 123, 7}, {58, 144, 8}}) MineProps.crystals(b, burst[0], DEEP + 1, burst[1], burst[2], MineProps.BLUE, burst[0] + burst[1]);
-        for (int[] drip : new int[][]{{44, 126, 8}, {56, 126, 7}, {40, 136, 9}, {60, 136, 8}, {50, 142, 7}, {50, 124, 6}}) MineProps.stalactite(b, drip[0], DEEP + 19, drip[1], drip[2], 2.4, DARK_ROCK, Material.LIGHT_BLUE_STAINED_GLASS, drip[0]);
+        for (int[] drip : new int[][]{{44, 126, 8}, {56, 126, 7}, {40, 136, 9}, {60, 136, 8}, {50, 142, 7}, {50, 124, 6}}) MineProps.curtain(b, drip[0], roof(kit, drip[0], DEEP + 12, drip[1], 110), drip[1], drip[2] + 6, 3, drip[0] % 2 == 0, DARK_ROCK, Material.LIGHT_BLUE_STAINED_GLASS, drip[0]);
+        // Bursts thrown out of the walls at every height, big ones low and small ones up in the dark.
+        for (int index = 0; index < 20; index++) {
+            double angle = index * 2.399, lift = noise(index, 3, 645);
+            int y = DEEP + 3 + (int) (lift * lift * 20), x = 50, z = 134;
+            for (double step = 0; step < 26 && kit.open(x, y, z); step += .5) {
+                x = 50 + (int) Math.round(Math.cos(angle) * step * 1.5);
+                z = 134 + (int) Math.round(Math.sin(angle) * step);
+            }
+            if (kit.open(x, y, z)) continue;
+            MineProps.burst(b, x, y, z, 5 + (int) ((1 - lift) * 11), -Math.cos(angle) * .8, -Math.sin(angle) * .6, MineProps.BLUE, index * 7 + 3);
+            kit.dust(b, x, y, z, 5, Material.CYAN_STAINED_GLASS, index + 646);
+        }
+        for (int[] column : new int[][]{{36, 134, 4}, {64, 133, 4}, {39, 126, 3}, {61, 142, 3}}) MineProps.column(b, column[0], DEEP, column[1], roof(kit, column[0], DEEP + 12, column[1], 110), column[2], ICE_ROCK, column[0] + column[1]);
         for (int[] load : new int[][]{{44, 130}, {56, 130}, {44, 139}, {56, 139}}) {
-            for (int y = DEEP + 8; y <= DEEP + 18; y++) b.block(load[0], y, load[1], Material.IRON_CHAIN, "axis=y");
+            for (int y = DEEP + 8; y <= roof(kit, load[0], DEEP + 12, load[1], 110); y++) b.block(load[0], y, load[1], Material.IRON_CHAIN, "axis=y");
             b.block(load[0], DEEP + 7, load[1], Material.STRIPPED_OAK_WOOD);
             for (int[] arm : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) b.block(load[0] + arm[0], DEEP + 7, load[1] + arm[1], TIMBER, arm[0] != 0 ? "axis=x" : "axis=z");
         }
         // The south door, barred till Grell is down.
         for (int x = 49; x <= 51; x++) for (int y = DEEP + 1; y <= DEEP + 4; y++) b.block(x, y, 150, Material.IRON_BARS, "east=true,west=true");
+    }
+
+    /** The first block of roof above a spot, or {@code limit}. */
+    private static int roof(MineKit kit, int x, int y, int z, int limit) {
+        while (y < limit && kit.open(x, y, z)) y++;
+        return y;
     }
 
     private static void straightRail(BuildCanvas b, int x1, int z1, int x2, int z2, int y) {
@@ -298,7 +383,11 @@ final class MinesTemplate {
     /** One straight run of rails, and the refuges men jumped into when a cart came. */
     private static void mainline(BuildCanvas b) {
         straightRail(b, 60, 170, 96, 170, LINE + 1);
-        for (int x = 60; x <= 88; x += 6) b.block(x, LINE + 4, 170, Material.LANTERN, "hanging=true");
+        for (int x = 60; x <= 88; x += 6) {
+            b.block(x, LINE + 5, 170, Material.IRON_CHAIN, "axis=y");
+            b.block(x, LINE + 4, 170, Material.LANTERN, "hanging=true");
+            for (int side : new int[]{-1, 1}) b.block(x, LINE + 5, 170 + side, TIMBER, "axis=x");
+        }
         for (int x = 65; x <= 83; x += 7) {
             b.block(x + 1, LINE + 4, 166, Material.LANTERN, "hanging=true");
             b.block(x + 4, LINE + 4, 174, Material.LANTERN, "hanging=true");
@@ -308,6 +397,44 @@ final class MinesTemplate {
             for (int z = 168; z <= 172; z++) plank(b, x, LINE, z);
             for (int z : new int[]{168, 172}) b.block(x, LINE + 1, z, RAIL);
             if (x % 6 == 0) MineProps.trestle(b, x, LINE, 170, true, 31);
+        }
+    }
+
+    /** The great headframe over the shaft: four battered legs braced in tiers, a back stay, a platform and sheave wheels at the very top. */
+    private static void headframe(BuildCanvas b, int x, int z) {
+        int foot = 33, top = 84;
+        for (int y = foot; y <= top; y++) {
+            int spread = 3 + (top - y) / 8;
+            for (int sx : new int[]{-1, 1}) for (int sz : new int[]{-1, 1}) b.block(x + sx * spread, y, z + sz * spread, Material.DARK_OAK_LOG, "axis=y");
+            if ((top - y) % 8 == 2) for (int run = -spread; run <= spread; run++) for (int side : new int[]{-1, 1}) {
+                b.block(x + run, y, z + side * spread, TIMBER, "axis=x");
+                b.block(x + side * spread, y, z + run, TIMBER, "axis=z");
+            }
+        }
+        for (int panel = top - 2, flip = 0; panel - 8 >= foot; panel -= 8, flip++) {
+            int high = 3 + (top - panel) / 8, low = 3 + (top - panel + 8) / 8, sign = flip % 2 == 0 ? 1 : -1;
+            for (int side : new int[]{-1, 1}) {
+                MineProps.line(b, x - high * sign, panel - 1, z + side * high, x + low * sign, panel - 7, z + side * low, RAIL, "");
+                MineProps.line(b, x + side * high, panel - 1, z - high * sign, x + side * low, panel - 7, z + low * sign, RAIL, "");
+            }
+        }
+        for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) {
+            b.block(x + dx, top + 1, z + dz, Math.abs(dx) == 6 || Math.abs(dz) == 6 ? TIMBER : Material.SPRUCE_PLANKS, Math.abs(dz) == 6 ? "axis=x" : Math.abs(dx) == 6 ? "axis=z" : "");
+            if (Math.abs(dx) == 6 || Math.abs(dz) == 6) b.block(x + dx, top + 2, z + dz, RAIL);
+        }
+        // Two sheave wheels, side by side, and the ropes going down from them.
+        for (int side : new int[]{-3, 3}) {
+            for (double angle = 0; angle < Math.TAU; angle += .05) {
+                int dx = (int) Math.round(Math.cos(angle) * 3.4), dy = (int) Math.round(Math.sin(angle) * 3.4);
+                b.block(x + dx, top + 6 + dy, z + side, Material.DARK_OAK_PLANKS);
+            }
+            for (int spoke = -3; spoke <= 3; spoke++) {
+                b.block(x + spoke, top + 6, z + side, TIMBER, "axis=x");
+                b.block(x, top + 6 + spoke, z + side, TIMBER, "axis=y");
+            }
+            for (int y = top + 2; y <= top + 5; y++) for (int leg : new int[]{-3, 3}) b.block(x + leg, y, z + side, Material.DARK_OAK_LOG, "axis=y");
+            for (int y = foot + 12; y <= top; y++) b.block(x - 3, y, z + side, Material.IRON_CHAIN, "axis=y");
+            MineProps.cart(b, x - 4, foot + 9, z + side - 1, Material.RAW_COPPER_BLOCK);
         }
     }
 
@@ -350,9 +477,9 @@ final class MinesTemplate {
         // Lamps on posts, ore bins, and buffers.
         for (int x = YARD_X1 + 6; x < YARD_X2; x += 12) for (int z : new int[]{YARD_Z1, YARD_Z2}) {
             if (x >= 121 && x <= 127) continue;
-            for (int y = LINE + 2; y <= LINE + 6; y++) b.block(x, y, z, TIMBER, "axis=y");
-            b.block(x, LINE + 7, z, Material.LANTERN, "hanging=false");
+            MineProps.lamp(b, x, LINE + 1, z, true);
         }
+        headframe(b, 124, 190);
         for (int[] bin : new int[][]{{103, 157}, {145, 157}, {103, 183}, {145, 183}}) crates(b, bin[0], LINE + 1, bin[1]);
         for (int x = 104; x <= 146; x += 11) {
             spoil(b, x, LINE + 1, 162, Material.RAW_IRON_BLOCK);
@@ -381,53 +508,168 @@ final class MinesTemplate {
         }
     }
 
-    /** A wall of blackstone with arches, fire running in its channels and lit windows, standing out of the lava. */
+    /**
+     * The fortress across the back of the cavern: the hero of the whole map, sixty blocks of it stepping back in three
+     * tiers to a keep and two great stacks, with the Foreman's iron mask over the gate. Nothing here is a flat wall: pilasters
+     * stand proud of the face between bays, every arch is recessed behind a lighter ring, each tier ends in a deep stepped
+     * cornice, and the stone runs light to dark, red with the heat where it meets the fire.
+     */
     private static void fortress(BuildCanvas b, MineKit kit) {
-        int[][] tiers = {{26, 46, 52}, {46, 62, 49}, {62, 76, 46}};
+        int[][] tiers = {{26, 48, 53}, {48, 68, 46}, {68, 86, 39}};
         for (int index = 0; index < tiers.length; index++) {
-            int bottom = tiers[index][0], top = tiers[index][1], face = tiers[index][2], half = 34 - index * 8;
-            for (int x = FOUNDRY_X - half; x <= FOUNDRY_X + half; x++) for (int y = bottom; y <= top; y++) {
+            int bottom = tiers[index][0], top = tiers[index][1], face = tiers[index][2], half = 36 - index * 9, back = index + 1 < tiers.length ? tiers[index + 1][2] : face - 12;
+            // Its roof, back to the next tier, and its flanks.
+            for (int x = FOUNDRY_X - half; x <= FOUNDRY_X + half; x++) for (int z = back; z < face; z++) {
+                b.block(x, top, z, Math.floorMod(x + z, 7) == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.DEEPSLATE_TILES);
+                for (int y = top - 1; y >= top - 2; y--) b.block(x, y, z, Material.POLISHED_BLACKSTONE_BRICKS);
+                boolean flank = Math.abs(x - FOUNDRY_X) == half;
+                if (flank) for (int y = bottom; y < top; y++) b.block(x, y, z, Math.floorMod(z, 6) == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : fortStone(x, y, z, bottom, top));
+            }
+            for (int x = FOUNDRY_X - half; x <= FOUNDRY_X + half; x++) {
                 int bay = Math.floorMod(x - FOUNDRY_X + 4, 8) - 4;
-                double arch = Math.sqrt(Math.max(0, 9 - bay * bay));
-                int spring = top - 9;
-                boolean opening = y > bottom + 2 && Math.abs(bay) <= 2 && y <= spring + arch && !(index == 0 && Math.abs(x - FOUNDRY_X) <= 4);
-                boolean cornice = y == top || y == top - 1;
-                if (opening) {
-                    b.block(x, y, face, Material.AIR);
-                    b.block(x, y, face - 1, y % 4 == 0 ? Material.SHROOMLIGHT : Material.ORANGE_STAINED_GLASS);
-                    b.block(x, y, face - 2, Material.POLISHED_BLACKSTONE_BRICKS);
-                } else {
-                    b.block(x, y, face, cornice ? Material.CHISELED_POLISHED_BLACKSTONE : pick(FORT, x + y, face, 622));
-                    b.block(x, y, face - 1, pick(FORT, x, y, 623));
+                boolean pilaster = Math.abs(bay) == 4 || Math.abs(bay) == 3 && bay == -3;
+                for (int y = bottom; y <= top; y++) {
+                    double arch = Math.sqrt(Math.max(0, 7.5 - bay * bay));
+                    int spring = top - 7;
+                    double above = y - (spring + arch);
+                    boolean gate = index == 0 && Math.abs(x - FOUNDRY_X) <= 4 || index == 1 && Math.abs(x - FOUNDRY_X) <= 12;
+                    boolean opening = !pilaster && !gate && y > bottom + 3 && Math.abs(bay) <= 2 && above <= 0;
+                    boolean ring = !pilaster && !gate && y > bottom + 3 && Math.abs(bay) <= 3 && above > 0 && above <= 1.3;
+                    if (opening) {
+                        b.block(x, y, face, Material.AIR);
+                        b.block(x, y, face - 1, Material.IRON_BARS, "east=true,west=true,north=false,south=false");
+                        b.block(x, y, face - 2, y % 3 == 0 ? Material.SHROOMLIGHT : Material.ORANGE_STAINED_GLASS);
+                        b.block(x, y, face - 3, Material.POLISHED_BLACKSTONE_BRICKS);
+                        continue;
+                    }
+                    b.block(x, y, face, ring ? Material.POLISHED_DEEPSLATE : fortStone(x, y, face, bottom, top));
+                    b.block(x, y, face - 1, fortStone(x, y, face - 1, bottom, top));
+                    if (pilaster) b.block(x, y, face + 1, fortStone(x, y, face + 1, bottom, top + 2));
                 }
-                if (y == top + 0 && Math.floorMod(x, 3) == 0) b.block(x, y + 1, face + 1, Material.POLISHED_BLACKSTONE_BRICKS);
+                // A plinth at the foot and a stepped cornice at the head of each tier.
+                b.block(x, bottom + 3, face + 1, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=north,half=bottom,shape=straight");
+                for (int y = bottom; y < bottom + 3; y++) b.block(x, y, face + 1, Material.POLISHED_BLACKSTONE_BRICKS);
+                b.block(x, top - 1, face + 1, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=north,half=top,shape=straight");
+                b.block(x, top, face + 1, Material.CHISELED_POLISHED_BLACKSTONE);
+                b.block(x, top, face + 2, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=north,half=top,shape=straight");
+                b.block(x, top + 1, face + 2, Material.POLISHED_BLACKSTONE_BRICKS);
+                b.block(x, top + 1, face + 3, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=north,half=top,shape=straight");
+                // Merlons with a spike on every other one.
+                if (Math.floorMod(x, 4) == 0) {
+                    for (int y = top + 2; y <= top + 3; y++) b.block(x, y, face + 2, Material.POLISHED_BLACKSTONE_BRICKS);
+                    if (Math.floorMod(x, 8) == 0) for (int y = top + 4; y <= top + 5; y++) b.block(x, y, face + 2, Material.IRON_BARS);
+                } else {
+                    b.block(x, top + 2, face + 2, Material.POLISHED_BLACKSTONE_BRICK_SLAB, "type=bottom");
+                }
             }
         }
-        // The great gate at the head of the causeway.
-        for (int x = FOUNDRY_X - 5; x <= FOUNDRY_X + 5; x++) for (int y = FORGE + 1; y <= FORGE + 11; y++) {
-            int off = Math.abs(x - FOUNDRY_X);
-            boolean way = off <= 2 && y <= FORGE + 5 + (off < 2 ? 2 : 1);
-            for (int z = 47; z <= 52; z++) if (way) b.block(x, y, z, Material.AIR);
-            if (!way) b.block(x, y, 52, off == 5 || y == FORGE + 11 ? Material.CHISELED_POLISHED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS);
+        keep(b);
+        mask(b);
+        // The great gate at the head of the causeway, stepped back in three orders.
+        for (int order = 0; order <= 2; order++) for (int x = FOUNDRY_X - 7 + order; x <= FOUNDRY_X + 7 - order; x++) for (int y = FORGE + 1; y <= FORGE + 14 - order; y++) {
+            int off = Math.abs(x - FOUNDRY_X), z = 54 - order;
+            double arch = 4.6 - order * .8;
+            boolean way = off < arch && y <= FORGE + 6 + Math.sqrt(Math.max(0, arch * arch - off * off));
+            b.block(x, y, z, way ? Material.AIR : order == 0 ? Material.CHISELED_POLISHED_BLACKSTONE : fortStone(x, y, z, FORGE, FORGE + 14));
         }
-        // Fire pours down the channels from the top tier into the sea.
-        for (int offset : new int[]{-22, 22, -10, 10}) {
-            int x = FOUNDRY_X + offset, top = Math.abs(offset) > 12 ? 62 : 76;
+        for (int x = FOUNDRY_X - 2; x <= FOUNDRY_X + 2; x++) for (int y = FORGE + 1; y <= FORGE + 8; y++) for (int z = 46; z <= 51; z++) b.block(x, y, z, Material.AIR);
+        // Fire pours down the channels from the top tier into the sea, stepping out at each cornice.
+        for (int offset : new int[]{-23, 23, -15, 15}) {
+            int x = FOUNDRY_X + offset, top = Math.abs(offset) > 16 ? 68 : 86;
             for (int y = top; y >= LAVA; y--) {
-                int z = y > 62 ? 47 : y > 46 ? 50 : 53;
-                b.block(x, y, z, Material.LAVA, y == top ? "level=0" : "level=8");
-                b.block(x + 1, y, z, Material.LAVA, "level=8");
-                if (y == 62 || y == 46) for (int run = z; run <= z + 3; run++) { b.block(x, y, run, Material.LAVA, "level=8"); b.block(x + 1, y, run, Material.LAVA, "level=8"); }
+                int z = y > 68 ? 43 : y > 48 ? 50 : 57;
+                for (int dx = 0; dx <= 1; dx++) {
+                    b.block(x + dx, y, z, Material.LAVA, y == top ? "level=0" : "level=8");
+                    if (y == 68 || y == 48) for (int run = z; run <= z + 7; run++) b.block(x + dx, y, run, Material.LAVA, "level=8");
+                }
+                for (int side : new int[]{-1, 2}) b.block(x + side, y, z, y % 2 == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.CHISELED_POLISHED_BLACKSTONE);
             }
+        }
+        // Round towers at the ends of the wall, with lit slits, a corbelled head, and a tall iron cap.
+        for (int side : new int[]{-1, 1}) tower(b, FOUNDRY_X + side * 40, 56, 24, 78, 6);
+        for (int side : new int[]{-1, 1}) tower(b, FOUNDRY_X + side * 28, 46, 48, 84, 4);
+    }
+
+    /** A round tower: a battered foot, lit slits in rings, a head corbelled out on a stepped ring, and a spike. */
+    private static void tower(BuildCanvas b, int x, int z, int foot, int top, int radius) {
+        for (int y = foot; y <= top; y++) for (int dx = -radius - 3; dx <= radius + 3; dx++) for (int dz = -radius - 3; dz <= radius + 3; dz++) {
+            double from = Math.hypot(dx, dz), wide = y > top - 6 ? radius + 1.3 : y > top - 8 ? radius + .7 : radius + .3 + Math.max(0, foot + 6 - y) * .3;
+            if (from > wide) continue;
+            boolean shell = from > wide - 1.6;
+            if (!shell) continue;
+            boolean slit = y % 9 == 4 && (dx == 0 || dz == 0);
+            b.block(x + dx, y, z + dz, Math.floorMod(y, 9) == 0 ? Material.CHISELED_POLISHED_BLACKSTONE : slit ? Material.SHROOMLIGHT : y == top - 7 ? Material.POLISHED_BLACKSTONE_BRICKS : fortStone(x + dx, y, z + dz, foot, top));
+        }
+        for (int up = 0; up <= radius * 3; up++) {
+            double across = (radius + 1.3) * Math.pow(1 - up / (radius * 3D + 1), 1.4);
+            int reach = (int) Math.ceil(across);
+            for (int dx = -reach; dx <= reach; dx++) for (int dz = -reach; dz <= reach; dz++)
+                if (Math.hypot(dx, dz) <= across) b.block(x + dx, top + 1 + up, z + dz, up % 4 == 0 ? Material.WAXED_EXPOSED_CUT_COPPER : Material.POLISHED_BLACKSTONE);
+        }
+        b.block(x, top + 2 + radius * 3, z, Material.GILDED_BLACKSTONE);
+    }
+
+    /** The keep on the top tier and the two great stacks either side of it, smoking. */
+    private static void keep(BuildCanvas b) {
+        for (int x = FOUNDRY_X - 8; x <= FOUNDRY_X + 8; x++) for (int z = 26; z <= 36; z++) for (int y = 86; y <= 98; y++) {
+            boolean wall = Math.abs(x - FOUNDRY_X) == 8 || z == 36 || z == 26;
+            if (!wall && y < 98) continue;
+            int bay = Math.floorMod(x - FOUNDRY_X + 2, 4) - 2;
+            boolean window = z == 36 && Math.abs(bay) <= 1 && bay != -2 && y >= 89 && y <= 94 - Math.abs(bay) && Math.abs(x - FOUNDRY_X) < 8;
+            b.block(x, y, z, window ? Material.SHROOMLIGHT : Math.abs(bay) == 2 ? Material.POLISHED_BLACKSTONE_BRICKS : y == 98 ? Material.CHISELED_POLISHED_BLACKSTONE : fortStone(x, y, z, 80, 98));
+        }
+        for (int x = FOUNDRY_X - 10; x <= FOUNDRY_X + 10; x++) {
+            b.block(x, 98, 37, Material.POLISHED_BLACKSTONE_BRICK_STAIRS, "facing=north,half=top,shape=straight");
+            if (Math.floorMod(x, 2) == 0) for (int y = 99; y <= 100; y++) b.block(x, y, 37, Material.POLISHED_BLACKSTONE_BRICKS);
         }
         for (int side : new int[]{-1, 1}) {
-            int x = FOUNDRY_X + side * 38;
-            for (int y = 24; y <= 72; y++) for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {
-                double from = Math.hypot(dx, dz);
-                if (from > 4.3 || from < 3 && y < 70) continue;
-                b.block(x + dx, y, 54 + dz, y % 7 == 0 ? Material.CHISELED_POLISHED_BLACKSTONE : (dx == 0 || dz == 0) && y % 7 == 3 ? Material.SHROOMLIGHT : pick(FORT, x + dx + y, 54 + dz, 624));
+            int x = FOUNDRY_X + side * 14, z = 32;
+            for (int y = 84; y <= 100; y++) for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {
+                double from = Math.hypot(dx, dz), wide = y >= 98 ? 4.3 : y == 97 ? 3.8 : 3.3;
+                if (from > wide) continue;
+                b.block(x + dx, y, z + dz, from > wide - 1.4 ? (y % 4 == 0 ? Material.GILDED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS) : y >= 100 ? Material.MAGMA_BLOCK : Material.AIR);
+            }
+            // A bale under the fire sends the smoke up three times as far.
+            b.block(x, 99, z, Material.HAY_BLOCK, "axis=y");
+            b.block(x, 100, z, Material.CAMPFIRE, "lit=true,signal_fire=true,facing=north");
+        }
+    }
+
+    /** The Foreman's iron mask over the gate, twenty-five blocks across: domed brow, slit eyes with fire behind them, a gilded nose guard and a barred mouth. */
+    private static void mask(BuildCanvas b) {
+        int cx = FOUNDRY_X, cy = 58, plane = 47, wide = 12, tall = 10;
+        for (int dx = -wide; dx <= wide; dx++) for (int dy = -tall; dy <= tall; dy++) {
+            double e = Math.pow(dx / (double) wide, 2) + Math.pow(dy / (double) tall, 2);
+            if (e > 1) continue;
+            int depth = (int) Math.round(6 * Math.sqrt(1 - e));
+            boolean eye = dy >= 1 && dy <= 2 && Math.abs(dx) >= 2 && Math.abs(dx) <= 8;
+            boolean mouth = dy <= -4 && dy >= -8 && Math.abs(dx) <= 6;
+            boolean nose = Math.abs(dx) <= 1 && dy <= 5 && dy >= -3;
+            boolean brow = dy == 3 && Math.abs(dx) <= 9;
+            for (int z = plane; z <= plane + depth; z++) {
+                boolean face = z == plane + depth;
+                double value = .45 + dy / (double) tall * .3 + (depth / 6D - .5) * .6;
+                Material plate = value > .62 ? Material.POLISHED_DEEPSLATE : value > .36 ? Material.POLISHED_BLACKSTONE : Material.BLACKSTONE;
+                b.block(cx + dx, cy + dy, z, face && eye ? Material.AIR : face && mouth && Math.floorMod(dx, 2) == 0 ? Material.IRON_BARS : face && brow ? Material.GILDED_BLACKSTONE : plate);
+                if (face && eye) b.block(cx + dx, cy + dy, z - 1, Material.SHROOMLIGHT);
+                if (face && mouth) b.block(cx + dx, cy + dy, z - 1, Material.MAGMA_BLOCK);
+                if (face && nose) b.block(cx + dx, cy + dy, z + 1, Material.GILDED_BLACKSTONE);
             }
         }
+        for (int side : new int[]{-1, 1}) for (int step = 0; step <= 16; step++) {
+            int x = cx + side * (wide - 1 + step), y = cy + 2 + (int) Math.round(Math.pow(step / 16D, 2.2) * 12), reach = Math.max(0, 2 - step / 6);
+            for (int dy = -reach; dy <= reach; dy++) for (int dz = -reach; dz <= reach; dz++)
+                if (Math.abs(dy) + Math.abs(dz) <= reach + 1) b.block(x, y + dy, plane + 2 + dz, step > 13 ? Material.GILDED_BLACKSTONE : Material.POLISHED_BLACKSTONE);
+        }
+    }
+
+    /** Fortress stone in order of value, darkest low down, red with heat where it meets the fire, with big soft patches of wear. */
+    private static Material fortStone(int x, int y, int z, int bottom, int top) {
+        double wear = (smooth(x + y, z, 8, 622) - .5) * 1.6;
+        if (y + wear * 6 < 33) return Material.RED_NETHER_BRICKS;
+        if (y + wear * 6 < 38) return Material.NETHER_BRICKS;
+        double value = (y - bottom) / (double) Math.max(1, top - bottom) * .7 + wear + .12;
+        return FORT[Math.clamp((int) Math.round(value * (FORT.length - 1)), 0, FORT.length - 1)];
     }
 
     /** A stone causeway over the fire, with a parapet. */
@@ -440,11 +682,11 @@ final class MinesTemplate {
             if (parapet) b.block(x, FORGE + 1, z, Math.floorMod(run, 2) == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.POLISHED_BLACKSTONE_BRICK_SLAB, Math.floorMod(run, 2) == 0 ? "" : "type=bottom");
             for (int y = FORGE - 1; y >= FORGE - 2; y--) b.block(x, y, z, Material.POLISHED_BLACKSTONE_BRICKS);
         }
-        for (int run = alongZ ? Math.min(z1, z2) + 2 : Math.min(x1, x2) + 2; run < (alongZ ? Math.max(z1, z2) : Math.max(x1, x2)); run += 9) {
+        for (int run = alongZ ? Math.min(z1, z2) + 4 : Math.min(x1, x2) + 4; run < (alongZ ? Math.max(z1, z2) : Math.max(x1, x2)); run += 15) {
             for (int side : new int[]{-1, 1}) {
                 int x = alongZ ? x1 + side * (half + 4) : run, z = alongZ ? run : z1 + side * (half + 4);
                 for (int y = 19; y < FORGE; y++) for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) b.block(x + dx, y, z + dz, pick(FORT, x + dx + y, z + dz, 626));
-                MineProps.spire(b, x, FORGE + 1, z, 10, Material.POLISHED_BLACKSTONE_BRICKS, Material.CHISELED_POLISHED_BLACKSTONE, Material.SHROOMLIGHT);
+                MineProps.spire(b, x, FORGE + 1, z, 12, Material.POLISHED_BLACKSTONE_BRICKS, Material.CHISELED_POLISHED_BLACKSTONE, Material.SHROOMLIGHT);
             }
         }
     }
@@ -476,7 +718,7 @@ final class MinesTemplate {
         // The crucible's hood, hung from the roof on four great chains.
         for (double angle = 0; angle < Math.TAU; angle += .02) for (int r = 3; r <= 5; r++)
             b.block(FOUNDRY_X + (int) Math.round(Math.cos(angle) * r), FORGE + 14, FOUNDRY_Z + (int) Math.round(Math.sin(angle) * r), Material.POLISHED_BLACKSTONE_BRICKS);
-        for (int[] corner : new int[][]{{-4, -4}, {4, -4}, {-4, 4}, {4, 4}}) for (int y = FORGE + 15; y <= 62; y++) if (kit.open(FOUNDRY_X + corner[0], y, FOUNDRY_Z + corner[1])) b.block(FOUNDRY_X + corner[0], y, FOUNDRY_Z + corner[1], Material.IRON_CHAIN, "axis=y");
+        for (int[] corner : new int[][]{{-4, -4}, {4, -4}, {-4, 4}, {4, 4}}) for (int y = FORGE + 15; y <= 92; y++) if (kit.open(FOUNDRY_X + corner[0], y, FOUNDRY_Z + corner[1])) b.block(FOUNDRY_X + corner[0], y, FOUNDRY_Z + corner[1], Material.IRON_CHAIN, "axis=y");
         for (double angle = Math.PI / 8; angle < Math.TAU; angle += Math.PI / 4) {
             int x = FOUNDRY_X + (int) Math.round(Math.cos(angle) * 16), z = FOUNDRY_Z + (int) Math.round(Math.sin(angle) * 16);
             for (int y = FORGE + 1; y <= FORGE + 5; y++) b.block(x, y, z, Material.POLISHED_BLACKSTONE_BRICKS);
@@ -508,7 +750,8 @@ final class MinesTemplate {
         for (int x = 121; x <= 123; x++) for (int y = FORGE + 1; y <= FORGE + 4; y++) b.block(x, y, 67, Material.IRON_BARS, "east=true,west=true");
         fortress(b, kit);
         // The rest of the cavern: spires of black rock, hanging stone, and fire from the roof.
-        for (int[] spire : new int[][]{{88, 74, 24}, {94, 104, 30}, {158, 76, 28}, {152, 108, 22}, {100, 62, 18}, {146, 60, 20}, {104, 116, 16}, {142, 118, 14}}) {
+        for (int[] column : new int[][]{{92, 92, 8}, {152, 94, 7}, {98, 112, 6}, {146, 114, 6}}) MineProps.column(b, column[0], 20, column[1], roof(kit, column[0], 40, column[1], 110), column[2], SLAG_ROCK, column[0] + column[1]);
+        for (int[] spire : new int[][]{{88, 74, 24}, {158, 76, 28}, {100, 62, 18}, {146, 60, 20}, {104, 116, 16}, {142, 118, 14}}) {
             for (int up = 0; up < spire[2]; up++) {
                 double across = 4.5 * Math.pow(1 - up / (double) spire[2], .7) + .4;
                 int reach = (int) Math.ceil(across);
@@ -517,14 +760,12 @@ final class MinesTemplate {
             }
         }
         for (int index = 0; index < 34; index++) {
-            int x = 84 + (int) (noise(index, 11, 631) * 78), z = 54 + (int) (noise(11, index, 632) * 62), y = 66;
-            while (y < 66 + 20 && kit.open(x, y, z)) y++;
-            if (y >= 86 || Math.hypot(x - FOUNDRY_X, z - FOUNDRY_Z) < 9) continue;
-            MineProps.stalactite(b, x, y, z, 7 + (int) (noise(index, index, 633) * 14), 2.4 + noise(z, x, 634) * 2.6, HOT_ROCK, null, 635 + index);
+            int x = 84 + (int) (noise(index, 11, 631) * 78), z = 62 + (int) (noise(11, index, 632) * 54), y = roof(kit, x, 60, z, 106);
+            if (y >= 106 || Math.hypot(x - FOUNDRY_X, z - FOUNDRY_Z) < 9) continue;
+            MineProps.curtain(b, x, y, z, 10 + (int) (noise(index, index, 633) * 16), 3 + (int) (noise(z, x, 634) * 4), index % 2 == 0, HOT_ROCK, null, 635 + index);
         }
         for (int[] fall : new int[][]{{96, 84, 2}, {150, 72, 2}, {148, 106, 1}, {100, 108, 1}, {156, 92, 1}}) {
-            int y = 60;
-            while (y < 80 && kit.open(fall[0], y, fall[1])) y++;
+            int y = roof(kit, fall[0], 50, fall[1], 106);
             MineProps.lavafall(b, fall[0], y - 1, fall[1], LAVA + 1, fall[2]);
         }
         kit.flood(b, Material.LAVA, 80, 44, 166, 124, 19, LAVA);
@@ -580,7 +821,7 @@ final class MinesTemplate {
         b.block(178, DOCK + 1, 38, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
         crates(b, 174, DOCK + 1, 28);
         crates(b, 183, DOCK + 1, 40);
-        for (int x = 188; x <= 215; x++) {
+        for (int x = 188; x <= 219; x++) {
             for (int z = 33; z <= 35; z++) plank(b, x, DOCK, z);
             b.block(x, DOCK + 1, 32, RAIL);
             b.block(x, DOCK + 1, 36, RAIL);
@@ -593,11 +834,12 @@ final class MinesTemplate {
             }
         }
         for (int step = 0; step < 4; step++) for (int z = 33; z <= 35; z++) {
-            int x = 216 + step, half = step + 1;
+            int x = 220 + step, half = step + 1;
             b.block(x, DOCK + half / 2, z, Material.SPRUCE_PLANKS);
             if (half % 2 == 1) b.block(x, DOCK + half / 2 + 1, z, Material.SPRUCE_SLAB, "type=bottom");
         }
         GloomforgeShip.build(b);
+        MineProps.hoard(b, GloomforgeShip.X, DECK + 4, 68, 5, 650);
         // Blue crystal on every shore, and in the water itself.
         for (int[] burst : new int[][]{{206, 6, 11, 18}, {203, 74, 11, 16}, {280, 18, 12, 22}, {272, 72, 12, 18}, {196, 10, 8, 10}, {214, 70, 6, 12}, {286, 44, 8, 14}, {262, 8, 6, 15}, {258, 78, 6, 14}}) MineProps.crystals(b, burst[0], burst[2], burst[1], burst[3], MineProps.BLUE, burst[0] + burst[1]);
         kit.flood(b, Material.WATER, 170, -12, 300, 92, 2, WATER);
@@ -608,10 +850,11 @@ final class MinesTemplate {
         // The roof comes down in great blue-tipped curtains, and water falls in threads.
         for (int index = 0; index < 46; index++) {
             int x = 180 + (int) (noise(index, 7, 524) * 110), z = -2 + (int) (noise(7, index, 525) * 84), y = 40;
-            if (Math.abs(x - GloomforgeShip.X) < 20 && Math.abs(z - GloomforgeShip.Z) < 30) continue;
+            if (Math.abs(x - GloomforgeShip.X) < 18 && Math.abs(z - GloomforgeShip.Z) < 48) continue;
             while (y < 62 && kit.open(x, y, z)) y++;
-            if (y < 62) MineProps.stalactite(b, x, y, z, 8 + (int) (noise(index, index, 526) * 16), 3 + noise(z, x, 527) * 3, WET_ROCK, Material.SEA_LANTERN, 640 + index);
+            if (y < 62) MineProps.curtain(b, x, y, z, 10 + (int) (noise(index, index, 526) * 18), 3 + (int) (noise(z, x, 527) * 4), index % 2 == 0, WET_ROCK, Material.SEA_LANTERN, 640 + index);
         }
+        for (int[] column : new int[][]{{198, 58, 7}, {206, 22, 6}, {270, 58, 7}, {276, 24, 8}, {192, 30, 5}}) MineProps.column(b, column[0], 2, column[1], roof(kit, column[0], 30, column[1], 62), column[2], ICE_ROCK, column[0] + column[1]);
         for (int[] fall : new int[][]{{190, 12, 3}, {214, 78, 2}, {262, 4, 3}, {288, 66, 2}}) {
             int y = 34;
             while (y < 62 && kit.open(fall[0], y, fall[1])) y++;

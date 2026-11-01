@@ -3,37 +3,55 @@ package net.nerdsmp.paper.expedition;
 import org.bukkit.Material;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import static net.nerdsmp.paper.expedition.SampleKit.noise;
-import static net.nerdsmp.paper.expedition.SampleKit.pick;
 import static net.nerdsmp.paper.expedition.SampleKit.smooth;
 
 /**
  * Digs a mine out of nothing: every passage is carved as open air first, then {@link #close} wraps the whole
- * of it in rock, so drifts and caverns can run into each other freely. The rock changes with depth, drifts get
- * timber sets and a line of rails, and steps in the floor get a half block so they can be walked.
+ * of it in rock, so drifts and caverns can run into each other freely.
+ *
+ * <p>The rock is worked the way terrain builders work it. Carving is only the block-out. {@link #weather} then
+ * pushes the surface in and out along bedding planes, and melts it, as erosion brushes do, so it gets ledges and
+ * soft lumps. {@link #tone} shades it last: a ramp of blocks in order of value, so only neighbouring tones ever touch,
+ * laid out in large clusters and drips that follow where a real wall weathers. Cracks and hollows take the darkest block
+ * and ridges the lightest, so the shape reads even in flat light. Random speckle is what makes rock look generated, and
+ * nothing here is random block to block. Every step in the rock then gets a stair or a slab, because a form that's only
+ * half smoothed looks worse than one that isn't.
  */
 final class MineKit {
-    private static final Material[] UPPER = {Material.STONE, Material.ANDESITE, Material.STONE, Material.COBBLESTONE, Material.TUFF};
-    private static final Material[] MIDDLE = {Material.TUFF, Material.STONE, Material.DEEPSLATE, Material.COBBLED_DEEPSLATE, Material.ANDESITE};
-    private static final Material[] LOWER = {Material.DEEPSLATE, Material.COBBLED_DEEPSLATE, Material.DEEPSLATE, Material.TUFF};
-    private static final Material[] FORGE = {Material.BLACKSTONE, Material.SMOOTH_BASALT, Material.DEEPSLATE, Material.BLACKSTONE};
-    private static final Material[] DROWNED = {Material.DEEPSLATE, Material.COBBLED_DEEPSLATE, Material.TUFF, Material.DARK_PRISMARINE};
+    // Each ramp runs dark to light, in steps close enough to touch.
+    private static final Material[] UPPER = {Material.TUFF, Material.COBBLESTONE, Material.ANDESITE, Material.LIGHT_GRAY_CONCRETE_POWDER};
+    private static final Material[] MIDDLE = {Material.COBBLED_DEEPSLATE, Material.TUFF, Material.COBBLESTONE, Material.ANDESITE};
+    private static final Material[] LOWER = {Material.DEEPSLATE_TILES, Material.COBBLED_DEEPSLATE, Material.DEEPSLATE, Material.TUFF, Material.COBBLESTONE};
+    private static final Material[] FORGE = {Material.BLACKSTONE, Material.DEEPSLATE_TILES, Material.COBBLED_DEEPSLATE, Material.DEEPSLATE, Material.TUFF};
+    /** Rock the fire is shining on, baked into the block because the game's own light has no colour. */
+    private static final Material[] EMBER = {Material.BLACKSTONE, Material.BROWN_TERRACOTTA, Material.RED_TERRACOTTA, Material.TERRACOTTA, Material.ORANGE_TERRACOTTA};
+    private static final Material[] DROWNED = {Material.DEEPSLATE_TILES, Material.COBBLED_DEEPSLATE, Material.DEEPSLATE, Material.CYAN_TERRACOTTA};
+    /** The wet band along the waterline. */
+    private static final Material[] TIDE = {Material.DEEPSLATE_TILES, Material.DARK_PRISMARINE, Material.CYAN_TERRACOTTA, Material.PRISMARINE_BRICKS};
     private static final Material[] ORES = {Material.DEEPSLATE_IRON_ORE, Material.DEEPSLATE_COPPER_ORE, Material.DEEPSLATE_GOLD_ORE,
         Material.DEEPSLATE_COAL_ORE, Material.DEEPSLATE_REDSTONE_ORE};
     private static final Material TIMBER = Material.STRIPPED_SPRUCE_LOG;
     private static final int[][] FACES = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-    private static final int SET_EVERY = 11;
+    /** Fourteen ways out from a block, to feel the shape round it at a distance. */
+    private static final int[][] FAR = {{3, 0, 0}, {-3, 0, 0}, {0, 3, 0}, {0, -3, 0}, {0, 0, 3}, {0, 0, -3},
+        {2, 2, 2}, {2, 2, -2}, {2, -2, 2}, {2, -2, -2}, {-2, 2, 2}, {-2, 2, -2}, {-2, -2, 2}, {-2, -2, -2}};
+    private static final int SET_EVERY = 11, REACH = 4;
 
     private record Door(int x, int floor, int z, boolean alongX, int length) { }
 
-    /** No rock is put round anything in this circle at or above {@code y}: it's open to the sky. */
-    private record Sky(int x, int z, int radius, int y) { }
+    /** No rock is put round anything in this circle at or above {@code y} and short of {@code farZ}: it's open to the sky. */
+    private record Sky(int x, int z, int radius, int y, int farZ) { }
 
     private final Set<Long> air = new HashSet<>();
+    private final Set<Long> rock = new HashSet<>();
+    /** Square-cut work, which weather leaves alone. */
+    private final Set<Long> dressed = new HashSet<>();
     private final List<List<int[]>> drifts = new ArrayList<>();
     private final List<Door> doors = new ArrayList<>();
     private final List<Sky> skies = new ArrayList<>();
@@ -50,10 +68,12 @@ final class MineKit {
 
     void carve(int x, int y, int z) { air.add(key(x, y, z)); }
 
-    void openToSky(int x, int z, int radius, int y) { skies.add(new Sky(x, z, radius, y)); }
+    void openToSky(int x, int z, int radius, int y) { openToSky(x, z, radius, y, Integer.MAX_VALUE); }
+
+    void openToSky(int x, int z, int radius, int y, int farZ) { skies.add(new Sky(x, z, radius, y, farZ)); }
 
     private boolean underSky(int x, int y, int z) {
-        for (Sky sky : skies) if (y >= sky.y() && Math.hypot(x - sky.x(), z - sky.z()) <= sky.radius()) return true;
+        for (Sky sky : skies) if (y >= sky.y() && z <= sky.farZ() && Math.hypot(x - sky.x(), z - sky.z()) <= sky.radius()) return true;
         return false;
     }
 
@@ -103,33 +123,157 @@ final class MineKit {
 
     /** A square-cut room. */
     void hall(int x1, int z1, int x2, int z2, int floor, int high) {
-        for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) for (int y = floor + 1; y <= floor + high; y++) carve(x, y, z);
+        for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) for (int y = floor + 1; y <= floor + high; y++) cut(x, y, z);
+    }
+
+    private void cut(int x, int y, int z) {
+        carve(x, y, z);
+        dressed.add(key(x, y, z));
     }
 
     /** A round room, or a shaft if it's tall. */
     void round(int cx, int floor, int cz, int radius, int high) {
         for (int x = cx - radius; x <= cx + radius; x++) for (int z = cz - radius; z <= cz + radius; z++)
-            if (Math.hypot(x - cx, z - cz) <= radius + .3) for (int y = floor + 1; y <= floor + high; y++) carve(x, y, z);
+            if (Math.hypot(x - cx, z - cz) <= radius + .3) for (int y = floor + 1; y <= floor + high; y++) cut(x, y, z);
     }
 
     /** A timbered doorway three wide and four high, cut through {@code length} blocks of rock. */
     void door(int x, int floor, int z, boolean alongX, int length) {
         for (int along = 0; along < length; along++) for (int across = -1; across <= 1; across++) for (int y = floor + 1; y <= floor + 4; y++)
-            carve(alongX ? x + along : x + across, y, alongX ? z + across : z + along);
+            cut(alongX ? x + along : x + across, y, alongX ? z + across : z + along);
         doors.add(new Door(x, floor, z, alongX, length));
     }
 
-    /** The rock at a depth, in seams and patches. The bands blur into each other instead of changing on a line. */
-    private static Material rock(int x, int y, int z) {
+    private static Material[] ramp(int x, int y, int z) {
         double depth = y + (smooth(x, z, 11, 501) - .5) * 8;
-        Material[] band = x > 168 && z < 92 ? DROWNED : depth >= 84 ? UPPER : depth >= 62 ? MIDDLE : depth >= 42 ? LOWER : depth >= 22 ? FORGE : DROWNED;
-        // Seams lie nearly flat, so stretch the patches sideways and let them lean with the height.
-        double seam = (smooth(x + y * 2, z - y * 2, 5, 502) + smooth(x - y * 3, z + y * 3, 9, 507)) / 2;
-        return band[Math.clamp((int) ((seam - .3) / .4 * band.length), 0, band.length - 1)];
+        if (x > 168 && z < 92) return depth < 17 ? TIDE : DROWNED;
+        if (x > 72 && x < 172 && z > 28 && z < 132 && depth < 46) return EMBER;
+        return depth >= 84 ? UPPER : depth >= 62 ? MIDDLE : depth >= 42 ? LOWER : depth >= 22 ? FORGE : DROWNED;
+    }
+
+    /** The big soft shapes in a rock face: lumps lying along the bedding, and flutes where water ran down it. */
+    private static double lump(int x, int y, int z) {
+        double bedding = (smooth(x, y * 3, 11, 509) + smooth(z, y * 3, 11, 510)) / 2 - .5;
+        return bedding * 14 + (smooth(x, z, 6, 511) - .5) * 4;
+    }
+
+    private boolean nearFloor(int x, int y, int z) {
+        return !open(x, y - 1, z) || !open(x, y - 2, z) || !open(x, y - 3, z);
+    }
+
+    private boolean floorOf(int x, int y, int z) {
+        return open(x, y + 1, z) || open(x, y + 2, z) || open(x, y + 3, z);
+    }
+
+    private boolean held(long cell) {
+        int x = xOf(cell), y = yOf(cell), z = zOf(cell);
+        return dressed.contains(cell) || (air.contains(cell) ? nearFloor(x, y, z) : floorOf(x, y, z));
+    }
+
+    /** How far each cell near a worked surface lies from it: air counts up, rock counts down. */
+    private Map<Long, Integer> band() {
+        Map<Long, Integer> depth = new HashMap<>();
+        List<Long> rim = new ArrayList<>();
+        for (long cell : air) {
+            if (dressed.contains(cell)) continue;
+            int x = xOf(cell), y = yOf(cell), z = zOf(cell);
+            for (int[] face : FACES) {
+                long side = key(x + face[0], y + face[1], z + face[2]);
+                if (air.contains(side)) continue;
+                depth.put(cell, 1);
+                if (depth.putIfAbsent(side, -1) == null) rim.add(side);
+            }
+            if (depth.containsKey(cell)) rim.add(cell);
+        }
+        for (int step = 2; step <= REACH; step++) {
+            List<Long> next = new ArrayList<>();
+            for (long cell : rim) {
+                int x = xOf(cell), y = yOf(cell), z = zOf(cell), sign = Integer.signum(depth.get(cell));
+                for (int[] face : FACES) {
+                    long side = key(x + face[0], y + face[1], z + face[2]);
+                    if (air.contains(side) != sign > 0 || depth.containsKey(side)) continue;
+                    depth.put(side, sign * step);
+                    next.add(side);
+                }
+            }
+            rim = next;
+        }
+        return depth;
+    }
+
+    private void change(long cell, boolean open) {
+        if (open) air.add(cell);
+        else air.remove(cell);
+    }
+
+    /** The block-out becomes rock: the surface moves in and out along the bedding, then melts, then settles. */
+    private void weather() {
+        Map<Long, Integer> band = band();
+        Map<Long, Boolean> moved = new HashMap<>();
+        band.forEach((cell, depth) -> {
+            if (held(cell)) return;
+            boolean open = depth + lump(xOf(cell), yOf(cell), zOf(cell)) > 0;
+            if (open != air.contains(cell)) moved.put(cell, open);
+        });
+        moved.forEach(this::change);
+        melt(band.keySet(), 4, 5);
+        melt(band.keySet(), 4, 4);
+    }
+
+    /** One pass of an erosion brush: rock with {@code wear} faces bare is worn away, and hollows with {@code silt} faces of rock fill in. */
+    private void melt(Set<Long> cells, int wear, int silt) {
+        Map<Long, Boolean> moved = new HashMap<>();
+        for (long cell : cells) {
+            if (held(cell)) continue;
+            int x = xOf(cell), y = yOf(cell), z = zOf(cell), bare = 0;
+            for (int[] face : FACES) if (open(x + face[0], y + face[1], z + face[2])) bare++;
+            if (air.contains(cell) && 6 - bare >= silt) moved.put(cell, false);
+            else if (!air.contains(cell) && bare >= wear) moved.put(cell, true);
+        }
+        moved.forEach(this::change);
+    }
+
+    /** A thin winding seam through the rock. */
+    private static boolean seam(int x, int y, int z, int salt, double width) {
+        return Math.abs((smooth(x + y, z, 9, salt) + smooth(x, z + y, 9, salt + 1)) / 2 - .5) < width;
+    }
+
+    /** How far down the wall a cell sits from whatever it stands on, for the grime at the foot of a face. */
+    private int footing(int x, int y, int z) {
+        for (int[] face : FACES) {
+            if (face[1] != 0 || !open(x + face[0], y, z + face[2])) continue;
+            int rise = 0;
+            while (rise < 6 && open(x + face[0], y - rise - 1, z + face[2])) rise++;
+            return rise;
+        }
+        return 6;
+    }
+
+    /** How a block of rock sits in the shape round it: below zero down a crack or in a hollow, above zero out on a ridge. */
+    private double relief(int x, int y, int z) {
+        int near = 0, far = 0;
+        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) if (open(x + dx, y + dy, z + dz)) near++;
+        for (int[] out : FAR) if (open(x + out[0], y + out[1], z + out[2])) far++;
+        return (near - 9) / 9D * .6 + (far - 5) / 5D * .4;
+    }
+
+    /** The value of a block of rock, from what's happened to it: clustered weathering, drips, dark cracks, light ridges, grime at the foot. */
+    private Material tone(int x, int y, int z) {
+        Material[] ramp = ramp(x, y, z);
+        double cluster = (smooth(x + y, z, 14, 520) + smooth(x, z + y, 14, 521)) / 2 - .5;
+        double value = .42 + cluster * 2 - Math.max(0, smooth(x, z, 4, 522) - .56) * 1.6 + relief(x, y, z) * .46;
+        if (open(x, y + 1, z)) value += .16;
+        if (open(x, y - 1, z)) value -= .28;
+        else value -= .24 * (1 - footing(x, y, z) / 6D);
+        Material block = ramp[Math.clamp((int) Math.round(value * (ramp.length - 1)), 0, ramp.length - 1)];
+        // Powder falls, so it only goes on a face with rock under it.
+        boolean loose = block == Material.LIGHT_GRAY_CONCRETE_POWDER && (open(x, y + 1, z) || !rock.contains(key(x, y - 1, z)));
+        return loose ? Material.ANDESITE : block;
     }
 
     /** Wraps everything carved in rock, then sets the floors, timbers and rails. */
     void close(BuildCanvas b) {
+        weather();
         Set<Long> solid = new HashSet<>();
         for (long cell : air) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
@@ -139,19 +283,19 @@ final class MineKit {
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
                 if (!open(x + dx, y + dy, z + dz)) solid.add(key(x + dx, y + dy, z + dz));
         }
+        rock.addAll(solid);
         for (long cell : solid) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
             if (underSky(x, y, z)) continue;
-            if (open(x, y + 1, z)) b.block(x, y, z, noise(x, z, 503) < .2 ? Material.GRAVEL : noise(z, x, 504) < .3 ? Material.COBBLED_DEEPSLATE : rock(x, y, z));
-            else if (x > 168 && z < 92 && noise(x * 7 + y, z, 508) < .018) b.block(x, y, z, Material.SEA_LANTERN);
-            else if (noise(x * 7 + y, z, 505) < .05 && y > 20) b.block(x, y, z, pick(ORES, x + y, z, 506));
-            else b.block(x, y, z, rock(x, y, z));
+            boolean drowned = x > 168 && z < 92;
+            if (open(x, y + 1, z)) b.block(x, y, z, smooth(x, z, 5, 503) > .66 ? Material.GRAVEL : tone(x, y, z));
+            else if (drowned && seam(x, y, z, 505, .006)) b.block(x, y, z, Material.SEA_LANTERN);
+            else if (!drowned && seam(x, y, z, 505, .008)) b.block(x, y, z, ORES[Math.floorMod((x + y / 2) / 16 + z / 16, ORES.length)]);
+            else b.block(x, y, z, tone(x, y, z));
         }
-        for (List<int[]> drift : drifts) {
-            rails(b, drift);
-            sets(b, drift);
-        }
-        steps(b);
+        for (List<int[]> drift : drifts) rails(b, drift);
+        ease(b);
+        for (List<int[]> drift : drifts) sets(b, drift);
         for (Door door : doors) frame(b, door);
     }
 
@@ -162,18 +306,44 @@ final class MineKit {
         return y;
     }
 
-    /** Half blocks on the terraces a slope leaves, so a drift can be walked up as well as down. */
-    private void steps(BuildCanvas b) {
+    /** The half and the stair of the same stone, or the nearest there is: {slab, stairs}. */
+    private static Material[] trim(Material block) {
+        return switch (block) {
+            case TUFF -> new Material[]{Material.TUFF_SLAB, Material.TUFF_STAIRS};
+            case COBBLESTONE -> new Material[]{Material.COBBLESTONE_SLAB, Material.COBBLESTONE_STAIRS};
+            case ANDESITE, LIGHT_GRAY_CONCRETE_POWDER -> new Material[]{Material.ANDESITE_SLAB, Material.ANDESITE_STAIRS};
+            case DEEPSLATE_TILES -> new Material[]{Material.DEEPSLATE_TILE_SLAB, Material.DEEPSLATE_TILE_STAIRS};
+            case BLACKSTONE, BROWN_TERRACOTTA, RED_TERRACOTTA -> new Material[]{Material.BLACKSTONE_SLAB, Material.BLACKSTONE_STAIRS};
+            case TERRACOTTA, ORANGE_TERRACOTTA -> new Material[]{Material.GRANITE_SLAB, Material.GRANITE_STAIRS};
+            case DARK_PRISMARINE, PRISMARINE_BRICKS -> new Material[]{Material.DARK_PRISMARINE_SLAB, Material.DARK_PRISMARINE_STAIRS};
+            default -> new Material[]{Material.COBBLED_DEEPSLATE_SLAB, Material.COBBLED_DEEPSLATE_STAIRS};
+        };
+    }
+
+    /**
+     * Stairs and slabs on every step in worked rock, floor and roof alike, in the stone it's cut from. Floors can then be
+     * walked up as well as down. Square-cut rooms stay square.
+     */
+    private void ease(BuildCanvas b) {
         for (long cell : air) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
-            if (open(x, y - 1, z) || !CanopyKit.empty(b, x, y, z)) continue;
+            if (dressed.contains(cell) || !CanopyKit.empty(b, x, y, z)) continue;
+            boolean floor = !open(x, y - 1, z) && !CanopyKit.empty(b, x, y - 1, z);
+            boolean roof = !open(x, y + 1, z) && !CanopyKit.empty(b, x, y + 1, z) && open(x, y - 1, z) && open(x, y - 2, z) && open(x, y - 3, z) && open(x, y - 4, z);
+            if (!floor && !roof) continue;
+            int rises = 0, riseX = 0, riseZ = 0;
             for (int[] face : FACES) {
                 if (face[1] != 0) continue;
                 int nx = x + face[0], nz = z + face[2];
-                if (open(nx, y, nz) || !open(nx, y + 1, nz) || !open(nx, y + 2, nz)) continue;
-                b.block(x, y, z, Material.COBBLED_DEEPSLATE_SLAB, "type=bottom");
-                break;
+                if (open(nx, y, nz) || !open(nx, floor ? y + 1 : y - 1, nz) || (floor && !open(nx, y + 2, nz))) continue;
+                rises++;
+                riseX = face[0];
+                riseZ = face[2];
             }
+            if (rises == 0) continue;
+            Material[] trim = trim(tone(x + riseX, y, z + riseZ));
+            if (rises == 1) b.block(x, y, z, trim[1], "facing=" + side(riseX, riseZ) + ",half=" + (floor ? "bottom" : "top") + ",shape=straight");
+            else b.block(x, y, z, trim[0], floor ? "type=bottom" : "type=top");
         }
     }
 
@@ -228,6 +398,13 @@ final class MineKit {
                 if (open(x, cap, z)) b.block(x, cap, z, TIMBER, acrossX ? "axis=x" : "axis=z");
                 if (offset == -left || offset == right) for (int y = cap - 1; y >= floor; y--) if (open(x, y, z)) b.block(x, y, z, TIMBER, "axis=y");
             }
+            // A bracket under each end of the cap.
+            for (int sign : new int[]{-1, 1}) {
+                int reach = sign < 0 ? left - 1 : right - 1;
+                if (reach < 2) continue;
+                int x = at[0] + stepX * sign * reach, z = at[2] + stepZ * sign * reach;
+                if (open(x, cap - 1, z) && open(x, cap - 2, z) && open(x, cap - 3, z) && CanopyKit.empty(b, x, cap - 1, z) && CanopyKit.empty(b, x, cap - 3, z)) b.block(x, cap - 1, z, Material.SPRUCE_STAIRS, "facing=" + side(stepX * sign, stepZ * sign) + ",half=top,shape=straight");
+            }
             if (index % (SET_EVERY * 2) == SET_EVERY / 2 && open(at[0], cap - 1, at[2])) b.block(at[0], cap - 1, at[2], Material.LANTERN, "hanging=true");
         }
     }
@@ -239,6 +416,15 @@ final class MineKit {
                 if (Math.abs(across) == 2) for (int y = door.floor() + 1; y <= door.floor() + 5; y++) b.block(x, y, z, TIMBER, "axis=y");
                 b.block(x, door.floor() + 5, z, TIMBER, door.alongX() ? "axis=z" : "axis=x");
             }
+        }
+    }
+
+    /** A dusting of the crystal's own colour in the rock face round a burst, thinning out with distance, so it grows out of the seam rather than sitting on it. */
+    void dust(BuildCanvas b, int cx, int cy, int cz, int radius, Material glass, int salt) {
+        for (int x = cx - radius; x <= cx + radius; x++) for (int y = cy - radius; y <= cy + radius; y++) for (int z = cz - radius; z <= cz + radius; z++) {
+            double from = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy) + (z - cz) * (z - cz)) / radius;
+            if (from > 1 || !rock.contains(key(x, y, z)) || CanopyKit.empty(b, x, y, z)) continue;
+            if (SampleKit.noise(x + y, z, salt) < .2 * (1 - from)) b.block(x, y, z, glass);
         }
     }
 
@@ -254,7 +440,7 @@ final class MineKit {
             double from = Math.hypot((x - cx) / (double) rx, (z - cz) / (double) rz) / (1 + (smooth(x, z, 5, salt) - .5) * .5);
             if (from > 1) continue;
             int surface = top - (int) Math.round(Math.pow(from, 5) * 5);
-            for (int y = bottom; y <= surface; y++) if (open(x, y, z)) b.block(x, y, z, y == surface ? (noise(x, z, salt) < .35 ? Material.GRAVEL : Material.TUFF) : rock(x, y, z));
+            for (int y = bottom; y <= surface; y++) if (open(x, y, z)) b.block(x, y, z, y == surface ? (smooth(x, z, 4, salt) > .55 ? Material.GRAVEL : Material.TUFF) : tone(x, y, z));
         }
     }
 }

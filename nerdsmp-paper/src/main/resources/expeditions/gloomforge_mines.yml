@@ -15,7 +15,7 @@ time-limit-minutes: 45
 # Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
 records-version: 2
 spawn: [14, 97, -2, 0]
-exit: [236, 17, 64]
+exit: [233, 17, 60]
 modifiers: []
 requires: [sunken_aqueduct]
 goal: forces
@@ -93,19 +93,19 @@ hazards:
   pit_rockfall: {type: rocks, area: [168, 31, 100, 196, 31, 124], every: 7, count: 3, damage: 5}
   forge_vents:
     type: lane
-    area: [220, 17, 32, 252, 17, 64]
+    area: [224, 17, 32, 248, 17, 62]
     every: 9
     count: 1
     damage: 7
     burn: 5
-    lanes: [[222, 38, 250, 38], [250, 50, 222, 50], [224, 60, 248, 60]]
+    lanes: [[225, 39, 247, 39], [247, 50, 225, 50], [225, 60, 247, 60]]
   ore_skips:
     type: collapse
-    area: [220, 17, 32, 252, 17, 64]
+    area: [224, 17, 32, 248, 17, 62]
     every: 25
     damage: 12
     spots: [[228, 26, 44], [244, 26, 44], [228, 26, 56], [244, 26, 56]]
-  deep_rockfall: {type: rocks, area: [222, 17, 34, 250, 17, 62], every: 7, count: 4, damage: 6}
+  deep_rockfall: {type: rocks, area: [226, 17, 34, 246, 17, 60], every: 7, count: 4, damage: 6}
 
 ambience:
   - {sound: block.pointed_dripstone.drip_water, every: 7, volume: 0.6, pitch: 0.7}
@@ -113,7 +113,7 @@ ambience:
   - {sound: entity.minecart.riding, every: 26, volume: 0.25, pitch: 0.6}
   - {sound: block.anvil.land, every: 34, volume: 0.15, pitch: 0.5}
   - {sound: block.lava.ambient, every: 8, volume: 0.7, pitch: 0.7, area: [80, 28, 44, 200, 80, 128]}
-  - {sound: block.furnace.fire_crackle, every: 6, volume: 0.8, pitch: 0.6, area: [216, 10, 10, 256, 62, 84]}
+  - {sound: block.furnace.fire_crackle, every: 6, volume: 0.8, pitch: 0.6, area: [218, 10, 0, 254, 64, 88]}
   - {sound: ambient.underwater.loop.additions.rare, every: 16, volume: 0.6, pitch: 0.6, area: [172, 2, -8, 300, 64, 90]}
 
 # The opening scene, played as the run starts, and the narration after the win.
@@ -132,14 +132,14 @@ cutscenes:
     - {at: [122.5, 44, 116, 180, 10], to: [122.5, 42, 108, 180, 6], seconds: 4, fade: true, lines: ["|Below that, the Round Foundry, and a heat that doesn't belong in stone."]}
     - {at: [192, 27, 34, -90, 6], to: [208, 25, 34, -90, 4], seconds: 5, fade: true, lines: ["hesk|And at the bottom, the Gloomforge. The Foreman took a new contract, paid in gold, with orders to dig straight down.", "hesk|He dug until he hit water, and he kept going."]}
   grell_wakes:
-    - {at: [50.5, 76, 124, 0, 18], to: [50.5, 75, 127, 0, 12], seconds: 4, title: "<red>Overseer Grell</red>", text: "<gray>He still counts the shift</gray>", sound: "block.bell.use 0.6", lines: ["Overseer Grell|Late. All of you. That's a day's pay."]}
+    - {at: [50.5, 75, 131, 0, 18], to: [50.5, 74, 133, 0, 12], seconds: 4, title: "<red>Overseer Grell</red>", text: "<gray>He still counts the shift</gray>", sound: "block.bell.use 0.6", lines: ["Overseer Grell|Late. All of you. That's a day's pay."]}
   ore_line_wakes:
     - {at: [102, 60, 170, -90, 14], to: [112, 59, 170, -90, 10], seconds: 4, title: "<gold>The Blastmaster</gold>", text: "<gray>Keeper of the Ore Line</gray>", sound: "block.bell.use 0.8", lines: ["The Blastmaster|Mind the rails! Ha! No, don't. Stand right there."]}
   hound_wakes:
     - {at: [171, 34, 112, -90, 6], to: [177, 34, 112, -90, 4], seconds: 4, title: "<red>The Slag Hound</red>", text: "<gray>Something the foundry fed</gray>", sound: "entity.ravager.roar 0.6", lines: ["|Something huge shoulders up out of the slag, and shakes it off like water."]}
   foreman_wakes:
-    - {at: [226, 24, 42, -40, 8], to: [230, 23, 47, -30, 4], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The furnace roars. The whole hull shudders against its chains."]}
-    - {at: [231, 21, 36, -20, 4], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
+    - {at: [232, 22, 36, -15, 4], to: [233, 21, 38, -15, 2], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The furnace roars. The whole hull shudders against its chains."]}
+    - {at: [232, 21, 37, -15, 4], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
 
 mobs:
   "custom:gloom_miner": {forces: 1}
@@ -202,8 +202,8 @@ companion-drops:
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [232, 17, 62]
-  bonus: [240, 17, 62]
+  free: [231, 17, 59]
+  bonus: [241, 17, 59]
 
 rooms:
   grells_shaft:
@@ -312,12 +312,12 @@ rooms:
         clear: ["hazard stop slag_flows", "hazard stop pit_rockfall", "say hesk|You went looking for that? Well. It won't be eating anyone else."]
   the_gloomforge:
     title: The Gloomforge
-    region: [216, 10, 10, 256, 62, 84]
+    region: [218, 10, 0, 254, 64, 88]
     requires: [grells_shaft, ore_line, round_foundry]
     requires-packs: [dock_north, dock_south, trestle_walkers]
-    seal: [220, 17, 33, 220, 20, 35]
-    checkpoint: [224, 17, 35, 90]
-    points: [[236, 17, 46, 180], [228, 17, 40], [244, 17, 40], [228, 17, 54], [244, 17, 54]]
+    seal: [224, 17, 33, 224, 20, 35]
+    checkpoint: [228, 17, 36, 90]
+    points: [[236, 17, 49, 180], [229, 17, 41], [243, 17, 41], [229, 17, 53], [243, 17, 53]]
     encounter:
       type: boss
       boss: custom:deep_foreman
@@ -335,7 +335,7 @@ rooms:
         start: ["cutscene foreman_wakes", "wait 9", "say hesk|Those ore skips over the deck! Bring him under one when the chain goes!", "hazard start ore_skips"]
         health-66: ["hazard start forge_vents", "say The Deep Foreman|Stoke it! All of it!"]
         health-33: ["hazard start deep_rockfall", "say The Deep Foreman|Bring it ALL down!"]
-        clear: ["hazard stop ore_skips", "hazard stop forge_vents", "hazard stop deep_rockfall", "npc hesk 241 17 55 0", "say hesk|The Gloomforge goes quiet. First time in a hundred years. Come on up, friends."]
+        clear: ["hazard stop ore_skips", "hazard stop forge_vents", "hazard stop deep_rockfall", "npc hesk 240 17 54 0", "say hesk|The Gloomforge goes quiet. First time in a hundred years. Come on up, friends."]
 
 guide:
   lore: "Gloomsteel is the dark ore that drinks light, and the Gloomforge has mined it for generations. Old Miner Hesk worked these levels for forty years. Then the Deep Foreman took a contract from a buyer he never met, paid in old gold, with one instruction: dig straight down. The night shift never came back up."

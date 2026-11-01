@@ -5,6 +5,18 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### The Gloomforge Mines, rebuilt to a higher standard (November 1)
+- **The rock is shaded by hand-picked ramps.** Walls run tuff to cobble to andesite to pale powder, with the darkest
+  block down the cracks and the lightest on the ridges. Rock near the lava is baked orange, and every step in worked rock
+  now has a stair or a slab.
+- **The fortress is the map's hero.** It now climbs sixty blocks in three tiers to a keep and two smoking stacks, with the
+  Foreman's iron mask over the gate. Its upper tiers used to be buried in the cavern roof.
+- **The Gullet looks worked.** Spruce shoring holds back the walls, trodden earth covers the terraces, a great hoist
+  stands on the upper terrace beside a copper-roofed headhouse, and camps stack up the rock.
+- **More set pieces.** The Ore Line has real trestle bents and a towering headframe. Crystal now bursts from the walls,
+  with columns running floor to roof. The ship's roof is calmer, and the Foreman's hoard lies heaped on the foredeck.
+- **The portal is cut into a crag,** among big bent pines and boulders.
+
 ### Gloomforge Mines rebuilt (October 31)
 - **A descent, with a look for every level.** A timbered mine portal in a green valley; the Gullet, a terraced pit open to
   the sky with a tree grown up from its floor; a cavern of blue crystal; a rail yard on trestles over a dark drop; a
