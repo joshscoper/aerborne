@@ -363,3 +363,65 @@ windpip:
     - { block: LIGHT_BLUE_CONCRETE, at: [1.4, 7.4, 3.1], size: [1.1, 1.3, 0.3], group: head }
     - { block: LIGHT_BLUE_WOOL, at: [-6, 7, -0.5], size: [2.4, 1, 3], group: wing_left }
     - { block: LIGHT_BLUE_WOOL, at: [6, 7, -0.5], size: [2.4, 1, 3], group: wing_right }
+kilnling:
+  bounce: trot
+  pivots:
+    head: [0, 9, 0]
+  parts:
+    - { block: BRICKS, at: [0, 5.6, 0], size: [6, 6, 6] }
+    - { block: GOLD_BLOCK, at: [0, 8.8, 0], size: [6.6, 0.6, 6.6] }
+    - { block: GOLD_BLOCK, at: [0, 2.8, 0], size: [6.6, 0.6, 6.6] }
+    - { block: MAGMA_BLOCK, at: [0, 5, 3.05], size: [3, 2.4, 0.3], glow: true }
+    - { block: SHROOMLIGHT, at: [0, 4.7, 3.2], size: [1.8, 1.4, 0.2], glow: true }
+    - { block: POLISHED_BLACKSTONE, at: [0, 10.2, 0], size: [3.4, 2, 3.4], group: head }
+    - { block: SHROOMLIGHT, at: [-0.8, 10.6, 1.8], size: [0.7, 0.5, 0.2], glow: true, group: head }
+    - { block: SHROOMLIGHT, at: [0.8, 10.6, 1.8], size: [0.7, 0.5, 0.2], glow: true, group: head }
+    - { block: MAGMA_BLOCK, at: [0, 11.6, 0], size: [2, 0.8, 2], glow: true, group: head }
+    - { block: BLACKSTONE, at: [-2, 1.2, 0], size: [1.8, 2.4, 2.4], group: leg_a }
+    - { block: BLACKSTONE, at: [2, 1.2, 0], size: [1.8, 2.4, 2.4], group: leg_b }
+rimepup:
+  bounce: trot
+  pivots:
+    head: [0, 7, 3]
+  parts:
+    - { block: PACKED_ICE, at: [0, 5, 0], size: [3.8, 3.4, 7] }
+    - { block: SNOW_BLOCK, at: [0, 6.7, -0.6], size: [4, 0.8, 5.4] }
+    - { block: BLUE_ICE, at: [0, 7.4, 4], size: [3.6, 3.2, 3.2], group: head }
+    - { block: SNOW_BLOCK, at: [0, 6.4, 6.2], size: [1.8, 1.4, 1.6], group: head }
+    - { block: SEA_LANTERN, at: [-1.1, 8, 5.6], size: [0.6, 0.6, 0.2], glow: true, group: head }
+    - { block: SEA_LANTERN, at: [1.1, 8, 5.6], size: [0.6, 0.6, 0.2], glow: true, group: head }
+    - { block: PACKED_ICE, at: [-1.3, 9.6, 3.6], size: [0.9, 1.4, 0.9], group: head }
+    - { block: PACKED_ICE, at: [1.3, 9.6, 3.6], size: [0.9, 1.4, 0.9], group: head }
+    - { block: BLUE_ICE, at: [0, 7, -4.4], size: [1, 1, 3] }
+    - { block: PACKED_ICE, at: [-1.4, 1.8, 2.4], size: [1.3, 3.2, 1.3], group: leg_a }
+    - { block: PACKED_ICE, at: [1.4, 1.8, -2.4], size: [1.3, 3.2, 1.3], group: leg_a }
+    - { block: PACKED_ICE, at: [1.4, 1.8, 2.4], size: [1.3, 3.2, 1.3], group: leg_b }
+    - { block: PACKED_ICE, at: [-1.4, 1.8, -2.4], size: [1.3, 3.2, 1.3], group: leg_b }
+pebblewarden:
+  bounce: trot
+  pivots:
+    head: [0, 9, 0]
+  parts:
+    - { block: STONE_BRICKS, at: [0, 2, 0], size: [6, 4, 5] }
+    - { block: ANDESITE, at: [0, 5.5, 0], size: [5, 3, 4] }
+    - { block: STONE_BRICKS, at: [0, 7.8, 0], size: [6, 1.6, 4.2] }
+    - { block: STONE_BRICKS, at: [0, 10.4, -0.2], size: [4.2, 3.6, 4.4], group: head }
+    - { block: BLACK_CONCRETE, at: [0, 10.2, 2], size: [2.6, 2, 0.2], group: head }
+    - { block: OCHRE_FROGLIGHT, at: [-0.7, 10.4, 2.1], size: [0.6, 0.5, 0.2], glow: true, group: head }
+    - { block: OCHRE_FROGLIGHT, at: [0.7, 10.4, 2.1], size: [0.6, 0.5, 0.2], glow: true, group: head }
+    - { block: POLISHED_DIORITE, at: [0, 2.6, 3.2], size: [0.7, 5, 0.3] }
+    - { block: GOLD_BLOCK, at: [0, 5.4, 3.2], size: [2.4, 0.5, 0.4] }
+    - { block: GOLD_BLOCK, at: [0, 6.4, 3.2], size: [0.5, 1.5, 0.5] }
+inkling:
+  bounce: none
+  pivots:
+    head: [0, 8, 0]
+  parts:
+    - { block: BLACK_CONCRETE, at: [0, 6, 0], size: [5, 5, 5] }
+    - { block: BLACK_CONCRETE, at: [0, 3, 0], size: [3.6, 2, 3.6] }
+    - { block: BLACK_CONCRETE, at: [-2.4, 3, 1.2], size: [1, 2.6, 1] }
+    - { block: BLACK_CONCRETE, at: [2.2, 2.6, -1.4], size: [1, 3, 1] }
+    - { block: BLACK_CONCRETE, at: [0.6, 1.4, 1.8], size: [0.8, 2, 0.8] }
+    - { block: PEARLESCENT_FROGLIGHT, at: [-1.2, 6.8, 2.6], size: [1, 1, 0.2], glow: true, group: head }
+    - { block: PEARLESCENT_FROGLIGHT, at: [1.2, 6.8, 2.6], size: [1, 1, 0.2], glow: true, group: head }
+    - { block: GOLD_BLOCK, at: [0, 9, 0], size: [3, 0.5, 3], group: head }

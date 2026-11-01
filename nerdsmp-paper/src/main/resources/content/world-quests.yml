@@ -1124,6 +1124,24 @@ quests:
       xp: {hunting: 750}
       items: ["material:experience_bottle 3"]
 
+  daily_echoes_of_the_hall:
+    chain: daily_bounties
+    title: Echoes of the Hall
+    giver: archivist_vell
+    level: 1
+    repeat: daily
+    offer:
+      - "The echoes on the stair don't know they've finished. Lay a day's watch to rest for me, would you?"
+      - "Aspirants, keepers, frost and stone, anything the Wardens left on guard. I'll be in the Hall of Seals, if you get there."
+    complete:
+      - "Quiet, for a day at least. They'll stand to again by morning. It's all they know. Thank you."
+    objectives:
+      - {type: kill, targets: ["custom:hall_aspirant", "custom:hall_shieldmaiden", "custom:hall_thundercaller", "custom:hall_runecarver", "custom:hall_marksman", "custom:gate_sentinel", "custom:ash_acolyte", "custom:rime_stalker", "custom:rime_hound", "custom:archive_sentry"], count: 30, description: Lay the Hall's watch to rest}
+    rewards:
+      marks: 340
+      xp: {hunting: 850}
+      items: ["material:experience_bottle 3"]
+
   daily_gnawer_cull:
     chain: daily_bounties
     title: Gnawer Cull

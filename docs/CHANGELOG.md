@@ -5,6 +5,29 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### The Hall of the Three Wardens, rebuilt (November 1)
+- **A new map, on one axis.** You land low in the clouds and climb the Long Stair past two landings to the High Gate, between
+  colossi of the Ember and Frost Wardens, with the Stone Warden in a great niche over the door. Behind the gate is the Hall of
+  Seals: a domed hall of sixteen columns, a gallery, a lapis vault with gold ribs, and three wings going out from it. Best
+  times on the map reset.
+- **Three arenas, each with a colossus over it.** The Ember Throne is a caldera of basalt columns round a moat of lava. The Frost
+  Throne is a glacier round a frozen lake, with the seal lit under the ice. The Stone Throne is a mountain top cut into terraces
+  under the Stone Warden, seated, with the falls coming down either side of the throne.
+- **New bosses and fights.** Thane Orrek throws a blade that comes back, and his horn sends a gale across the plaza. The Keepers
+  of the Flame have to die together. The Ember Warden takes on the powers of whichever brazier it stands by. The Frost Warden
+  shares its cold among everyone in the ring, goes to ground at 60%, and comes back hunting one player at a time. Four kings
+  rise in turn, each stronger than the last. The Stone Warden throws down its Aegis, and everyone has to reach it before the
+  sky falls.
+- **The last boss is through a portal.** When the third Warden falls, a tear opens in the air over the dais in the Hall of Seals
+  and the three plates pour into it. Behind it is the Unwritten, a dark full of pieces of the wings you've just fought through,
+  and Oriveth, the fourth Warden, whose name was scraped out of every book. She starts behind echoes of the three Wardens, then
+  takes up all three seals and fights with fire, frost and stone alongside her own void magic: wells that drag you in, bonds
+  that tie two players together, eyes that have to be shut, three-step blinks, and Black Harvest, rings of dark with one gap in
+  each. In the last third the floor tears away from the edge in.
+- **Each Warden leaves a Favour on the party** until the run ends: Ember adds damage, Frost adds speed, Stone turns blows aside.
+- **New trash, gear and a daily.** Aspirants, shieldmaidens, thundercallers, runecarvers, sentinels and more, 33 new pieces of
+  gear across every slot, a legendary from Oriveth, and a daily from Archivist Vell.
+
 ### Gloomforge detail and Mines fixes (November 1)
 - **You can't walk out past your own loot.** The exit waits while you still have a boss chest or reward chest to open, and it now
   stands at the far end of the hall from the chests. This is what took a player out of the run after the final boss.

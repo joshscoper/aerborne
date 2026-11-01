@@ -45,6 +45,14 @@ expeditions:
     materials: [sigil_shard, wardens_seal, archive_key]
     gear: [wardensworn_helm, wardensworn_plate, wardensworn_greaves, wardensworn_boots, tri_seal_blade]
     signatures: [wardens_aegis]
+    finds: [gate_watch_buckler, thunder_cord, aspirants_pauldrons, long_stair_cloak, rune_cuffs, archivists_mitts, hallguard_belt, gilded_loop, sky_whistle]
+    bosses:
+      high_gate: [watchmans_bracers, thanes_girdle, gale_treads, orreks_horn, returning_axe]
+      ember_court: [keepers_gloves, ash_keepers_stole, gale_treads]
+      ember_throne: [cinderbound_legguards, ember_rite_mantle, rite_of_ash_band, wardens_firebrand]
+      frost_throne: [icebound_helm, packleader_band, rimewoven_cloak, hoarfrost_longbow]
+      stone_throne: [court_seal_signet, kingsblood_greaves, mossgrown_bulwark, stonewarden_plate]
+      the_unwritten: [binding_treads, unwritten_crown, unwritten_cuirass, wardens_aegis, tri_seal_blade, seal_of_three, oriveths_quill]
   cinder_keep:
     materials: [cinder_shard, smoldering_core, sovereigns_ember]
     gear: [kilnborn_crown, kilnborn_cuirass, kilnborn_greaves, kilnborn_sabatons, kilnbreaker_maul]

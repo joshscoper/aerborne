@@ -1,7 +1,9 @@
-# The Hall of the Three Wardens: a floating citadel with three wings, each guarded by a warden.
-# Defeat all three, in any order. Full reference: docs/EXPEDITIONS.md.
+# The Hall of the Three Wardens: a sky citadel on one long axis. The Long Stair climbs to the High Gate, the gate opens on
+# the Hall of Seals, and three wings go out from it to the wardens of ember, frost and stone, in any order. With all three
+# seals broken a portal tears open over the dais, and behind it is the fourth Warden, the one the record leaves out.
+# Full reference: docs/EXPEDITIONS.md.
 title: The Hall of the Three Wardens
-description: "Three wardens keep the sky archive's wings: embers, frost and stone. Break all three seals."
+description: "Climb the Long Stair, take the High Gate, and break the seals of ember, frost and stone."
 icon: lodestone
 dimension: overworld
 sample: hall_of_wardens
@@ -9,205 +11,470 @@ published: true
 difficulty: 4
 level: 24
 party: {min: 1, max: 5}
-time-limit-minutes: 40
-time: 13600
-spawn: [0, 64, -9, 0]
-exit: [0, 64, 4]
+time-limit-minutes: 45
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 2
+time: 12300
+spawn: [0, 42, -178, 0]
+exit: [320, 64, 286, 0]
 modifiers: []
 requires: [gloomforge_mines]
 goal: bosses
+# The clouds catch nobody. The hall's wind does, and sets you down hurt.
+falls: {below: 20, damage: 4, message: "The wind off the Hall catches you, and throws you back on the stones."}
 
 npcs:
   vell:
     name: Archivist Vell
     entity: villager
-    at: [-4, 64, -9, 0]
+    at: [-5, 42, -176, 0]
+    # She offers the daily in content/world-quests.yml, and takes it back in the Hall of Seals.
+    quests: archivist_vell
     lines:
-      - "Three wardens hold the archive's seals. Break all three and the archive opens. The order is yours."
-      - "West burns: light the four braziers with arrows, all within half a minute."
-      - "East sings: ring the four chimes in the order the frost shows you."
-      - "South holds: the old plates want weight. Take counterweights from the crate, or throw anything you like."
-      - "Each warden was a keeper once. Don't let that make you gentle."
+      - "I have read every word the Wardens left, and I have never climbed this stair. Nobody has. The echoes keep it."
+      - "At the top of the Long Stair is Thane Orrek. He held that gate in life and he doesn't know he's dead. When he sounds his horn, get behind something heavy."
+      - "West is ember, east is frost, south is stone. The order is yours. Each seal you break leaves a little of its warden with you, and you'll want all of it."
+      - "The Ember Warden's powers go with the fire. It uses whichever brazier it stands by, so choose which one you fight it at."
+      - "When the Frost Warden shares out the cold, stand together in the ring. Alone, it will kill you. Shared, it's only a chill."
+      - "The Stone Warden brings the sky down. It will throw down its Aegis first. Get behind it."
+      - "The Wardens made the seals out of themselves. I don't know what happens when all three are broken. Nothing in the record goes that far."
+      - "There's a hole in the archive. Every list of the Wardens has a line scraped off the page, always the fourth. I've never found out why."
 
 campfires:
-  concourse_fire: {at: [6, 64, -9], lit: true, title: Concourse Fire}
+  camp_fire: {at: [7, 42, -176], lit: true, title: "Vell's Camp"}
+  hall_fire: {at: [5, 64, 22], lit: false, title: The Hall of Seals}
+  ember_fire: {at: [-78, 64, 59], lit: false, title: The Ash Court}
+  frost_fire: {at: [74, 64, 33], lit: false, title: The Rime Stacks}
+  stone_fire: {at: [-13, 64, 120], lit: false, title: The Court of Kings}
+  margin_fire: {at: [326, 64, 250], lit: false, title: The Margin}
+
+# A tear in the Hall of Seals, drawn in particles. It opens when the last warden falls and stays open until she's dead.
+portals:
+  the_tear:
+    title: Something tears open over the dais in the Hall of Seals
+    at: [0, 66, 46]
+    to: [320, 64, 250, 0]
+    radius: 3
+    room: the_unwritten
+    requires: [ember_throne, frost_throne, stone_throne]
+    feeds: [[-17, 64, 46], [17, 64, 46], [0, 64, 63]]
+    opens: ["sound block.end_portal.spawn 0.6", "say vell|No. No, no. There's a fourth hand in the seals. All three were written by the same person, and the plates are pouring into something.", "wait 4", "say vell|Friends, there's a hole in the air over my dais. Whatever the Wardens were holding shut, it was never the fire. Go, before it closes on us."]
 
 hazards:
-  ember_rain: {type: fire, area: [-64, 63, -10, -44, 63, 10], every: 7, count: 4, damage: 5}
-  frost_gas: {type: gas, area: [44, 63, -10, 64, 63, 10], every: 9, count: 3, damage: 0}
-  stone_fall: {type: rocks, area: [-10, 63, 44, 10, 63, 64], every: 6, count: 4, damage: 6}
+  # The horn calls the wind. The standing stones on the plaza are the only cover from it.
+  gate_gale:
+    type: gust
+    area: [-28, 63, -44, 28, 63, 12]
+    every: 17
+    damage: 3
+    lanes: [[-28, -16, 28, -16], [28, -16, -28, -16]]
+  gate_bolts: {type: rocks, area: [-24, 63, -38, 24, 63, 6], every: 9, count: 3, damage: 6}
+  ember_rain: {type: fire, area: [-160, 63, 24, -116, 63, 68], every: 7, count: 4, damage: 6}
+  ember_runnels:
+    type: lane
+    area: [-162, 63, 22, -114, 63, 70]
+    every: 10
+    count: 2
+    damage: 7
+    burn: 4
+    lanes: [[-124, 24, -124, 68], [-152, 68, -152, 24], [-162, 38, -114, 38], [-114, 54, -162, 54]]
+  rime_mist: {type: gas, area: [116, 63, 24, 160, 63, 68], every: 9, count: 3, damage: 0}
+  rime_fall: {type: rocks, area: [116, 63, 24, 160, 63, 68], every: 8, count: 3, damage: 6}
+  stone_fall: {type: rocks, area: [-22, 63, 162, 22, 63, 206], every: 6, count: 4, damage: 7}
+  # Pieces of the Wardens' own wings, coming down out of the dark.
+  page_fall: {type: rocks, area: [296, 63, 276, 344, 63, 324], every: 8, count: 4, damage: 7}
+  # The disc goes from the edge in, a side at a time. The middle stays.
+  void_tear:
+    type: burndown
+    area: [290, 63, 270, 350, 63, 330]
+    every: 26
+    sections:
+      - {box: [288, 40, 270, 352, 72, 278]}
+      - {box: [288, 40, 322, 352, 72, 334]}
+      - {box: [286, 40, 279, 298, 72, 321]}
+      - {box: [342, 40, 279, 354, 72, 321]}
+
+ambience:
+  - {sound: item.elytra.flying, every: 20, volume: 0.12, pitch: 0.6}
+  - {sound: block.beacon.ambient, every: 18, volume: 0.5, pitch: 0.6, area: [-30, 60, 16, 30, 140, 76]}
+  - {sound: block.fire.ambient, every: 5, volume: 0.8, pitch: 0.7, area: [-170, 55, 16, -50, 110, 76]}
+  - {sound: block.lava.ambient, every: 9, volume: 0.7, pitch: 0.6, area: [-170, 55, 16, -108, 110, 76]}
+  - {sound: entity.player.hurt_freeze, every: 21, volume: 0.15, pitch: 0.6, area: [50, 55, 16, 170, 110, 76]}
+  - {sound: block.deepslate.step, every: 13, volume: 0.5, pitch: 0.5, area: [-30, 55, 96, 30, 110, 216]}
+  - {sound: ambient.soul_sand_valley.mood, every: 24, volume: 0.9, pitch: 0.5, area: [240, 0, 220, 400, 130, 390]}
+  - {sound: block.end_portal_frame.fill, every: 19, volume: 0.25, pitch: 0.5, area: [240, 0, 220, 400, 130, 390]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
 outro:
-  - "The three seals rise from the wardens' thrones and settle into your hands: one warm, one cold, one heavy."
+  - "Oriveth comes apart into the dark she was kept in, and three seals settle into your hands: one warm, one cold, one heavy."
+  - "Archivist Vell: 'A fourth Warden. Three to hold the fire and one to hold the three, and we scraped her name out of every book so nobody would ever go looking.'"
   - "Archivist Vell: 'With these, the Ember Gate will open. Cinder Keep waits below the clouds. Ashkar must not wake his master.'"
 
 cutscenes:
+  # Up the whole axis, the way the party has to go.
   prologue:
-    - {at: [0.5, 82, -25, 0, 30], seconds: 5, title: "<gold>The Hall of the Three Wardens</gold>", text: "<gray>The sky archive</gray>", sound: "block.beacon.ambient", lines: ["|Here the Wardens of Ember, Frost and Stone kept the record of the Binding.", "vell|And here they left their echoes, to guard the seals until they were needed."]}
-    - {at: [-14.5, 74, 0.5, 90, 20], seconds: 4, fade: true, lines: ["vell|Each warden's seal is a key to the road below. The Steward wants them. We need them first."]}
-    - {at: [0.5, 74, 14, 0, 25], seconds: 5, lines: ["vell|The echoes won't know friend from foe. You'll have to earn the seals.", "|Ember to the west, frost to the east, stone to the south. The order is yours."]}
-  ember_warden:
-    - {at: [-41.5, 72, 0.5, 90, 25], seconds: 4, title: "<gold>The Ember Warden</gold>", text: "<gray>Echo of the first Warden</gray>", sound: "block.fire.ambient", lines: ["The Ember Warden|I sealed the fire once. Show me you could do the same."]}
-  frost_warden:
-    - {at: [42.5, 72, 0.5, -90, 25], seconds: 4, title: "<aqua>The Frost Warden</aqua>", text: "<gray>Echo of the second Warden</gray>", sound: "block.glass.break 0.6", lines: ["The Frost Warden|Cold kept him sleeping. Is your nerve as cold?"]}
-  stone_warden:
-    - {at: [0.5, 72, 42.5, 0, 25], seconds: 4, title: "<green>The Stone Warden</green>", text: "<gray>Echo of the third Warden</gray>", sound: "block.stone.break 0.5", lines: ["The Stone Warden|Stone holds. Stone endures. Do you?"]}
+    - {at: [0.5, 46, -180, 0, -14], to: [0.5, 53, -152, 0, -18], seconds: 6, title: "<gold>The Hall of the Three Wardens</gold>", text: "<gray>The sky archive</gray>", sound: "block.beacon.ambient", lines: ["|Here the Wardens of Ember, Frost and Stone kept the record of the Binding.", "vell|And here they left their echoes, to guard the seals until they were needed."]}
+    - {at: [0.5, 72, -38, 0, -26], to: [0.5, 70, -20, 0, -30], seconds: 5, fade: true, lines: ["vell|The High Gate. Three Wardens stand over it, and a thane who never left his post stands under them."]}
+    - {at: [0.5, 68, 28, 0, -58], to: [0.5, 69, 38, 0, -72], seconds: 5, fade: true, lines: ["vell|Behind it, the Hall of Seals. Each seal is a key to the road below. The Steward wants them. We need them first."]}
+    - {at: [-100.5, 86, 46.5, 90, -6], to: [-106.5, 84, 46.5, 90, -8], seconds: 4, fade: true, lines: ["|Ember to the west."]}
+    - {at: [100.5, 86, 46.5, -90, -6], to: [106.5, 84, 46.5, -90, -8], seconds: 3, fade: true, lines: ["|Frost to the east."]}
+    - {at: [0.5, 86, 146, 0, -6], to: [0.5, 84, 152, 0, -8], seconds: 3, fade: true, lines: ["|Stone to the south. The order is yours."]}
+  orrek_wakes:
+    - {at: [0.5, 66, -30, 0, -44], to: [0.5, 66, -27, 0, -48], seconds: 4, sound: "item.goat_horn.sound.2 0.6", lines: ["|High over the gate, someone is standing where nobody should be able to stand."]}
+    - {at: [8, 66, -12, 150, -38], to: [6, 66, -14, 165, -24], seconds: 3, title: "<gold>Thane Orrek</gold>", text: "<gray>Warder of the High Gate</gray>", lines: ["Thane Orrek|None pass while the watch stands. The watch stands."]}
+  keepers_wake:
+    - {at: [-60, 69, 46, 90, 4], to: [-64, 69, 46, 90, 4], seconds: 4, title: "<gold>The Keepers of the Flame</gold>", text: "<gray>Sael and Oren</gray>", sound: "block.fire.ambient 0.6", lines: ["Keeper Sael|The fire is not yours to carry.", "Keeper Oren|Nor ours to give."]}
+  ember_wakes:
+    - {at: [-118, 72, 46, 90, 8], to: [-122, 72, 46, 90, 8], seconds: 4, sound: "block.fire.ambient 0.6", lines: ["|The two great braziers catch by themselves, and the fire runs in across the floor."]}
+    - {at: [-128, 70, 46, 90, -4], to: [-130, 69, 46, 90, -8], seconds: 5, title: "<gold>The Ember Warden</gold>", text: "<gray>Echo of the first Warden</gray>", lines: ["The Ember Warden|I sealed the fire once. Show me you could do the same."]}
+  frost_wakes:
+    - {at: [118, 72, 46, -90, 8], to: [122, 72, 46, -90, 8], seconds: 4, sound: "block.glass.break 0.6", lines: ["|The cold comes in from every side of the arena at once, and it all comes to one place."]}
+    - {at: [128, 69, 46, -90, -2], to: [130, 68, 46, -90, -6], seconds: 5, title: "<aqua>The Frost Warden</aqua>", text: "<gray>Echo of the second Warden</gray>", lines: ["The Frost Warden|Cold kept him sleeping. Is your nerve as cold?"]}
+  kings_wake:
+    - {at: [0.5, 72, 104, 0, 16], to: [0.5, 71, 108, 0, 12], seconds: 5, title: "<green>The Court of Kings</green>", text: "<gray>Four thrones, four kings</gray>", sound: "block.deepslate.break 0.5", lines: ["|Four thrones, and on the first of them the dust moves.", "King Harl|Who comes before the court? Stand, and be judged."]}
+  stone_wakes:
+    - {at: [0.5, 72, 164, 0, 10], to: [0.5, 71, 170, 0, 8], seconds: 4, sound: "block.stone.break 0.5", lines: ["|The moss on the floor lifts. There are bones of stone under it, and they are moving."]}
+    - {at: [0.5, 70, 174, 0, -2], to: [0.5, 69, 176, 0, -6], seconds: 5, title: "<green>The Stone Warden</green>", text: "<gray>Echo of the third Warden</gray>", lines: ["The Stone Warden|Stone holds. Stone endures. Do you?"]}
+  oriveth_wakes:
+    - {at: [320.5, 76, 276, 0, 4], to: [320.5, 80, 284, 0, -10], seconds: 5, sound: "ambient.soul_sand_valley.mood 0.5", lines: ["|There is nothing written here. There never was. The seals' plates are burning on a floor that left the Hall a long time ago."]}
+    - {at: [320.5, 70, 282, 0, -22], to: [320.5, 70, 286, 0, -34], seconds: 6, lines: ["Oriveth|Three to hold the fire, and one to hold the three. Did your archivist leave that part out?", "Oriveth|No. She couldn't have read it. I took it out myself."]}
+    - {at: [334, 70, 288, 45, -8], to: [332, 69, 290, 45, -12], seconds: 4, title: "<dark_purple>Oriveth</dark_purple>", text: "<gray>The Unwritten Warden</gray>", sound: "entity.ender_dragon.growl 0.5", lines: ["Oriveth|You carried my seals all this way. How kind."]}
 
 mobs:
-  "custom:archive_sentry": {role: elite, abilities: [charge]}
+  "custom:hall_aspirant": {abilities: [leap]}
+  "custom:hall_shieldmaiden": {role: elite, abilities: [cleave, rally]}
+  "custom:hall_thundercaller": {abilities: [arc_bolt], behavior: caster}
+  "custom:hall_runecarver": {abilities: [spear_fall, mend], behavior: caster}
+  "custom:hall_marksman": {abilities: [pin_shot], behavior: caster}
+  "custom:gate_sentinel": {role: elite, abilities: [charged_pulse, slam]}
+  "custom:ash_acolyte": {abilities: [ember_burst]}
+  "custom:ember_wisp": {abilities: [fire_pools], behavior: caster}
   "custom:frostmarked": {role: elite, abilities: [frost_nova]}
+  "custom:rime_stalker": {abilities: [frost_bolt], behavior: caster}
+  "custom:rime_hound": {abilities: [leap]}
+  "custom:archive_sentry": {role: elite, abilities: [charge]}
+  "custom:king_harl": {role: elite, title: The First King, abilities: [slam]}
+  "custom:king_osric": {role: elite, title: The Second King, abilities: [slam, charge]}
+  "custom:king_brand": {role: elite, title: The Third King, abilities: [slam, charge, heavy_blow]}
+  "custom:king_ulf": {role: elite, title: The Last King, abilities: [slam, charge, heavy_blow]}
+  "custom:echo_of_ember": {role: elite, title: Echo of the Ember Warden, abilities: [fire_pools, meteor]}
+  "custom:echo_of_frost": {role: elite, title: Echo of the Frost Warden, abilities: [frost_bolt, rime_share]}
+  "custom:echo_of_stone": {role: elite, title: Echo of the Stone Warden, abilities: [slam, cataclysm]}
+  "custom:void_eye": {abilities: [void_bolt], behavior: caster}
+  "custom:unwritten_shade": {abilities: [void_bolt, leap]}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group.
+packs:
+  # The Long Stair.
+  stair_watch: {at: [0, 50, -118], mobs: {"custom:hall_aspirant": 3, "custom:hall_thundercaller": 1}, aggro: 10}
+  stair_guard: {at: [0, 50, -108], mobs: {"custom:hall_shieldmaiden": 1, "custom:hall_marksman": 2}}
+  high_landing: {at: [0, 57, -78], mobs: {"custom:hall_aspirant": 2, "custom:hall_marksman": 2, "custom:hall_runecarver": 1}, aggro: 10}
+  gate_sentinel: {at: [0, 57, -66], mobs: {"custom:gate_sentinel": 1, "custom:hall_thundercaller": 2}}
+  # The Hall of Seals.
+  nave_watch: {at: [0, 64, 28], mobs: {"custom:hall_shieldmaiden": 1, "custom:hall_aspirant": 2, "custom:hall_runecarver": 1}, aggro: 9}
+  west_aisle: {at: [-20, 64, 46], mobs: {"custom:hall_marksman": 2, "custom:hall_thundercaller": 1}}
+  east_aisle: {at: [20, 64, 46], mobs: {"custom:hall_aspirant": 3, "custom:hall_runecarver": 1}}
+  south_aisle: {at: [0, 64, 66], mobs: {"custom:hall_shieldmaiden": 1, "custom:hall_marksman": 2}}
+  hall_walkers:
+    at: [-14, 64, 36]
+    mobs: {"custom:hall_aspirant": 2, "custom:gate_sentinel": 1}
+    aggro: 8
+    patrol: [[-14, 64, 36], [14, 64, 36]]
+  # West.
+  ember_bridge: {at: [-40, 64, 46], mobs: {"custom:ash_acolyte": 3}, aggro: 7}
+  ember_far: {at: [-103, 64, 46], mobs: {"custom:ash_acolyte": 2, "custom:ember_wisp": 2}, aggro: 7}
+  # East.
+  frost_bridge: {at: [40, 64, 46], mobs: {"custom:rime_stalker": 2, "custom:frostmarked": 1}, aggro: 7}
+  frost_stacks: {at: [66, 64, 46], mobs: {"custom:rime_stalker": 2, "custom:rime_hound": 2}}
+  frost_far: {at: [103, 64, 46], mobs: {"custom:rime_hound": 3, "custom:frostmarked": 1}, aggro: 7}
+  # South.
+  stone_bridge: {at: [0, 64, 86], mobs: {"custom:archive_sentry": 2, "custom:stonemite": 4}, aggro: 7}
+  stone_far: {at: [0, 64, 149], mobs: {"custom:archive_sentry": 2, "custom:stonemite": 3}, aggro: 7}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  ember_crate: {at: [-25, 64, 4], kind: crate, title: Ember Crate}
-  frost_locked_chest: {at: [30, 64, 6], kind: chest, title: Frost-Locked Chest}
-  archive_cache: {at: [-5, 64, 34], kind: secret, title: Archive Cache}
+  landing_crate: {at: [-9, 57, -68], kind: crate, title: Watch Crate}
+  frozen_chest: {at: [88, 64, 34], kind: chest, title: Frost-Locked Chest}
+  archive_cache: {at: [154, 64, 10], kind: secret, title: Archive Cache}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
+companion-drops:
+  ember_throne: {companion: kilnling, chance: 0.01}
+  frost_throne: {companion: rimepup, chance: 0.01}
+  stone_throne: {companion: pebblewarden, chance: 0.01}
+  the_unwritten: {companion: inkling, chance: 0.01}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-2, 64, 6]
-  bonus: [2, 64, 6]
+  free: [314, 64, 288]
+  bonus: [326, 64, 288]
 
 rooms:
-  ember_antechamber:
-    title: The Ember Antechamber
-    requires: []
-    region: [-36, 60, -8, -20, 75, 8]
-    checkpoint: [-22, 64, 0, 90]
-    gate: [-36, 64, -1, -36, 66, 1]
-    points: [[-30, 64, -2], [-26, 64, 2], [-30, 64, 2], [-26, 64, -2]]
+  high_gate:
+    title: The High Gate
+    region: [-30, 60, -46, 30, 100, 9]
+    requires-packs: [stair_watch, stair_guard, high_landing, gate_sentinel]
+    seal: [-5, 64, -44, 5, 69, -44]
+    gate: [-3, 64, 8, 3, 72, 8]
+    checkpoint: [0, 64, -41, 0]
+    points: [[0, 64, -16, 180], [-14, 64, -24], [14, 64, -24], [-14, 64, -6], [14, 64, -6]]
+    encounter:
+      type: boss
+      boss: custom:thane_orrek
+      # He stands on the peak of the gate, sounds his horn, and steps off.
+      entrance: {style: plunge, seconds: 8, sources: [[0, 119, 7, 0]]}
+      boss-damage: 0.75
+      abilities: [dancing_blade, cleave]
+      phases:
+        - {at: 66, abilities: [dancing_blade, cleave, charge], title: "Orrek sounds the Horn of the Watch"}
+        - {at: 33, abilities: [dancing_blade, cleave, charge, arc_bolt], title: "The storm answers the horn"}
+      enrage-seconds: 300
+      adds-at-health: [66, 33]
+      waves:
+        - {"custom:hall_aspirant": 2, "custom:hall_marksman": 1}
+        - {"custom:hall_shieldmaiden": 1, "custom:hall_thundercaller": 1}
+      scripts:
+        start: ["cutscene orrek_wakes", "wait 9", "say vell|He's fast with that blade, and it comes back the same way it went. Stay off the red line."]
+        health-66: ["hazard start gate_gale", "say Thane Orrek|Rise, watch! Rise, wind!", "say vell|The horn! Get behind the standing stones, or it will throw you off the stair!"]
+        health-33: ["hazard start gate_bolts", "say Thane Orrek|The watch stands!"]
+        clear: ["hazard stop gate_gale", "hazard stop gate_bolts", "npc vell -8 64 26 0", "message <yellow>The bronze doors of the High Gate grind open.</yellow>", "say vell|He can rest now. I'm coming up. West, east or south, it's yours to choose. I'll be at the hall's fire."]
+  ember_court:
+    title: The Ash Court
+    region: [-96, 60, 24, -52, 88, 68]
+    requires: [high_gate]
+    requires-packs: [ember_bridge]
+    seal: [-52, 64, 44, -52, 70, 48]
+    gate: [-96, 64, 44, -96, 70, 48]
+    checkpoint: [-56, 64, 46, 90]
+    points: [[-74, 64, 40, 90], [-74, 64, 52, 90], [-68, 64, 46], [-80, 64, 46], [-74, 64, 46]]
     puzzles:
       braziers:
         type: targets
         title: Light the four braziers with arrows
-        blocks: [[-33, 65, -4], [-33, 65, 4], [-23, 65, -4], [-23, 65, 4]]
-        supply: [-28, 64, -6]
+        blocks: [[-66, 65, 37], [-66, 65, 55], [-82, 65, 37], [-82, 65, 55]]
+        supply: [-62, 64, 51]
         seconds: 30
     encounter:
-      type: waves
-      waves:
-        - {"custom:ember_wisp": 2}
+      type: council
+      bosses: ["custom:keeper_sael", "custom:keeper_oren"]
+      # Kill one and the other has this long before it brings the first one back.
+      link-seconds: 12
+      boss-damage: 0.7
+      abilities: [fire_pools, ember_burst]
+      phases:
+        - {at: 40, abilities: [fire_pools, ember_burst, charge], title: "The Keepers burn brighter"}
+      enrage-seconds: 240
       scripts:
-        start: ["say vell|The braziers! Arrows into all four targets, quickly."]
-        solved-braziers: ["sound item.firecharge.use 0.8", "message <gold>The braziers roar and the bars to the throne lift.</gold>"]
+        start: ["cutscene keepers_wake", "wait 5", "say vell|Those two kept each other's fires. Bring them down together, or one will light the other again.", "wait 6", "say vell|And the four braziers bar the throne. There's a bow in the crate by the door: arrows into all four targets, inside thirty seconds."]
+        solved-braziers: ["sound item.firecharge.use 0.8", "message <gold>The four braziers roar.</gold>"]
+        clear: ["message <gold>The bars to the Ember Throne lift.</gold>", "say vell|The way's open. Light that fire before you cross."]
   ember_throne:
     title: The Ember Throne
-    requires: [ember_antechamber]
-    region: [-67, 60, -13, -41, 80, 13]
-    points: [[-58, 64, 0], [-50, 64, -6], [-50, 64, 6], [-62, 64, -6], [-62, 64, 6]]
+    region: [-166, 60, 16, -110, 110, 76]
+    requires: [ember_court]
+    requires-packs: [ember_far]
+    seal: [-110, 64, 44, -110, 70, 48]
+    checkpoint: [-114, 64, 46, 90]
+    # Each warden's seal, broken, leaves something of it with the whole party.
+    boon: {title: "Warden's Favour: Ember", damage: 12, fireproof: true}
+    points: [[-138, 64, 46, 90], [-126, 64, 38], [-126, 64, 54], [-150, 64, 38], [-150, 64, 54]]
     encounter:
       type: boss
       boss: custom:ember_warden
+      # The two great braziers catch, their flames run to a turning circle, and it rises in a column of fire.
+      entrance: {style: summon, delay: 1, seconds: 9, sources: [[-138, 68, 28], [-138, 68, 64]]}
       boss-level-bonus: 2
-      abilities: [fire_pools, barrage]
+      boss-damage: 0.75
+      abilities: [fire_pools]
+      # Its powers go with the fire: it uses the rite of whichever brazier it stands nearest.
+      stances:
+        - {at: [-138, 64, 28], title: The Rite of Ash, abilities: [fire_pools, arc_bolt, ember_burst]}
+        - {at: [-138, 64, 64], title: The Rite of Flame, abilities: [meteor, charged_pulse, ember_burst]}
       phases:
-        - {at: 50, abilities: [fire_pools, meteor, summon], title: "The embers flare"}
-      enrage-seconds: 300
-      adds-at-health: [60]
+        - {at: 50, abilities: [fire_pools], title: "The embers flare"}
+      enrage-seconds: 330
+      adds-at-health: [70, 35]
       waves:
-        - {"custom:ember_wisp": 2}
+        - {"custom:ember_wisp": 2, "custom:ash_acolyte": 1}
+        - {"custom:ember_wisp": 3}
       scripts:
-        start: ["cutscene ember_warden", "wait 4", "say The Ember Warden|The flame does not yield its seal."]
-        health-50: ["hazard start ember_rain"]
-        clear: ["hazard stop ember_rain", "say vell|The ember seal breaks! Two remain."]
-  frost_antechamber:
-    title: The Frost Antechamber
-    requires: []
-    region: [20, 60, -8, 36, 75, 8]
-    checkpoint: [22, 64, 0, -90]
-    gate: [36, 64, -1, 36, 66, 1]
-    points: [[28, 64, -2], [28, 64, 2], [26, 64, 0], [30, 64, 0]]
+        start: ["cutscene ember_wakes", "wait 10", "say vell|Watch which brazier it stands by! It takes up that rite. Drag it to the one you can live with.", "say The Ember Warden|The flame does not yield its seal."]
+        health-50: ["hazard start ember_rain", "hazard start ember_runnels"]
+        clear: ["hazard stop ember_rain", "hazard stop ember_runnels", "say vell|The ember seal breaks! I can feel it from here. That warmth you've got? Keep it. It's yours until you leave."]
+  frost_court:
+    title: The Rime Stacks
+    region: [52, 60, 24, 96, 88, 68]
+    requires: [high_gate]
+    requires-packs: [frost_bridge, frost_stacks]
+    seal: [52, 64, 44, 52, 70, 48]
+    gate: [96, 64, 44, 96, 70, 48]
+    checkpoint: [56, 64, 46, -90]
+    points: [[74, 64, 38], [74, 64, 54], [66, 64, 46], [82, 64, 46]]
     puzzles:
       chimes:
         type: sequence
         title: Ring the chimes in the frost's order
-        blocks: [[24, 66, -3], [32, 66, -3], [24, 66, 3], [32, 66, 3]]
+        blocks: [[70, 66, 51], [70, 66, 41], [78, 66, 51], [78, 66, 41]]
         order: [3, 1, 4, 2]
         show: true
     encounter:
       type: waves
       waves:
-        - {"custom:frostmarked": 2}
+        - {"custom:frostmarked": 2, "custom:rime_stalker": 1}
+        - {mobs: {"custom:rime_hound": 3}, delay-seconds: 5}
       scripts:
-        start: ["say vell|Watch the frost on the pillars: it shows the order of the chimes."]
-  frost_hall:
-    title: The Frost Hall
-    requires: [frost_antechamber]
-    region: [41, 60, -13, 67, 80, 13]
-    points: [[58, 64, 0], [50, 64, -6], [50, 64, 6], [62, 64, -6], [62, 64, 6]]
+        start: ["say vell|The archive's stacks, frozen where they stood. Watch the frost on the pillars: it shows the order of the chimes."]
+        solved-chimes: ["sound block.note_block.chime 1.0", "message <aqua>The last note rings out.</aqua>"]
+        clear: ["message <aqua>The ice in the east gate cracks, and the way to the Frost Throne is open.</aqua>"]
+  frost_throne:
+    title: The Frost Throne
+    region: [110, 60, 16, 166, 110, 76]
+    requires: [frost_court]
+    requires-packs: [frost_far]
+    seal: [110, 64, 44, 110, 70, 48]
+    checkpoint: [114, 64, 46, -90]
+    boon: {title: "Warden's Favour: Frost", speed: 1, guard: 5}
+    points: [[138, 64, 46, -90], [126, 64, 38], [126, 64, 54], [150, 64, 38], [150, 64, 54]]
     encounter:
       type: boss
       boss: custom:frost_warden
+      # The cold runs in from these marks and closes on a pillar of ice, which splits open.
+      entrance: {style: icebound, seconds: 9, sources: [[124, 64, 54], [124, 64, 38], [146, 64, 30], [146, 64, 62], [156, 64, 46]]}
       boss-level-bonus: 2
-      abilities: [frost_nova, barrage, blink]
+      boss-damage: 0.75
+      abilities: [frost_bolt, rime_share, frost_nova]
       phases:
-        - {at: 50, abilities: [frost_nova, tether, meteor], title: "The frost deepens"}
-      enrage-seconds: 300
+        # It withdraws to its den and sends the pack out; it comes back hunting.
+        - {at: 60, abilities: [frost_bolt, rime_share, hoarfrost_chase, frost_nova], title: "The Frost Warden goes to ground", submerge-seconds: 22}
+        - {at: 25, abilities: [rime_share, hoarfrost_chase, frost_nova, tether], title: "The hunt turns on you"}
+      enrage-seconds: 330
       adds-at-health: [60]
       waves:
-        - {"custom:frostmarked": 2}
+        - {"custom:rime_hound": 4}
       scripts:
-        start: ["cutscene frost_warden", "wait 4", "say The Frost Warden|Be still. Be cold. Be gone."]
-        health-50: ["hazard start frost_gas"]
-        clear: ["hazard stop frost_gas", "say vell|The frost seal shatters!"]
-  stone_antechamber:
-    title: The Stone Antechamber
-    requires: []
-    region: [-8, 60, 20, 8, 75, 36]
-    checkpoint: [0, 64, 22, 0]
-    gate: [-1, 64, 36, 1, 66, 36]
-    points: [[-3, 64, 23], [3, 64, 23], [-2, 64, 29], [2, 64, 29]]
+        start: ["cutscene frost_wakes", "wait 10", "say vell|When the ring closes on it, stand inside together. The cold is shared out among you.", "say The Frost Warden|Be still. Be cold. Be gone."]
+        health-60: ["hazard start rime_mist", "say vell|It's gone to ground! Kill the pack and it will have to come back."]
+        health-25: ["hazard start rime_fall"]
+        clear: ["hazard stop rime_mist", "hazard stop rime_fall", "say vell|The frost seal shatters! You'll find your feet lighter now."]
+  stone_court:
+    title: The Court of Kings
+    region: [-24, 60, 98, 24, 88, 142]
+    requires: [high_gate]
+    requires-packs: [stone_bridge]
+    seal: [-2, 64, 98, 2, 70, 98]
+    gate: [-2, 64, 142, 2, 70, 142]
+    checkpoint: [0, 64, 102, 0]
+    points: [[-10, 64, 111], [10, 64, 111], [-10, 64, 129], [10, 64, 129], [0, 64, 120]]
     puzzles:
       plates:
         type: plates
         title: Weigh down the three old plates
-        blocks: [[-4, 65, 26], [4, 65, 26], [0, 65, 31]]
-        supply: [4, 64, 23]
+        blocks: [[-6, 65, 116], [6, 65, 116], [0, 65, 126]]
+        supply: [10, 64, 104]
     encounter:
       type: waves
+      # Each king comes down off his throne when the last one falls, and picks up the dead king's strength. The last two rise together.
       waves:
-        - {"custom:stonemite": 4, "custom:archive_sentry": 1}
+        - {"custom:king_harl": 1}
+        - {mobs: {"custom:king_osric": 1}, delay-seconds: 3}
+        - {mobs: {"custom:king_brand": 1, "custom:king_ulf": 1}, delay-seconds: 3}
       scripts:
-        start: ["say vell|The plates want weight. Throw anything onto all three."]
-  stone_court:
-    title: The Stone Court
-    requires: [stone_antechamber]
-    region: [-13, 60, 41, 13, 80, 67]
-    points: [[0, 64, 58], [-6, 64, 50], [6, 64, 50], [-6, 64, 62], [6, 64, 62]]
+        start: ["cutscene kings_wake", "wait 6", "say vell|The old kings of the Hall. Each one that falls hands his strength to the next, so spend your cooldowns late.", "wait 6", "say vell|The three old plates hold the south gate. They want weight: throw anything onto all of them."]
+        solved-plates: ["sound block.stone_pressure_plate.click_on 0.5", "message <green>The three old plates sink.</green>"]
+        clear: ["message <green>The south gate rolls aside.</green>", "say vell|The court is empty. That's the way to the throne."]
+  stone_throne:
+    title: The Stone Throne
+    region: [-28, 60, 156, 28, 110, 214]
+    requires: [stone_court]
+    requires-packs: [stone_far]
+    seal: [-2, 64, 156, 2, 70, 156]
+    checkpoint: [0, 64, 160, 0]
+    boon: {title: "Warden's Favour: Stone", guard: 12}
+    points: [[0, 64, 184, 180], [-12, 64, 176], [12, 64, 176], [-12, 64, 192], [12, 64, 192]]
     encounter:
       type: boss
       boss: custom:stone_warden
+      # Bones of stone lie in the moss from the start; the arena's lamps are drawn into them and they build its body.
+      entrance:
+        style: reanimate
+        delay: 1
+        seconds: 9
+        block: stone_bricks
+        sources: [[-14, 73, 176], [14, 73, 176], [-14, 73, 192], [14, 73, 192]]
       boss-level-bonus: 2
-      abilities: [slam, leap]
+      boss-damage: 0.75
+      abilities: [slam, heavy_blow, leap]
       phases:
-        - {at: 50, abilities: [slam, leap, shield], title: "The stone endures"}
-      enrage-seconds: 300
-      adds-at-health: [60]
+        - {at: 66, abilities: [slam, heavy_blow, leap, cataclysm], title: "The Stone Warden lifts its Aegis"}
+        - {at: 30, abilities: [slam, heavy_blow, cataclysm, shield], title: "The stone endures"}
+      enrage-seconds: 330
+      adds-at-health: [50]
       waves:
-        - {"custom:archive_sentry": 2}
+        - {"custom:archive_sentry": 2, "custom:stonemite": 3}
       scripts:
-        start: ["cutscene stone_warden", "wait 4", "say The Stone Warden|I have stood a thousand years. I will stand a thousand more."]
-        health-50: ["hazard start stone_fall"]
-        clear: ["hazard stop stone_fall", "say vell|The stone seal cracks!"]
+        start: ["cutscene stone_wakes", "wait 10", "say The Stone Warden|I have stood a thousand years. I will stand a thousand more."]
+        health-66: ["say vell|The Aegis! When it falls, get inside the ring around it. Nothing else will save you."]
+        health-30: ["hazard start stone_fall"]
+        clear: ["hazard stop stone_fall", "say vell|The stone seal cracks! Whatever it was holding up, it isn't holding it now."]
+  the_unwritten:
+    title: The Unwritten
+    # Reached only through the portal in the Hall of Seals.
+    region: [286, 40, 268, 354, 112, 334]
+    requires: [ember_throne, frost_throne, stone_throne]
+    seal: [318, 64, 269, 322, 70, 269]
+    checkpoint: [320, 64, 284, 0]
+    # After her own spot, the seal plates: ember, frost, stone. Echoes stand on them, and Sigil Brand sends people to them.
+    points: [[320, 65, 300, 0], [303, 64, 300], [337, 64, 300], [320, 64, 317], [308, 64, 288], [332, 64, 288]]
+    encounter:
+      type: boss
+      boss: custom:oriveth
+      body: unwritten
+      # The three plates give up their light, and she comes down the beams.
+      entrance: {style: converge, delay: 1, seconds: 15, sources: [[303, 64, 300], [337, 64, 300], [320, 64, 317]]}
+      boss-level-bonus: 4
+      boss-damage: 0.8
+      # She doesn't fight at first. Her echoes do, and she can't be touched until they're gone.
+      abilities: [echo_ward]
+      phases:
+        - {at: 99, abilities: [void_bolt, void_rift, gravity_well, void_step, fire_pools, frost_nova, slam], title: "The echoes are spent. Oriveth takes up the three seals"}
+        - {at: 66, abilities: [void_bolt, void_rift, gravity_well, void_step, void_bond, eye_of_the_void, sigil_brand, meteor, rime_share], title: "The void answers Oriveth"}
+        - {at: 33, abilities: [void_bolt, gravity_well, void_step, void_bond, black_harvest, sigil_brand, cataclysm, volatile_mark], title: "The page tears"}
+      enrage-seconds: 480
+      adds-at-health: [50]
+      waves:
+        - {"custom:unwritten_shade": 3}
+      scripts:
+        start: ["cutscene oriveth_wakes", "wait 16", "say Oriveth|Show them what they broke.", "say vell|I can still reach you. Those are the Wardens' echoes! She can't be hurt while they stand on the plates!"]
+        health-99: ["say Oriveth|There. Now I have all three, and you have nothing left to hit.", "say vell|That's her own magic and theirs. Don't stand still."]
+        health-66: ["hazard start page_fall", "say Oriveth|You came all this way to read me. Read this.", "say vell|When she brands you, look at the colour! Run to the plate that matches!"]
+        health-33: ["hazard start void_tear", "say Oriveth|Let's see what's left of you when the page is blank.", "say vell|The floor is going! Stay towards the middle, and find the gap in those black rings!"]
+        clear: ["hazard stop page_fall", "hazard stop void_tear", "npc vell 320 64 280 0", "say vell|It's over. Three seals, there on the stone, and a name I have never read in any book. Friends, I think I've been wrong about a few things."]
 
 guide:
-  lore: "When the Wardens bound Pyrrhax beneath Cinder Keep, they wrote the Binding into three seals and left them in their sky archive, guarded by echoes of themselves. Archivist Vell has studied the seals all her life. Now a Steward named Ashkar is digging, drowning and burning his way towards the keep, and Vell believes he means to wake his master. The seals open the Ember Gate, and the echoes will not hand them to anyone who has not earned them."
-  overview: A floating citadel with three wings. Each wing has a puzzle antechamber and a warden. Defeat all three wardens, in any order, then step into the light at the centre of the concourse.
+  lore: "When the Wardens bound Pyrrhax beneath Cinder Keep, they wrote the Binding into three seals and left them in their sky archive, guarded by echoes of themselves and by the dead of their own Hall. Archivist Vell has studied the seals all her life. Now a Steward named Ashkar is digging, drowning and burning his way towards the keep, and Vell believes he means to wake his master. The seals open the Ember Gate, and the echoes will not hand them to anyone who has not earned them."
+  overview: Climb the Long Stair and beat Thane Orrek at the High Gate. Behind it is the Hall of Seals, with three wings. Take them in any order, and each warden you beat leaves a blessing on the party. When all three seals are broken, a tear opens over the dais in the Hall of Seals. Walk through it and finish what the Wardens started.
   tips:
-    - The ember antechamber's supply crate hands out a bow and arrows. The braziers need four arrows within thirty seconds.
-    - Watch the frost pillars when you enter the east wing; they flash the chime order. A wrong chime resets it.
-    - Throw counterweights from the crate (or any items) onto the stone plates; one each keeps them down.
-    - Every warden gets harder below half health and calls helpers at 60%. Rest at the concourse fire between wings.
+    - Each warden leaves a Favour on the whole party until the run ends. Ember adds damage, Frost adds speed, and Stone turns blows aside.
+    - The wings are long. Light the fire in the Hall of Seals and the one in each court as you pass, because that's where you run back from.
+    - Thane Orrek's horn calls a gale off the plaza. Stand behind one of the standing stones when the wind rises.
+    - The Ash Court's crate has a bow and arrows, and the four braziers need arrows within thirty seconds.
+    - Watch the frost on the pillars in the Rime Stacks. It flashes the chime order, and a wrong chime starts it over.
+    - Throw anything onto the Court of Kings' plates. One item each keeps them down.
+    - Thundercallers, Ember Wardens and anything casting Void Bolt can be stopped mid-cast with a charged hit.
   rooms:
-    ember_antechamber: Two blazes while you shoot four targets on the brazier pedestals.
-    ember_throne: The Ember Warden scatters fire pools and volleys, then meteors. Fire falls across the arena in the second half.
-    frost_antechamber: Two frostmarked elites while you ring four chimes in the order shown.
-    frost_hall: The Frost Warden freezes, blinks and shoots. Below half it chains players and drops crushing ice; poison mist rises.
-    stone_antechamber: Silverfish and a vindicator while you weigh down three plates.
-    stone_court: The Stone Warden slams and leaps. Below half it shields itself behind its guards and the ceiling of the sky gives way.
-  boss: Each warden has its own style. Ember is fire and volleys, Frost is freezing and blinking, Stone is slams and leaps. All three call helpers at 60% health, change abilities below half, and enrage after five minutes.
+    high_gate: Thane Orrek throws a blade along a red line and it comes back the same way. Below two-thirds his horn brings a gale across the plaza, so hide behind the standing stones. Below a third, lightning arcs between anyone standing close.
+    ember_court: The Keepers of the Flame fight together. Kill them within twelve seconds of each other or the survivor brings the other back. Then light the four braziers with arrows.
+    ember_throne: The Ember Warden takes up the powers of whichever brazier it stands by. The Rite of Ash is fire pools and arcing bolts, the Rite of Flame is meteors and a pulse that throws you back. Move it to the one you'd rather face. Below half, fire falls and runs along the floor.
+    frost_court: Frostmarked, stalkers and hounds, while you ring four chimes in the order the frost shows you.
+    frost_throne: The Frost Warden shares its cold among everyone in the ring, so stand in it together. At 60% it goes to ground and sends out its hounds. It comes back hunting one player at a time, leaving ice behind it.
+    stone_court: Four kings, one at a time, and each one takes up the strength of the last. The final two rise together. Then weigh down the three plates.
+    stone_throne: The Stone Warden slams, leaps and winds up a heavy blow. Below two-thirds it throws down its Aegis, and everyone has to stand inside the ring around it before the sky falls.
+    the_unwritten: Oriveth, the Unwritten Warden. Light the fire on the rock before you cross. See the boss briefing.
+  boss: Oriveth starts behind an echo of each Warden, one on each plate, and can't be hurt until all three are dead. Then she takes up all three seals and fights with fire, frost and stone alongside her own void magic. Below two-thirds she binds pairs of players, who have to get far apart, opens eyes that cast until they're killed, and brands players to the matching plate on the floor. Below a third the disc starts tearing away from the edge, and Black Harvest sends rings across the floor, each with one gap to stand in.
 loot:
   marks: 320
   items: {quartz: 16, gold_ingot: 6, diamond: 2, experience_bottle: 6}
+# Campaign credit is set in the season file (campaign/season.yml), not here.

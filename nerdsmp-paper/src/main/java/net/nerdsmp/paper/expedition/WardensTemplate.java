@@ -5,162 +5,200 @@ import org.bukkit.Material;
 import static net.nerdsmp.paper.expedition.SampleKit.*;
 
 /**
- * The Hall of the Three Wardens: a marble concourse floating at the centre (spawn and exit), with
- * three wings: west to the embers, east to the frost, south to the stone. Each wing is a puzzle
- * antechamber island bridged to a warden's arena. Floors at Y63.
+ * The Hall of the Three Wardens, on one axis from north to south. A landing stands low in the clouds; the Long Stair climbs
+ * from it past two landings to the High Gate, between colossi of the Wardens; behind the gate is the Hall of Seals under
+ * its dome, and from that the three wings go out west, east and south. All the floors from the gate on are at {@link #Y}.
+ * The last room is out of the way entirely, in {@link WardensVoid}.
  */
 final class WardensTemplate {
     static final int Y = 63;
-    static final Isle MARBLE = new Isle(Material.CALCITE, Material.SMOOTH_STONE,
-        new Material[]{Material.STONE, Material.DIORITE, Material.CALCITE, Material.TUFF});
-    static final Isle EMBER = new Isle(Material.BLACKSTONE, Material.BASALT,
-        new Material[]{Material.BLACKSTONE, Material.BASALT, Material.MAGMA_BLOCK, Material.BLACKSTONE});
-    static final Isle FROST = new Isle(Material.SNOW_BLOCK, Material.PACKED_ICE,
-        new Material[]{Material.PACKED_ICE, Material.STONE, Material.BLUE_ICE, Material.SNOW_BLOCK});
-    static final Isle STONE = new Isle(Material.MOSS_BLOCK, Material.DIRT,
-        new Material[]{Material.STONE, Material.ANDESITE, Material.MOSSY_COBBLESTONE, Material.COBBLESTONE});
+    static final int LANDING_Y = 41, LANDING_Z = -170;
+    static final int PLAZA_Z = -16, PLAZA_RADIUS = 28;
+    /** The hall's centre. Wings go out from it to their courts, and on to their arenas. */
+    static final int HALL_Z = 46, COURT = 74, ARENA = 138, COURT_RADIUS = 22, ARENA_RADIUS = 28;
+    static final Isle HALL_ROCK = new Isle(Material.SMOOTH_SANDSTONE, Material.SANDSTONE,
+        new Material[]{Material.STONE, Material.ANDESITE, Material.TUFF, Material.STONE, Material.SMOOTH_SANDSTONE});
+    static final Material PAVE = Material.SMOOTH_SANDSTONE, BLOCK = Material.CUT_SANDSTONE, TRIM = Material.CHISELED_SANDSTONE, COURSE = Material.SANDSTONE;
+
+    private static final int[][] FLIGHTS = {{-144, -128, LANDING_Y}, {-100, -86, 49}, {-58, -44, 56}};
+    private static final int STAIR_HALF = 5, PAD_RADIUS = 14;
 
     private WardensTemplate() { }
 
     static BuildCanvas.Plan build() {
         BuildCanvas b = new BuildCanvas();
-        concourse(b);
-        embers(b);
-        frost(b);
-        stone(b);
+        sky(b);
+        landing(b);
+        longStair(b);
+        plaza(b);
+        WardensHall.build(b);
+        WardensWings.build(b);
+        WardensVoid.build(b);
         SampleChests.place(b, "hall_of_wardens");
         return b.freeze();
     }
 
-    private static void concourse(BuildCanvas b) {
-        island(b, 0, Y, 0, 13, 14, MARBLE);
-        for (int x = -11; x <= 11; x++) for (int z = -11; z <= 11; z++) {
-            if (x * x + z * z > 121) continue;
-            boolean ring = Math.abs(Math.sqrt(x * x + z * z) - 7) < .6;
-            b.block(x, Y, z, ring ? Material.GOLD_BLOCK : (x + z) % 2 == 0 ? Material.SMOOTH_QUARTZ : Material.CALCITE);
-        }
-        // Three archways, one for each wing, and the archive dais in the middle.
-        arch(b, -10, 0, true, Material.ORANGE_STAINED_GLASS);
-        arch(b, 10, 0, true, Material.LIGHT_BLUE_STAINED_GLASS);
-        arch(b, 0, 10, false, Material.GREEN_STAINED_GLASS);
-        b.disk(0, Y + 1, 0, 2, Material.SMOOTH_QUARTZ_SLAB);
-        b.block(0, Y + 1, 0, Material.LODESTONE);
-        for (int[] statue : new int[][]{{-6, -6}, {6, -6}, {-6, 6}, {6, 6}}) {
-            b.block(statue[0], Y + 1, statue[1], Material.CHISELED_QUARTZ_BLOCK);
-            b.block(statue[0], Y + 2, statue[1], Material.QUARTZ_PILLAR, "axis=y");
-            b.block(statue[0], Y + 3, statue[1], Material.END_ROD, "facing=up");
-        }
-        b.block(6, Y + 1, -9, Material.CAMPFIRE, "lit=true,signal_fire=false,facing=north");
-        b.block(-6, Y + 1, -9, Material.LECTERN, "facing=south,has_book=false");
-        for (int z = -12; z <= -9; z++) for (int x = -1; x <= 1; x++) b.block(x, Y, z, Material.GOLD_BLOCK);
-        // Bridges out to each wing.
-        for (int x = -20; x <= -12; x++) walk(b, x, 0, true);
-        for (int x = 12; x <= 20; x++) walk(b, x, 0, true);
-        for (int z = 12; z <= 20; z++) walk(b, 0, z, false);
+    private static void sky(BuildCanvas b) {
+        int[][] banks = {{-70, -150, 30}, {60, -120, 34}, {-120, -60, 26}, {120, -40, 38}, {-180, 90, 30}, {190, 60, 28}, {-60, 150, 32}, {80, 190, 36},
+            {0, -190, 26}, {-30, 40, 16}, {50, 120, 22}, {-110, 140, 20}, {130, 130, 24}, {-200, -20, 44}, {210, -60, 48}};
+        for (int index = 0; index < banks.length; index++) SkyKit.cloud(b, banks[index][0], banks[index][2], banks[index][1], 26 + index % 3 * 7, 4 + index % 3, 600 + index);
     }
 
-    /** A pointed arch facing along X ({@code alongX}) or Z, with tinted glass in its crown. */
-    private static void arch(BuildCanvas b, int cx, int cz, boolean alongX, Material glass) {
-        for (int offset = -3; offset <= 3; offset++) for (int y = Y + 1; y <= Y + 7; y++) {
-            int x = alongX ? cx : cx + offset, z = alongX ? cz + offset : cz;
-            boolean post = Math.abs(offset) == 3 || Math.abs(offset) == 2 && y >= Y + 5;
-            boolean crown = y == Y + 7 && Math.abs(offset) <= 1 || y == Y + 6 && Math.abs(offset) == 2;
-            if (post) b.block(x, y, z, Material.QUARTZ_PILLAR, "axis=y");
-            else if (crown) b.block(x, y, z, Material.CHISELED_QUARTZ_BLOCK);
-            else if (y == Y + 6 && Math.abs(offset) <= 1) b.block(x, y, z, glass);
+    /** Where the party comes in: a low island at the foot of the stair, with Vell's camp. */
+    private static void landing(BuildCanvas b) {
+        island(b, 0, LANDING_Y, LANDING_Z, 24, 22, HALL_ROCK);
+        SkyRuins.hang(b, 0, LANDING_Y, LANDING_Z, 24, 22);
+        for (int x = -24; x <= 24; x++) for (int z = LANDING_Z - 24; z <= LANDING_Z + 24; z++) {
+            double r = Math.hypot(x, z - LANDING_Z);
+            if (r > 21 || b.get(x, LANDING_Y, z) == null) continue;
+            double wear = smooth(x, z, 6, 611);
+            b.block(x, LANDING_Y, z, wear > .62 ? Material.GRASS_BLOCK : wear > .5 ? Material.MOSS_BLOCK : (x + z) % 2 == 0 ? PAVE : COURSE);
         }
+        // The paved way from the portal to the foot of the stair.
+        for (int z = LANDING_Z - 12; z <= FLIGHTS[0][0]; z++) for (int x = -STAIR_HALF; x <= STAIR_HALF; x++)
+            b.block(x, LANDING_Y, z, Math.abs(x) == STAIR_HALF ? BLOCK : x == 0 ? Material.GOLD_BLOCK : PAVE);
+        for (int side = -1; side <= 1; side += 2) {
+            obelisk(b, side * 7, LANDING_Y + 1, FLIGHTS[0][0] - 3);
+            SkyKit.bannerPost(b, side * 15, LANDING_Y + 1, LANDING_Z + 6, true, Material.RED_WOOL);
+        }
+        SkyKit.tent(b, -12, LANDING_Y + 1, LANDING_Z - 8, Material.RED_WOOL);
+        SkyKit.tent(b, 12, LANDING_Y + 1, LANDING_Z - 8, Material.YELLOW_WOOL);
+        SkyKit.crates(b, 17, LANDING_Y + 1, LANDING_Z + 1);
+        SkyKit.crates(b, -18, LANDING_Y + 1, LANDING_Z - 2);
+        b.block(-5, LANDING_Y + 1, LANDING_Z - 4, Material.LECTERN, "facing=east,has_book=false");
+        b.block(7, LANDING_Y + 1, LANDING_Z - 6, Material.CAMPFIRE, "lit=true,signal_fire=false,facing=north");
+        SkyKit.waterfall(b, 23, LANDING_Y, LANDING_Z, 40);
+        SkyKit.waterfall(b, -23, LANDING_Y, LANDING_Z + 4, 44);
     }
 
-    /** A three-wide bridge slice with railings. */
-    private static void walk(BuildCanvas b, int x, int z, boolean alongX) {
-        for (int offset = -2; offset <= 2; offset++) {
-            int bx = alongX ? x : x + offset, bz = alongX ? z + offset : z;
-            b.block(bx, Y, bz, Math.abs(offset) <= 1 ? Material.SMOOTH_QUARTZ : Material.QUARTZ_BRICKS);
-            if (Math.abs(offset) == 2) b.block(bx, Y + 1, bz, Material.QUARTZ_SLAB, "type=bottom");
-            b.block(bx, Y - 1, bz, Material.QUARTZ_BRICKS);
-        }
+    /** A tapering stone needle with a gold cap. */
+    static void obelisk(BuildCanvas b, int x, int y, int z) {
+        b.box(x - 1, y, z - 1, x + 1, y, z + 1, TRIM);
+        b.box(x - 1, y + 1, z - 1, x + 1, y + 5, z + 1, BLOCK);
+        for (int h = 6; h <= 9; h++) b.block(x, y + h, z, BLOCK);
+        b.block(x, y + 10, z, Material.GOLD_BLOCK);
+        b.block(x, y + 11, z, Material.LIGHTNING_ROD, "facing=up");
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // West: the embers
-    // ---------------------------------------------------------------------------------------------
-
-    private static void embers(BuildCanvas b) {
-        island(b, -28, Y, 0, 8, 10, EMBER);
-        // Four brazier pedestals with targets to light by arrow.
-        b.block(-28, Y + 1, -6, Material.BARREL, "facing=up"); // Supply crate: a bow and arrows.
-        for (int[] pedestal : new int[][]{{-33, -4}, {-33, 4}, {-23, -4}, {-23, 4}}) {
-            b.block(pedestal[0], Y + 1, pedestal[1], Material.POLISHED_BLACKSTONE_BRICKS);
-            b.block(pedestal[0], Y + 2, pedestal[1], Material.TARGET);
-            b.block(pedestal[0], Y + 3, pedestal[1], Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
-        }
-        gateWall(b, -36, true, Material.POLISHED_BLACKSTONE_BRICKS);
-        for (int x = -42; x <= -37; x++) walk(b, x, 0, true);
-        arena(b, -54, 0, EMBER, Material.POLISHED_BLACKSTONE_BRICKS, Material.MAGMA_BLOCK, Material.CAMPFIRE);
+    private static void longStair(BuildCanvas b) {
+        for (int[] flight : FLIGHTS) flight(b, flight[0], flight[1], flight[2]);
+        landingPad(b, -114, 49);
+        landingPad(b, -72, 56);
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // East: the frost
-    // ---------------------------------------------------------------------------------------------
-
-    private static void frost(BuildCanvas b) {
-        island(b, 28, Y, 0, 8, 10, FROST);
-        // Four ice pillars, each with a chime (a button) to ring in order.
-        int[][] chimes = {{24, -4}, {32, -4}, {24, 4}, {32, 4}};
-        for (int[] chime : chimes) {
-            for (int y = Y + 1; y <= Y + 4; y++) b.block(chime[0], y, chime[1], Material.PACKED_ICE);
-            b.block(chime[0], Y + 5, chime[1], Material.BLUE_ICE);
-            b.block(chime[0], Y + 2, chime[1] + (chime[1] < 0 ? 1 : -1), Material.POLISHED_DIORITE);
-            b.block(chime[0], Y + 3, chime[1] + (chime[1] < 0 ? 1 : -1), Material.STONE_BUTTON, "face=floor,facing=north,powered=false");
-        }
-        gateWall(b, 36, true, Material.PACKED_ICE);
-        for (int x = 37; x <= 42; x++) walk(b, x, 0, true);
-        arena(b, 54, 0, FROST, Material.PACKED_ICE, Material.BLUE_ICE, Material.SOUL_LANTERN);
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // South: the stone
-    // ---------------------------------------------------------------------------------------------
-
-    private static void stone(BuildCanvas b) {
-        island(b, 0, Y, 28, 8, 10, STONE);
-        b.block(4, Y + 1, 23, Material.BARREL, "facing=up"); // Supply crate: counterweights.
-        for (int[] plate : new int[][]{{-4, 26}, {4, 26}, {0, 31}}) {
-            b.box(plate[0] - 1, Y + 1, plate[1] - 1, plate[0] + 1, Y + 1, plate[1] + 1, Material.STONE_BRICKS);
-            b.block(plate[0], Y + 2, plate[1], Material.HEAVY_WEIGHTED_PRESSURE_PLATE, "power=0");
-        }
-        for (int[] menhir : new int[][]{{-6, 22}, {6, 22}, {-6, 33}, {6, 33}})
-            for (int y = Y + 1; y <= Y + 4; y++) b.block(menhir[0], y, menhir[1], Material.MOSSY_STONE_BRICKS);
-        gateWall(b, 36, false, Material.STONE_BRICKS);
-        for (int z = 37; z <= 42; z++) walk(b, 0, z, false);
-        arena(b, 0, 54, STONE, Material.STONE_BRICKS, Material.MOSSY_STONE_BRICKS, Material.LANTERN);
-    }
-
-    /** A wall across the bridge with an iron-bar gate in the middle (the antechamber's gate). */
-    private static void gateWall(BuildCanvas b, int at, boolean alongX, Material wall) {
-        for (int offset = -3; offset <= 3; offset++) for (int y = Y + 1; y <= Y + 5; y++) {
-            int x = alongX ? at : offset, z = alongX ? offset : at;
-            if (Math.abs(offset) <= 1 && y <= Y + 3) b.block(x, y, z, Material.IRON_BARS, alongX ? "north=true,south=true" : "east=true,west=true");
-            else b.block(x, y, z, wall);
-            b.block(x, Y, z, wall);
+    /** One run of steps, two blocks of going to each block of rise, over a wall of arches. */
+    private static void flight(BuildCanvas b, int from, int to, int y) {
+        for (int z = from; z < to; z++) {
+            int rise = (z - from) / 2, level = y + rise;
+            boolean nose = (z - from) % 2 == 0;
+            for (int x = -STAIR_HALF; x <= STAIR_HALF; x++) {
+                if (nose && Math.abs(x) < STAIR_HALF) b.block(x, level + 1, z, Math.abs(x) == 1 ? Material.SMOOTH_SANDSTONE_STAIRS : Material.SANDSTONE_STAIRS, "facing=south,half=bottom,shape=straight");
+                b.block(x, level, z, Math.abs(x) == STAIR_HALF ? BLOCK : PAVE);
+                if (!nose) b.block(x, level + 1, z, Math.abs(x) == STAIR_HALF ? BLOCK : PAVE);
+            }
+            for (int side = -1; side <= 1; side += 2) {
+                b.block(side * STAIR_HALF, level + 1, z, BLOCK);
+                b.block(side * STAIR_HALF, level + 2, z, BLOCK);
+                b.block(side * STAIR_HALF, level + 3, z, Material.SMOOTH_SANDSTONE_SLAB, "type=bottom");
+                arches(b, side * STAIR_HALF, level - 1, z, 34 - (y - LANDING_Y) / 2);
+            }
+            for (int x = -STAIR_HALF + 1; x < STAIR_HALF; x++) b.box(x, level - 3, z, x, level - 1, z, COURSE);
         }
     }
 
-    /** A warden's arena: a round island with a ring of pillars, themed floor accents and lights. */
-    private static void arena(BuildCanvas b, int cx, int cz, Isle isle, Material pillar, Material accent, Material light) {
-        island(b, cx, Y, cz, 13, 15, isle);
-        for (int x = cx - 11; x <= cx + 11; x++) for (int z = cz - 11; z <= cz + 11; z++) {
-            double dx = x - cx, dz = z - cz;
-            double distance = Math.sqrt(dx * dx + dz * dz);
-            if (distance > 11) continue;
-            if (Math.abs(distance - 9) < .6 || Math.abs(distance - 4) < .5) b.block(x, Y, z, accent);
+    /** Wall under a flight: a run of round arches cut through it, with the piers going on down to a point. */
+    private static void arches(BuildCanvas b, int x, int top, int z, int depth) {
+        int bay = Math.floorMod(z, 14) - 7;
+        for (int down = 0; down < depth; down++) {
+            boolean open = Math.hypot(bay, down - 6) < 5.2 || down >= 6 && Math.abs(bay) < 5;
+            int end = depth - Math.abs(bay) * 2;
+            if (!open && down < end) b.block(x, top - down, z, down % 7 == 3 ? TRIM : BLOCK);
         }
-        for (int index = 0; index < 10; index++) {
-            double angle = 2 * Math.PI * index / 10 + Math.PI / 10;
-            int x = cx + (int) Math.round(Math.cos(angle) * 11), z = cz + (int) Math.round(Math.sin(angle) * 11);
-            for (int y = Y + 1; y <= Y + 5 + index % 3; y++) b.block(x, y, z, pillar);
-            if (light == Material.CAMPFIRE) b.block(x, Y + 6 + index % 3, z, Material.CAMPFIRE, "lit=true,signal_fire=false,facing=north");
-            else b.block(x, Y + 6 + index % 3, z, light, light == Material.LANTERN || light == Material.SOUL_LANTERN ? "hanging=false" : "");
+    }
+
+    /** A round rest on the way up, with a wall round it and a gap at each end for the flights. */
+    private static void landingPad(BuildCanvas b, int mid, int y) {
+        island(b, 0, y, mid, PAD_RADIUS + 1, 18, HALL_ROCK);
+        SkyRuins.hang(b, 0, y, mid, PAD_RADIUS + 1, 18);
+        for (int x = -PAD_RADIUS - 1; x <= PAD_RADIUS + 1; x++) for (int z = mid - PAD_RADIUS - 1; z <= mid + PAD_RADIUS + 1; z++) {
+            double r = Math.hypot(x, z - mid);
+            if (r > PAD_RADIUS + .6) continue;
+            b.block(x, y, z, Math.abs(r - 6) < .7 ? Material.GOLD_BLOCK : Math.abs(r - 11) < .7 ? TRIM : Math.abs(x) < 2 ? BLOCK : (x + z) % 2 == 0 ? PAVE : COURSE);
+            if (Math.abs(r - PAD_RADIUS) > .75 || Math.abs(x) <= STAIR_HALF) continue;
+            b.block(x, y + 1, z, BLOCK);
+            b.block(x, y + 2, z, Math.floorMod(x + z, 4) == 0 ? BLOCK : COURSE);
+        }
+        medallion(b, 0, y, mid, 3);
+        for (int side = -1; side <= 1; side += 2) for (int end = -1; end <= 1; end += 2) obelisk(b, side * 9, y + 1, mid + end * 9);
+    }
+
+    /** The great round court before the gate. */
+    private static void plaza(BuildCanvas b) {
+        island(b, 0, Y, PLAZA_Z, PLAZA_RADIUS + 2, 26, HALL_ROCK);
+        SkyRuins.hang(b, 0, Y, PLAZA_Z, PLAZA_RADIUS + 2, 26);
+        for (int x = -PLAZA_RADIUS - 2; x <= PLAZA_RADIUS + 2; x++) for (int z = PLAZA_Z - PLAZA_RADIUS - 2; z <= PLAZA_Z + PLAZA_RADIUS + 2; z++) {
+            double dz = z - PLAZA_Z, r = Math.hypot(x, dz);
+            if (r > PLAZA_RADIUS + 1) continue;
+            b.block(x, Y, z, knotFloor(r, Math.atan2(dz, x), 20, 12));
+        }
+        medallion(b, 0, Y, PLAZA_Z, 6);
+        rim(b, 0, PLAZA_Z, PLAZA_RADIUS, Y, STAIR_HALF, true);
+        // The wind crosses the plaza from the east and west, and these are the only cover from it.
+        for (int[] stone : new int[][]{{-15, -29}, {15, -29}, {-20, -12}, {20, -12}, {-9, -2}, {9, -2}, {-7, -19}, {7, -19}}) standingStone(b, stone[0], stone[1]);
+        SkyKit.waterfall(b, -PLAZA_RADIUS - 2, Y, PLAZA_Z - 8, 58);
+        SkyKit.waterfall(b, PLAZA_RADIUS + 2, Y, PLAZA_Z - 8, 54);
+    }
+
+    /** A squat block of the hall's stone with a gold cap, broad enough for two to shelter behind. */
+    private static void standingStone(BuildCanvas b, int x, int z) {
+        b.box(x - 2, Y + 1, z - 2, x + 2, Y + 1, z + 2, TRIM);
+        b.box(x - 1, Y + 2, z - 2, x + 1, Y + 5, z + 2, BLOCK);
+        b.box(x - 1, Y + 6, z - 1, x + 1, Y + 6, z + 1, Material.GOLD_BLOCK);
+    }
+
+    /** A breast-high wall round a round court, broken at its north end for the stair if {@code north}. */
+    static void rim(BuildCanvas b, int cx, int cz, int radius, int y, int gap, boolean north) {
+        for (int x = cx - radius - 2; x <= cx + radius + 2; x++) for (int z = cz - radius - 2; z <= cz + radius + 2; z++) {
+            double r = Math.hypot(x - cx, z - cz);
+            if (Math.abs(r - radius) > .75) continue;
+            if (north && z < cz && Math.abs(x - cx) <= gap) continue;
+            b.block(x, y + 1, z, BLOCK);
+            b.block(x, y + 2, z, Math.floorMod(x + z * 3, 5) == 0 ? BLOCK : COURSE);
+        }
+        int posts = radius * 2 / 5;
+        for (int index = 0; index < posts; index++) {
+            double angle = index * Math.TAU / posts + .13;
+            int x = cx + (int) Math.round(Math.cos(angle) * radius), z = cz + (int) Math.round(Math.sin(angle) * radius);
+            if (north && z < cz && Math.abs(x - cx) <= gap + 1) continue;
+            b.box(x, y + 1, z, x, y + 3, z, TRIM);
+            b.block(x, y + 4, z, Material.GOLD_BLOCK);
+            b.block(x, y + 5, z, Material.LANTERN, "hanging=false");
+        }
+    }
+
+    /**
+     * A floor of plain stone with a braid of gold running round it. Two waves cross and cross again; at each crossing one
+     * strand breaks off to pass under the other, which is all it takes for a line to read as knotwork.
+     */
+    static Material knotFloor(double r, double angle, double middle, int lobes) {
+        double swing = 2.6, wave = Math.sin(lobes * angle), one = middle + swing * wave, two = middle - swing * wave;
+        int crossing = (int) Math.round(lobes * angle / Math.PI);
+        boolean near = Math.abs(wave) < .32, under = Math.floorMod(crossing, 2) == 0;
+        if (Math.abs(r - one) < .8 && !(near && under)) return Material.GOLD_BLOCK;
+        if (Math.abs(r - two) < .8 && !(near && !under)) return Material.GOLD_BLOCK;
+        if (Math.abs(r - (middle - swing - 2.4)) < .6 || Math.abs(r - (middle + swing + 2.4)) < .6) return TRIM;
+        if (r > middle + swing + 2.6 || r < middle - swing - 2.6) return Math.floorMod((int) (r * .5) + (int) (angle * r * .3), 2) == 0 ? PAVE : COURSE;
+        return BLOCK;
+    }
+
+    /** A round gold seal let into a floor: a ring, three spokes, and a boss in the middle. */
+    static void medallion(BuildCanvas b, int cx, int y, int cz, int radius) {
+        for (int x = cx - radius; x <= cx + radius; x++) for (int z = cz - radius; z <= cz + radius; z++) {
+            double dx = x - cx, dz = z - cz, r = Math.hypot(dx, dz), angle = Math.atan2(dz, dx);
+            if (r > radius + .4) continue;
+            boolean ring = r > radius - 1.2, boss = r < 1.3;
+            boolean spoke = Math.abs(Math.sin(angle * 1.5 + Math.PI / 4)) < .16;
+            b.block(x, y, z, ring || boss || spoke ? Material.GOLD_BLOCK : Material.RAW_GOLD_BLOCK);
         }
     }
 }

@@ -57,7 +57,8 @@ final class RunEntrance {
         MoltenBody body(LivingEntity boss);
     }
 
-    private static final Set<EntranceStyle> ACTS = Set.of(EntranceStyle.HOIST, EntranceStyle.POWDER, EntranceStyle.ERUPT, EntranceStyle.FORGED, EntranceStyle.COLOSSUS);
+    private static final Set<EntranceStyle> ACTS = Set.of(EntranceStyle.HOIST, EntranceStyle.POWDER, EntranceStyle.ERUPT, EntranceStyle.FORGED, EntranceStyle.COLOSSUS,
+        EntranceStyle.PLUNGE, EntranceStyle.ICEBOUND, EntranceStyle.CONVERGE);
 
     private static final double DEPTH = 3, BODY = 3.6;
     private static final int LOOSE_BONES = 14, WISP_TICKS = 24, FLIGHT_TICKS = 8, CIRCLE_PLATES = 18;
@@ -287,6 +288,9 @@ final class RunEntrance {
             case ERUPT -> acts.erupt(set, boss, home, tick, length);
             case FORGED -> acts.forged(set, boss, home, marks.getFirst(), tick, length);
             case COLOSSUS -> acts.colossus(set, boss, host.body(boss), home, marks.getFirst(), tick, length);
+            case PLUNGE -> acts.plunge(set, boss, home, marks.getFirst(), tick, length);
+            case ICEBOUND -> acts.icebound(set, boss, home, marks, tick, length);
+            case CONVERGE -> acts.converge(set, boss, host.body(boss), home, marks, tick, length);
             default -> { }
         }
     }

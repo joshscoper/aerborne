@@ -120,6 +120,10 @@ class ExpeditionLootTest {
         assertEquals(Set.of("grells_shaft", "ore_line", "slag_pits", "the_gloomforge", "the_molten_deep"), mines.getKeys(false));
         for (String room : mines.getKeys(false)) for (String item : mines.getStringList(room))
             assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
+        var hall = loot.getConfigurationSection("expeditions.hall_of_wardens.bosses");
+        assertEquals(Set.of("high_gate", "ember_court", "ember_throne", "frost_throne", "stone_throne", "the_unwritten"), hall.getKeys(false));
+        for (String room : hall.getKeys(false)) for (String item : hall.getStringList(room))
+            assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
         for (String item : added) assertFalse(relics.contains(item), item + " would lose to the catalog's own item");
     }
 

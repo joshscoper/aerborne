@@ -127,7 +127,11 @@ public final class CosmeticCatalog {
                 new Companion("cogling", "Cogling", "Runaway mine engine", "cogling", 0.9D, false, "", "gold", false, "The Blastmaster, very rarely"),
                 new Companion("embermutt", "Embermutt", "Slag hound pup", "embermutt", 0.9D, false, "SMALL_FLAME", "red", false, "The Slag Hound, very rarely"),
                 new Companion("lampwick", "Lampwick", "The last miner's lamp", "lampwick", 0.8D, true, "", "yellow", false, "The Deep Foreman, very rarely"),
-                new Companion("smeltling", "Smeltling", "A spark of the Colossus", "smeltling", 0.9D, false, "SMALL_FLAME", "gold", false, "Something in the Foundry, very rarely")),
+                new Companion("smeltling", "Smeltling", "A spark of the Colossus", "smeltling", 0.9D, false, "SMALL_FLAME", "gold", false, "Something in the Foundry, very rarely"),
+                new Companion("kilnling", "Kilnling", "A brazier that followed you", "kilnling", 0.9D, false, "SMALL_FLAME", "gold", false, "The Ember Warden, very rarely"),
+                new Companion("rimepup", "Rimepup", "Runt of the Warden's pack", "rimepup", 0.9D, false, "SNOWFLAKE", "aqua", false, "The Frost Warden, very rarely"),
+                new Companion("pebblewarden", "Pebblewarden", "A very small colossus", "pebblewarden", 0.8D, false, "", "green", false, "The Stone Warden, very rarely"),
+                new Companion("inkling", "Inkling", "A blot that got off the page", "inkling", 0.8D, true, "REVERSE_PORTAL", "dark_purple", false, "Oriveth, very rarely")),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),

@@ -33,7 +33,7 @@ final class ExpeditionMapPainter {
     record Pin(String name, String room, String icon, String color, boolean optional, double x, double y) { }
     record Place(String name, String kind, double x, double y) { }
 
-    private static final int MAX_SIDE = 1400, PADDING = 12;
+    private static final int MAX_SIDE = 1400, PADDING = 12, BEYOND_REACH = 200;
     private static final double MOST_PIXELS_PER_BLOCK = 7, TALLEST_SHEET = 1.35;
     private static final int[][] ZONES = {{198, 86, 66}, {226, 160, 48}, {150, 104, 182}, {84, 130, 168}, {88, 150, 96}, {196, 96, 140}};
 
@@ -44,6 +44,7 @@ final class ExpeditionMapPainter {
     /** Open water nobody is meant to stand in: anything a fall would catch them from. */
     private final Set<Long> lake = new HashSet<>();
     private final Set<Cell> walked = new HashSet<>();
+    private final List<ExpeditionDefinition.Room> beyond = new ArrayList<>();
     private int minX, minZ, maxX, maxZ;
     private double scale;
     private final List<Pin> pins = new ArrayList<>();
@@ -54,6 +55,7 @@ final class ExpeditionMapPainter {
         this.blocks = new HashMap<>(plan);
         this.mobs = mobs;
         open();
+        offMap();
         walk();
         drown();
         bounds();
@@ -110,14 +112,33 @@ final class ExpeditionMapPainter {
         return ground && open(blocks.get(at)) && open(blocks.get(new Cell(at.x(), at.y() + 1, at.z())));
     }
 
+    /** What's through a portal isn't anywhere on this sheet, so it comes off the plan. */
+    private void offMap() {
+        for (var portal : expedition.story().portals().values()) {
+            var far = expedition.rooms().get(portal.room());
+            beyond.add(far);
+            blocks.keySet().removeIf(cell -> Math.hypot(cell.x() - far.region().minX(), cell.z() - far.region().minZ()) < BEYOND_REACH);
+        }
+    }
+
+    private List<ExpeditionDefinition.Room> mapped() {
+        List<ExpeditionDefinition.Room> rooms = new ArrayList<>(expedition.publicRooms());
+        rooms.removeAll(beyond);
+        return rooms;
+    }
+
+    private boolean onMap(ExpeditionDefinition.Point point) {
+        return beyond.stream().noneMatch(far -> Math.hypot(point.x() - far.region().minX(), point.z() - far.region().minZ()) < BEYOND_REACH);
+    }
+
     /** Fills the floor on foot from everywhere a party has to go. No jumps, so hidden places stay hidden. */
     private void walk() {
         List<ExpeditionDefinition.Point> seeds = new ArrayList<>(List.of(expedition.spawn()));
-        if (expedition.exit() != null) seeds.add(expedition.exit());
+        if (expedition.exit() != null && onMap(expedition.exit())) seeds.add(expedition.exit());
         expedition.story().packs().values().forEach(pack -> seeds.add(pack.at()));
-        expedition.story().campfires().values().forEach(fire -> seeds.add(fire.at()));
+        expedition.story().campfires().values().stream().filter(fire -> onMap(fire.at())).forEach(fire -> seeds.add(fire.at()));
         for (var chest : expedition.story().chests().values()) if (chest.kind() != ExpeditionDefinition.ChestKind.SECRET) seeds.add(chest.at());
-        for (var room : expedition.publicRooms()) {
+        for (var room : mapped()) {
             seeds.addAll(room.points());
             if (room.checkpoint() != null) seeds.add(room.checkpoint());
             for (var puzzle : room.puzzles().values()) {
@@ -143,7 +164,7 @@ final class ExpeditionMapPainter {
 
     /** On a jump course the way on really is a jump. Everywhere else a jump leads somewhere hidden. */
     private boolean course(Cell at) {
-        for (var room : expedition.publicRooms())
+        for (var room : mapped())
             if (room.region() != null && room.region().contains(at.x() + .5, at.y(), at.z() + .5)
                 && room.puzzles().values().stream().anyMatch(puzzle -> puzzle.type() == ExpeditionDefinition.PuzzleType.REACH)) return true;
         return false;
@@ -223,6 +244,11 @@ final class ExpeditionMapPainter {
                 List<String> names = ids.stream().map(id -> mobName(id, room.title())).distinct().toList();
                 String name = names.isEmpty() ? room.title() : names.size() == 2 ? String.join(" & ", names) : names.getFirst();
                 double x = room.points().isEmpty() ? middle == null ? 0 : middle[0] : room.points().getFirst().x(), z = room.points().isEmpty() ? middle == null ? 0 : middle[1] : room.points().getFirst().z();
+                // A boss through a portal goes on the sheet where the portal is.
+                for (var portal : expedition.story().portals().values()) if (portal.room().equals(room.id())) {
+                    x = portal.at().x();
+                    z = portal.at().z();
+                }
                 int[] color = ZONES[zone++ % ZONES.length];
                 pins.add(new Pin(name, room.title().equals(name) ? "" : room.title(), ids.isEmpty() ? "crown" : icon(ids.getFirst()), String.format(Locale.ROOT, "#%02x%02x%02x", color[0], color[1], color[2]),
                     room.optional(), percentX(x), percentZ(z)));
@@ -245,7 +271,7 @@ final class ExpeditionMapPainter {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             for (long cell : new TreeSet<>(floor)) digest.update(Long.toString(cell).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            for (var room : expedition.publicRooms()) if (room.bossRoom() && room.region() != null) digest.update(room.region().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            for (var room : mapped()) if (room.bossRoom() && room.region() != null) digest.update(room.region().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return java.util.HexFormat.of().formatHex(digest.digest()).substring(0, 16);
         } catch (java.security.NoSuchAlgorithmException impossible) {
             throw new AssertionError(impossible);

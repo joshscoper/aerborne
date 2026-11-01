@@ -214,9 +214,6 @@ lures:
     radius: 4
     fishing-level: 25
     room: the_molten_deep
-    body: colossus
-    # Killing it leaves a piece of its fire in the party until the run ends.
-    boon: {title: Heart of the Foundry, damage: 15, guard: 15}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
@@ -354,9 +351,12 @@ rooms:
     requires: [round_foundry]
     checkpoint: [122, 33, 104, 180]
     points: [[122, 33, 97, 0], [112, 33, 96], [132, 33, 96], [110, 33, 84], [134, 33, 84]]
+    # Killing it leaves a piece of its fire in the party until the run ends.
+    boon: {title: Heart of the Foundry, damage: 15, guard: 15, fireproof: true}
     encounter:
       type: boss
       boss: custom:molten_colossus
+      body: colossus
       # It stands up out of the boiling slag, and jumps to the Foundry.
       entrance: {style: colossus, seconds: 14, sources: [[134, 27, 113, 90]]}
       boss-level-bonus: 6

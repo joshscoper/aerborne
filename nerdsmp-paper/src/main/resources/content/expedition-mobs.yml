@@ -180,11 +180,58 @@ mobs:
     mark-reward: 240
 
   # The Hall of the Three Wardens
+  thane_orrek:
+    rank: normal
+    name: "<gradient:#ffe08a:#c98a1b><bold>Thane Orrek</bold></gradient>"
+    type: vindicator
+    boss: true
+    health: 760
+    attack-damage: 9
+    scale: 1.9
+    speed: 0.25
+    ability: none
+    mark-reward: 140
+    equipment: {head: golden_helmet, chest: golden_chestplate, legs: golden_leggings, hand: golden_axe}
+  keeper_sael:
+    rank: normal
+    name: "<gradient:#ffbe76:#b33939><bold>Keeper Sael</bold></gradient>"
+    type: husk
+    boss: true
+    health: 380
+    attack-damage: 8
+    scale: 1.7
+    speed: 0.22
+    ability: none
+    mark-reward: 70
+    equipment: {head: golden_helmet, chest: netherite_chestplate, hand: blaze_rod}
+  keeper_oren:
+    rank: normal
+    name: "<gradient:#ffbe76:#b33939><bold>Keeper Oren</bold></gradient>"
+    type: husk
+    boss: true
+    health: 380
+    attack-damage: 8
+    scale: 1.7
+    speed: 0.22
+    ability: none
+    mark-reward: 70
+    equipment: {head: netherite_helmet, chest: golden_chestplate, hand: golden_sword}
+  oriveth:
+    rank: normal
+    name: "<gradient:#c77dff:#3c096c><bold>Oriveth, the Unwritten Warden</bold></gradient>"
+    type: iron_golem
+    boss: true
+    health: 1800
+    attack-damage: 12
+    scale: 3
+    speed: 0.17
+    ability: none
+    mark-reward: 320
   ember_warden:
     name: "<gradient:#ffbe76:#eb4d4b><bold>The Ember Warden</bold></gradient>"
     type: blaze
     boss: true
-    health: 450
+    health: 820
     attack-damage: 8
     scale: 2.2
     ability: none
@@ -193,7 +240,7 @@ mobs:
     name: "<gradient:#dff9fb:#22a6b3><bold>The Frost Warden</bold></gradient>"
     type: stray
     boss: true
-    health: 450
+    health: 820
     attack-damage: 7
     scale: 2.0
     ability: none
@@ -203,7 +250,7 @@ mobs:
     name: "<gradient:#b8e994:#3c6382><bold>The Stone Warden</bold></gradient>"
     type: vindicator
     boss: true
-    health: 520
+    health: 900
     attack-damage: 11
     scale: 2.3
     speed: 0.24
@@ -510,6 +557,181 @@ mobs:
     ability: none
     mark-reward: 5
     equipment: {head: iron_helmet, chest: iron_chestplate, hand: iron_axe}
+  hall_aspirant:
+    rank: normal
+    name: "<#e6c67a>Hall Aspirant</#e6c67a>"
+    type: husk
+    health: 54
+    attack-damage: 7
+    ability: none
+    mark-reward: 4
+    equipment: {head: golden_helmet, chest: golden_chestplate, hand: golden_sword}
+  hall_shieldmaiden:
+    rank: normal
+    name: "<#e6c67a>Hall Shieldmaiden</#e6c67a>"
+    type: husk
+    health: 96
+    attack-damage: 8
+    scale: 1.15
+    ability: none
+    mark-reward: 6
+    equipment: {head: golden_helmet, chest: iron_chestplate, legs: golden_leggings, hand: golden_axe, off-hand: shield}
+  hall_thundercaller:
+    rank: normal
+    name: "<#8fd3ff>Hall Thundercaller</#8fd3ff>"
+    type: husk
+    health: 44
+    attack-damage: 4
+    ability: none
+    mark-reward: 5
+    equipment: {head: golden_helmet, hand: lightning_rod}
+  hall_runecarver:
+    rank: normal
+    name: "<#ffd98e>Hall Runecarver</#ffd98e>"
+    type: husk
+    health: 46
+    attack-damage: 4
+    ability: none
+    mark-reward: 6
+    equipment: {head: leather_helmet, chest: golden_chestplate, hand: amethyst_shard}
+  hall_marksman:
+    rank: normal
+    name: "<#e6c67a>Hall Marksman</#e6c67a>"
+    type: stray
+    health: 40
+    attack-damage: 5
+    ability: none
+    mark-reward: 4
+    equipment: {head: golden_helmet, hand: bow}
+  gate_sentinel:
+    rank: normal
+    name: "<#d9c38c>Gate Sentinel</#d9c38c>"
+    type: iron_golem
+    health: 140
+    attack-damage: 10
+    scale: 1.15
+    speed: 0.2
+    ability: none
+    mark-reward: 9
+  ash_acolyte:
+    rank: normal
+    name: "<#c77b4a>Ash Acolyte</#c77b4a>"
+    type: wither_skeleton
+    health: 52
+    attack-damage: 7
+    ability: none
+    mark-reward: 5
+    equipment: {head: golden_helmet, hand: golden_sword}
+  rime_stalker:
+    rank: normal
+    name: "<#a8dcff>Rime Stalker</#a8dcff>"
+    type: stray
+    health: 42
+    attack-damage: 5
+    ability: none
+    mark-reward: 5
+    equipment: {head: ice, hand: bow}
+  rime_hound:
+    rank: normal
+    name: "<#a8dcff>Rime Hound</#a8dcff>"
+    type: wolf
+    health: 34
+    attack-damage: 6
+    scale: 1.3
+    speed: 0.36
+    ability: none
+    mark-reward: 3
+  king_harl:
+    rank: normal
+    name: "<gradient:#c8d6c0:#6a8560><bold>King Harl</bold></gradient>"
+    type: zombie
+    health: 260
+    attack-damage: 9
+    scale: 1.6
+    speed: 0.22
+    ability: none
+    mark-reward: 30
+    equipment: {head: golden_helmet, chest: iron_chestplate, hand: stone_sword}
+  king_osric:
+    rank: normal
+    name: "<gradient:#c8d6c0:#6a8560><bold>King Osric</bold></gradient>"
+    type: zombie
+    health: 300
+    attack-damage: 10
+    scale: 1.6
+    speed: 0.22
+    ability: none
+    mark-reward: 30
+    equipment: {head: golden_helmet, chest: chainmail_chestplate, hand: stone_axe}
+  king_brand:
+    rank: normal
+    name: "<gradient:#c8d6c0:#6a8560><bold>King Brand</bold></gradient>"
+    type: zombie
+    health: 260
+    attack-damage: 10
+    scale: 1.6
+    speed: 0.22
+    ability: none
+    mark-reward: 30
+    equipment: {head: golden_helmet, chest: golden_chestplate, hand: iron_sword}
+  king_ulf:
+    rank: normal
+    name: "<gradient:#c8d6c0:#6a8560><bold>King Ulf</bold></gradient>"
+    type: zombie
+    health: 260
+    attack-damage: 10
+    scale: 1.6
+    speed: 0.22
+    ability: none
+    mark-reward: 30
+    equipment: {head: golden_helmet, chest: golden_chestplate, hand: iron_axe}
+  echo_of_ember:
+    rank: normal
+    name: "<gradient:#ffbe76:#6c3483><bold>Echo of Ember</bold></gradient>"
+    type: blaze
+    health: 300
+    attack-damage: 7
+    scale: 1.6
+    ability: none
+    mark-reward: 20
+  echo_of_frost:
+    rank: normal
+    name: "<gradient:#dff9fb:#6c3483><bold>Echo of Frost</bold></gradient>"
+    type: stray
+    health: 300
+    attack-damage: 7
+    scale: 1.6
+    ability: none
+    mark-reward: 20
+    equipment: {head: blue_ice, hand: bow}
+  echo_of_stone:
+    rank: normal
+    name: "<gradient:#b8e994:#6c3483><bold>Echo of Stone</bold></gradient>"
+    type: vindicator
+    health: 320
+    attack-damage: 9
+    scale: 1.7
+    ability: none
+    mark-reward: 20
+    equipment: {head: mossy_cobblestone, hand: stone_axe}
+  void_eye:
+    rank: normal
+    name: "<dark_purple>Eye of the Void</dark_purple>"
+    type: guardian
+    health: 70
+    attack-damage: 4
+    ability: none
+    mark-reward: 6
+  unwritten_shade:
+    rank: normal
+    name: "<dark_purple>Unwritten Shade</dark_purple>"
+    type: wither_skeleton
+    health: 70
+    attack-damage: 9
+    scale: 1.2
+    ability: none
+    mark-reward: 7
+    equipment: {head: netherite_helmet, hand: netherite_sword}
   cinder_thrall:
     name: "<red>Cinder Thrall</red>"
     type: wither_skeleton

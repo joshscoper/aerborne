@@ -11,13 +11,20 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -53,6 +60,8 @@ public final class AbilityCaster {
         default LivingEntity target(LivingEntity caster) { return null; }
         /** Spawns a mob that doesn't move, tracked by the room, or null if it can't. */
         default LivingEntity fixture(String mob, Location at) { return null; }
+        /** The room's marked spots, past the boss's own. */
+        default List<Location> marks() { return List.of(); }
     }
 
     /** Frost's patch of ice: how wide it is and how long it stays. */
@@ -60,6 +69,14 @@ public final class AbilityCaster {
     private static final int ICE_TICKS = 100;
     /** How long silk holds a player if nobody breaks the cocoon. */
     private static final int WRAP_TICKS = 120;
+    private static final double ARC_REACH = 6, PULSE_RADIUS = 6, SPEAR_RADIUS = 2.2, SPEAR_BURST = 5, BLADE_REACH = 15, SHARE_RADIUS = 6, AEGIS_RADIUS = 4.5, BRAND_RADIUS = 3.6;
+    private static final int SPEAR_STANDS = 50, BLADE_TICKS = 18, CHASE_STEPS = 28, BRAND_STEPS = 16;
+    private static final double WELL_PULL = 11, WELL_CORE = 3, RIFT_RADIUS = 2.6, BOND_APART = 14, HARVEST_GAP = .28, STEP_BURST = 4.5;
+    private static final int RIFT_PULSES = 16, HARVEST_TICKS = 120, HARVEST_SPACE = 26;
+    private static final String[] ECHOES = {"custom:echo_of_ember", "custom:echo_of_frost", "custom:echo_of_stone"};
+    private static final org.bukkit.Color[] SEALS = {Telegraph.FIRE, Telegraph.FROST, Telegraph.POISON};
+    private static final String[] SEAL_NAMES = {"<gold><bold>Branded by Ember!</bold></gold> <gray>Reach the fire plate.</gray>",
+        "<aqua><bold>Branded by Frost!</bold></aqua> <gray>Reach the ice plate.</gray>", "<green><bold>Branded by Stone!</bold></green> <gray>Reach the stone plate.</gray>"};
 
     private final Plugin plugin;
     private final Set<UUID> channeling = new HashSet<>();
@@ -114,6 +131,22 @@ public final class AbilityCaster {
             case "gust_shot" -> gustShot(caster, arena, targets, power);
             case "ember_burst" -> emberBurst(caster, arena, power);
             case "frost_bolt" -> frostBolt(caster, arena, targets, power);
+            case "arc_bolt" -> arcBolt(caster, arena, targets, power);
+            case "charged_pulse" -> chargedPulse(caster, arena, power);
+            case "spear_fall" -> spearFall(caster, arena, targets, power);
+            case "dancing_blade" -> dancingBlade(caster, arena, targets, power);
+            case "rime_share" -> rimeShare(caster, arena, power);
+            case "hoarfrost_chase" -> hoarfrostChase(caster, arena, targets, power);
+            case "cataclysm" -> cataclysm(caster, arena, power);
+            case "sigil_brand" -> sigilBrand(caster, arena, targets, power);
+            case "echo_ward" -> echoWard(caster, arena);
+            case "void_bolt" -> voidBolt(caster, targets, power);
+            case "gravity_well" -> gravityWell(caster, arena, targets, power);
+            case "void_rift" -> voidRift(caster, arena, targets, power);
+            case "void_bond" -> voidBond(caster, arena, targets, power);
+            case "eye_of_the_void" -> voidEyes(caster, arena);
+            case "black_harvest" -> blackHarvest(caster, arena, power);
+            case "void_step" -> voidStep(caster, arena, power);
             default -> false;
         };
     }
@@ -624,6 +657,395 @@ public final class AbilityCaster {
         });
         return true;
     }
+
+    /** Lightning off one player and on to anyone standing close: spread out and it stops at one. */
+    private boolean arcBolt(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player first = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        hold(caster, 14);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, .5F, 1.8F);
+        repeat(caster, arena, 3, 5, tick -> Telegraph.line(caster.getLocation().add(0, 1, 0), first.getLocation().add(0, 1, 0), Telegraph.FROST), () -> {
+            Set<UUID> struck = new HashSet<>();
+            Location from = caster.getLocation().add(0, 1, 0);
+            Player next = first;
+            for (int jump = 0; jump < 4 && next != null; jump++) {
+                struck.add(next.getUniqueId());
+                Location to = next.getLocation().add(0, 1, 0);
+                Vector step = to.toVector().subtract(from.toVector());
+                for (double along = 0; along <= 1; along += .1) caster.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, from.clone().add(step.clone().multiply(along)), 2, .08, .08, .08, 0);
+                caster.getWorld().playSound(to, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, .8F, 1.4F);
+                hit(next, caster, 3 * power);
+                from = to;
+                Player found = null;
+                for (Player player : arena.near(to, ARC_REACH)) if (!struck.contains(player.getUniqueId())) found = player;
+                next = found;
+            }
+        });
+        return true;
+    }
+
+    /** A ring closes round the caster, and everything left inside it is thrown back. */
+    private boolean chargedPulse(LivingEntity caster, Arena arena, double power) {
+        hold(caster, 24);
+        Location center = caster.getLocation();
+        caster.getWorld().playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 1.2F, 1.6F);
+        repeat(caster, arena, 5, 5, tick -> Telegraph.ring(center, PULSE_RADIUS, Telegraph.FROST), () -> {
+            caster.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, center.clone().add(0, 1, 0), 80, 2.5, .6, 2.5, .2);
+            caster.getWorld().playSound(center, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.2F, 1.2F);
+            for (Player player : arena.near(center, PULSE_RADIUS)) {
+                hit(player, caster, 3 * power);
+                player.setVelocity(player.getLocation().toVector().subtract(center.toVector()).setY(0).normalize().multiply(1.1).setY(.4));
+            }
+        });
+        return true;
+    }
+
+    /** Spears of light come down on marked spots, stand a moment, and burst. Don't stay near one. */
+    private boolean spearFall(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        List<Location> spots = new ArrayList<>();
+        for (Player player : targets.subList(0, Math.min(3, targets.size()))) spots.add(player.getLocation());
+        hold(caster, 16);
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 1.6F, .6F);
+        repeat(caster, arena, 4, 5, tick -> { for (Location spot : spots) Telegraph.disc(spot, SPEAR_RADIUS, Telegraph.HOLY); }, () -> {
+            for (Location spot : spots) {
+                BlockDisplay spear = caster.getWorld().spawn(spot.clone().add(0, 14, 0), BlockDisplay.class, display -> {
+                    display.setBlock(Material.GOLD_BLOCK.createBlockData());
+                    display.setPersistent(false);
+                    display.setTeleportDuration(4);
+                    display.setBrightness(new Display.Brightness(15, 15));
+                    display.setTransformation(new Transformation(new Vector3f(-.2F, 0, -.2F), new Quaternionf(), new Vector3f(.4F, 6, .4F), new Quaternionf()));
+                });
+                Bukkit.getScheduler().runTaskLater(plugin, () -> { if (spear.isValid()) spear.teleport(spot.clone().subtract(0, 1.5, 0)); }, 2L);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (!arena.live()) { spear.remove(); return; }
+                    caster.getWorld().playSound(spot, Sound.ITEM_TRIDENT_THUNDER, 1F, 1.4F);
+                    caster.getWorld().spawnParticle(Particle.END_ROD, spot.clone().add(0, 1, 0), 30, .6, 1, .6, .05);
+                    for (Player player : arena.near(spot, SPEAR_RADIUS)) hit(player, caster, 3 * power);
+                }, 7L);
+                int[] tick = {0};
+                Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                    if (!arena.live() || (tick[0] += 5) > SPEAR_STANDS) {
+                        task.cancel();
+                        if (!arena.live()) { spear.remove(); return; }
+                        spear.remove();
+                        caster.getWorld().spawnParticle(Particle.FIREWORK, spot.clone().add(0, 1, 0), 60, 1.4, .8, 1.4, .12);
+                        caster.getWorld().playSound(spot, Sound.BLOCK_GLASS_BREAK, 1.4F, .7F);
+                        for (Player player : arena.near(spot, SPEAR_BURST)) hit(player, caster, 2 * power);
+                        return;
+                    }
+                    Telegraph.ring(spot, SPEAR_BURST, Telegraph.HOLY);
+                }, 12L, 5L);
+            }
+        });
+        return true;
+    }
+
+    /** A blade thrown spinning down a marked line, and it comes back the same way. */
+    private boolean dancingBlade(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        Location from = caster.getLocation().add(0, 1, 0);
+        Vector along = target.getLocation().add(0, 1, 0).toVector().subtract(from.toVector()).setY(0);
+        if (along.lengthSquared() < 1e-3) return false;
+        along.normalize();
+        Location end = from.clone().add(along.clone().multiply(BLADE_REACH));
+        hold(caster, 18);
+        caster.getWorld().playSound(from, Sound.ITEM_TRIDENT_RETURN, 1.4F, .7F);
+        repeat(caster, arena, 4, 5, tick -> Telegraph.line(from, end, Telegraph.DANGER), () -> {
+            ItemDisplay blade = caster.getWorld().spawn(from, ItemDisplay.class, display -> {
+                display.setItemStack(new ItemStack(Material.GOLDEN_SWORD));
+                display.setPersistent(false);
+                display.setTeleportDuration(1);
+                display.setBrightness(new Display.Brightness(15, 15));
+                display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(3, 3, 3), new Quaternionf()));
+            });
+            Set<UUID> struck = new HashSet<>();
+            int[] tick = {0};
+            Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                int now = tick[0]++;
+                if (!arena.live() || now >= BLADE_TICKS * 2) {
+                    blade.remove();
+                    task.cancel();
+                    return;
+                }
+                double out = (now < BLADE_TICKS ? now : BLADE_TICKS * 2 - now) / (double) BLADE_TICKS;
+                Location at = from.clone().add(along.clone().multiply(BLADE_REACH * out));
+                at.setYaw(now * 50F);
+                blade.teleport(at);
+                caster.getWorld().spawnParticle(Particle.SWEEP_ATTACK, at, 1);
+                if (now == BLADE_TICKS) struck.clear();
+                for (Player player : arena.near(at, 1.7)) if (struck.add(player.getUniqueId())) hit(player, caster, 3 * power);
+            }, 0L, 1L);
+        });
+        return true;
+    }
+
+    /** The cold is shared out among everyone standing in the ring, so together it's a chill and alone it's a killing frost. */
+    private boolean rimeShare(LivingEntity caster, Arena arena, double power) {
+        hold(caster, 30);
+        Location center = caster.getLocation();
+        caster.getWorld().playSound(center, Sound.BLOCK_POWDER_SNOW_STEP, 2F, .5F);
+        for (Player player : arena.targets(caster, 30)) bar(player, "<aqua>Get in the ring, together!</aqua> <gray>The frost is shared.</gray>");
+        repeat(caster, arena, 6, 5, tick -> {
+            Telegraph.ring(center, SHARE_RADIUS, Telegraph.FROST);
+            caster.getWorld().spawnParticle(Particle.SNOWFLAKE, center.clone().add(0, 1, 0), 20, 2, .8, 2, .01);
+        }, () -> {
+            List<Player> inside = arena.near(center, SHARE_RADIUS);
+            caster.getWorld().spawnParticle(Particle.ITEM_SNOWBALL, center.clone().add(0, 1, 0), 80, 3, 1, 3, .1);
+            caster.getWorld().playSound(center, Sound.BLOCK_GLASS_BREAK, 2F, .6F);
+            double share = 8 * power / Math.max(1, inside.size());
+            for (Player player : inside) hit(player, caster, share);
+            for (Player player : arena.targets(caster, 30)) if (!inside.contains(player)) {
+                hit(player, caster, 8 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+            }
+        });
+        return true;
+    }
+
+    /** It picks one player and runs them down, freezing the ground behind it. Keep moving, and keep away from your friends. */
+    private boolean hoarfrostChase(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        if (!(caster instanceof Mob mob)) return false;
+        Player prey = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        bar(prey, "<aqua><bold>It's hunting you. Run!</bold></aqua>");
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_POLAR_BEAR_WARNING, 2F, .7F);
+        Set<UUID> struck = new HashSet<>();
+        repeat(caster, arena, CHASE_STEPS, 6, tick -> {
+            if (!prey.isOnline() || prey.isDead()) return;
+            mob.getPathfinder().moveTo(prey, 1.7);
+            Telegraph.ring(prey.getLocation(), 1.4, Telegraph.FROST);
+            Block floor = caster.getLocation().getBlock();
+            if (floor.getType().isAir() && floor.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) arena.temporary(floor, Material.SNOW, ICE_TICKS);
+            for (Player player : arena.targets(caster, 2.4)) if (struck.add(player.getUniqueId())) {
+                hit(player, caster, 4 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 50, 1));
+            }
+        }, () -> mob.getPathfinder().stopPathfinding());
+        return true;
+    }
+
+    /** It throws its aegis down somewhere on the floor and brings the sky in on everyone not sheltering behind it. */
+    private boolean cataclysm(LivingEntity caster, Arena arena, double power) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        double angle = random.nextDouble(Math.TAU);
+        Location spot = caster.getLocation().add(Math.cos(angle) * 10, 0, Math.sin(angle) * 10);
+        while (spot.getBlock().isSolid() && spot.getY() < caster.getLocation().getY() + 6) spot.add(0, 1, 0);
+        while (!spot.clone().subtract(0, 1, 0).getBlock().isSolid() && spot.getY() > caster.getLocation().getY() - 6) spot.subtract(0, 1, 0);
+        hold(caster, 100);
+        BlockDisplay aegis = caster.getWorld().spawn(spot, BlockDisplay.class, display -> {
+            display.setBlock(Material.GOLD_BLOCK.createBlockData());
+            display.setPersistent(false);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTransformation(new Transformation(new Vector3f(-1.2F, 0, -.2F), new Quaternionf(), new Vector3f(2.4F, 3.4F, .4F), new Quaternionf()));
+        });
+        caster.getWorld().playSound(spot, Sound.ITEM_SHIELD_BLOCK, 2F, .5F);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_WARDEN_ROAR, 1.6F, .7F);
+        for (Player player : arena.targets(caster, 40)) bar(player, "<gold><bold>To the Aegis!</bold></gold>");
+        repeat(caster, arena, 20, 5, tick -> {
+            Telegraph.ring(spot, AEGIS_RADIUS, Telegraph.HOLY);
+            if (tick % 2 == 0) Telegraph.disc(spot, AEGIS_RADIUS, Telegraph.HOLY);
+            caster.getWorld().spawnParticle(Particle.END_ROD, spot.clone().add(0, 2, 0), 4, 1, 1, 1, .01);
+            if (tick > 12) caster.getWorld().spawnParticle(Particle.FLAME, caster.getLocation().add(0, 1, 0), 30, 2, 1, 2, .1);
+        }, () -> {
+            aegis.remove();
+            caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, caster.getLocation(), 3, 4, 1, 4, 0);
+            caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 2F, .5F);
+            for (Player player : arena.targets(caster, 40)) if (player.getLocation().distance(spot) > AEGIS_RADIUS) hit(player, caster, 12 * power);
+        });
+        return true;
+    }
+
+    /** Every player is branded with one of the three seals, and has to reach that seal's plate before the brand burns in. */
+    private boolean sigilBrand(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        List<Location> plates = arena.marks();
+        if (plates.size() < SEALS.length) return false;
+        int start = ThreadLocalRandom.current().nextInt(SEALS.length);
+        java.util.Map<Player, Integer> brands = new java.util.HashMap<>();
+        for (int index = 0; index < targets.size(); index++) {
+            int seal = (start + index) % SEALS.length;
+            brands.put(targets.get(index), seal);
+            bar(targets.get(index), SEAL_NAMES[seal]);
+            targets.get(index).playSound(targets.get(index).getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1F, 1.2F);
+        }
+        hold(caster, 60);
+        repeat(caster, arena, BRAND_STEPS, 5, tick -> {
+            for (int seal = 0; seal < SEALS.length; seal++) Telegraph.ring(plates.get(seal), BRAND_RADIUS, SEALS[seal]);
+            brands.forEach((player, seal) -> {
+                if (!player.isOnline()) return;
+                Telegraph.ring(player.getLocation(), .8, SEALS[seal]);
+                if (tick % 6 == 0) bar(player, SEAL_NAMES[seal]);
+            });
+        }, () -> {
+            brands.forEach((player, seal) -> {
+                if (!player.isOnline() || player.isDead() || player.getWorld() != caster.getWorld()) return;
+                if (player.getLocation().distance(plates.get(seal)) <= BRAND_RADIUS) {
+                    player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.4F, 1.2F);
+                    return;
+                }
+                hit(player, caster, 10 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 3));
+                bar(player, "<red>Unworthy.</red>");
+            });
+        });
+        return true;
+    }
+
+    /** Three echoes on their plates, and the caster can't be touched until the last of them is dead. */
+    private boolean echoWard(LivingEntity caster, Arena arena) {
+        List<Location> plates = arena.marks();
+        if (plates.size() < ECHOES.length) return false;
+        hold(caster, 30);
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 2F, .6F);
+        List<LivingEntity> echoes = new ArrayList<>();
+        for (int index = 0; index < ECHOES.length; index++) {
+            LivingEntity echo = arena.fixture(ECHOES[index], plates.get(index));
+            if (echo != null) echoes.add(echo);
+        }
+        if (echoes.isEmpty()) return false;
+        arena.shield(caster, echoes);
+        return true;
+    }
+
+    private boolean voidBolt(LivingEntity caster, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        Location from = caster.getLocation().add(0, caster.getHeight() * .7, 0), to = target.getLocation().add(0, 1, 0);
+        Vector step = to.toVector().subtract(from.toVector());
+        for (double along = 0; along <= 1; along += .04) caster.getWorld().spawnParticle(Particle.REVERSE_PORTAL, from.clone().add(step.clone().multiply(along)), 2, .05, .05, .05, 0);
+        caster.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1F, .6F);
+        hit(target, caster, 3.2 * power);
+        return true;
+    }
+
+    /** A well opens under someone. Everything in reach is dragged towards it, and it closes with a crack: be gone by then. */
+    private boolean gravityWell(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Location well = targets.get(ThreadLocalRandom.current().nextInt(targets.size())).getLocation();
+        hold(caster, 14);
+        caster.getWorld().playSound(well, Sound.BLOCK_PORTAL_TRIGGER, 1.6F, .5F);
+        repeat(caster, arena, 18, 4, tick -> {
+            Telegraph.ring(well, WELL_PULL, Telegraph.SHADOW);
+            Telegraph.disc(well, WELL_CORE, Telegraph.SHADOW);
+            caster.getWorld().spawnParticle(Particle.REVERSE_PORTAL, well.clone().add(0, .5, 0), 30, 3, .4, 3, .06);
+            for (Player player : arena.near(well, WELL_PULL)) {
+                Vector pull = well.toVector().subtract(player.getLocation().toVector()).setY(0);
+                if (pull.lengthSquared() > 1) player.setVelocity(player.getVelocity().add(pull.normalize().multiply(.13)));
+            }
+        }, () -> {
+            caster.getWorld().spawnParticle(Particle.EXPLOSION, well, 3, 1, .3, 1, 0);
+            caster.getWorld().spawnParticle(Particle.SQUID_INK, well.clone().add(0, 1, 0), 60, 2, 1, 2, .1);
+            caster.getWorld().playSound(well, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.2F, .7F);
+            for (Player player : arena.near(well, WELL_CORE)) hit(player, caster, 7 * power);
+        });
+        return true;
+    }
+
+    /** Pools of nothing open under each player, and stay open a while. */
+    private boolean voidRift(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        List<Location> spots = new ArrayList<>();
+        for (Player player : targets.subList(0, Math.min(3, targets.size()))) spots.add(player.getLocation());
+        hold(caster, 12);
+        repeat(caster, arena, 3, 5, tick -> { for (Location spot : spots) Telegraph.disc(spot, RIFT_RADIUS, Telegraph.SHADOW); }, () -> repeat(caster, arena, RIFT_PULSES, 10, tick -> {
+            for (Location spot : spots) {
+                caster.getWorld().spawnParticle(Particle.SQUID_INK, spot.clone().add(0, .2, 0), 16, 1.4, .05, 1.4, 0);
+                caster.getWorld().spawnParticle(Particle.REVERSE_PORTAL, spot.clone().add(0, .2, 0), 10, 1.4, .2, 1.4, .02);
+                Telegraph.ring(spot, RIFT_RADIUS, Telegraph.SHADOW);
+                for (Player player : arena.near(spot, RIFT_RADIUS)) hit(player, caster, power);
+            }
+        }, () -> { }));
+        return true;
+    }
+
+    /** Two players are tied together, and it only breaks if they get far enough apart before it closes. */
+    private boolean voidBond(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        if (targets.size() < 2) return false;
+        List<Player> pair = new ArrayList<>(targets);
+        java.util.Collections.shuffle(pair);
+        Player one = pair.get(0), two = pair.get(1);
+        for (Player player : List.of(one, two)) bar(player, "<dark_purple><bold>Bound!</bold></dark_purple> <gray>Get away from " + player(player == one ? two : one) + ".</gray>");
+        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_CHAIN_PLACE, 2F, .5F);
+        repeat(caster, arena, 24, 5, tick -> {
+            if (!one.isOnline() || !two.isOnline() || one.getWorld() != two.getWorld()) return;
+            Telegraph.line(one.getLocation().add(0, 1, 0), two.getLocation().add(0, 1, 0), Telegraph.SHADOW);
+        }, () -> {
+            if (!one.isOnline() || !two.isOnline() || one.getWorld() != two.getWorld()) return;
+            if (one.getLocation().distance(two.getLocation()) >= BOND_APART) {
+                for (Player player : List.of(one, two)) player.playSound(player.getLocation(), Sound.BLOCK_CHAIN_BREAK, 1.4F, .7F);
+                return;
+            }
+            for (Player player : List.of(one, two)) {
+                hit(player, caster, 7 * power);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+            }
+        });
+        return true;
+    }
+
+    private static String player(Player player) { return net.nerdsmp.paper.presentation.Chat.escape(player.getName()); }
+
+    /** Eyes open in the air round the arena and start casting. They don't stop until they're shut. */
+    private boolean voidEyes(LivingEntity caster, Arena arena) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        hold(caster, 20);
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.2F, .7F);
+        for (int eye = 0; eye < 2; eye++) {
+            double angle = random.nextDouble(Math.TAU), far = random.nextDouble(11, 20);
+            Location spot = caster.getLocation().add(Math.cos(angle) * far, 3, Math.sin(angle) * far);
+            caster.getWorld().spawnParticle(Particle.REVERSE_PORTAL, spot, 50, .6, .6, .6, .1);
+            arena.fixture("custom:void_eye", spot);
+        }
+        return true;
+    }
+
+    /** Rings of black run out across the floor from the caster, each with one gap in it. Find the gap. */
+    private boolean blackHarvest(LivingEntity caster, Arena arena, double power) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Location center = caster.getLocation();
+        hold(caster, HARVEST_TICKS);
+        double[] gaps = {random.nextDouble(Math.TAU), random.nextDouble(Math.TAU), random.nextDouble(Math.TAU)};
+        List<Set<UUID>> struck = List.of(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        caster.getWorld().playSound(center, Sound.ENTITY_WITHER_SPAWN, 1.6F, .6F);
+        for (Player player : arena.near(center, 40)) bar(player, "<dark_purple><bold>Black Harvest!</bold></dark_purple> <gray>Find the gap in each ring.</gray>");
+        repeat(caster, arena, HARVEST_TICKS, 1, tick -> {
+            for (int wave = 0; wave < gaps.length; wave++) {
+                int age = tick - 12 - wave * HARVEST_SPACE;
+                double reach = age * .8;
+                if (age < 0 || reach > 34) continue;
+                int points = (int) (reach * 2.4) + 8;
+                for (int spot = 0; spot < points; spot++) {
+                    double angle = spot * Math.TAU / points;
+                    if (Math.abs(Math.sin((angle - gaps[wave]) / 2)) < HARVEST_GAP) continue;
+                    caster.getWorld().spawnParticle(Particle.SQUID_INK, center.clone().add(Math.cos(angle) * reach, .4, Math.sin(angle) * reach), 1, 0, .1, 0, 0);
+                }
+                for (Player player : arena.near(center, 40)) {
+                    Location at = player.getLocation();
+                    double out = Math.hypot(at.getX() - center.getX(), at.getZ() - center.getZ()), angle = Math.atan2(at.getZ() - center.getZ(), at.getX() - center.getX());
+                    if (Math.abs(out - reach) > 1.3 || Math.abs(Math.sin((angle - gaps[wave]) / 2)) < HARVEST_GAP || !struck.get(wave).add(player.getUniqueId())) continue;
+                    hit(player, caster, 6 * power);
+                }
+            }
+        }, () -> { });
+        return true;
+    }
+
+    /** Three steps through nothing, and each place it stood bursts a moment after it leaves. */
+    private boolean voidStep(LivingEntity caster, Arena arena, double power) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Location home = caster.getLocation();
+        hold(caster, 45);
+        repeat(caster, arena, 3, 14, step -> {
+            Location left = caster.getLocation();
+            double angle = random.nextDouble(Math.TAU), far = random.nextDouble(8, 18);
+            Location next = step == 2 ? home : home.clone().add(Math.cos(angle) * far, 0, Math.sin(angle) * far);
+            caster.getWorld().spawnParticle(Particle.REVERSE_PORTAL, left.clone().add(0, 2, 0), 80, 1, 2, 1, .1);
+            caster.getWorld().playSound(left, Sound.ENTITY_ENDERMAN_TELEPORT, 1.6F, .5F);
+            caster.teleport(next);
+            repeat(caster, arena, 3, 5, tick -> Telegraph.ring(left, STEP_BURST, Telegraph.SHADOW), () -> {
+                caster.getWorld().spawnParticle(Particle.SQUID_INK, left.clone().add(0, 1, 0), 50, 2, .6, 2, .08);
+                caster.getWorld().playSound(left, Sound.ENTITY_GENERIC_EXPLODE, .8F, 1.4F);
+                for (Player player : arena.near(left, STEP_BURST)) hit(player, caster, 4 * power);
+            });
+        }, () -> { });
+        return true;
+    }
+
+    private static void bar(Player player, String markup) { net.nerdsmp.paper.presentation.Chat.bar(player, markup); }
 
     /** A bolt you can watch fly to a marked spot, and ice there for a few seconds after. */
     private boolean frostBolt(LivingEntity caster, Arena arena, List<Player> targets, double power) {

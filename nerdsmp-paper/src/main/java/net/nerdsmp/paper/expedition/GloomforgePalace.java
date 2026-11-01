@@ -24,30 +24,9 @@ final class GloomforgePalace {
 
     private GloomforgePalace() { }
 
-    /** A piece of carving set out from a spot: {@code a} across, {@code h} up, {@code f} the way it faces. */
-    private record Frame(BuildCanvas b, int x, int y, int z, int dirX, int dirZ) {
-        int wx(int a, int f) { return x + a * dirZ + f * dirX; }
-
-        int wz(int a, int f) { return z - a * dirX + f * dirZ; }
-
-        void set(int a, int h, int f, Material block) { b.block(wx(a, f), y + h, wz(a, f), block); }
-
-        void set(int a, int h, int f, Material block, String state) { b.block(wx(a, f), y + h, wz(a, f), block, state); }
-
-        void box(int a1, int a2, int h1, int h2, int f1, int f2, Material block) {
-            for (int a = a1; a <= a2; a++) for (int h = h1; h <= h2; h++) for (int f = f1; f <= f2; f++) set(a, h, f, block);
-        }
-
-        /** The same box either side of the middle. */
-        void both(int a1, int a2, int h1, int h2, int f1, int f2, Material block) {
-            box(a1, a2, h1, h2, f1, f2, block);
-            box(-a2, -a1, h1, h2, f1, f2, block);
-        }
-
-        /** Texture in blobs, so a wall reads as one stone with patches of wear and not as static. */
-        void dress(int a1, int a2, int h1, int h2, int f1, int f2) {
-            for (int a = a1; a <= a2; a++) for (int h = h1; h <= h2; h++) for (int f = f1; f <= f2; f++) set(a, h, f, stone(wx(a, f), y + h, wz(a, f)));
-        }
+    /** Texture in blobs, so a wall reads as one stone with patches of wear and not as static. */
+    private static void dress(Carving c, int a1, int a2, int h1, int h2, int f1, int f2) {
+        for (int a = a1; a <= a2; a++) for (int h = h1; h <= h2; h++) for (int f = f1; f <= f2; f++) c.set(a, h, f, stone(c.wx(a, f), c.y() + h, c.wz(a, f)));
     }
 
     /** The palace's worked stone: blue-black brick, drifting to tile and to a cold cyan where the damp has got at it. */
@@ -73,7 +52,7 @@ final class GloomforgePalace {
     }
 
     static void build(BuildCanvas b, MineKit kit) {
-        Frame front = new Frame(b, FACE, FLOOR + 1, AXIS, -1, 0);
+        Carving front = new Carving(b, FACE, FLOOR + 1, AXIS, -1, 0);
         causeway(b);
         terrace(front);
         wings(front);
@@ -125,7 +104,7 @@ final class GloomforgePalace {
                 if (Math.abs(dx) == 5 || dz == 11) for (int y = 2; y < DOCK; y++) b.block(x + dx, y, AXIS + side * dz, stone(x + dx, y, AXIS + side * dz));
             }
             for (int dx = -2; dx <= 2; dx++) b.block(x + dx, DOCK + 1, AXIS + side * 3, Material.AIR);
-            guard(new Frame(b, x, DOCK + 1, AXIS + side * 8, 0, -side));
+            guard(new Carving(b, x, DOCK + 1, AXIS + side * 8, 0, -side));
         }
         for (int x : new int[]{190, 212, 230}) for (int side : new int[]{-1, 1}) lamp(b, x, DOCK + 1, AXIS + side * 3);
     }
@@ -155,7 +134,7 @@ final class GloomforgePalace {
     }
 
     /** A hooded stone dwarf, both hands on the head of a hammer planted between his feet. */
-    private static void guard(Frame stone) {
+    private static void guard(Carving stone) {
         stone.box(-3, 3, 0, 1, -3, 3, DRESSED);
         stone.box(-2, 2, 1, 1, -2, 2, CARVED);
         for (int h = 2; h <= 9; h++) {
@@ -178,13 +157,13 @@ final class GloomforgePalace {
     }
 
     /** The front court: three steps of plinth out of the water, a flared stair on the axis, and fire raised either side of it. */
-    private static void terrace(Frame front) {
+    private static void terrace(Carving front) {
         int[][] tiers = {{-7, 24, 42}, {-5, 20, 38}, {-3, 16, 34}};
         for (int[] tier : tiers) {
             int top = tier[0], out = tier[1], wide = tier[2];
             for (int a = -wide; a <= wide; a++) for (int f = 0; f <= out; f++) {
                 boolean rim = Math.abs(a) >= wide - 1 || f >= out - 1;
-                if (rim) front.dress(a, a, -14, top - 1, f, f);
+                if (rim) dress(front, a, a, -14, top - 1, f, f);
                 front.set(a, top, f, rim ? DRESSED : TILE);
             }
             for (int a = -wide - 1; a <= wide + 1; a++) front.set(a, top, out + 1, Material.DEEPSLATE_BRICK_SLAB, "type=bottom");
@@ -204,13 +183,13 @@ final class GloomforgePalace {
             }
         }
         for (int side : new int[]{-1, 1}) {
-            for (int f = 11; f <= 14; f++) for (int a = 11; a <= 13; a++) front.dress(side * a, side * a, -1, 0, f, f);
+            for (int f = 11; f <= 14; f++) for (int a = 11; a <= 13; a++) dress(front, side * a, side * a, -1, 0, f, f);
             brazier(front, side * 12, 3, 12);
         }
     }
 
     /** A bowl of fire on a stem, high enough to be seen over a crowd. */
-    private static void brazier(Frame at, int a, int h, int f) {
+    private static void brazier(Carving at, int a, int h, int f) {
         at.box(a, a, h - 2, h, f, f, Material.POLISHED_BLACKSTONE);
         at.box(a - 1, a + 1, h + 1, h + 1, f - 1, f + 1, BRONZE);
         at.box(a - 1, a + 1, h + 2, h + 2, f - 1, f + 1, EMBER);
@@ -233,13 +212,13 @@ final class GloomforgePalace {
     // The front
     // ---------------------------------------------------------------------------------------------
 
-    private static Material proudAt(Frame front, int a, int h, int f) { return proud(front.wx(a, f), front.y() + h, front.wz(a, f)); }
+    private static Material proudAt(Carving front, int a, int h, int f) { return proud(front.wx(a, f), front.y() + h, front.wz(a, f)); }
 
     /** The long low arcades either side, dark in the arches, each with a lit window deep in it. */
-    private static void wings(Frame front) {
+    private static void wings(Carving front) {
         for (int side : new int[]{-1, 1}) {
             for (int a = 25; a <= 44; a++) {
-                front.dress(side * a, side * a, 0, 20, 0, 3);
+                dress(front, side * a, side * a, 0, 20, 0, 3);
                 front.set(side * a, 21, 3, DRESSED);
                 front.set(side * a, 21, 2, BRONZE);
                 for (int h = 22; h <= 24; h++) for (int f = -2; f <= 2 - (h - 22); f++) front.set(side * a, h, f, Math.floorMod(a, 2) == 0 ? TILE : BRICK);
@@ -271,7 +250,7 @@ final class GloomforgePalace {
     }
 
     /** A tower of the front: it juts out from the cliff, its corners stand proud of its faces, and it steps in as it climbs to a crown of crystal. */
-    private static void pylon(Frame front, int side) {
+    private static void pylon(Carving front, int side) {
         int inner = 13, outer = 24, out = 11, eave = 34;
         for (int a = inner; a <= outer; a++) for (int f = 0; f <= out; f++) {
             int s = side * a;
@@ -314,7 +293,7 @@ final class GloomforgePalace {
     }
 
     /** The gate in its sleeve: frame within frame, each one darker and further in, to the doors and the hammer over them. */
-    private static void gate(Frame front) {
+    private static void gate(Carving front) {
         // The sleeve, stepping in from the face of the wall.
         for (int ring = 0; ring < 4; ring++) {
             int f = 4 - ring * 2, half = 12 - ring * 2, spring = 16 - ring * 2, top = spring + half - 3;
@@ -352,7 +331,7 @@ final class GloomforgePalace {
     }
 
     /** The old king, carved out of the front, looking down the causeway at whoever's coming. */
-    private static void king(Frame front) {
+    private static void king(Carving front) {
         for (int a = -15; a <= 15; a++) for (int h = 24; h <= 59; h++) {
             int out = (int) Math.round(relief(a, h));
             if (out <= 0) continue;
@@ -382,7 +361,7 @@ final class GloomforgePalace {
     }
 
     /** Masonry shouldered up into the roof of the cave, so the front grows out of the rock and doesn't stand in front of it. */
-    private static void wedge(Frame front, MineKit kit) {
+    private static void wedge(Carving front, MineKit kit) {
         for (int a = -60; a <= 60; a++) for (int f = 0; f <= 9; f++) {
             // Behind the crown of the helm and over the towers it comes down to meet the masonry; out at the sides it falls to the wings.
             int over = Math.abs(a) <= 28 ? 65 + (int) ((smooth(a + 40, f, 6, 706) - .5) * 8) + f * 2 : 26 + (60 - Math.abs(a)) / 2 + f * 3;
@@ -394,7 +373,7 @@ final class GloomforgePalace {
     }
 
     /** Bronze doors standing open: they've been open since the Foreman broke them, and one hangs off true. */
-    private static void doors(Frame front) {
+    private static void doors(Carving front) {
         for (int h = 0; h <= 7; h++) for (int depth = 0; depth < 5; depth++) for (int side : new int[]{-1, 1}) {
             boolean skew = side > 0 && depth >= 3;
             front.set(side * 5 + (side > 0 ? 0 : 0), h, -6 - depth, h % 3 == 0 ? BRONZE : Math.floorMod(depth, 2) == 0 ? VERDIGRIS : BRONZE);
@@ -404,7 +383,7 @@ final class GloomforgePalace {
     }
 
     /** The forge's overflow, running down the front either side of the gate and away along the terrace in stone channels. */
-    private static void lava(Frame front) {
+    private static void lava(Carving front) {
         for (int side : new int[]{-1, 1}) {
             int a = side * 12;
             for (int h = 30; h >= 0; h--) for (int f = 4; f <= 5; f++) front.set(a, h, f, Material.LAVA, h == 30 ? "level=0" : "level=8");
@@ -467,7 +446,7 @@ final class GloomforgePalace {
     private static void niches(BuildCanvas b) {
         for (int x = FIRST_COLUMN + 4; x < END - 4; x += GRID) for (int side : new int[]{-1, 1}) {
             int z = AXIS + side * HALF;
-            Frame wall = new Frame(b, x, FLOOR + 1, z, 0, -side);
+            Carving wall = new Carving(b, x, FLOOR + 1, z, 0, -side);
             wall.box(-2, 2, 2, 10, -1, 0, SHADOW);
             wall.box(-3, 3, 11, 11, 0, 0, BRONZE);
             wall.box(-1, 1, 12, 15, 0, 0, Material.AIR);
@@ -505,8 +484,8 @@ final class GloomforgePalace {
 
     /** The far end: the great hearth, a grate as tall as a house with the fire behind it. */
     private static void hearth(BuildCanvas b) {
-        Frame end = new Frame(b, END, FLOOR + 1, AXIS, -1, 0);
-        end.dress(-HALF, HALF, 0, CEILING - FLOOR - 1, 0, 2);
+        Carving end = new Carving(b, END, FLOOR + 1, AXIS, -1, 0);
+        dress(end, -HALF, HALF, 0, CEILING - FLOOR - 1, 0, 2);
         for (int h = 0; h <= 12; h++) {
             int half = h <= 8 ? 8 : 8 - (h - 8);
             for (int a = -half; a <= half; a++) {
@@ -530,7 +509,7 @@ final class GloomforgePalace {
 
     /** The great anvil of the hall, before the hearth, with the Foreman's tools still on it. */
     private static void anvil(BuildCanvas b) {
-        Frame anvil = new Frame(b, END - 12, FLOOR + 1, AXIS, -1, 0);
+        Carving anvil = new Carving(b, END - 12, FLOOR + 1, AXIS, -1, 0);
         anvil.box(-2, 2, 0, 0, -3, 3, DRESSED);
         anvil.box(-1, 1, 1, 1, -2, 2, Material.POLISHED_BLACKSTONE);
         anvil.box(0, 0, 2, 2, -1, 1, Material.POLISHED_BLACKSTONE);

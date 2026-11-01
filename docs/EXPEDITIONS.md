@@ -147,7 +147,7 @@ and other members need only be allowed into the expedition itself.
 | `thornwood_canopy` | Treetops at night, level 12, forces (80) | 1–5 | Rootgate → Low Boughs → the Fork (hub) → east: Signal Boughs (four boards lower the span), then optional Verrin's Perch (boss in the wind) → west: Silk Walk, then the Briar Matron's Nest (boss; breaks open a catwalk) → the climb → Heart Gate → Thornheart Grove (The Thornheart Shaman) |
 | `sunken_aqueduct` | Flooded waterworks, level 16, timed (10 min, +2 min per room) | 1–5 | Sluice Hall (waves + three valves in the shown order, which drain the channel) → Cistern (survive 50 s, geysers) → Floodgate Control (clear + two counterweight plates) → Pumphouse Stove → Tidewarden's Basin (The Tidewarden: tether, frost nova; below 50% meteor, summon, geysers) |
 | `gloomforge_mines` | Five levels down, level 20, forces | 1–5 | The Pithead → the Upper Galleries → the Gullet (a terraced pit) → Grell's Shaft (Overseer Grell, falling loads) → the Mainline (waves, carts, refuges) → the Ore Line (the Blastmaster, carts on seven tracks) → the Round Foundry (waves + three dampers) → the Slag Pits (optional, the Slag Hound) → the Gloomforge (the Deep Foreman, in the great hall of a dwarven forge-palace cut into the cliff) |
-| `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | From the concourse, three wings in any order: Ember Antechamber (four brazier targets) → Ember Throne; Frost Antechamber (four chimes in the shown order) → Frost Hall; Stone Antechamber (three plates) → Stone Court |
+| `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | The Long Stair → the High Gate (Thane Orrek) → the Hall of Seals, then three wings in any order: the Ash Court (the Keepers, four brazier targets) → Ember Throne; the Rime Stacks (four chimes in the shown order) → Frost Throne; the Court of Kings (four kings, three plates) → Stone Throne. With all three seals broken, a portal over the dais leads to the Unwritten, and Oriveth |
 | `cinder_keep` | **Raid**: Nether (basalt deltas), level 26 | 2–8 | Scorched Descent (clear) → Gorrak's Kiln (Gorrak the Kilnbreaker; opens the Cinder Shelf) → Slagfalls (3 waves, falling slag) → Hound Pens (Skarn and Vesh, linked) → Rune Galleries (clear + three rune valves) → Slag Chapel (Vael, the Slag Priest) → Great Bellows (survive 75 s, vents) → Steward's Hall (Steward Ashkar and his guard; raises the causeway) → Molten Heart (Pyrrhax, the Ashen Sovereign) |
 
 **The campaign path.** Each campaign expedition opens once you've cleared the one before it
@@ -632,7 +632,20 @@ npcs:
   turning circle around the first point, then raises the boss in a column of fire and slams it
   down; those fires stay lit for the fight. Either takes about a dozen seconds to read well. The boss is
   let loose once every camera is back, and a second attempt takes a second with no wait. Time a
-  scene around it.
+  scene around it. The acts each take their own marks in `sources`: `plunge` a perch the boss stands on,
+  sounds its horn and steps off; `icebound` the spots the cold runs in from, closing on a pillar of ice
+  that splits open; `converge` three plates that throw beams up to where the boss comes down.
+- **Stances.** `stances: [{at: [x, y, z], title: The Rite of Ash, abilities: [fire_pools]}]` on a boss
+  encounter gives it the powers of whichever spot it stands nearest, and the room is told when it
+  changes, so the party chooses where to fight it.
+- **Boons.** `boon: {title: Warden's Favour, damage: 12, guard: 5, speed: 1, fireproof: true}` on a room
+  leaves that on the whole party until the run ends, once the room is cleared. Several stack.
+- **Bodies.** `body: colossus` or `body: unwritten` on an encounter hides the boss and hangs that
+  display-entity figure on it. `converge` and `colossus` entrances need one.
+- **Portals.** `portals: {id: {title: ..., at: [x, y, z], to: [x, y, z, yaw], radius: 3, room: far_room, requires: [rooms], feeds: [[x, y, z]], opens: [script lines]}}`
+  draws a tear in particles once every room in `requires` is cleared, runs `opens`, and takes anyone who walks into it to
+  `to` until `room` is won. `feeds` are spots whose streams run into it. Nothing is built, so it needs no blocks.
+- **Floors that just go.** A `burndown` section with no `device` can't be saved: it's marked, then it falls.
 - **Characters** stand where placed, can't be hurt or traded with, and play their next line when
   right-clicked. Scripts make them (or anyone) speak with `say`, and move them with `npc`. With
   `quests: <giver id>` a character is a quest giver for `content/world-quests.yml`: it shows a blue

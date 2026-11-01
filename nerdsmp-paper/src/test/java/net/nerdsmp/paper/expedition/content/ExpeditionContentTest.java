@@ -62,7 +62,7 @@ class ExpeditionContentTest {
         assertEquals(ExpeditionDefinition.Goal.FORCES, sample("thornwood_canopy").story().goal());
         assertEquals(ExpeditionDefinition.Goal.TIMED, sample("sunken_aqueduct").story().goal());
         assertEquals(ExpeditionDefinition.Goal.BOSSES, sample("hall_of_wardens").story().goal());
-        assertEquals(3, sample("hall_of_wardens").roomList().stream().filter(ExpeditionDefinition.Room::bossRoom).count());
+        assertEquals(6, sample("hall_of_wardens").roomList().stream().filter(ExpeditionDefinition.Room::bossRoom).count());
     }
 
     @Test void barrowRoomsWavesScriptsAndLootParse() {

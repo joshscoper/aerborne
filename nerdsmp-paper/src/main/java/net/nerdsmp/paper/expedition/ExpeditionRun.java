@@ -104,7 +104,9 @@ final class ExpeditionRun {
     private final RunArena roomFight;
     private final RunPacks packs;
     private final RoomMuster muster = new RoomMuster();
+    private final Map<UUID, ExpeditionDefinition.Stance> stances = new HashMap<>();
     private RunLures lures;
+    private RunPortals portals;
     /** Whether each sealed room's door is shut now. */
     private final Map<String, Boolean> seals = new HashMap<>();
     /** When the active sealed fight last had a living member inside. */
@@ -381,6 +383,7 @@ final class ExpeditionRun {
     void begin(World created) {
         world = created;
         lures = new RunLures(plugin, this);
+        portals = new RunPortals(plugin, this);
         long now = System.currentTimeMillis();
         progress = new RunProgress(expedition, tier, modifiers, new HashSet<>(members), now);
         for (Room room : expedition.roomList()) {
@@ -486,6 +489,8 @@ final class ExpeditionRun {
         stage.tick(now);
         puzzles.tick(now);
         lures.tick();
+        portals.tick();
+        tickStances();
         if (muster.room() != null) {
             if (progress.startable(muster.room())) muster(expedition.rooms().get(muster.room()), now);
             else muster.clear();
@@ -647,6 +652,15 @@ final class ExpeditionRun {
         apply(progress.enter(roomId, now), now);
         return true;
     }
+
+    boolean isLive() { return state == State.ACTIVE; }
+
+    boolean roomCleared(String room) { return progress.state(room) == RunProgress.RoomState.CLEARED; }
+
+    /** A portal has opened: its lines play as if the room on its far side had said them. */
+    void opened(ExpeditionDefinition.Portal portal) { runScript(portal.room(), portal.opens(), 0); }
+
+    void send(Player player, Location to) { service.teleport(player, to); }
 
     double boonDealt() { return lures == null ? 1 : lures.dealt(); }
 
@@ -1125,6 +1139,25 @@ final class ExpeditionRun {
         }
     }
 
+    /** A boss with stances takes on the powers of whichever it's standing nearest, and the whole room sees it change. */
+    private void tickStances() {
+        Room room = progress.activeRoom();
+        if (room == null || room.encounter().stances().isEmpty()) return;
+        for (UUID uuid : bosses.keySet()) {
+            if (!(Bukkit.getEntity(uuid) instanceof LivingEntity boss) || !casters.containsKey(uuid)) continue;
+            Location at = boss.getLocation();
+            ExpeditionDefinition.Stance near = null;
+            for (var stance : room.encounter().stances())
+                if (near == null || stance.at().distanceSquared(at.getX(), at.getY(), at.getZ()) < near.at().distanceSquared(at.getX(), at.getY(), at.getZ())) near = stance;
+            if (near == stances.put(uuid, near)) continue;
+            casters.get(uuid).abilities = near.abilities();
+            casters.get(uuid).nextCast = System.currentTimeMillis() + 1_500;
+            broadcast("<gold>" + plainName(boss) + "</gold> <gray>takes up</gray> <yellow>" + Chat.escape(near.title()) + "</yellow><gray>.</gray>");
+            world.spawnParticle(Particle.FLAME, at.clone().add(0, 1, 0), 40, 1, 1, 1, .05);
+            world.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, 1.4F, .7F);
+        }
+    }
+
     /** A boss's abilities for a phase: the phase's list, or the encounter's when the phase lists none. */
     private List<String> bossAbilities(Room room, int phase) {
         var encounter = room.encounter();
@@ -1146,6 +1179,7 @@ final class ExpeditionRun {
                 caster.nextCast = System.currentTimeMillis() + 2_000;
             }
         }
+        stances.clear();
         String title = definition.title() == null ? "Phase " + (phase + 1) : definition.title();
         if (definition.submergeSeconds() > 0) submerge(definition.submergeSeconds());
         for (Player player : online()) {
@@ -1164,8 +1198,8 @@ final class ExpeditionRun {
         for (UUID uuid : bosses.keySet()) {
             if (!(Bukkit.getEntity(uuid) instanceof LivingEntity boss)) continue;
             fight.cancelCast(uuid);
-            world.spawnParticle(Particle.LAVA, boss.getLocation(), 40, 1, .5, 1, 0);
-            world.playSound(boss.getLocation(), Sound.BLOCK_LAVA_EXTINGUISH, 1.2F, .6F);
+            world.spawnParticle(Particle.CLOUD, boss.getLocation(), 40, 1, .5, 1, .05);
+            world.playSound(boss.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.2F, .6F);
             boss.setInvulnerable(true);
             boss.setVisibleByDefault(false);
             if (boss instanceof Mob mob) mob.setAware(false);
@@ -1183,9 +1217,9 @@ final class ExpeditionRun {
             boss.setInvulnerable(false);
             boss.setVisibleByDefault(true);
             if (boss instanceof Mob mob) mob.setAware(true);
-            world.spawnParticle(Particle.LAVA, boss.getLocation(), 60, 1.2, .8, 1.2, 0);
+            world.spawnParticle(Particle.CLOUD, boss.getLocation(), 60, 1.2, .8, 1.2, .08);
             world.spawnParticle(Particle.EXPLOSION, boss.getLocation(), 2, .6, .4, .6, 0);
-            world.playSound(boss.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.3F, .5F);
+            world.playSound(boss.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.3F, .5F);
             Caster caster = casters.get(uuid);
             if (caster != null) caster.nextCast = System.currentTimeMillis() + 2_000;
         }
@@ -1235,6 +1269,13 @@ final class ExpeditionRun {
 
     private final AbilityCaster.Arena arena = new AbilityCaster.Arena() {
         @Override public boolean live() { return state == State.ACTIVE; }
+
+        @Override public List<Location> marks() {
+            Room room = progress.activeRoom();
+            List<Location> marks = new ArrayList<>();
+            if (room != null) for (Point point : room.points().subList(Math.min(1, room.points().size()), room.points().size())) marks.add(location(point));
+            return marks;
+        }
 
         @Override public List<Player> targets(LivingEntity caster, double radius) {
             List<Player> found = new ArrayList<>();
@@ -1797,7 +1838,7 @@ final class ExpeditionRun {
         } else lines.add(state == State.ENDING ? completed ? "<green>✔ Complete</green>" : "<red>✘ Failed</red>"
             : "<gray>" + Chat.escape(tier.title()) + "</gray>  " + (left <= 60 ? "<red>" : left <= 300 ? "<yellow>" : "<white>") + clock + "</white>"
                 + "  <red>❤ " + Math.max(0, progress.lives()) + "</red>");
-        if (lures != null && lures.status() != null) lines.add(lures.status());
+        if (lures != null) lines.addAll(lures.status());
         Room active = progress.activeRoom();
         List<RunProgress.Objective> all = progress.objectives(now);
         // Only what's in hand: the room running now, else what's open next, and how far along the party is.

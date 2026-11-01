@@ -34,6 +34,23 @@ abilities:
   molten_heart_stone: [ember_aura]
   deep_foremans_cuirass: [last_stand]
   gloomforge_signet: [ember_aura]
+  # The Hall of the Three Wardens.
+  orreks_horn: [last_stand]
+  gale_treads: [fleet_stride]
+  returning_axe: [thunderclap]
+  rite_of_ash_band: [ember_aura]
+  wardens_firebrand: [ember_brand]
+  hoarfrost_longbow: [grave_chill]
+  stonewarden_plate: [last_stand]
+  binding_treads: [fleet_stride]
+  seal_of_three: [ember_aura]
+  ember_rite_mantle: [ember_aura]
+  rimewoven_cloak: [last_stand]
+  kingsblood_greaves: [last_stand]
+  mossgrown_bulwark: [last_stand]
+  unwritten_crown: [ember_aura]
+  unwritten_cuirass: [last_stand]
+  oriveths_quill: [soul_siphon]
   # The other dungeons.
   briarshot_crossbow: [grave_chill]
   thornheart_rapier: [shadow_step]
@@ -417,6 +434,335 @@ items:
     stats: {max-health: 6, damage-percent: 3}
     lore:
       - "<gray>A burning crown, pressed into the gold by someone else's hand.</gray>"
+  gate_watch_buckler:
+    material: shield
+    name: "<green>Gate-Watch Buckler</green>"
+    slot: off_hand
+    rarity: uncommon
+    item-level: 24
+    stats: {defense: 7}
+    lore:
+      - "<gray>Dented on one side only. They always came from the stair.</gray>"
+  thunder_cord:
+    material: string
+    name: "<green>Thunder Cord</green>"
+    slot: neck
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {max-health: 5}
+    lore:
+      - "<gray>It hums before a storm, and it's always before a storm up here.</gray>"
+  aspirants_pauldrons:
+    material: leather
+    name: "<green>Aspirant's Pauldrons</green>"
+    slot: shoulders
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {defense: 4}
+    lore:
+      - "<gray>Worn smooth by the same drill, a thousand years running.</gray>"
+  long_stair_cloak:
+    material: phantom_membrane
+    name: "<green>Long Stair Cloak</green>"
+    slot: back
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {max-health: 5}
+    lore:
+      - "<gray>Cut to catch the wind, which there is no shortage of.</gray>"
+  rune_cuffs:
+    material: iron_nugget
+    name: "<green>Rune Cuffs</green>"
+    slot: wrists
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {defense: 4}
+    lore:
+      - "<gray>The runes say 'stand'. Only that, over and over.</gray>"
+  archivists_mitts:
+    material: rabbit_hide
+    name: "<green>Archivist's Mitts</green>"
+    slot: hands
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {defense: 3, damage-flat: 1}
+    lore:
+      - "<gray>Inked to the knuckle.</gray>"
+  hallguard_belt:
+    material: leather
+    name: "<green>Hallguard Belt</green>"
+    slot: waist
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {defense: 4}
+    lore:
+      - "<gray>The buckle is a very small Warden, frowning.</gray>"
+  gilded_loop:
+    material: gold_nugget
+    name: "<green>Gilded Loop</green>"
+    slot: ring
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {max-health: 3, damage-percent: 1}
+    lore:
+      - "<gray>Gold leaf over stone. The Hall kept up appearances.</gray>"
+  sky_whistle:
+    material: feather
+    name: "<green>Sky Whistle</green>"
+    slot: trinket
+    rarity: uncommon
+    item-level: 24
+    sockets: 1
+    stats: {max-health: 4}
+    lore:
+      - "<gray>Nothing answers it. Something up there does turn its head.</gray>"
+  orreks_horn:
+    material: goat_horn
+    name: "<light_purple>Orrek's Horn</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 27
+    sockets: 2
+    stats: {max-health: 5, damage-percent: 3}
+    lore:
+      - "<gray>One note. Every watch for a thousand years has known what it meant.</gray>"
+  watchmans_bracers:
+    material: gold_nugget
+    name: "<blue>Watchman's Bracers</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 26
+    sockets: 1
+    stats: {defense: 5, max-health: 3}
+    lore:
+      - "<gray>The left one is worn through where the shield sat.</gray>"
+  thanes_girdle:
+    material: leather
+    name: "<blue>Thane's Girdle</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 26
+    sockets: 1
+    stats: {defense: 5, max-health: 3}
+    lore:
+      - "<gray>Let out twice, and never taken in.</gray>"
+  gale_treads:
+    material: golden_boots
+    name: "<blue>Gale Treads</blue>"
+    slot: feet
+    rarity: rare
+    item-level: 26
+    sockets: 1
+    stats: {defense: 5}
+    lore:
+      - "<gray>You'd swear the wind was behind you. It usually is, up here.</gray>"
+  returning_axe:
+    material: golden_axe
+    name: "<light_purple>The Returning Axe</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 27
+    sockets: 2
+    stats: {damage: 9, damage-percent: 2}
+    lore:
+      - "<gray>Throw it and stand still. That's the hard part.</gray>"
+  keepers_gloves:
+    material: rabbit_hide
+    name: "<blue>Keeper's Gloves</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 26
+    sockets: 1
+    stats: {defense: 4, damage-flat: 2}
+    lore:
+      - "<gray>Scorched on the inside.</gray>"
+  ash_keepers_stole:
+    material: string
+    name: "<blue>Ash Keeper's Stole</blue>"
+    slot: neck
+    rarity: rare
+    item-level: 26
+    sockets: 1
+    stats: {max-health: 7, damage-percent: 1}
+    lore:
+      - "<gray>It's still warm, and it's been a very long time.</gray>"
+  ember_rite_mantle:
+    material: blaze_powder
+    name: "<light_purple>Mantle of the Rite</light_purple>"
+    slot: shoulders
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {defense: 7, damage-percent: 2}
+    lore:
+      - "<gray>Ash on the left shoulder, flame on the right.</gray>"
+  rite_of_ash_band:
+    material: gold_nugget
+    name: "<light_purple>Band of the Ash Rite</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {max-health: 6, damage-percent: 3}
+    lore:
+      - "<gray>Ash gathers in the setting however often you blow it out.</gray>"
+  cinderbound_legguards:
+    material: golden_leggings
+    name: "<blue>Cinderbound Legguards</blue>"
+    slot: legs
+    rarity: rare
+    item-level: 27
+    sockets: 2
+    stats: {defense: 9}
+    lore:
+      - "<gray>Each plate was quenched in something that wasn't water.</gray>"
+  wardens_firebrand:
+    material: golden_sword
+    name: "<light_purple>The Warden's Firebrand</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {damage: 10, damage-percent: 2}
+    lore:
+      - "<gray>It was lit before the Binding. Nobody has found out how to put it out.</gray>"
+  rimewoven_cloak:
+    material: phantom_membrane
+    name: "<light_purple>Rimewoven Cloak</light_purple>"
+    slot: back
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {max-health: 9, defense: 2}
+    lore:
+      - "<gray>It keeps the cold in, which turns out to be the point.</gray>"
+  icebound_helm:
+    material: iron_helmet
+    name: "<blue>Icebound Helm</blue>"
+    slot: head
+    rarity: rare
+    item-level: 27
+    sockets: 2
+    stats: {defense: 8}
+    lore:
+      - "<gray>Don't lick it.</gray>"
+  packleader_band:
+    material: iron_nugget
+    name: "<blue>Packleader's Band</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 27
+    sockets: 1
+    stats: {max-health: 4, damage-percent: 2}
+    lore:
+      - "<gray>A hound's tooth, set in cold iron.</gray>"
+  hoarfrost_longbow:
+    material: bow
+    name: "<light_purple>Hoarfrost Longbow</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {damage: 8, damage-percent: 3}
+    lore:
+      - "<gray>The string doesn't thaw.</gray>"
+  stonewarden_plate:
+    material: iron_chestplate
+    name: "<light_purple>Stone Warden's Plate</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 28
+    sockets: 3
+    stats: {defense: 14}
+    lore:
+      - "<gray>Heavier than it looks, and it looks heavy.</gray>"
+  kingsblood_greaves:
+    material: iron_leggings
+    name: "<light_purple>Kingsblood Greaves</light_purple>"
+    slot: legs
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {defense: 10, max-health: 3}
+    lore:
+      - "<gray>Four kings wore these in turn, and each of them left a little.</gray>"
+  court_seal_signet:
+    material: gold_nugget
+    name: "<blue>Court Seal Signet</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 27
+    sockets: 1
+    stats: {max-health: 6, defense: 1}
+    lore:
+      - "<gray>It closed judgments. It has not been asked to open one.</gray>"
+  mossgrown_bulwark:
+    material: shield
+    name: "<light_purple>Mossgrown Bulwark</light_purple>"
+    slot: off_hand
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {defense: 9, max-health: 3}
+    lore:
+      - "<gray>It has stood in the rain a very long time and it's in no hurry.</gray>"
+  unwritten_crown:
+    material: golden_helmet
+    name: "<light_purple>Crown of the Unwritten</light_purple>"
+    slot: head
+    rarity: epic
+    item-level: 30
+    sockets: 3
+    stats: {defense: 8, damage-percent: 3}
+    lore:
+      - "<gray>Three bands: warm, cold and heavy. The fourth is a gap.</gray>"
+  unwritten_cuirass:
+    material: netherite_chestplate
+    name: "<light_purple>Unwritten Cuirass</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 30
+    sockets: 3
+    stats: {defense: 15, max-health: 3}
+    lore:
+      - "<gray>The joins between the three metals shouldn't hold. They hold.</gray>"
+  binding_treads:
+    material: iron_boots
+    name: "<light_purple>Treads of the Binding</light_purple>"
+    slot: feet
+    rarity: epic
+    item-level: 30
+    sockets: 2
+    stats: {defense: 6, max-health: 4}
+    lore:
+      - "<gray>They leave no mark on stone, ice or ash.</gray>"
+  oriveths_quill:
+    material: amethyst_shard
+    name: "<gold>Oriveth's Quill</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 31
+    sockets: 3
+    stats: {damage: 10, damage-percent: 4}
+    lore:
+      - "<gray>It has scraped a great many names off a great many pages.</gray>"
+  seal_of_three:
+    material: lodestone
+    name: "<gold>Seal of Three</gold>"
+    slot: trinket
+    rarity: legendary
+    item-level: 31
+    sockets: 3
+    stats: {max-health: 8, damage-percent: 4}
+    lore:
+      - "<gray>It turns slowly in the hand, always toward the Keep.</gray>"
   rangers_roundel:
     material: shield
     name: "<green>Ranger's Roundel</green>"

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * The Mines' boss entrances, staged in display entities. Each act runs once a tick for its length, and the boss is
+ * Boss entrances staged in display entities. Each act runs once a tick for its length, and the boss is
  * moved by hand until the last tick, when {@link RunEntrance} sets it loose. {@code set} is the act's props: they're
  * removed when the act ends, however it ends.
  */
@@ -83,13 +83,15 @@ final class RunActs {
     }
 
     /** A wave of fire running out across the floor from {@code at}, plate by plate. */
-    private void shockwave(List<Display> set, Location at, double reach, int ticks) {
+    private void shockwave(List<Display> set, Location at, double reach, int ticks) { shockwave(set, at, Material.MAGMA_BLOCK, reach, ticks); }
+
+    private void shockwave(List<Display> set, Location at, Material block, double reach, int ticks) {
         int plates = 28;
         for (int index = 0; index < plates; index++) {
             double angle = index * Math.TAU / plates;
             Quaternionf facing = new Quaternionf().rotateY((float) (-angle + Math.PI / 2));
             BlockDisplay plate = world.spawn(at.clone().add(0, .1, 0), BlockDisplay.class, display -> {
-                display.setBlock(Material.MAGMA_BLOCK.createBlockData());
+                display.setBlock(block.createBlockData());
                 display.setPersistent(false);
                 display.setBrightness(new Display.Brightness(15, 15));
                 display.setTransformation(new Transformation(new Vector3f((float) Math.cos(angle) * 1.5F, 0, (float) Math.sin(angle) * 1.5F), facing, new Vector3f(1.4F, .9F, .5F), new Quaternionf()));
@@ -480,6 +482,182 @@ final class RunActs {
             world.playSound(home, Sound.ENTITY_RAVAGER_ROAR, 2F, .4F);
             world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 2F, .5F);
             world.spawnParticle(Particle.FLAME, home.clone().add(0, 10, 0), 160, 2.5, 2, 2.5, .25);
+        }
+        if (tick == length - 12) body.stance(0, 0);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The Warder: he stands on the tower, sounds his horn, and steps off.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double HORN = .42, LEAPS = .55, STRIKES = .8;
+
+    void plunge(List<Display> set, LivingEntity boss, Location home, Location perch, int tick, int length) {
+        double done = tick / (double) length;
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            perch.setYaw(facing(perch, home));
+        }
+        if (done < LEAPS) {
+            boss.teleport(perch);
+            if (tick % 4 == 0) world.spawnParticle(Particle.END_ROD, perch.clone().add(0, 1, 0), 3, .4, .8, .4, .01);
+        }
+        for (double sounded : new double[]{.1, HORN}) if (tick == (int) (length * sounded)) {
+            world.playSound(home, Sound.ITEM_GOAT_HORN_SOUND_2, 6F, .6F);
+            world.playSound(perch, Sound.ITEM_GOAT_HORN_SOUND_2, 6F, .6F);
+        }
+        if (done >= LEAPS && done < STRIKES) {
+            double flown = (done - LEAPS) / (STRIKES - LEAPS);
+            Location at = perch.clone().add(home.toVector().subtract(perch.toVector()).multiply(flown * flown)).add(0, Math.sin(flown * Math.PI) * 6, 0);
+            at.setYaw(perch.getYaw());
+            boss.teleport(at);
+            world.spawnParticle(Particle.FIREWORK, at, 8, .3, .3, .3, .02);
+            world.spawnParticle(Particle.END_ROD, at.clone().add(0, 1, 0), 6, .4, .6, .4, .02);
+            if (tick % 5 == 0) world.playSound(at, Sound.ENTITY_PHANTOM_FLAP, 1.6F, .7F);
+        }
+        if (tick == (int) (length * STRIKES)) {
+            boss.teleport(home);
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, home, 2, 1, .3, 1, 0);
+            world.spawnParticle(Particle.ELECTRIC_SPARK, home.clone().add(0, 1, 0), 120, 5, .5, 5, .3);
+            world.playSound(home, Sound.ITEM_TRIDENT_THUNDER, 2F, .6F);
+            world.playSound(home, Sound.ENTITY_GENERIC_EXPLODE, 1.6F, .7F);
+            shockwave(set, home.clone().subtract(0, .02, 0), Material.GOLD_BLOCK, 14, 12);
+            debris(set, home.clone().add(0, .5, 0), new Material[]{Material.CUT_SANDSTONE, Material.SMOOTH_SANDSTONE, Material.GOLD_BLOCK}, 22, 9, 12);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The Frost Warden: the cold runs in from the room and closes on a pillar of ice, which splits open.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double FREEZES = .55, BURSTS = .86;
+
+    void icebound(List<Display> set, LivingEntity boss, Location home, List<Location> sources, int tick, int length) {
+        double done = tick / (double) length;
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        if (tick == 0) {
+            world.playSound(home, Sound.BLOCK_POWDER_SNOW_FALL, 2F, .5F);
+            for (int index = 0; index < 24; index++) {
+                double angle = index * Math.TAU / 24, radius = 1.5 + (index % 3) * .4;
+                float wide = (float) random.nextDouble(.9, 1.6);
+                float high = (float) random.nextDouble(2.6, 4.6) + (index % 3 == 0 ? 0 : 1.2F);
+                Material block = index % 5 == 0 ? Material.BLUE_ICE : index % 2 == 0 ? Material.PACKED_ICE : Material.ICE;
+                set.add(box(home, block, (float) (Math.cos(angle) * radius) - wide / 2, 0, (float) (Math.sin(angle) * radius) - wide / 2, wide, .05F, wide, 13));
+            }
+            for (Display shard : set) {
+                Transformation now = shard.getTransformation();
+                float grown = 2.6F + (float) random.nextDouble(2.4);
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (shard.isValid()) move(shard, new Transformation(now.getTranslation(), now.getLeftRotation(), new Vector3f(now.getScale().x, grown, now.getScale().z), new Quaternionf()), (int) (length * FREEZES));
+                }, 2L);
+            }
+        }
+        if (done < FREEZES) {
+            double reached = done / FREEZES;
+            for (Location source : sources) {
+                Location at = source.clone().add(home.toVector().subtract(source.toVector()).multiply(reached)).add(0, .2, 0);
+                world.spawnParticle(Particle.SNOWFLAKE, at, 14, .5, .1, .5, .02);
+                world.spawnParticle(Particle.ITEM_SNOWBALL, at, 4, .3, .1, .3, .05);
+            }
+            if (tick % 10 == 0) world.playSound(home, Sound.BLOCK_GLASS_HIT, 1.8F, .5F + (float) reached * .4F);
+        }
+        if (done >= FREEZES && done < BURSTS) {
+            double strain = (done - FREEZES) / (BURSTS - FREEZES);
+            world.spawnParticle(Particle.SNOWFLAKE, home.clone().add(0, 2.4, 0), 8 + (int) (strain * 30), 1.8, 2, 1.8, .03);
+            if (tick % Math.max(3, (int) (14 - strain * 11)) == 0) {
+                world.playSound(home, Sound.BLOCK_GLASS_BREAK, 1.4F, .5F + (float) strain * .7F);
+                world.playSound(home, Sound.ENTITY_WARDEN_HEARTBEAT, 2F, .6F);
+            }
+        }
+        if (tick == (int) (length * BURSTS)) {
+            boss.setVisibleByDefault(true);
+            boss.teleport(home);
+            for (Display shard : new ArrayList<>(set)) {
+                Vector3f out = new Vector3f(shard.getTransformation().getTranslation());
+                out.y = 0;
+                out.normalize();
+                fling(shard, out.x * 14, random.nextDouble(3, 9), out.z * 14, 14);
+            }
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, home.clone().add(0, 1, 0), 2, .6, .6, .6, 0);
+            world.spawnParticle(Particle.SNOWFLAKE, home.clone().add(0, 2, 0), 300, 3, 2, 3, .25);
+            world.playSound(home, Sound.BLOCK_GLASS_BREAK, 2F, .5F);
+            world.playSound(home, Sound.ENTITY_POLAR_BEAR_WARNING, 2F, .6F);
+            world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.6F, .8F);
+            shockwave(set, home.clone().subtract(0, .02, 0), Material.PACKED_ICE, 16, 14);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Oriveth: three plates give up their light, and what's been drinking it comes down the beams.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double FLARE = .12, BEAMS = .36, DESCENDS = .78, HIGH = 26;
+    private static final Material[] LIGHTS = {Material.ORANGE_CONCRETE, Material.LIGHT_BLUE_CONCRETE, Material.LIME_CONCRETE};
+
+    private BlockDisplay beam(Location from, Location to, Material block) {
+        Vector3f along = new Vector3f((float) (to.getX() - from.getX()), (float) (to.getY() - from.getY()), (float) (to.getZ() - from.getZ()));
+        float length = along.length();
+        Quaternionf turn = new Quaternionf().rotationTo(new Vector3f(0, 1, 0), along.normalize());
+        BlockDisplay beam = world.spawn(from, BlockDisplay.class, display -> {
+            display.setBlock(block.createBlockData());
+            display.setPersistent(false);
+            display.setViewRange(4F);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTransformation(new Transformation(new Vector3f(), turn, new Vector3f(.5F, .1F, .5F), new Quaternionf()));
+        });
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (beam.isValid()) move(beam, new Transformation(new Vector3f(), turn, new Vector3f(.5F, length, .5F), new Quaternionf()), 14);
+        }, 2L);
+        return beam;
+    }
+
+    void converge(List<Display> set, LivingEntity boss, MoltenBody body, Location home, List<Location> plates, int tick, int length) {
+        double done = tick / (double) length;
+        Location apex = home.clone().add(0, HIGH, 0);
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            body.eyes(false);
+            body.stance(2.6F, 0);
+            world.playSound(home, Sound.BLOCK_BEACON_ACTIVATE, 3F, .6F);
+        }
+        for (int plate = 0; plate < plates.size(); plate++) {
+            Location at = plates.get(plate);
+            if (tick == (int) (length * FLARE * (plate + 1))) {
+                world.spawnParticle(Particle.EXPLOSION, at.clone().add(0, 1, 0), 3, .5, .3, .5, 0);
+                world.playSound(at, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 3F, .7F + plate * .2F);
+                world.playSound(at, Sound.BLOCK_END_PORTAL_FRAME_FILL, 3F, .6F);
+                set.add(beam(at.clone().add(0, .5, 0), apex, LIGHTS[plate % LIGHTS.length]));
+            }
+        }
+        // Held in the light up there, out of the dome's reach, with its eyes dark.
+        if (done < BEAMS) {
+            boss.teleport(apex.clone().add(0, 12, 0));
+            return;
+        }
+        if (done < DESCENDS) {
+            double down = eased((done - BEAMS) / (DESCENDS - BEAMS));
+            Location at = apex.clone().subtract(0, HIGH * down, 0);
+            at.setYaw(home.getYaw());
+            boss.teleport(at);
+            world.spawnParticle(Particle.REVERSE_PORTAL, at.clone().add(0, 6, 0), 16, 2, 4, 2, .02);
+            if (tick % 16 == 0) world.playSound(home, Sound.BLOCK_RESPAWN_ANCHOR_AMBIENT, 3F, .5F);
+            body.stance((float) (2.6F * (1 - down)), 0);
+        }
+        if (tick == (int) (length * DESCENDS)) {
+            boss.teleport(home);
+            body.eyes(true);
+            body.stance(-1F, 1.4F);
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, home, 4, 3, .5, 3, 0);
+            world.spawnParticle(Particle.REVERSE_PORTAL, home.clone().add(0, 3, 0), 320, 6, 3, 6, .3);
+            world.playSound(home, Sound.ITEM_TOTEM_USE, 2F, .5F);
+            world.playSound(home, Sound.ENTITY_WARDEN_SONIC_BOOM, 2F, .5F);
+            world.playSound(home, Sound.BLOCK_ANVIL_LAND, 2F, .5F);
+            shockwave(set, home.clone().subtract(0, .02, 0), Material.CRYING_OBSIDIAN, 26, 16);
+        }
+        if (tick == (int) (length * (DESCENDS + .08))) {
+            body.stance(2.5F, 0);
+            world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 3F, .5F);
+            world.playSound(home, Sound.ENTITY_RAVAGER_ROAR, 3F, .5F);
         }
         if (tick == length - 12) body.stance(0, 0);
     }

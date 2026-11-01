@@ -670,7 +670,8 @@ final class RunArena {
         burning.put(section, System.currentTimeMillis() + BURN_MILLIS);
         Location at = centre(section);
         host.world().playSound(at, Sound.ENTITY_BLAZE_SHOOT, 2F, .5F);
-        host.broadcast(spent.contains(section.device()) ? "<red>The deck is burning again!</red> <gray>Its cistern is dry. Get off it!</gray>"
+        if (section.device() == null) host.broadcast("<dark_purple>The page is tearing!</dark_purple> <gray>Get off the marked floor.</gray>");
+        else host.broadcast(spent.contains(section.device()) ? "<red>The deck is burning again!</red> <gray>Its cistern is dry. Get off it!</gray>"
             : "<red>The deck is burning!</red> <gray>Right-click its " + Chat.escape(device(section.device()).title()) + " before it falls.</gray>");
     }
 
@@ -688,6 +689,13 @@ final class RunArena {
             if (now >= burning.get(section)) {
                 burning.remove(section);
                 giveWay(section);
+                continue;
+            }
+            if (section.device() == null) {
+                int wide = box.maxX() - box.minX() + 1, deep = box.maxZ() - box.minZ() + 1;
+                world.spawnParticle(Particle.REVERSE_PORTAL, centre(section), wide * deep / 8, wide / 2.5, .4, deep / 2.5, .02);
+                world.spawnParticle(Particle.SQUID_INK, centre(section), wide * deep / 24, wide / 2.5, .2, deep / 2.5, .01);
+                world.playSound(centre(section), Sound.BLOCK_RESPAWN_ANCHOR_AMBIENT, 2F, .6F);
                 continue;
             }
             if (!spent.contains(section.device())) {
@@ -731,11 +739,11 @@ final class RunArena {
             if (!block.getType().isAir()) clear(block);
         }
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int piece = 0; piece < 12; piece++) timber(new Location(world, random.nextDouble(box.minX(), box.maxX()), box.minY(), random.nextDouble(box.minZ(), box.maxZ())));
+        if (section.device() != null) for (int piece = 0; piece < 12; piece++) timber(new Location(world, random.nextDouble(box.minX(), box.maxX()), box.minY(), random.nextDouble(box.minZ(), box.maxZ())));
         world.playSound(centre(section), Sound.ENTITY_GENERIC_EXPLODE, 2F, .6F);
         world.playSound(centre(section), Sound.BLOCK_WOOD_BREAK, 2F, .5F);
         world.spawnParticle(Particle.LARGE_SMOKE, centre(section), 60, 6, .6, 6, .03);
-        host.broadcast("<red>The deck gives way!</red>");
+        host.broadcast(section.device() == null ? "<dark_purple>The floor is gone.</dark_purple>" : "<red>The deck gives way!</red>");
         host.log("deck lost");
     }
 

@@ -23,8 +23,8 @@ final class SampleChests {
             new Spot(8, 64, 86, Material.CHEST)),
         "gloomforge_mines", List.of(new Spot(30, 96, 42, Material.BARREL), new Spot(47, 71, 143, Material.CHEST),
             new Spot(66, 94, 32, Material.CHEST)),
-        "hall_of_wardens", List.of(new Spot(-25, 64, 4, Material.BARREL), new Spot(30, 64, 6, Material.CHEST),
-            new Spot(-5, 64, 34, Material.CHEST)),
+        "hall_of_wardens", List.of(new Spot(-9, 57, -68, Material.BARREL), new Spot(88, 64, 34, Material.CHEST),
+            new Spot(154, 64, 10, Material.CHEST)),
         "cinder_keep", List.of(new Spot(-8, 64, -100, Material.BARREL), new Spot(-7, 64, 12, Material.CHEST),
             new Spot(14, 64, 44, Material.CHEST), new Spot(-10, 64, 98, Material.BARREL)));
 

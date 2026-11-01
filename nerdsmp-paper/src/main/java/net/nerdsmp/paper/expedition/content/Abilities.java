@@ -60,6 +60,22 @@ public final class Abilities {
         add("gust_shot", "Gust", "Throws a slow ball of wind that pushes whoever it hits a little. Watch it come, and sidestep.", 6);
         add("ember_burst", "Ember Burst", "It glows, and a ring shows how far the flame will reach. Back away before it bursts.", 9);
         add("frost_bolt", "Frost Bolt", "Fires a bolt of frost you can see coming at a marked spot. It leaves ice that slows anyone on it.", 7);
+        cast("arc_bolt", "Arcing Bolt", "Lightning strikes one player and jumps to anyone standing close to them. Spread out, or a charged hit stops it.", 8, 1.5, 1);
+        cast("charged_pulse", "Charged Pulse", "A long wind-up, then a blast throws everyone close back. Step out, or a charged hit stops it.", 12, 2, 1);
+        add("spear_fall", "Spears of Light", "Spears of light fall on marked spots, stand a moment, then burst. Don't linger near one.", 14);
+        add("dancing_blade", "Dancing Blade", "A red line marks the throw. The blade spins out along it and comes back the same way.", 9);
+        add("rime_share", "Shared Frost", "A ring closes on it and the frost is split between everyone inside. Stand together; anyone outside takes all of it.", 18);
+        add("hoarfrost_chase", "Hoarfrost Pursuit", "It picks one player and runs them down, leaving ice behind it. Keep moving and keep away from your friends.", 22);
+        add("cataclysm", "Cataclysm", "It throws its aegis to the floor and brings the sky down. Stand in the ring round the aegis or take the whole of it.", 34);
+        add("echo_ward", "Echo Ward", "Calls an echo of each Warden onto its plate, and can't be hurt while any of them stands.", 900);
+        cast("void_bolt", "Void Bolt", "A bolt of nothing at one player. A charged hit stops it.", 6, 1.6, 1);
+        add("gravity_well", "Gravity Well", "A well opens under someone and drags everyone close towards it. Be out of the middle when it closes.", 20);
+        add("void_rift", "Void Rift", "Pools of nothing open under each player and stay open. Step out, and keep out.", 16);
+        add("void_bond", "Void Bond", "Ties two players together. Get far enough apart before it closes, or it hurts you both.", 24);
+        add("eye_of_the_void", "Eye of the Void", "Eyes open in the air and cast until they're killed.", 30);
+        add("black_harvest", "Black Harvest", "Rings of black run out across the floor, each with one gap. Stand in the gap.", 40);
+        add("void_step", "Void Step", "Steps through nothing three times, and each spot it leaves bursts a moment later.", 22);
+        add("sigil_brand", "Sigil Brand", "Everyone is branded with a seal. Reach that seal's plate before the brand burns in, or be found unworthy.", 26);
         add("spore_burst", "Spore Burst", "It bursts as it dies, and a cloud of spores hangs where it fell. Step away from the body.", 0);
     }
 

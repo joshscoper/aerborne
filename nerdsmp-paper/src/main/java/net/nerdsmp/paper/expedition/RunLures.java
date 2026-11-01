@@ -25,7 +25,9 @@ import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -42,7 +44,7 @@ final class RunLures {
     private final Map<UUID, Line> lines = new HashMap<>();
     private final Map<UUID, MoltenBody> bodies = new HashMap<>();
     private final Map<UUID, BlockDisplay> motes = new HashMap<>();
-    private Boon boon;
+    private final List<Boon> boons = new ArrayList<>();
 
     private static final class Line {
         Lure lure;
@@ -137,9 +139,12 @@ final class RunLures {
             Location at = new Location(run.world, lure.at().x() + .5, lure.at().y() + 1, lure.at().z() + .5);
             if (at.getChunk().isLoaded()) run.world.spawnParticle(Particle.LAVA, at, 3, lure.radius() * .4, 0, lure.radius() * .4, 0);
         }
-        if (boon == null) return;
+        if (boons.isEmpty()) return;
+        boolean fireproof = boons.stream().anyMatch(Boon::fireproof);
+        int speed = boons.stream().mapToInt(Boon::speed).sum();
         for (Player player : run.online()) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60, 0, true, false, false));
+            if (fireproof) player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60, 0, true, false, false));
+            if (speed > 0) player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60, speed - 1, true, false, false));
             motes.computeIfAbsent(player.getUniqueId(), ignored -> mote(player));
         }
     }
@@ -168,32 +173,34 @@ final class RunLures {
         return mote;
     }
 
-    /** A room cleared: if a lure led to it, its boon falls on the party. */
+    /** A room cleared: if it holds a boon, it falls on the party. */
     void cleared(Room room) {
-        for (Lure lure : run.expedition.story().lures().values()) {
-            if (lure.boon() == null || !room.id().equals(lure.room())) continue;
-            boon = lure.boon();
-            run.broadcast("<gold><bold>" + Chat.escape(boon.title()) + "</bold></gold> <gray>The fire in it passes to you: +" + boon.damage() + "% damage, -" + boon.guard()
-                + "% damage taken and no fear of burning, until the expedition ends.</gray>");
-            for (Player player : run.online()) {
-                player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, .7F, .7F);
-                run.world.spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 60, .5, .8, .5, .08);
-            }
+        Boon boon = room.boon();
+        if (boon == null) return;
+        boons.add(boon);
+        List<String> gifts = new ArrayList<>();
+        if (boon.damage() > 0) gifts.add("+" + boon.damage() + "% damage");
+        if (boon.guard() > 0) gifts.add("-" + boon.guard() + "% damage taken");
+        if (boon.speed() > 0) gifts.add("speed");
+        if (boon.fireproof()) gifts.add("no fear of burning");
+        run.broadcast("<gold><bold>" + Chat.escape(boon.title()) + "</bold></gold> <gray>It passes to all of you until the expedition ends: " + String.join(", ", gifts) + ".</gray>");
+        for (Player player : run.online()) {
+            player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, .7F, .7F);
+            run.world.spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 60, .5, .8, .5, .08);
         }
     }
 
-    double dealt() { return boon == null ? 1 : 1 + boon.damage() / 100D; }
+    double dealt() { return boons.stream().mapToDouble(boon -> 1 + boon.damage() / 100D).reduce(1, (a, b) -> a * b); }
 
-    double taken() { return boon == null ? 1 : 1 - boon.guard() / 100D; }
+    double taken() { return boons.stream().mapToDouble(boon -> 1 - boon.guard() / 100D).reduce(1, (a, b) -> a * b); }
 
-    /** The line on the sidebar while the boon lasts, or null. */
-    String status() { return boon == null ? null : "<gold>🔥 " + Chat.escape(boon.title()) + "</gold>"; }
+    /** The sidebar's lines while boons last. */
+    List<String> status() { return boons.stream().map(boon -> "<gold>🔥 " + Chat.escape(boon.title()) + "</gold>").toList(); }
 
     MoltenBody body(LivingEntity boss) { return bodies.get(boss.getUniqueId()); }
 
-    /** A lure's boss has a body of its own. */
+    /** Some bosses have a body of their own. */
     void dress(Room room, LivingEntity boss) {
-        for (Lure lure : run.expedition.story().lures().values())
-            if (room.id().equals(lure.room()) && lure.body() != null) bodies.put(boss.getUniqueId(), MoltenBody.dress(plugin, boss));
+        if (room.encounter().body() != null) bodies.put(boss.getUniqueId(), MoltenBody.dress(plugin, boss, room.encounter().body()));
     }
 }

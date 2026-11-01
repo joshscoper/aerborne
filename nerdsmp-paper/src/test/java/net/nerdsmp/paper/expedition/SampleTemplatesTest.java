@@ -190,14 +190,27 @@ class SampleTemplatesTest {
 
     @Test void theMinesCamerasStayClearOfWalls() { camerasStayClearOfWalls("gloomforge_mines"); }
 
-    /** Walks the Mines from the spawn on foot, with every gate up: drops of three at most, steps of one, no jumps across a gap. */
-    @Test void theMinesCanBeWalkedFromTheTopToTheForge() {
-        var mines = definition("gloomforge_mines");
-        Map<Cell, Material> blocks = new HashMap<>(blocks("gloomforge_mines"));
+    @Test void theHallsCamerasStayClearOfWalls() { camerasStayClearOfWalls("hall_of_wardens"); }
+
+    @Test void theMinesCanBeWalkedFromTheTopToTheForge() { canBeWalked("gloomforge_mines"); }
+
+    @Test void theHallCanBeWalkedFromTheLandingToEveryThrone() { canBeWalked("hall_of_wardens"); }
+
+    /** Walks a map from the spawn on foot, with every gate up: drops of three at most, steps of one, no jumps across a gap. */
+    private static void canBeWalked(String id) {
+        var mines = definition(id);
+        Map<Cell, Material> blocks = new HashMap<>(blocks(id));
         blocks.values().removeIf(material -> material == Material.IRON_BARS);
+        for (var room : mines.roomList()) {
+            var gate = room.gate();
+            if (gate == null) continue;
+            for (int x = gate.minX(); x <= gate.maxX(); x++) for (int y = gate.minY(); y <= gate.maxY(); y++) for (int z = gate.minZ(); z <= gate.maxZ(); z++) blocks.remove(new Cell(x, y, z));
+        }
         java.util.Set<Cell> seen = new java.util.HashSet<>();
         java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
         open.add(new Cell(mines.spawn().x(), mines.spawn().y(), mines.spawn().z()));
+        // A portal is a way across that isn't on foot.
+        for (var portal : mines.story().portals().values()) open.add(new Cell(portal.to().x(), portal.to().y(), portal.to().z()));
         while (!open.isEmpty()) {
             Cell at = open.poll();
             if (!seen.add(at)) continue;
@@ -264,6 +277,8 @@ class SampleTemplatesTest {
         java.util.Set<Cell> seen = new java.util.HashSet<>();
         java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
         open.add(new Cell(mines.spawn().x(), mines.spawn().y(), mines.spawn().z()));
+        // A portal is a way across that isn't on foot.
+        for (var portal : mines.story().portals().values()) open.add(new Cell(portal.to().x(), portal.to().y(), portal.to().z()));
         while (!open.isEmpty()) {
             Cell at = open.poll();
             if (!seen.add(at)) continue;
@@ -564,7 +579,7 @@ class SampleTemplatesTest {
                 if (room.gate() == null) continue;
                 var gate = room.gate();
                 for (int x = gate.minX(); x <= gate.maxX(); x++) for (int y = gate.minY(); y <= gate.maxY(); y++) for (int z = gate.minZ(); z <= gate.maxZ(); z++)
-                    assertEquals(Material.IRON_BARS, blocks.get(new Cell(x, y, z)), id + " gate of " + room.id() + " at " + x + "," + y + "," + z);
+                    assertNotNull(blocks.get(new Cell(x, y, z)), id + " gate of " + room.id() + " at " + x + "," + y + "," + z);
             }
             // Linear maps: walking south from the spawn along X=0 crosses only air and gates into the boss room.
             if (!LINEAR.contains(id)) continue;
@@ -580,7 +595,7 @@ class SampleTemplatesTest {
         for (String id : ExpeditionService.SAMPLES) {
             assertSame(SampleTemplates.plan(id), SampleTemplates.plan(id));
             assertTrue(SampleTemplates.plan(id).size() > 5_000, id);
-            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> p.cell().x() > -128 && p.cell().x() < 320 && p.cell().z() > -128 && p.cell().z() < 256), id);
+            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> p.cell().x() > -256 && p.cell().x() < 400 && p.cell().z() > -256 && p.cell().z() < 400), id);
         }
         assertNull(SampleTemplates.plan("nope"));
         assertTrue(blocks("cinder_keep").containsValue(Material.MAGMA_BLOCK));

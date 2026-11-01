@@ -183,10 +183,35 @@ public final class ExpeditionLoader {
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
             lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
             packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops, devices, ambience(yaml),
-            falls(yaml), lowerOrNull(yaml.getString("motes")), lures(yaml));
+            falls(yaml), lowerOrNull(yaml.getString("motes")), lures(yaml), portals(yaml));
     }
 
-    /** {@code lures: {spot: {at: [x, y, z], radius: 4, fishing-level: 25, room: hidden_room, body: colossus}}}. */
+    /** {@code portals: {id: {title: ..., at: [x, y, z], to: [x, y, z, yaw], radius: 3, room: far_room, requires: [rooms], feeds: [[x, y, z]], opens: [script]}}}. */
+    private static Map<String, ExpeditionDefinition.Portal> portals(ConfigurationSection yaml) {
+        Map<String, ExpeditionDefinition.Portal> portals = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "portals").entrySet()) {
+            ConfigurationSection portal = entry.getValue();
+            String path = "portals." + entry.getKey();
+            Point at = point(portal, "at"), to = point(portal, "to");
+            if (at == null || to == null) throw new IllegalArgumentException(path + ": a portal needs at: and to:.");
+            String room = lowerOrNull(portal.getString("room"));
+            if (room == null) throw new IllegalArgumentException(path + ".room: the room on its far side.");
+            List<ScriptAction> opens = new ArrayList<>();
+            List<String> lines = portal.getStringList("opens");
+            for (int index = 0; index < lines.size(); index++) {
+                try {
+                    opens.add(ScriptAction.parse(lines.get(index)));
+                } catch (IllegalArgumentException invalid) {
+                    throw new IllegalArgumentException(path + ".opens[" + (index + 1) + "]: " + invalid.getMessage());
+                }
+            }
+            portals.put(entry.getKey(), new ExpeditionDefinition.Portal(entry.getKey(), portal.getString("title", titleCase(entry.getKey())), at, to, portal.getInt("radius", 3), room,
+                lower(portal.getStringList("requires")), points(portal, "feeds", path), opens));
+        }
+        return portals;
+    }
+
+    /** {@code lures: {spot: {at: [x, y, z], radius: 4, fishing-level: 25, room: hidden_room}}}. */
     private static Map<String, ExpeditionDefinition.Lure> lures(ConfigurationSection yaml) {
         Map<String, ExpeditionDefinition.Lure> lures = new LinkedHashMap<>();
         for (var entry : sections(yaml, "lures").entrySet()) {
@@ -196,9 +221,7 @@ public final class ExpeditionLoader {
             if (at == null) throw new IllegalArgumentException(path + ".at: the middle of the spot, [x, y, z].");
             String room = lowerOrNull(lure.getString("room"));
             if (room == null) throw new IllegalArgumentException(path + ".room: the hidden room it starts.");
-            ConfigurationSection boon = lure.getConfigurationSection("boon");
-            lures.put(entry.getKey(), new ExpeditionDefinition.Lure(entry.getKey(), at, lure.getInt("radius", 4), lure.getInt("fishing-level", 0), room,
-                lowerOrNull(lure.getString("body")), boon == null ? null : new ExpeditionDefinition.Boon(boon.getString("title", titleCase(entry.getKey())), boon.getInt("damage", 0), boon.getInt("guard", 0))));
+            lures.put(entry.getKey(), new ExpeditionDefinition.Lure(entry.getKey(), at, lure.getInt("radius", 4), lure.getInt("fishing-level", 0), room));
         }
         return lures;
     }
@@ -217,10 +240,10 @@ public final class ExpeditionLoader {
         int index = 0;
         for (Map<?, ?> raw : hazard.getMapList("sections")) {
             index++;
-            if (!(raw.get("box") instanceof List<?> list) || list.size() != 6 || list.stream().anyMatch(value -> !(value instanceof Number)) || !(raw.get("device") instanceof String device))
+            if (!(raw.get("box") instanceof List<?> list) || list.size() != 6 || list.stream().anyMatch(value -> !(value instanceof Number)))
                 throw new IllegalArgumentException(path + ".sections[" + index + "]: a section is {box: [x1, y1, z1, x2, y2, z2], device: id}.");
             int[] v = list.stream().mapToInt(value -> ((Number) value).intValue()).toArray();
-            sections.add(new ExpeditionDefinition.Section(Box.of(v[0], v[1], v[2], v[3], v[4], v[5]), device.toLowerCase(Locale.ROOT)));
+            sections.add(new ExpeditionDefinition.Section(Box.of(v[0], v[1], v[2], v[3], v[4], v[5]), raw.get("device") instanceof String device ? device.toLowerCase(Locale.ROOT) : null));
         }
         return sections;
     }
@@ -324,7 +347,7 @@ public final class ExpeditionLoader {
         List<?> raw = entrance.getList("sources", List.of());
         for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise, reanimate, summon, descend, bloom, hoist, powder, erupt, forged or colossus"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
+            path + ".entrance.style", "rise, reanimate, summon, descend, bloom, hoist, powder, erupt, forged, colossus, plunge, icebound or converge"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {
@@ -398,7 +421,26 @@ public final class ExpeditionLoader {
         return new Room(id, room.getString("title", titleCase(id)), box(room, "region", path), point(room, "checkpoint"),
             box(room, "gate", path), points, encounter == null ? Encounter.NONE : encounter(encounter, path + ".encounter"),
             requires, room.getBoolean("optional", false), puzzles(room, path), loot(room.getConfigurationSection("loot")),
-            lower(room.getStringList("unlocks")), box(room, "seal", path), lower(room.getStringList("requires-packs")), room.getBoolean("hidden", false));
+            lower(room.getStringList("unlocks")), box(room, "seal", path), lower(room.getStringList("requires-packs")), room.getBoolean("hidden", false), boon(room));
+    }
+
+    /** {@code boon: {title: Heart of the Foundry, damage: 15, guard: 15, speed: 1, fireproof: true}}. */
+    private static ExpeditionDefinition.Boon boon(ConfigurationSection room) {
+        ConfigurationSection boon = room.getConfigurationSection("boon");
+        return boon == null ? null : new ExpeditionDefinition.Boon(boon.getString("title", "Blessing"), boon.getInt("damage", 0), boon.getInt("guard", 0), boon.getInt("speed", 0), boon.getBoolean("fireproof", false));
+    }
+
+    /** {@code stances: [{at: [x, y, z], title: The Ash Rite, abilities: [fire_pools]}]}. */
+    private static List<ExpeditionDefinition.Stance> stances(ConfigurationSection section, String path) {
+        List<ExpeditionDefinition.Stance> stances = new ArrayList<>();
+        List<?> raw = section.getList("stances", List.of());
+        for (int index = 0; index < raw.size(); index++) {
+            if (!(raw.get(index) instanceof Map<?, ?> stance)) throw new IllegalArgumentException(path + ".stances[" + (index + 1) + "]: {at, title, abilities}.");
+            List<String> abilities = new ArrayList<>();
+            if (stance.get("abilities") instanceof List<?> listed) for (Object ability : listed) abilities.add(String.valueOf(ability).toLowerCase(Locale.ROOT));
+            stances.add(new ExpeditionDefinition.Stance(point(stance.get("at"), path + ".stances[" + (index + 1) + "].at"), String.valueOf(stance.get("title")), abilities));
+        }
+        return stances;
     }
 
     private static Map<String, ExpeditionDefinition.Pack> packs(ConfigurationSection yaml) {
@@ -465,7 +507,7 @@ public final class ExpeditionLoader {
             multiplier(section, "boss-damage", path), multiplier(section, "boss-health", path), bosses,
             lower(section.getStringList("abilities")), phases(section, path),
             section.contains("enrage-seconds") ? integer(section, "enrage-seconds") : 0,
-            section.contains("link-seconds") ? integer(section, "link-seconds") : 0, entrance(section, path));
+            section.contains("link-seconds") ? integer(section, "link-seconds") : 0, entrance(section, path), lowerOrNull(section.getString("body")), stances(section, path));
     }
 
     @SuppressWarnings("unchecked")
