@@ -314,6 +314,18 @@ final class MineProps {
             }
         }
         b.block(x + (int) Math.round(Math.sin(2.6 + salt) * 1.2), y + high, z + (int) Math.round(Math.cos(2.1 + salt) * 1.2), Material.SPRUCE_LEAVES, "persistent=true");
+        // Noise thins the ends of the boughs, and a leaf left on its own reads as a speck in the sky.
+        int reach = high / 2;
+        for (int dx = -reach; dx <= reach; dx++) for (int dz = -reach; dz <= reach; dz++) for (int up = 0; up <= high + 1; up++)
+            if (leaf(b.get(x + dx, y + up, z + dz)) && loose(b, x + dx, y + up, z + dz)) b.block(x + dx, y + up, z + dz, Material.AIR);
+    }
+
+    private static boolean leaf(Material block) { return block == Material.SPRUCE_LEAVES || block == Material.DARK_OAK_LEAVES; }
+
+    private static boolean loose(BuildCanvas b, int x, int y, int z) {
+        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+            if ((dx != 0 || dy != 0 || dz != 0) && !CanopyKit.empty(b, x + dx, y + dy, z + dz)) return false;
+        return true;
     }
 
     /** A boulder half sunk in the ground, stepped round its shoulders, with moss on the top of it. */
@@ -416,5 +428,6 @@ final class MineProps {
             for (int z = north + 1; z < south && (x == cx - halfX || x == cx + halfX); z++) b.block(x, y + 4 + rise, z, Material.SPRUCE_PLANKS);
         }
         b.block(cx, y + 3, cz, Material.LANTERN, "hanging=true");
+        for (int up = 4; up < 5 + halfZ; up++) b.block(cx, y + up, cz, Material.IRON_CHAIN, "axis=y");
     }
 }

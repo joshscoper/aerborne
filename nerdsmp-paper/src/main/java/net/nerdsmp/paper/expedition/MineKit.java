@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntBinaryOperator;
 
 import static net.nerdsmp.paper.expedition.SampleKit.smooth;
 
@@ -41,12 +42,13 @@ final class MineKit {
     /** Fourteen ways out from a block, to feel the shape round it at a distance. */
     private static final int[][] FAR = {{3, 0, 0}, {-3, 0, 0}, {0, 3, 0}, {0, -3, 0}, {0, 0, 3}, {0, 0, -3},
         {2, 2, 2}, {2, 2, -2}, {2, -2, 2}, {2, -2, -2}, {-2, 2, 2}, {-2, 2, -2}, {-2, -2, 2}, {-2, -2, -2}};
+    /** A block of rock has to be part of something at least this big to stay. */
+    private static final int CRUMB = 400;
+    private static final double DRIFT_CLEAR = 2.5;
     private static final int SET_EVERY = 11, REACH = 4;
 
     private record Door(int x, int floor, int z, boolean alongX, int length) { }
 
-    /** No rock is put round anything in this circle at or above {@code y} and short of {@code farZ}: it's open to the sky. */
-    private record Sky(int x, int z, int radius, int y, int farZ) { }
 
     private final Set<Long> air = new HashSet<>();
     private final Set<Long> rock = new HashSet<>();
@@ -54,7 +56,7 @@ final class MineKit {
     private final Set<Long> dressed = new HashSet<>();
     private final List<List<int[]>> drifts = new ArrayList<>();
     private final List<Door> doors = new ArrayList<>();
-    private final List<Sky> skies = new ArrayList<>();
+    private IntBinaryOperator ground = (x, z) -> Integer.MAX_VALUE;
 
     private static long key(int x, int y, int z) { return ((x + 2048L) << 40) | ((y + 512L) << 20) | (z + 2048L); }
 
@@ -68,14 +70,8 @@ final class MineKit {
 
     void carve(int x, int y, int z) { air.add(key(x, y, z)); }
 
-    void openToSky(int x, int z, int radius, int y) { openToSky(x, z, radius, y, Integer.MAX_VALUE); }
-
-    void openToSky(int x, int z, int radius, int y, int farZ) { skies.add(new Sky(x, z, radius, y, farZ)); }
-
-    private boolean underSky(int x, int y, int z) {
-        for (Sky sky : skies) if (y >= sky.y() && z <= sky.farZ() && Math.hypot(x - sky.x(), z - sky.z()) <= sky.radius()) return true;
-        return false;
-    }
+    /** The lie of the land: no rock goes above it, so a shaft or a valley opens to the sky at the same line the hills end. */
+    void ground(IntBinaryOperator height) { ground = height; }
 
     /** A round-backed section at a spot along a drift. */
     private void disk(double cx, int floor, double cz, double radius, int high) {
@@ -126,7 +122,8 @@ final class MineKit {
         for (int x = x1; x <= x2; x++) for (int z = z1; z <= z2; z++) for (int y = floor + 1; y <= floor + high; y++) cut(x, y, z);
     }
 
-    private void cut(int x, int y, int z) {
+    /** Clears a cell for good: the rock isn't allowed to weather back across it. */
+    void cut(int x, int y, int z) {
         carve(x, y, z);
         dressed.add(key(x, y, z));
     }
@@ -144,9 +141,12 @@ final class MineKit {
         doors.add(new Door(x, floor, z, alongX, length));
     }
 
+    /** The Drowned Deep, and the bay south of it past the Slag Pits. */
+    private static boolean drowned(int x, int z) { return x > 168 && z < 92 || x > 200 && z < 140; }
+
     private static Material[] ramp(int x, int y, int z) {
         double depth = y + (smooth(x, z, 11, 501) - .5) * 8;
-        if (x > 168 && z < 92) return depth < 17 ? TIDE : DROWNED;
+        if (drowned(x, z)) return depth < 17 ? TIDE : DROWNED;
         if (x > 72 && x < 172 && z > 28 && z < 132 && depth < 46) return EMBER;
         return depth >= 84 ? UPPER : depth >= 62 ? MIDDLE : depth >= 42 ? LOWER : depth >= 22 ? FORGE : DROWNED;
     }
@@ -274,6 +274,9 @@ final class MineKit {
     /** Wraps everything carved in rock, then sets the floors, timbers and rails. */
     void close(BuildCanvas b) {
         weather();
+        // The drifts are the way through: however the rock settled, a party walks them two abreast with room to swing.
+        for (List<int[]> drift : drifts) for (int[] at : drift) for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++)
+            if (Math.hypot(dx, dz) <= DRIFT_CLEAR) for (int y = at[1] + 1; y <= at[1] + 5; y++) carve(at[0] + dx, y, at[2] + dz);
         Set<Long> solid = new HashSet<>();
         for (long cell : air) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
@@ -283,11 +286,12 @@ final class MineKit {
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
                 if (!open(x + dx, y + dy, z + dz)) solid.add(key(x + dx, y + dy, z + dz));
         }
+        solid.removeIf(cell -> yOf(cell) > ground.applyAsInt(xOf(cell), zOf(cell)));
+        dropCrumbs(solid);
         rock.addAll(solid);
         for (long cell : solid) {
             int x = xOf(cell), y = yOf(cell), z = zOf(cell);
-            if (underSky(x, y, z)) continue;
-            boolean drowned = x > 168 && z < 92;
+            boolean drowned = drowned(x, z);
             if (open(x, y + 1, z)) b.block(x, y, z, smooth(x, z, 5, 503) > .66 ? Material.GRAVEL : tone(x, y, z));
             else if (drowned && seam(x, y, z, 505, .006)) b.block(x, y, z, Material.SEA_LANTERN);
             else if (!drowned && seam(x, y, z, 505, .008)) b.block(x, y, z, ORES[Math.floorMod((x + y / 2) / 16 + z / 16, ORES.length)]);
@@ -297,6 +301,24 @@ final class MineKit {
         ease(b);
         for (List<int[]> drift : drifts) sets(b, drift);
         for (Door door : doors) frame(b, door);
+    }
+
+    /** Weathering can leave a crumb of rock in mid air, or a shell round a pocket nobody can reach. Neither stays. */
+    private static void dropCrumbs(Set<Long> solid) {
+        Set<Long> seen = new HashSet<>();
+        for (long start : Set.copyOf(solid)) {
+            if (!seen.add(start)) continue;
+            List<Long> group = new ArrayList<>(List.of(start));
+            for (int index = 0; index < group.size(); index++) {
+                long cell = group.get(index);
+                int x = xOf(cell), y = yOf(cell), z = zOf(cell);
+                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
+                    long near = key(x + dx, y + dy, z + dz);
+                    if (solid.contains(near) && seen.add(near)) group.add(near);
+                }
+            }
+            if (group.size() < CRUMB) group.forEach(solid::remove);
+        }
     }
 
     /** The lowest open block at a spot, working down from {@code y}, or {@code MIN_VALUE} if it's solid there. */
@@ -416,6 +438,14 @@ final class MineKit {
                 if (Math.abs(across) == 2) for (int y = door.floor() + 1; y <= door.floor() + 5; y++) b.block(x, y, z, TIMBER, "axis=y");
                 b.block(x, door.floor() + 5, z, TIMBER, door.alongX() ? "axis=z" : "axis=x");
             }
+        }
+    }
+
+    /** Run last: whatever grew across a doorway while the rooms were dressed comes out of it again. */
+    void clearDoors(BuildCanvas b) {
+        for (Door door : doors) for (int along = -4; along < door.length() + 4; along++) for (int across = -1; across <= 1; across++) for (int y = door.floor() + 1; y <= door.floor() + 4; y++) {
+            int x = door.alongX() ? door.x() + along : door.x() + across, z = door.alongX() ? door.z() + across : door.z() + along;
+            if (b.get(x, y, z) != null && b.get(x, y, z) != Material.IRON_BARS) b.block(x, y, z, Material.AIR);
         }
     }
 

@@ -176,7 +176,7 @@ public final class RunProgress {
 
     /** The first room that can start now, for "push on to…" hints; null when none. */
     public Room nextRoom() {
-        for (int index = 0; index < rooms.size(); index++) if (available(index)) return rooms.get(index);
+        for (int index = 0; index < rooms.size(); index++) if (available(index) && !rooms.get(index).hidden()) return rooms.get(index);
         return null;
     }
 
@@ -489,7 +489,7 @@ public final class RunProgress {
         for (int index = 0; index < rooms.size(); index++) {
             Room room = rooms.get(index);
             boolean hallway = room.encounter().type() == EncounterType.NONE && room.puzzles().isEmpty();
-            if (hallway) continue;
+            if (hallway || room.hidden() && states[index] == RoomState.WAITING) continue;
             Objective.Status status = states[index] == RoomState.CLEARED ? Objective.Status.DONE
                 : states[index] == RoomState.ACTIVE ? Objective.Status.ACTIVE
                 : available(index) ? Objective.Status.OPEN : Objective.Status.LOCKED;

@@ -153,7 +153,7 @@ public final class MenuManager implements Listener, AutoCloseable {
         commandButton(menu, 22, Material.COOKED_CHICKEN, "<gold>Harvest Kitchen</gold>", List.of("<gray>" + plugin.recipes().mealCount() + " meals, ingredients and Cooking unlocks.</gray>", "<gray>Meals improve with the cook's level.</gray>"), "cooking");
         stationButton(menu, player, 31, Material.SPYGLASS, "yellow", RemoteStation.IDENTIFY,
             List.of("<gray>Identify one item or a whole batch.</gray>",
-                "<gray>Scrap sealed gear for Arcane Dust.</gray>"), runCommand(menu, "identify"));
+                "<gray>Scrap any gear you don't want.</gray>"), runCommand(menu, "identify"));
         stationButton(menu, player, 33, Material.ANVIL, "aqua", RemoteStation.REPAIR,
             List.of("<gray>Repair damaged equipment throughout your inventory.</gray>",
                 "<gray>Repair one item at any anvil's forge.</gray>"), runCommand(menu, "repairall"));

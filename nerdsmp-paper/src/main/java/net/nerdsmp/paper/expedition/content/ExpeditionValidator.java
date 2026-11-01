@@ -107,7 +107,7 @@ public final class ExpeditionValidator {
                 error(issues, name + " is too large (" + room.region().volume() + " blocks; max " + MAX_ROOM_VOLUME + ").", "/expedition room add " + room.id());
             for (int other = 0; other < index; other++) {
                 Room earlier = rooms.get(other);
-                if (earlier.region() != null && earlier.region().intersects(room.region()))
+                if (earlier.region() != null && !room.hidden() && earlier.region().intersects(room.region()))
                     error(issues, name + " overlaps room '" + earlier.id() + "'.", "Reselect one of them with the wand");
             }
             if (room.checkpoint() != null && !room.region().contains(room.checkpoint()))

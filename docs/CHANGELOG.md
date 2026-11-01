@@ -5,6 +5,22 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Mines playtest notes, and Nyra's bench (November 1)
+- **Nyra's Bench replaces Arcane Identification's three buttons.** `/identify` (or `/scrap`) shows your gear as cards on two
+  tabs, Identify and Scrap. Pick pieces one at a time or use Select All, see the running cost or yield, and review before
+  anything happens. Identifying now reads out what you found, and you can hover each name.
+- **Any gear can be scrapped.** Identified gear pays the same dust as sealed. Vanilla gear gives back a little of what it was
+  made of, and dust only for diamond, netherite and enchantments, so nothing can be farmed. Socketed gear has to be emptied
+  first, Select All leaves Epic and better alone unless you shift-click it, and right-clicking a piece protects it for good.
+- **Nobody gets locked out of a boss.** Sealed boss rooms no longer start at the door. They wait until someone is well inside
+  and the party has had up to ten seconds to follow, and anyone still outside is brought in as the door comes down.
+- **Boss names no longer stack.** The name card was being drawn on top of the cutscene's title.
+- **The Mines' terrain is fixed.** Slabs of hillside floated over the Gullet, rock bulged through the stairs, and crystal
+  plugged Grell's door. Every drift now has a guaranteed corridor, and a test walks the whole route two abreast.
+- **The way out of the Ore Line was blocked.** A trestle leg stood across the north walkway. It's gone, the gate has lamps
+  either side, and Hesk says where to go. The yard itself is properly lit now.
+- **The Gloomforge has room.** She lies in her own bay, with her bow clear of the wall, a darker hull and a tidier foredeck.
+
 ### The Gloomforge Mines, rebuilt to a higher standard (November 1)
 - **The rock is shaded by hand-picked ramps.** Walls run tuff to cobble to andesite to pale powder, with the darkest
   block down the cracks and the lightest on the ridges. Rock near the lava is baked orange, and every step in worked rock

@@ -117,7 +117,7 @@ final class ExpeditionMapPainter {
         expedition.story().packs().values().forEach(pack -> seeds.add(pack.at()));
         expedition.story().campfires().values().forEach(fire -> seeds.add(fire.at()));
         for (var chest : expedition.story().chests().values()) if (chest.kind() != ExpeditionDefinition.ChestKind.SECRET) seeds.add(chest.at());
-        for (var room : expedition.roomList()) {
+        for (var room : expedition.publicRooms()) {
             seeds.addAll(room.points());
             if (room.checkpoint() != null) seeds.add(room.checkpoint());
             for (var puzzle : room.puzzles().values()) {
@@ -143,7 +143,7 @@ final class ExpeditionMapPainter {
 
     /** On a jump course the way on really is a jump. Everywhere else a jump leads somewhere hidden. */
     private boolean course(Cell at) {
-        for (var room : expedition.roomList())
+        for (var room : expedition.publicRooms())
             if (room.region() != null && room.region().contains(at.x() + .5, at.y(), at.z() + .5)
                 && room.puzzles().values().stream().anyMatch(puzzle -> puzzle.type() == ExpeditionDefinition.PuzzleType.REACH)) return true;
         return false;
@@ -214,7 +214,7 @@ final class ExpeditionMapPainter {
     private void mark() {
         int zone = 0;
         Set<String> placed = new TreeSet<>();
-        for (var room : expedition.roomList()) {
+        for (var room : expedition.publicRooms()) {
             double[] middle = room.region() == null ? null : middle(room.region());
             if (room.bossRoom()) {
                 var encounter = room.encounter();
@@ -245,7 +245,7 @@ final class ExpeditionMapPainter {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             for (long cell : new TreeSet<>(floor)) digest.update(Long.toString(cell).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            for (var room : expedition.roomList()) if (room.bossRoom() && room.region() != null) digest.update(room.region().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            for (var room : expedition.publicRooms()) if (room.bossRoom() && room.region() != null) digest.update(room.region().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return java.util.HexFormat.of().formatHex(digest.digest()).substring(0, 16);
         } catch (java.security.NoSuchAlgorithmException impossible) {
             throw new AssertionError(impossible);
@@ -319,7 +319,7 @@ final class ExpeditionMapPainter {
         int[] zones = new int[width * height];
         int zone = 0;
         List<ExpeditionDefinition.Box> regions = new ArrayList<>();
-        for (var room : expedition.roomList()) if (room.bossRoom()) regions.add(room.region());
+        for (var room : expedition.publicRooms()) if (room.bossRoom()) regions.add(room.region());
         for (int py = 0; py < height; py++) for (int px = 0; px < width; px++) {
             int x = minX + (int) (px / scale), z = minZ + (int) (py / scale);
             // Narrow bridges would vanish in the blur, so the floor is drawn a little fat.

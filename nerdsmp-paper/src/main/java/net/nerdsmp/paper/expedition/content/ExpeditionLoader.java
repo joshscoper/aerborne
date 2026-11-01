@@ -183,7 +183,23 @@ public final class ExpeditionLoader {
             campfires, setpieces, hazards, cutscenes, npcs, mobs, yaml.contains("time") ? integer(yaml, "time") : null,
             lower(yaml.getStringList("requires")), chests, rewardChests, lowerOrNull(yaml.getString("intro")), yaml.getStringList("outro"),
             packs(yaml), yaml.contains("records-version") ? integer(yaml, "records-version") : 0, companionDrops, devices, ambience(yaml),
-            falls(yaml), lowerOrNull(yaml.getString("motes")));
+            falls(yaml), lowerOrNull(yaml.getString("motes")), lures(yaml));
+    }
+
+    /** {@code lures: {spot: {at: [x, y, z], radius: 4, fishing-level: 25, room: hidden_room, body: colossus}}}. */
+    private static Map<String, ExpeditionDefinition.Lure> lures(ConfigurationSection yaml) {
+        Map<String, ExpeditionDefinition.Lure> lures = new LinkedHashMap<>();
+        for (var entry : sections(yaml, "lures").entrySet()) {
+            ConfigurationSection lure = entry.getValue();
+            String path = "lures." + entry.getKey();
+            Point at = point(lure, "at");
+            if (at == null) throw new IllegalArgumentException(path + ".at: the middle of the spot, [x, y, z].");
+            String room = lowerOrNull(lure.getString("room"));
+            if (room == null) throw new IllegalArgumentException(path + ".room: the hidden room it starts.");
+            lures.put(entry.getKey(), new ExpeditionDefinition.Lure(entry.getKey(), at, lure.getInt("radius", 4), lure.getInt("fishing-level", 0), room,
+                lowerOrNull(lure.getString("body"))));
+        }
+        return lures;
     }
 
     /** {@code falls: {below: 50, damage: 4, message: "..."}}. */
@@ -381,7 +397,7 @@ public final class ExpeditionLoader {
         return new Room(id, room.getString("title", titleCase(id)), box(room, "region", path), point(room, "checkpoint"),
             box(room, "gate", path), points, encounter == null ? Encounter.NONE : encounter(encounter, path + ".encounter"),
             requires, room.getBoolean("optional", false), puzzles(room, path), loot(room.getConfigurationSection("loot")),
-            lower(room.getStringList("unlocks")), box(room, "seal", path), lower(room.getStringList("requires-packs")));
+            lower(room.getStringList("unlocks")), box(room, "seal", path), lower(room.getStringList("requires-packs")), room.getBoolean("hidden", false));
     }
 
     private static Map<String, ExpeditionDefinition.Pack> packs(ConfigurationSection yaml) {

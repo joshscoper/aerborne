@@ -2486,7 +2486,7 @@ dialogues:
   # ------------------------------------------------------------------ Nyra Vell, Arcane Identifier
   nyra_start:
     text:
-      - "Bring me your sealed finds. I can read the lot, or break down what you don't need into Arcane Dust."
+      - "Bring me your sealed finds and I'll read them. Anything you don't want, sealed or not, I'll break down for you."
       - "Every sealed piece is a little argument with whoever made it. I enjoy arguments."
     choices:
       identify:
@@ -2505,7 +2505,8 @@ dialogues:
   nyra_explain:
     text:
       - "The name, socket count, and every affix. Until then, the item grants nothing."
-      - "Or I can scrap it for dust. Better gear yields more, but there's no getting it back."
+      - "Or I can scrap it, along with any other gear you're tired of carrying. Better gear yields more dust, plain kit gives back a little of what it was made of, and there's no getting any of it back."
+      - "Right-click anything on my bench you never want to lose and I'll leave it be."
     choices:
       identify:
         text: "Let's take a look."

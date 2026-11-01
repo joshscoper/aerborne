@@ -94,7 +94,7 @@ final class GloomforgeShip {
             int z = (int) Math.round(Z + LONG + rel * .5);
             b.block(X, DECK + rel, z, rel >= 3 ? Material.GOLD_BLOCK : Material.DARK_OAK_LOG, rel >= 3 ? "" : "axis=y");
         }
-        for (int out = 0; out <= 17; out++) {
+        for (int out = 0; out <= 15; out++) {
             int y = DECK + 6 + out * 2 / 3, z = Z + LONG - 3 + out;
             b.block(X, y, z, POST, "axis=z");
             b.block(X, y + 1, z, POST, "axis=z");
@@ -110,7 +110,7 @@ final class GloomforgeShip {
         if (band >= 1) b.block(x, y, z, Material.SPRUCE_PLANKS);
         else if (band == 0) b.block(x, y, z, POST, "axis=z");
         else if (band == -1) b.block(x, y, z, Material.STRIPPED_OAK_WOOD);
-        else if (band == -2) b.block(x, y, z, Material.WAXED_OXIDIZED_CUT_COPPER);
+        else if (band == -2) b.block(x, y, z, Material.STRIPPED_DARK_OAK_WOOD);
         else if (band == -3) b.block(x, y, z, POST, "axis=z");
         else if (band == -4) b.block(x, y, z, Math.floorMod(z, 5) == 2 && Math.abs(t) < .7 ? Material.SHROOMLIGHT : Material.SPRUCE_PLANKS);
         else if (band == -5) b.block(x, y, z, Material.SPRUCE_PLANKS);
@@ -257,16 +257,8 @@ final class GloomforgeShip {
         }
         // Stays, fore and aft.
         rope(b, X, DECK + 34, 38, X, DECK + 28, 55, 1.5);
-        rope(b, X, DECK + 28, 55, X, DECK + 16, Z + LONG + 13, 2);
+        rope(b, X, DECK + 28, 55, X, DECK + 15, Z + LONG + 11, 2);
         rope(b, X, DECK + 34, 38, X, DECK + 31, 22, 1);
-        // The jib, lashed down along the forestay in a long uneven bundle.
-        for (int z = 62; z <= Z + LONG + 8; z++) {
-            double t = (z - 62) / (double) (Z + LONG + 8 - 62);
-            int y = (int) Math.round(DECK + 26 - t * 9 - Math.sin(t * Math.PI) * 2) - 1;
-            int depth = 1 + (int) Math.round(Math.sin(t * Math.PI) * 2);
-            boolean lashing = Math.floorMod(z, 6) == 0;
-            for (int down = 0; down < depth; down++) b.block(X, y - down, z, lashing || down == depth - 1 ? Material.LIGHT_GRAY_WOOL : Material.WHITE_WOOL);
-        }
     }
 
     /** Ore skips on chains over the deck, coal bunkers, a wheel, and lamps down both rails. */

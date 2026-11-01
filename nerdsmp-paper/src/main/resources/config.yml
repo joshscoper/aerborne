@@ -148,7 +148,7 @@ forestry:
 identification:
   base-cost-marks: 75
   per-affix-cost-marks: 25
-  # Scrapping destroys unidentified equipment only. Add this amount per existing affix.
+  # What scrapping pays for gear with a rarity, sealed or identified. Add this amount per affix.
   scrapping:
     dust-per-affix: 1
     dust-by-rarity:

@@ -1,20 +1,20 @@
 {
-  "version": "daef2011131d4628",
+  "version": "4b9c110f1d720d0e",
   "width": 1400,
-  "height": 1013,
-  "entrance": {"x": 17.5, "y": 15.8},
+  "height": 1021,
+  "entrance": {"x": 12.2, "y": 11.1},
   "pins": [
-    {"name": "Overseer Grell", "room": "Grell's Shaft", "icon": "staff", "color": "#c65642", "optional": false, "x": 27.5, "y": 68.1},
-    {"name": "The Blastmaster", "room": "The Ore Line", "icon": "bow", "color": "#e2a030", "optional": false, "x": 49.6, "y": 80.7},
-    {"name": "Slag Hound", "room": "The Slag Pits", "icon": "shield", "color": "#9668b6", "optional": true, "x": 64.0, "y": 59.4},
-    {"name": "The Deep Foreman", "room": "The Gloomforge", "icon": "skull", "color": "#5482a8", "optional": false, "x": 78.9, "y": 35.3}
+    {"name": "Overseer Grell", "room": "Grell's Shaft", "icon": "staff", "color": "#c65642", "optional": false, "x": 22.8, "y": 66.3},
+    {"name": "The Blastmaster", "room": "The Ore Line", "icon": "bow", "color": "#e2a030", "optional": false, "x": 46.3, "y": 79.6},
+    {"name": "Slag Hound", "room": "The Slag Pits", "icon": "shield", "color": "#9668b6", "optional": true, "x": 61.6, "y": 57.1},
+    {"name": "The Deep Foreman", "room": "The Gloomforge", "icon": "skull", "color": "#5482a8", "optional": false, "x": 77.5, "y": 31.7}
   ],
   "places": [
-    {"name": "The Mainline", "kind": "room", "x": 34.4, "y": 81.4},
-    {"name": "The Round Foundry", "kind": "room", "x": 47.5, "y": 50.3},
-    {"name": "Lift Station Fire", "kind": "fire", "x": 18.6, "y": 21.2},
-    {"name": "Foot of the Gullet", "kind": "fire", "x": 20.3, "y": 54.0},
-    {"name": "Miners' Rest", "kind": "fire", "x": 45.7, "y": 55.2},
-    {"name": "The Last Dock", "kind": "fire", "x": 62.8, "y": 31.1}
+    {"name": "The Mainline", "kind": "room", "x": 30.2, "y": 80.3},
+    {"name": "The Round Foundry", "kind": "room", "x": 44.1, "y": 47.5},
+    {"name": "Lift Station Fire", "kind": "fire", "x": 13.4, "y": 16.7},
+    {"name": "Foot of the Gullet", "kind": "fire", "x": 15.1, "y": 51.4},
+    {"name": "Miners' Rest", "kind": "fire", "x": 42.2, "y": 52.6},
+    {"name": "The Last Dock", "kind": "fire", "x": 60.4, "y": 27.2}
   ]
 }

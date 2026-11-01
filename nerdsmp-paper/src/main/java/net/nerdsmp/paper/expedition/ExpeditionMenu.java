@@ -152,7 +152,7 @@ public final class ExpeditionMenu implements Listener {
             if (definition.story().raid()) {
                 // Each boss with loot, plus the finish, pays once per tier per week.
                 List<String> slots = new ArrayList<>();
-                for (var room : definition.roomList())
+                for (var room : definition.publicRooms())
                     if (room.loot().profile() != null || !room.loot().items().isEmpty() || room.loot().marks() > 0) slots.add(room.id());
                 slots.add(net.nerdsmp.paper.expedition.flow.RaidLockouts.FINISH);
                 String account = plugin.sessions().account(player.getUniqueId()).map(Object::toString).orElse("");

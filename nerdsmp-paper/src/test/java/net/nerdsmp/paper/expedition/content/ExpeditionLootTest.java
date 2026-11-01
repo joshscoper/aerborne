@@ -117,7 +117,7 @@ class ExpeditionLootTest {
         for (String room : canopy.getKeys(false)) for (String item : canopy.getStringList(room))
             assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
         var mines = loot.getConfigurationSection("expeditions.gloomforge_mines.bosses");
-        assertEquals(Set.of("grells_shaft", "ore_line", "slag_pits", "the_gloomforge"), mines.getKeys(false));
+        assertEquals(Set.of("grells_shaft", "ore_line", "slag_pits", "the_gloomforge", "the_molten_deep"), mines.getKeys(false));
         for (String room : mines.getKeys(false)) for (String item : mines.getStringList(room))
             assertTrue(relics.contains(item) || added.contains(item), room + " " + item);
         for (String item : added) assertFalse(relics.contains(item), item + " would lose to the catalog's own item");

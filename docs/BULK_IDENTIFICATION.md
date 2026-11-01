@@ -2,7 +2,7 @@
 
 ## Player workflow
 
-Visit Nyra and choose her identification service. **Arcane Identification** now offers:
+Visit Nyra and choose her identification service, or use `/identify` or `/scrap` where allowed. **Nyra's Bench** shows your backpack and hotbar as cards on two tabs: **Identify** for sealed pieces and **Scrap** for any gear. Left-click picks a piece, Select All picks everything up to Rare (shift-click for Epic and better too), and right-clicking on the Scrap tab protects a piece until you right-click it again. Socketed gear must be emptied first. The earlier three-button menu offered:
 
 - **Identify Held**: reveal the sealed equipment in your main hand.
 - **Identify All**: reveal all eligible sealed equipment in your backpack and hotbar, with one combined Marks payment.

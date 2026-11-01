@@ -67,7 +67,8 @@ class ExpeditionMapsTest {
             ExpeditionDefinition expedition = ExpeditionLoader.parse(id, yaml("/expeditions/" + id + ".yml"));
             ExpeditionMapPainter painter = painter(id);
             assertTrue(painter.floorCells() > 200, id + " has hardly any floor");
-            assertEquals(expedition.roomList().stream().filter(ExpeditionDefinition.Room::bossRoom).count(), painter.pins().size(), id);
+            assertEquals(expedition.publicRooms().stream().filter(ExpeditionDefinition.Room::bossRoom).count(), painter.pins().size(), id);
+            assertTrue(painter.pins().stream().noneMatch(pin -> pin.name().contains("Colossus")), "a hidden boss stays off the map");
             for (var pin : painter.pins()) {
                 assertTrue(pin.x() > 0 && pin.x() < 100 && pin.y() > 0 && pin.y() < 100, id + " " + pin);
                 assertFalse(pin.name().contains("<"), id + " " + pin);

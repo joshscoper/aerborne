@@ -319,7 +319,8 @@ commands:
     usage: /watchdog [status|recent|player|clear|label|train] [player] [cheat|legit|clear] [hours]
     permission: nerdsmp.staff.anticheat
   identify:
-    description: Identify sealed equipment in bulk or scrap it for Arcane Dust.
+    description: Open Nyra's bench to identify sealed equipment and scrap gear you don't want.
+    aliases: [scrap]
     usage: /identify [held|all|scrap]
     permission: nerdsmp.station.remote
     permission-message: Visit Nyra to use Arcane Identification. Premium opens it from anywhere.

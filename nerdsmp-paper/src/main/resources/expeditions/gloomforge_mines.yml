@@ -36,6 +36,7 @@ npcs:
       - "On the Mainline, when the bell rings, you get into a refuge. There's no arguing with a loaded cart."
       - "The Blastmaster runs the Ore Line now. A cart will flatten him same as it'll flatten you, if you can get him on the rails."
       - "Bank the Foundry's dampers and the north door opens. After that it's all downhill, and the water's waiting."
+      - "There's a place off the Foundry's south causeway where the slag boils by itself. My brother swore something took his line there. All he brought home was the grip of the rod."
 
 campfires:
   lift_fire: {at: [18, 97, 12], lit: true, title: Lift Station Fire}
@@ -106,6 +107,15 @@ hazards:
     damage: 12
     spots: [[228, 26, 44], [244, 26, 44], [228, 26, 56], [244, 26, 56]]
   deep_rockfall: {type: rocks, area: [226, 17, 34, 246, 17, 60], every: 7, count: 4, damage: 6}
+  molten_rain: {type: rocks, area: [106, 33, 72, 138, 33, 104], every: 8, count: 5, damage: 8}
+  molten_vents:
+    type: lane
+    area: [104, 33, 70, 140, 33, 106]
+    every: 10
+    count: 2
+    damage: 8
+    burn: 5
+    lanes: [[106, 80, 138, 80], [138, 96, 106, 96], [112, 72, 112, 104], [132, 104, 132, 72]]
 
 ambience:
   - {sound: block.pointed_dripstone.drip_water, every: 7, volume: 0.6, pitch: 0.7}
@@ -126,7 +136,7 @@ outro:
 cutscenes:
   # The whole way down, one level at a time.
   prologue:
-    - {at: [14.5, 103, -14, 0, 6], to: [14.5, 102, -4, 0, 2], seconds: 5, title: "<gold>Gloomforge Mines</gold>", text: "<gray>Five levels down</gray>", sound: "block.anvil.land 0.5", lines: ["hesk|The night shift went down and the lift came back empty. That was the last anyone saw of them."]}
+    - {at: [14.5, 103, -10, 0, 6], to: [14.5, 102, -2, 0, 2], seconds: 5, title: "<gold>Gloomforge Mines</gold>", text: "<gray>Five levels down</gray>", sound: "block.anvil.land 0.5", lines: ["hesk|The night shift went down and the lift came back empty. That was the last anyone saw of them."]}
     - {at: [32.5, 121, 64, 0, 38], to: [32.5, 112, 70, 0, 44], seconds: 5, fade: true, lines: ["|The Gullet. Two turns of ledge round a drop that swallows the lamps."]}
     - {at: [102, 62, 170, -90, 8], to: [120, 62, 170, -90, 6], seconds: 4, fade: true, lines: ["|Below that, the Ore Line. The carts still run. Nobody's loading them."]}
     - {at: [122.5, 44, 116, 180, 10], to: [122.5, 42, 108, 180, 6], seconds: 4, fade: true, lines: ["|Below that, the Round Foundry, and a heat that doesn't belong in stone."]}
@@ -140,6 +150,8 @@ cutscenes:
   foreman_wakes:
     - {at: [232, 22, 36, -15, 4], to: [233, 21, 38, -15, 2], seconds: 4, text: "<gold>The Gloomforge</gold>", sound: "block.anvil.land 0.6", lines: ["|The furnace roars. The whole hull shudders against its chains."]}
     - {at: [232, 21, 37, -15, 4], seconds: 4, title: "<dark_red>The Deep Foreman</dark_red>", text: "<gray>Who dug too deep for a buyer he never met</gray>", sound: "entity.ravager.roar 0.5", lines: ["The Deep Foreman|Shift's over when I say it's over."]}
+  colossus_rises:
+    - {at: [122.5, 42, 122, 180, 18], to: [122.5, 40, 118, 180, 10], seconds: 5, title: "<gold>The Molten Colossus</gold>", text: "<gray>What the Foundry was built to keep down</gray>", sound: "entity.ravager.roar 0.4", lines: ["|It comes up out of the slag on your line, and it keeps coming, and it has hands."]}
 
 mobs:
   "custom:gloom_miner": {forces: 1}
@@ -167,7 +179,7 @@ packs:
   # Level two: the ledges of the Gullet, and the drift to Grell.
   ledge_top: {at: [58, 93, 92], mobs: {"custom:gloom_miner": 3}, aggro: 7}
   ledge_middle: {at: [12, 82, 100], mobs: {"custom:powder_sapper": 2, "custom:cave_lurker": 2}, aggro: 7}
-  ledge_low: {at: [50, 82, 96], mobs: {"custom:pit_brute": 1, "custom:gloom_miner": 2}, aggro: 7}
+  ledge_low: {at: [40, 82, 73], mobs: {"custom:pit_brute": 1, "custom:gloom_miner": 2}, aggro: 7}
   shaft_foot: {at: [36, 71, 92], mobs: {"custom:pit_brute": 1, "custom:powder_sapper": 2}}
   grell_guard: {at: [42, 71, 112], mobs: {"custom:gloom_miner": 3, "custom:pit_brute": 1}, aggro: 7}
   # Level three: the incline down to the Mainline.
@@ -186,6 +198,11 @@ packs:
     mobs: {"custom:drowned_stoker": 3}
     aggro: 7
     patrol: [[192, 15, 34], [212, 15, 34]]
+
+# Hidden. Nothing about this goes on a guide: a line cast into the boiling slag gets a bite, and whoever reels in
+# on it, at this Fishing level or better, hauls up the room.
+lures:
+  boiling_slag: {at: [134, 27, 113], radius: 4, fishing-level: 25, room: the_molten_deep, body: colossus}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
@@ -268,7 +285,7 @@ rooms:
         start: ["cutscene ore_line_wakes", "wait 5", "say hesk|Listen for the bell, watch for the sparks on the rail. And get him on the tracks, a cart'll knock the fight out of him!", "hazard start ore_line_carts"]
         health-60: ["hazard start ore_line_rush", "say The Blastmaster|Every switch! Every line! Run, little miners!"]
         health-30: ["hazard start powder_carts", "say The Blastmaster|Fire in the hole!"]
-        clear: ["hazard stop ore_line_carts", "hazard stop ore_line_rush", "hazard stop powder_carts", "say hesk|He's down, and the north door with him. Past that it's the Foundry. You'll feel it before you see it."]
+        clear: ["hazard stop ore_line_carts", "hazard stop ore_line_rush", "hazard stop powder_carts", "message <yellow>The north gate of the yard grinds open.</yellow>", "say hesk|He's down, and the north gate's up. Between the two big lamps on the north side of the yard, then the walkway down. It's the Foundry from there. You'll feel it before you see it."]
   round_foundry:
     title: The Round Foundry
     region: [100, 30, 66, 144, 54, 112]
@@ -310,6 +327,30 @@ rooms:
       scripts:
         start: ["cutscene hound_wakes", "wait 5", "hazard start slag_flows", "hazard start pit_rockfall"]
         clear: ["hazard stop slag_flows", "hazard stop pit_rockfall", "say hesk|You went looking for that? Well. It won't be eating anyone else."]
+  the_molten_deep:
+    title: The Molten Deep
+    hidden: true
+    optional: true
+    region: [100, 30, 66, 144, 54, 112]
+    requires: [round_foundry]
+    checkpoint: [122, 33, 104, 180]
+    points: [[122, 33, 97, 0], [112, 33, 96], [132, 33, 96], [110, 33, 84], [134, 33, 84]]
+    encounter:
+      type: boss
+      boss: custom:molten_colossus
+      boss-level-bonus: 6
+      abilities: [slam, fire_pools]
+      phases:
+        - {at: 66, abilities: [slam, fire_pools, charge], title: "The Colossus tears open the floor"}
+        - {at: 33, abilities: [slam, meteor, fire_pools, charge], title: "The Colossus calls down the roof"}
+      enrage-seconds: 360
+      adds-at-health: [50]
+      waves:
+        - {"custom:forge_thrall": 4, "custom:soot_caster": 2}
+      scripts:
+        start: ["cutscene colossus_rises", "wait 6", "say hesk|What in the hells have you pulled up?! Keep off the glowing floor, and keep moving!", "hazard start molten_rain"]
+        health-66: ["hazard start molten_vents"]
+        clear: ["hazard stop molten_rain", "hazard stop molten_vents", "say hesk|You caught that. On a fishing line. My brother is never going to hear the end of this."]
   the_gloomforge:
     title: The Gloomforge
     region: [218, 10, 0, 254, 64, 88]

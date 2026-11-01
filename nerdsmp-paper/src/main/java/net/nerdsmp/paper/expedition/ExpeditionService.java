@@ -168,7 +168,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             "66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07",
             "68ecbced26e68dd599978d1b9a11bd1931208749eb5b583399a2a7720ed87781",
             "6d82451550d698f60690d95f326fe3b2dfa112c62dc8f9266e88b467d9ea5d13",
-            "59f0383234ce44186e1f78ebe9f7155416e8c72ae03912f55e30e8b484271c79"),
+            "59f0383234ce44186e1f78ebe9f7155416e8c72ae03912f55e30e8b484271c79",
+            "a0c97174e2aa5683a5d015b38b401661dab3fdb5a0951cabd8e719f72388bc5e"),
         "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9",
             "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31",
             "434cacf4dc64073543d4cd3ee72faac553495b06ab4c423cc240669e7016c0c3"),
@@ -1064,6 +1065,12 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (!event.hasChangedBlock()) return;
         ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
         if (run != null && run.world != null && run.world.equals(event.getTo().getWorld())) run.moved(event.getPlayer(), event.getTo());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFish(org.bukkit.event.player.PlayerFishEvent event) {
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        if (run != null) run.fished(event);
     }
 
     /** Ender pearls, chorus fruit and staff teleports inside a run count as walking for room triggers and the exit. */

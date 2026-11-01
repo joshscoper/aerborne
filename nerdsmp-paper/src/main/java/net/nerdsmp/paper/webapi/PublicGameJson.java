@@ -102,6 +102,7 @@ final class PublicGameJson {
                 row.addProperty("bossItemChance", net.nerdsmp.paper.expedition.content.ExpeditionLoot.rareChance(
                     net.nerdsmp.paper.expedition.content.ExpeditionLoot.BOSS_ITEM_CHANCE, net.nerdsmp.paper.expedition.content.ExpeditionLoot.luck(tier.id(), 0)));
                 row.addProperty("itemLevelBonus", net.nerdsmp.paper.expedition.content.ExpeditionLoot.itemLevelBonus(tier.id(), 0, definition.level(), definition.level()));
+                row.addProperty("marks", Math.round(definition.loot().marks() * tier.marks()));
                 if (tier.requires() != null) row.addProperty("requires", tier.requires());
                 JsonArray modifiers = new JsonArray();
                 for (Modifier modifier : service.modifiers(definition, tier)) {
@@ -175,7 +176,7 @@ final class PublicGameJson {
         guide.tips().stream().limit(12).forEach(tips::add);
         json.add("tips", tips);
         JsonArray rooms = new JsonArray();
-        for (var room : definition.roomList()) {
+        for (var room : definition.publicRooms()) {
             JsonObject row = new JsonObject();
             row.addProperty("title", room.title());
             row.addProperty("type", room.encounter().type().name().toLowerCase(Locale.ROOT));
@@ -253,7 +254,7 @@ final class PublicGameJson {
         }
         // The dungeon's gear in detail. A companion is never listed: those are for players to find.
         JsonArray bosses = new JsonArray();
-        for (var room : definition.roomList()) {
+        for (var room : definition.publicRooms()) {
             List<String> own = table.bossLoot().get(room.id());
             if (own == null) continue;
             JsonObject row = new JsonObject();
@@ -337,6 +338,7 @@ final class PublicGameJson {
             row.addProperty("description", goal.description());
             row.addProperty("points", ledger.points(goal.id()));
             row.addProperty("target", goal.target());
+            row.addProperty("dailyCap", goal.dailyCap() == null ? season.playerDailyCap() : goal.dailyCap());
             JsonArray sources = new JsonArray();
             for (var source : goal.sources()) {
                 JsonObject value = new JsonObject();

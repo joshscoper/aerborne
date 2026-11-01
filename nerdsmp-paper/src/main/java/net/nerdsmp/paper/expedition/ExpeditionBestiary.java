@@ -40,7 +40,7 @@ public final class ExpeditionBestiary {
     public static List<Entry> of(NerdSmpPlugin plugin, ExpeditionDefinition expedition) {
         Map<String, Set<String>> rooms = new LinkedHashMap<>();
         Set<String> bosses = new LinkedHashSet<>();
-        for (Room room : expedition.roomList()) {
+        for (Room room : expedition.publicRooms()) {
             var encounter = room.encounter();
             if (encounter.boss() != null) {
                 bosses.add(encounter.boss());

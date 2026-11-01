@@ -1555,6 +1555,16 @@ relics:
     stats: {damage: 6, mining-power: 3, durability-save-percent: 8}
     lore:
       - "<gray>Cuts gloomsteel like chalk.</gray>"
+  emberline_rod:
+    material: fishing_rod
+    name: "<gold>Emberline Rod</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 30
+    sockets: 3
+    stats: {fishing-power: 6, fishing-luck-percent: 10, durability-save-percent: 12}
+    lore:
+      - "<gray>The grip is charred. The rest of it isn't, and nobody can say why.</gray>"
   deep_foremans_pick:
     material: netherite_pickaxe
     name: "<gold>Deep Foreman's Pick</gold>"

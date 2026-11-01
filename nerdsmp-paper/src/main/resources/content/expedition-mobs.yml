@@ -167,6 +167,17 @@ mobs:
     ability: none
     mark-reward: 160
     equipment: {head: iron_helmet, chest: iron_chestplate, legs: leather_leggings, hand: diamond_pickaxe}
+  molten_colossus:
+    rank: normal
+    name: "<gradient:#feca57:#d63031><bold>The Molten Colossus</bold></gradient>"
+    type: iron_golem
+    boss: true
+    health: 1500
+    attack-damage: 12
+    scale: 3
+    speed: 0.2
+    ability: none
+    mark-reward: 240
 
   # The Hall of the Three Wardens
   ember_warden:

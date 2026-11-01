@@ -59,7 +59,7 @@ final class ExpeditionGuideBook {
         book.newPage();
         book.heading("The route");
         int index = 1;
-        for (Room room : expedition.roomList()) {
+        for (Room room : expedition.publicRooms()) {
             String kind = switch (room.encounter().type()) {
                 case WAVES -> room.encounter().waves().size() + " waves";
                 case SURVIVE -> "survive " + room.encounter().surviveSeconds() + "s";

@@ -51,7 +51,7 @@ class ExpeditionContentTest {
             assertEquals(List.of(), errors(definition), id);
             assertEquals(EncounterType.BOSS, definition.roomList().get(definition.rooms().size() - 1).encounter().type(), id);
             assertFalse(definition.guide().isEmpty(), id + " ships a guide");
-            assertEquals(definition.rooms().keySet(), definition.guide().rooms().keySet(), id + ": a guide line for every room");
+            assertEquals(definition.publicRooms().stream().map(room -> room.id()).collect(java.util.stream.Collectors.toSet()), definition.guide().rooms().keySet(), id + ": a guide line for every room");
         }
     }
 

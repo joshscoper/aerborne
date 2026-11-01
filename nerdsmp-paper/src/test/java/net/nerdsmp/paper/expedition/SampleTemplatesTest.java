@@ -138,7 +138,7 @@ class SampleTemplatesTest {
 
     private static boolean seeThrough(Material material) {
         return material == Material.AIR || material == Material.COBWEB || material == Material.HANGING_ROOTS || material == Material.IRON_CHAIN
-            || material == Material.RAIL || material == Material.VINE
+            || material == Material.RAIL || material == Material.VINE || material == Material.LIGHT
             || material.name().endsWith("CANDLE") || material.name().endsWith("LANTERN") || material.name().endsWith("CAMPFIRE");
     }
 
@@ -219,6 +219,74 @@ class SampleTemplatesTest {
             if (!reached) stranded.add(target.x() + "," + target.y() + "," + target.z());
         }
         assertTrue(stranded.isEmpty(), "can't be reached on foot: " + stranded);
+    }
+
+    /** Nothing hangs in mid air: rock, turf and props all join up. A lone leaf or two at the end of a bough is all that's let off. */
+    @Test void nothingInTheMinesFloats() {
+        Map<Cell, Material> blocks = new HashMap<>(blocks("gloomforge_mines"));
+        blocks.values().removeIf(material -> material == Material.AIR || material == Material.LIGHT);
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        List<String> floating = new java.util.ArrayList<>();
+        int largest = 0;
+        for (Cell start : blocks.keySet()) {
+            if (!seen.add(start)) continue;
+            List<Cell> group = new java.util.ArrayList<>(List.of(start));
+            for (int index = 0; index < group.size(); index++) {
+                Cell at = group.get(index);
+                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
+                    Cell near = new Cell(at.x() + dx, at.y() + dy, at.z() + dz);
+                    if (blocks.containsKey(near) && seen.add(near)) group.add(near);
+                }
+            }
+            largest = Math.max(largest, group.size());
+            boolean leaves = group.stream().allMatch(cell -> blocks.get(cell).name().endsWith("LEAVES"));
+            if (group.size() < 100_000 && !(leaves && group.size() <= 3)) floating.add(group.size() + " blocks at " + start + " such as " + blocks.get(start));
+        }
+        assertTrue(largest > 100_000 && floating.isEmpty(), String.join("\n", floating));
+    }
+
+    /** A party has to fit: from the spawn to every room, boss, fire and pack, two abreast with room to jump. */
+    @Test void theMinesFitTwoAbreastAllTheWayDown() {
+        var mines = definition("gloomforge_mines");
+        Map<Cell, Material> blocks = new HashMap<>(blocks("gloomforge_mines"));
+        blocks.values().removeIf(material -> material == Material.AIR || material == Material.IRON_BARS || material == Material.LIGHT);
+        java.util.function.Predicate<Material> soft = material -> material == null || material == Material.RAIL || material == Material.SHORT_GRASS || material == Material.FERN
+            || material == Material.MOSS_CARPET || material == Material.WATER || material == Material.LANTERN || material == Material.IRON_CHAIN || material == Material.AZURE_BLUET || material == Material.BLUE_ORCHID;
+        java.util.function.Predicate<Cell> fits = at -> {
+            boolean floor = false;
+            for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) {
+                for (int up = dx == 0 && dz == 0 ? 0 : 1; up <= 2; up++) if (!soft.test(blocks.get(new Cell(at.x() + dx, at.y() + up, at.z() + dz)))) return false;
+                Material under = blocks.get(new Cell(at.x() + dx, at.y() - 1, at.z() + dz));
+                floor |= !soft.test(under) && !under.name().endsWith("FENCE");
+            }
+            return floor;
+        };
+        java.util.Set<Cell> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Cell> open = new java.util.ArrayDeque<>();
+        open.add(new Cell(mines.spawn().x(), mines.spawn().y(), mines.spawn().z()));
+        while (!open.isEmpty()) {
+            Cell at = open.poll();
+            if (!seen.add(at)) continue;
+            for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) for (int dy = -4; dy <= 1; dy++) {
+                Cell next = new Cell(at.x() + step[0], at.y() + dy, at.z() + step[1]);
+                if (!seen.contains(next) && fits.test(next)) open.add(next);
+            }
+        }
+        var targets = new java.util.ArrayList<>(List.of(mines.exit()));
+        for (var room : mines.roomList()) {
+            targets.add(room.checkpoint());
+            targets.add(room.points().getFirst());
+        }
+        for (var fire : mines.story().campfires().values()) targets.add(fire.at());
+        for (var pack : mines.story().packs().values()) targets.add(pack.at());
+        List<String> pinched = new java.util.ArrayList<>();
+        for (var target : targets) {
+            boolean reached = false;
+            for (int dy = -2; dy <= 2; dy++) for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++)
+                reached |= seen.contains(new Cell(target.x() + dx, target.y() + dy, target.z() + dz));
+            if (!reached) pinched.add(target.x() + "," + target.y() + "," + target.z());
+        }
+        assertTrue(pinched.isEmpty(), "too narrow to reach: " + pinched);
     }
 
     private static boolean walkThrough(Material material) {

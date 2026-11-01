@@ -18,6 +18,7 @@ import net.nerdsmp.paper.expedition.content.Modifier;
 import net.nerdsmp.paper.expedition.content.ScriptAction;
 import net.nerdsmp.paper.expedition.content.Tier;
 import net.nerdsmp.paper.expedition.flow.RaidLockouts;
+import net.nerdsmp.paper.expedition.flow.RoomMuster;
 import net.nerdsmp.paper.expedition.flow.RunProgress;
 import net.nerdsmp.paper.expedition.flow.RunProgress.Effect;
 import net.nerdsmp.paper.presentation.Chat;
@@ -102,6 +103,8 @@ final class ExpeditionRun {
     private final RunEntrance entrance;
     private final RunArena roomFight;
     private final RunPacks packs;
+    private final RoomMuster muster = new RoomMuster();
+    private RunLures lures;
     /** Whether each sealed room's door is shut now. */
     private final Map<String, Boolean> seals = new HashMap<>();
     /** When the active sealed fight last had a living member inside. */
@@ -122,6 +125,8 @@ final class ExpeditionRun {
     private static final String PACK = "pack:";
     /** How long a sealed fight runs with nobody alive inside before it counts as a wipe. */
     private static final long EVACUATED_MILLIS = 3_000;
+    /** How far past a sealed door someone has to get before the room notices them. */
+    private static final double PAST_THE_DOOR = 6;
     final RunLoot loot;
     /** While the room's boss is submerged: when it surfaces again (-1 when it isn't). */
     private long surfaceAt = -1;
@@ -374,6 +379,7 @@ final class ExpeditionRun {
 
     void begin(World created) {
         world = created;
+        lures = new RunLures(plugin, this);
         long now = System.currentTimeMillis();
         progress = new RunProgress(expedition, tier, modifiers, new HashSet<>(members), now);
         for (Room room : expedition.roomList()) {
@@ -478,6 +484,11 @@ final class ExpeditionRun {
         if (surfaceAt > 0 && (now >= surfaceAt || alive == 0 && now - submergedAt > 3_000)) surface();
         stage.tick(now);
         puzzles.tick(now);
+        lures.tick();
+        if (muster.room() != null) {
+            if (progress.startable(muster.room())) muster(expedition.rooms().get(muster.room()), now);
+            else muster.clear();
+        }
         updateSeals(now);
         catchEnemies();
         if (!bosses.isEmpty() && state == State.ACTIVE) {
@@ -576,14 +587,67 @@ final class ExpeditionRun {
         if (state == State.ACTIVE) {
             puzzles.moved(player, to);
             for (Room room : expedition.roomList())
-                if (room.region() != null && room.region().contains(to.getX(), to.getY(), to.getZ()) && progress.startable(room.id())) {
-                    apply(progress.enter(room.id(), System.currentTimeMillis()), System.currentTimeMillis());
+                if (room.region() != null && !room.hidden() && room.region().contains(to.getX(), to.getY(), to.getZ()) && progress.startable(room.id())) {
+                    enterOnFoot(room, to);
                     break;
                 }
         } else if (state == State.ENDING && completed && expedition.exit() != null
             && expedition.exit().distanceSquared(to.getX(), to.getY(), to.getZ()) <= 6.25) {
             service.sendHome(player, this, "<green>You leave " + Chat.escape(expedition.title()) + " with your spoils.</green>");
         }
+    }
+
+    /** A room starts as someone walks in, but a sealed boss room waits until they're well inside and the party has had a moment to follow. */
+    private void enterOnFoot(Room room, Location to) {
+        long now = System.currentTimeMillis();
+        if (room.seal() == null || !room.bossRoom()) {
+            apply(progress.enter(room.id(), now), now);
+            return;
+        }
+        double doorX = (room.seal().minX() + room.seal().maxX()) / 2D, doorZ = (room.seal().minZ() + room.seal().maxZ()) / 2D;
+        if (Math.hypot(to.getX() - doorX, to.getZ() - doorZ) >= PAST_THE_DOOR) muster(room, now);
+    }
+
+    /** The door shuts on nobody: when the wait is over, anyone still outside is brought in with the party. */
+    private void muster(Room room, long now) {
+        boolean called = muster.room() != null;
+        List<Player> outside = outside(room);
+        if (muster.call(room.id(), outside.isEmpty(), now)) {
+            muster.clear();
+            Location inside = roomSpot(room.id());
+            for (Player player : outside) {
+                service.teleport(player, inside);
+                Chat.notice(player, "You catch up with the party as the door comes down.");
+            }
+            apply(progress.enter(room.id(), now), now);
+            return;
+        }
+        if (!called) for (Player player : outside) Chat.send(player, "<gold>Your party has reached " + Chat.escape(room.title()) + ".</gold> <gray>Get inside, or you'll be swept in as the door comes down.</gray>");
+        for (Player player : online()) Chat.bar(player, "<gold>" + Chat.escape(room.title()) + "</gold> <gray>in " + muster.secondsLeft(now) + "s</gray>");
+    }
+
+    /** Living party members who aren't in a room yet. */
+    private List<Player> outside(Room room) {
+        List<Player> outside = new ArrayList<>();
+        for (UUID member : progress.present()) {
+            Player player = Bukkit.getPlayer(member);
+            if (player == null || player.isDead() || player.getWorld() != world) continue;
+            Location at = player.getLocation();
+            if (!room.region().contains(at.getX(), at.getY(), at.getZ())) outside.add(player);
+        }
+        return outside;
+    }
+
+    /** A line landed something: its hidden room starts, if nothing else is running. */
+    boolean surfaces(String roomId) {
+        if (state != State.ACTIVE || !progress.startable(roomId)) return false;
+        long now = System.currentTimeMillis();
+        apply(progress.enter(roomId, now), now);
+        return true;
+    }
+
+    void fished(org.bukkit.event.player.PlayerFishEvent event) {
+        if (lures != null && world == event.getPlayer().getWorld()) lures.fished(event);
     }
 
     void died(Player player) {
@@ -761,8 +825,7 @@ final class ExpeditionRun {
             case Effect.StartRoom start -> {
                 Room room = expedition.rooms().get(start.room());
                 // A room that opens on a scene lets the scene announce it.
-                boolean scene = room.encounter().script("start").stream().anyMatch(action -> action.verb() == ScriptAction.Verb.CUTSCENE);
-                if (!scene) for (Player player : online()) {
+                if (!opensOnScene(room)) for (Player player : online()) {
                     player.showTitle(Title.title(Component.empty(), Chat.render("<gold>" + Chat.escape(room.title()) + "</gold>"),
                         Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(400))));
                     player.playSound(player.getLocation(), Sound.EVENT_RAID_HORN, .5F, 1.2F);
@@ -1018,6 +1081,7 @@ final class ExpeditionRun {
         if (entity == null) return;
         bosses.put(entity.getUniqueId(), index);
         casters.put(entity.getUniqueId(), new Caster(ExpeditionDefinition.Role.BOSS, bossAbilities(room, 0), 1.4));
+        lures.dress(room, entity);
         if (room.encounter().entrance() == null) {
             announceBoss(room, id, entity);
             return;
@@ -1025,6 +1089,11 @@ final class ExpeditionRun {
         int ticks = entrance.enter(room, id, entity);
         Caster caster = casters.get(entity.getUniqueId());
         if (caster != null) caster.nextCast = System.currentTimeMillis() + ticks * 50L + 3_000;
+    }
+
+    /** Whether a room's first act is a cutscene. It plays a tick after the room starts, so nobody is in it yet. */
+    private static boolean opensOnScene(Room room) {
+        return room.encounter().script("start").stream().anyMatch(action -> action.verb() == ScriptAction.Verb.CUTSCENE);
     }
 
     /** The bar and the name card, once a boss is really in the fight. */
@@ -1042,7 +1111,7 @@ final class ExpeditionRun {
         world.playSound(entity.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.2F, .8F);
         // A name card for the boss, unless a cutscene is introducing it.
         String epithet = expedition.story().mob(id).title();
-        for (Player player : online()) {
+        if (!opensOnScene(room)) for (Player player : online()) {
             if (stage.inCutscene(player)) continue;
             player.showTitle(Title.title(Component.empty(), displayName(entity), Title.Times.times(Duration.ofMillis(300), Duration.ofMillis(2500), Duration.ofMillis(600))));
             if (epithet != null) Chat.bar(player, "<gray>" + Chat.escape(epithet) + "</gray>");

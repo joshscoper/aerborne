@@ -76,22 +76,22 @@ public record ExpeditionDefinition(
                         Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs, Integer time,
                         List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests, String intro, List<String> outro,
                         Map<String, Pack> packs, int recordsVersion, Map<String, CompanionDrop> companionDrops,
-                        Map<String, Device> devices, List<Ambience> ambience, Falls falls, String motes) {
+                        Map<String, Device> devices, List<Ambience> ambience, Falls falls, String motes, Map<String, Lure> lures) {
         public static final Story EMPTY = new Story(Goal.ROOMS, 0, 0, false, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), null, List.of(),
-            Map.of(), null, null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
+            Map.of(), null, null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null, Map.of());
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires, Map<String, LootChest> chests, RewardChests rewardChests) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, chests, rewardChests,
-                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null, Map.of());
         }
 
         public Story(Goal goal, int forces, int timeBonusSeconds, boolean raid, Map<String, Campfire> campfires, Map<String, SetPiece> setpieces,
                      Map<String, Hazard> hazards, Map<String, Cutscene> cutscenes, Map<String, Npc> npcs, Map<String, MobProfile> mobs,
                      Integer time, List<String> requires) {
             this(goal, forces, timeBonusSeconds, raid, campfires, setpieces, hazards, cutscenes, npcs, mobs, time, requires, Map.of(), null,
-                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null);
+                null, List.of(), Map.of(), 0, Map.of(), Map.of(), List.of(), null, null, Map.of());
         }
 
         public Story {
@@ -109,6 +109,7 @@ public record ExpeditionDefinition(
             companionDrops = ordered(companionDrops);
             devices = ordered(devices);
             ambience = ambience == null ? List.of() : List.copyOf(ambience);
+            lures = ordered(lures);
         }
 
         /** How many secret caches the map hides, for the run's exploration score. */
@@ -144,6 +145,12 @@ public record ExpeditionDefinition(
 
     /** A loot container in the map. Every player loots it once, with their own roll. */
     public record LootChest(String id, Point at, ChestKind kind, String title) { }
+
+    /**
+     * A hidden fishing spot in lava. Whoever lands the bite, at {@code fishingLevel} or better, starts {@code room},
+     * which should be {@code hidden}. {@code body} names a model hung on the boss; null leaves its own.
+     */
+    public record Lure(String id, Point at, int radius, int fishingLevel, String room, String body) { }
 
     /** A rare companion a boss can drop: each player rolls {@code chance} (0-1) for themselves, raised on harder tiers. */
     public record CompanionDrop(String companion, double chance) { }
@@ -309,6 +316,9 @@ public record ExpeditionDefinition(
 
     public List<Room> roomList() { return List.copyOf(rooms.values()); }
 
+    /** The rooms players may be told about: a hidden room stays off every guide, list and page. */
+    public List<Room> publicRooms() { return rooms.values().stream().filter(room -> !room.hidden()).toList(); }
+
     public Optional<Room> roomAt(double x, double y, double z) {
         return rooms.values().stream().filter(room -> room.region() != null && room.region().contains(x, y, z)).findFirst();
     }
@@ -371,7 +381,7 @@ public record ExpeditionDefinition(
      */
     public record Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
                        List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks,
-                       Box seal, List<String> requiresPacks) {
+                       Box seal, List<String> requiresPacks, boolean hidden) {
         /** What a room can unlock for everyone who clears it. */
         public static final List<String> UNLOCKS = List.of("nether");
 
@@ -386,7 +396,7 @@ public record ExpeditionDefinition(
 
         public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
                     List<String> requires, boolean optional, Map<String, Puzzle> puzzles, Loot loot, List<String> unlocks) {
-            this(id, title, region, checkpoint, gate, points, encounter, requires, optional, puzzles, loot, unlocks, null, List.of());
+            this(id, title, region, checkpoint, gate, points, encounter, requires, optional, puzzles, loot, unlocks, null, List.of(), false);
         }
 
         public Room(String id, String title, Box region, Point checkpoint, Box gate, List<Point> points, Encounter encounter,
