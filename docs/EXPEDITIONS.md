@@ -95,7 +95,7 @@ one bar) or, when no boss is up, a living mini-boss.
 - A disconnected player has `rejoin-minutes` to come back and is put straight back in. If the run
   ended meanwhile (or the server restarted), they are returned to where they entered from on join.
 - After the boss: each member gets their own loot (profile rolls per tier, fixed items, Marks).
-  Overflow waits until they leave. The exit lights up. Walk into it, or `/expedition leave`. The
+  Overflow waits until they leave. The exit lights up. Walk into it, or `/expedition leave`. If you've left a chest behind, it stops you once and says which; step out and back in to go without it. The
   instance closes `linger-after-finish-seconds` later, or as soon as everyone has left.
 - Players return to exactly where they entered from.
 

@@ -200,6 +200,23 @@ class SampleTemplatesTest {
 
     @Test void theRaidCanBeWalkedFromTheGateToTheHeart() { canBeWalked("cinder_keep"); }
 
+    /** The way down from the Steward's hall, step by step: open from wall to wall once the floor has fallen in. */
+    @Test void theRaidsLastStairIsOpenAllTheWayDown() {
+        var raid = definition("cinder_keep");
+        Map<Cell, Material> blocks = new HashMap<>(blocks("cinder_keep"));
+        blocks.values().removeIf(material -> material == Material.LIGHT);
+        var box = raid.story().setpieces().get("throne_floor").box();
+        for (int x = box.minX(); x <= box.maxX(); x++) for (int y = box.minY(); y <= box.maxY(); y++) for (int z = box.minZ(); z <= box.maxZ(); z++) blocks.remove(new Cell(x, y, z));
+        List<String> blocked = new java.util.ArrayList<>();
+        // The last step is level with the causeway, which carries on from it.
+        for (int step = 0; step < CinderKeepTemplate.Y - CinderHeart.FLOOR; step++) {
+            int z = CinderHalls.PIT_NORTH + 2 + step * 2, y = CinderKeepTemplate.Y - 1 - step;
+            for (int x = -5; x <= 5; x++) for (int d = 0; d <= 1; d++) for (int h = 1; h <= 3; h++)
+                if (y + h <= CinderKeepTemplate.Y && solid(blocks, x, y + h, z + d)) blocked.add(x + "," + (y + h) + "," + (z + d) + " " + blocks.get(new Cell(x, y + h, z + d)));
+        }
+        assertTrue(blocked.isEmpty(), "blocked: " + blocked);
+    }
+
     @Test void theMinesCanBeWalkedFromTheTopToTheForge() { canBeWalked("gloomforge_mines"); }
 
     @Test void theHallCanBeWalkedFromTheLandingToEveryThrone() { canBeWalked("hall_of_wardens"); }

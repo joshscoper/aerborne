@@ -5,6 +5,13 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Second round of raid fixes (November 1)
+- **Exits.** The exit refused to work while any boss chest in the run was unopened, with only a line on the action bar to say so.
+  It now stops you once, names the chest, and lets you go if you step out and back in.
+- **The Last Stair.** A second layer of floor under the Steward's hall stayed behind when the floor fell in, sealing the stair.
+- **Hitting the big bosses.** Pyrrhax's hit area sat eight blocks behind the front of his body, so a swing at what you could see
+  never landed. His and Cindermaw's are much larger now, and a blow on a built body throws sparks where it lands.
+
 ### Playtest fixes for the Hall, the Aqueduct and the raid (November 1)
 - **The Hall of the Three Wardens.** Arrows now light the fires on the Ash Court's targets, and the fires go out if the window
   closes. The opening is one unbroken flight up the stair, over the gate and round the Hall past each wing, and every boss scene is

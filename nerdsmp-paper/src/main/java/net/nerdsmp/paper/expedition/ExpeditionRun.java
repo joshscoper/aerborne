@@ -113,6 +113,8 @@ final class ExpeditionRun {
     private RunPortals portals;
     private RunFlight flight;
     private final Map<UUID, Long> unstuck = new HashMap<>();
+    /** Who the exit has warned about a chest, and whether they've stepped out of it since. */
+    private final Map<UUID, Boolean> exitWarned = new HashMap<>();
     /** How much less a raid boss takes from each hit, for the health the attribute's ceiling can't hold. */
     private final Map<UUID, Double> toughness = new HashMap<>();
     /** Whether each sealed room's door is shut now. */
@@ -296,6 +298,12 @@ final class ExpeditionRun {
 
     /** A player or ally hit an enemy: threat, interrupts, and waking its pack. */
     void enemyHit(Entity source, LivingEntity enemy, double amount, boolean charged) {
+        // A built body has no hurt flash of its own, so a landed blow shows where it landed.
+        if (source instanceof Player player && lures.body(enemy) != null) {
+            Location struck = player.getEyeLocation().add(player.getLocation().getDirection().multiply(2.5));
+            world.spawnParticle(Particle.CRIT, struck, 14, .4, .4, .4, .3);
+            world.spawnParticle(Particle.LAVA, struck, 3, .3, .3, .3, 0);
+        }
         if (source instanceof LivingEntity attacker) packs.struck(enemy, attacker);
         fight.hit(source, enemy, amount, charged);
     }
@@ -609,11 +617,23 @@ final class ExpeditionRun {
                     enterOnFoot(room, to);
                     break;
                 }
-        } else if (state == State.ENDING && completed && expedition.exit() != null
-            && expedition.exit().distanceSquared(to.getX(), to.getY(), to.getZ()) <= 6.25) {
-            if (loot.owed(player.getUniqueId())) Chat.bar(player, "<gold>You still have a chest to open.</gold>");
-            else service.sendHome(player, this, "<green>You leave " + Chat.escape(expedition.title()) + " with your spoils.</green>");
+        } else if (state == State.ENDING && completed && expedition.exit() != null) atExit(player, to);
+    }
+
+    /** The exit lets you go. It stops you once if you've left a chest behind, and only that once: step out and back in to go anyway. */
+    private void atExit(Player player, Location to) {
+        UUID id = player.getUniqueId();
+        if (expedition.exit().distanceSquared(to.getX(), to.getY(), to.getZ()) > 6.25) {
+            exitWarned.computeIfPresent(id, (who, walkedOff) -> true);
+            return;
         }
+        String chest = loot.owedAt(id);
+        if (chest == null || exitWarned.getOrDefault(id, false)) {
+            service.sendHome(player, this, "<green>You leave " + Chat.escape(expedition.title()) + " with your spoils.</green>");
+            return;
+        }
+        if (exitWarned.putIfAbsent(id, false) == null)
+            Chat.notice(player, "You still have a chest to open: " + Chat.escape(chest) + ". Step out and back in to leave without it.");
     }
 
     /** A room starts as someone walks in, but a sealed boss room waits until they're well inside and the party has had a moment to follow. */

@@ -315,6 +315,8 @@ final class CinderHalls {
             for (int x = -5; x <= 5; x++) for (int d = 0; d <= 1; d++) {
                 b.block(x, y, z + d, Math.abs(x) == 5 ? RED : Math.abs(x) == 4 ? GILT : BRICK);
                 b.block(x, y - 1, z + d, DARK);
+                // Nothing over the steps but the hall's own floor, which is what falls in.
+                for (int h = 1; h <= 7; h++) if (y + h < Y && b.get(x, y + h, z + d) != null) b.block(x, y + h, z + d, Material.AIR);
             }
             for (int d = 0; d <= 1; d++) for (int h = 1; h <= 7; h++) for (int x : new int[]{-6, 6}) if (y + h < Y - 1) b.block(x, y + h, z + d, h % 4 == 0 ? HOT : masonry(x, y + h, z + d));
             if (y + 8 < Y - 1) for (int d = 0; d <= 1; d++) for (int x = -6; x <= 6; x++) b.block(x, y + 8, z + d, Math.floorMod(z, 8) < 2 ? GILT : masonry(x, y + 8, z + d));

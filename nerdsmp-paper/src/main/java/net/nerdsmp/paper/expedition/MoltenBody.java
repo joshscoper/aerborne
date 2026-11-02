@@ -300,6 +300,8 @@ final class MoltenBody {
         boss.setCustomNameVisible(false);
         boss.setSilent(false);
         MoltenBody body = new MoltenBody(boss, look);
+        // A god's hit box fills the end of the arena, and it shouldn't shove anyone off it.
+        if (body.size > 2) boss.setCollidable(false);
         for (Part part : body.parts) body.displays.add(boss.getWorld().spawn(boss.getLocation(), BlockDisplay.class, display -> {
             display.setBlock((part.block() == Material.SHROOMLIGHT ? body.glow : part.block()).createBlockData());
             display.setPersistent(false);

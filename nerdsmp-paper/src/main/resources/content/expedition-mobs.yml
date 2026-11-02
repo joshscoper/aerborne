@@ -309,7 +309,7 @@ mobs:
     boss: true
     health: 7000
     attack-damage: 11
-    scale: 2
+    scale: 8
     speed: 0.22
     ability: none
     mark-reward: 180
@@ -456,7 +456,7 @@ mobs:
     health: 24000
     attack-damage: 14
     speed: 0.0001
-    scale: 5
+    scale: 16
     ability: none
     mark-reward: 400
   son_of_flame:
