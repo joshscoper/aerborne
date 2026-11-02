@@ -1,12 +1,13 @@
-# Cinder Keep: the first raid, for up to eight players. Beneath the keep a fire lord stirs in the
-# Molten Heart, and his servants work the forges to wake him. Runs in a real Nether dimension, so
-# the sky, fog, ash and Nether rules all apply. Full reference: docs/EXPEDITIONS.md.
+# Cinder Keep: the season's last raid, for up to eight players. The three seals open the Ember Gate, the Chain Bridge crosses
+# the gulf under a drake's wings, and the keep is taken from the ward to the throne. Under the throne is the Molten Heart, and
+# everyone who helped you get here comes to see it finished. Runs in a real Nether dimension, so the sky, fog, ash and Nether
+# rules all apply. Full reference: docs/EXPEDITIONS.md.
 #
 # The season campaign seals it until a milestone unlocks it (see campaign/season.yml). Defeating
 # Gorrak the Kilnbreaker, on any tier, opens the Nether's Cinder Shelf route to everyone who was there.
 # Each boss pays its loot once per tier per week; the lockouts reset on Monday (UTC).
 title: Cinder Keep
-description: "A raid for up to eight. Descend through the caverns under the keep and put the Ashen Sovereign back to sleep."
+description: "The season's last raid, for up to eight. Open the Ember Gate, take the keep, and put the Ashen Sovereign back in his chains."
 icon: blackstone
 dimension: nether
 biome: basalt_deltas
@@ -16,108 +17,277 @@ raid: true
 difficulty: 5
 level: 26
 party: {min: 2, max: 8}
-time-limit-minutes: 75
-spawn: [0, 64, -112, 0]
-exit: [0, 64, 133]
+time-limit-minutes: 90
+# Bump when a map changes enough that old best times mean nothing; clears and keys are kept.
+records-version: 2
+spawn: [0, 64, -252, 0]
+exit: [0, 32, 272, 0]
 modifiers: []
 requires: [hall_of_wardens]
+# The gulf catches you, and it doesn't let go gently.
+falls: {below: 18, damage: 6, message: "Cobb's lines find you over the fire, and haul you back singed."}
 
 npcs:
-  hesk:
-    name: Hesk the Forgewright
+  vell:
+    name: Archivist Vell
     entity: villager
-    at: [-3, 64, -109, 0]
+    at: [-6, 64, -248, 0]
     lines:
-      - "You came down the stair? Then you've seen the forges. They should have gone cold an age ago."
-      - "Pyrrhax, the Ashen Sovereign, sleeps in the Molten Heart. His Steward means to wake him, and every forge down here feeds the waking."
-      - "Gorrak keeps the great kiln. Break him and his hold on the Cinder Shelf breaks with him: the Nether opens to you."
+      - "Three seals, and I can feel every one of them. Whatever's behind that gate has been listening for them for a very long time."
+      - "There's a drake on the bridge. The Steward chained it there when the world was young. There are ballistas on the deck: put enough iron in it and it'll come down."
+      - "Everything Ashkar did, he did for this. The Huntsman, the Heart Tree, the flood, the mine. All of it was to get a keep full of fire and a door left open."
+  hesk:
+    name: Old Miner Hesk
+    entity: villager
+    at: [6, 64, -248, 0]
+    lines:
+      - "Forty years I worked the levels, and I never thought I'd come down this far. Gorrak keeps the great kiln. Break him and the Cinder Shelf opens to you."
       - "Skarn and Vesh run as a pair. Kill one and the other calls it back. Bring them down together."
-      - "Three runes hold the Heart's seal. Quench all three valves in the galleries or the Steward will never come out to meet you."
-      - "When the Sovereign raises his hammer, get your back to solid rock. His wrath throws you clean across the hall, and the moat is lava."
+      - "Three valves hold the cathedral's fires. Vael won't come out from behind the altar until they're shut."
+  cobb:
+    name: Engineer Cobb
+    entity: villager
+    at: [-11, 64, -243, 0]
+    lines:
+      - "I've brought every line and every man the guild has left. If you go off the bridge, we'll fish you out."
+      - "And I've brought the dam, in a manner of speaking. If it comes to it, I can get you water. Once. Don't ask me how yet."
+  ilsa:
+    name: Ranger Ilsa
+    entity: villager
+    at: [11, 64, -243, 0]
+    lines:
+      - "The Canopy sent everyone who can still draw a bow. We'll be where you need us."
+  pell:
+    name: Sexton Pell
+    entity: villager
+    at: [0, 64, -241, 0]
+    lines:
+      - "The dead of the hill road have been very patient. I said I'd tell them how it ends."
 
 campfires:
-  forge_camp: {at: [4, 64, -110], lit: true, title: Forgewright's Camp}
-  slagfall_rest: {at: [5, 64, -16], lit: false, title: Slagfall Rest}
-  heartgate_fire: {at: [-5, 64, 98], lit: false, title: Heartgate Fire}
+  landing_fire: {at: [4, 64, -258], lit: true, title: The Last Landing}
+  bridge_fire: {at: [4, 64, -148], lit: false, title: The Chain Bridge}
+  ward_fire: {at: [-10, 64, -50], lit: false, title: The Outer Ward}
+  nave_fire: {at: [9, 64, 6], lit: false, title: The Ash Cathedral}
+  bellows_fire: {at: [-5, 64, 118], lit: false, title: The Great Bellows}
+  rise_fire: {at: [5, 32, 256], lit: false, title: The Last Stair}
 
 setpieces:
-  heart_causeway: {box: [-2, 63, 136, 2, 63, 141], block: polished_blackstone_bricks, style: rise}
+  ember_doors: {box: [-11, 64, -228, 11, 90, -228], block: air, style: crumble}
+  throne_floor: {box: [-8, 63, 166, 8, 63, 176], block: air, style: crumble}
 
 hazards:
-  slag_rain: {type: rocks, area: [-9, 63, -40, 9, 63, -14], every: 6, count: 4, damage: 6}
-  kiln_fire: {type: fire, area: [-11, 63, -68, 11, 63, -48], every: 8, count: 4, damage: 5}
-  bellows_vents: {type: eruption, area: [-9, 63, 78, 9, 63, 98], every: 5, count: 4, damage: 5}
-  heart_eruptions: {type: eruption, area: [-11, 63, 142, 11, 63, 164], every: 6, count: 5, damage: 6}
-  heart_rockfall: {type: rocks, area: [-12, 63, 141, 12, 63, 165], every: 7, count: 4, damage: 7}
+  bridge_flames:
+    type: lane
+    area: [-16, 63, -190, 16, 63, -150]
+    every: 9
+    count: 2
+    damage: 6
+    burn: 3
+    lanes: [[-14, -186, 14, -186], [14, -178, -14, -178], [-14, -170, 14, -170], [14, -162, -14, -162], [-14, -154, 14, -154], [-9, -190, -9, -150], [9, -150, 9, -190]]
+  kiln_fire: {type: fire, area: [-30, 63, -106, 20, 63, -52], every: 8, count: 5, damage: 6}
+  pen_cinders: {type: rocks, area: [-16, 63, -38, 16, 63, -12], every: 9, count: 3, damage: 6}
+  nave_ash: {type: rocks, area: [-9, 63, 10, 9, 63, 60], every: 7, count: 4, damage: 6}
+  bellows_vents: {type: eruption, area: [-7, 63, 92, 7, 63, 120], every: 5, count: 4, damage: 6}
+  throne_fire: {type: fire, area: [-20, 63, 134, 20, 63, 180], every: 8, count: 5, damage: 7}
+  heart_rockfall: {type: rocks, area: [-24, 31, 276, 24, 31, 324], every: 9, count: 5, damage: 8}
+  heart_eruptions: {type: eruption, area: [-24, 31, 276, 24, 31, 324], every: 7, count: 5, damage: 8}
+
+ambience:
+  - {sound: block.lava.ambient, every: 8, volume: 0.8, pitch: 0.6}
+  - {sound: ambient.basalt_deltas.mood, every: 26, volume: 0.8, pitch: 0.7}
+  - {sound: block.chain.step, every: 11, volume: 0.5, pitch: 0.5, area: [-30, 50, -226, 30, 120, -120]}
+  - {sound: block.anvil.land, every: 23, volume: 0.15, pitch: 0.5, area: [-68, 60, -118, 68, 100, -42]}
+  - {sound: block.beacon.ambient, every: 19, volume: 0.35, pitch: 0.5, area: [-34, 60, -2, 34, 112, 86]}
+  - {sound: entity.warden.heartbeat, every: 7, volume: 0.6, pitch: 0.5, area: [-90, 20, 240, 90, 140, 390]}
 
 # The opening scene, played as the run starts, and the narration after the win.
 intro: prologue
 outro:
-  - "Pyrrhax sinks back into the molten stone, and the Heart's glow fades to a dull red."
-  - "Hesk the Forgewright: 'He's asleep, not gone. The Wardens knew that. Now so do we.'"
+  - "The Wardens' chains go down into the fire with what they hold, and for the first time in an age the Heart is only a mountain."
+  - "Archivist Vell: 'He isn't dead. You can't kill what the Wardens couldn't. But he's bound, and this time the people above know his name.'"
+  - "Old Miner Hesk: 'Forty years down the levels, and I'd do it again. Come on up, all of you. The Accord's waiting to hear how it ended.'"
 
 cutscenes:
   prologue:
-    - {at: [0.5, 68, -114, 0, 15], seconds: 5, title: "<red>Cinder Keep</red>", text: "<gold>The Molten Deep</gold>", sound: "block.lava.ambient", lines: ["|Beneath Cinder Keep, the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone.", "|For an age he slept. Now his Steward stokes every forge in the deep to wake him."]}
-    - {at: [0.5, 70, -96, 0, 15], seconds: 5, fade: true, lines: ["hesk|Remember me from the Gloomforge? I followed the gloomsteel down, and found worse at the bottom.", "hesk|Break Gorrak's kiln and the Cinder Shelf opens to you. Then we go deeper."]}
-    - {at: [0.5, 82, 133.5, 0, 32], seconds: 5, fade: true, lines: ["|Nine caverns lie between you and the Molten Heart. The Steward waits at the last door."]}
+    - {at: [0.5, 70, -262, 0, -8], to: [0.5, 72, -250, 0, -20], seconds: 6, title: "<red>Cinder Keep</red>", text: "<gold>Where the Binding was made</gold>", sound: "block.lava.ambient", lines: ["|When the old world burned, the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone, and built a keep on top of him.", "|For an age he slept. His Steward never did."]}
+    - {at: [-6, 68, -252, 15, 2], to: [6, 68, -252, -15, 2], seconds: 6, fade: true, lines: ["vell|Everyone's here. Everyone who owes you a debt, and I think that's all of us.", "hesk|The Huntsman, the Heart Tree, the flood, my mine. All of it was the Steward, clearing the way to this door."]}
+    - {at: [0.5, 92, -246, 0, -6], to: [0.5, 104, -238, 0, 8], seconds: 5, fade: true, lines: ["vell|Bring them up to the gate. We've three seals, and one chance."]}
+  seals_open:
+    - {at: [0.5, 70, -252, 0, -24], to: [0.5, 74, -246, 0, -32], seconds: 5, sound: "block.end_portal_frame.fill 0.6", lines: ["vell|Ember. Frost. Stone. As it was written."]}
+    - {at: [14, 74, -242, 12, -24], to: [10, 72, -240, 8, -18], seconds: 5, lines: ["|The seals go home in the stone, one after another, and something behind the wall that has not moved in an age begins to."]}
+    - {at: [0.5, 72, -242, 0, -8], to: [0.5, 72, -240, 0, -4], seconds: 4, sound: "block.end_portal.spawn 0.6", title: "<gold>The Ember Gate</gold>", lines: ["|The doors don't open. They fall."]}
+  drake_wakes:
+    - {at: [0.5, 72, -196, 0, -2], to: [0.5, 74, -188, 0, -6], seconds: 5, sound: "block.chain.break 0.5", lines: ["|Out on the bridge a chain goes slack, then another. Something large has noticed the gate is down."]}
+    - {at: [12, 70, -176, -20, -10], to: [10, 72, -172, -20, -18], seconds: 5, title: "<gold>Cindermaw</gold>", text: "<gray>The Steward's Gatewatch</gray>", sound: "entity.ender_dragon.growl 0.5", lines: ["vell|The ballistas! Get to the ballistas!"]}
   kiln:
-    - {at: [0.5, 74, -70.5, 0, 28], seconds: 4, title: "<gold>Gorrak the Kilnbreaker</gold>", text: "<gray>Keeper of the Great Kiln</gray>", sound: "entity.ravager.roar 0.6", lines: ["Gorrak the Kilnbreaker|More fuel for the kiln! The Sovereign hungers!"]}
+    - {at: [-12, 72, -92, 130, 10], to: [-8, 72, -88, 130, 6], seconds: 5, title: "<gold>Gorrak the Kilnbreaker</gold>", text: "<gray>Keeper of the Great Kiln</gray>", sound: "entity.ravager.roar 0.6", lines: ["Gorrak the Kilnbreaker|More fuel for the kiln! The Sovereign hungers!"]}
   hounds:
-    - {at: [0.5, 70, -8.5, 0, 20], seconds: 4, title: "<gray>Skarn and Vesh</gray>", text: "<gray>The Steward's hounds</gray>", sound: "entity.hoglin.angry 0.7", lines: ["|Two shapes rise from the ash, one grey and one glowing. They move as one."]}
+    - {at: [0.5, 70, -40, 0, 8], to: [0.5, 69, -36, 0, 4], seconds: 4, title: "<gray>Skarn and Vesh</gray>", text: "<gray>The Steward's hounds</gray>", sound: "entity.hoglin.angry 0.7", lines: ["|Two shapes rise from the ash, one grey and one glowing. They move as one."]}
+  vael_rises:
+    - {at: [0.5, 72, 20, 0, -6], to: [0.5, 76, 44, 0, -8], seconds: 6, sound: "block.beacon.deactivate 0.5", lines: ["|The rows of stone penitents don't turn. They've been facing the altar for an age, and they've heard this sermon."]}
+    - {at: [8, 72, 58, 20, -2], to: [6, 70, 60, 20, -4], seconds: 4, title: "<dark_red>Vael, the Slag Priest</dark_red>", text: "<gray>Who keeps the Sovereign's fires</gray>", lines: ["Vael, the Slag Priest|Kneel, and be rendered into slag for the Sovereign's waking!"]}
+  steward_wakes:
+    - {at: [0.5, 72, 134, 0, 4], to: [0.5, 76, 154, 0, -2], seconds: 6, sound: "block.beacon.ambient 0.5", lines: ["|Every step of it was his. The hound pens, the hill road, the contract with the burning crown. He has been expecting you for some time."]}
+    - {at: [0.5, 74, 170, 0, -12], to: [0.5, 72, 174, 0, -18], seconds: 5, title: "<gold>Steward Ashkar</gold>", text: "<gray>Who never stopped serving</gray>", lines: ["Steward Ashkar|You quenched the valves? Good. It saved me the trouble of opening them for you.", "Steward Ashkar|I have held this door for an age. Come and see what for."]}
+  the_reward:
+    - {at: [0.5, 70, 154, 0, -2], to: [0.5, 72, 156, 0, 2], seconds: 4, lines: ["Steward Ashkar|Enough... My lord. My lord, I have done everything you asked. Every forge, every grave. It's finished. You can wake."]}
+    - {at: [10, 72, 158, 25, 10], to: [8, 74, 160, 25, 14], seconds: 8, sound: "entity.warden.emerge 0.5", lines: ["|The floor of the hall lifts. He doesn't look round.", "Pyrrhax, the Ashen Sovereign|TOO SOON."]}
+    - {at: [0.5, 76, 150, 0, 12], to: [0.5, 76, 154, 0, 16], seconds: 3, lines: ["|There is nothing left to say about the Steward."]}
   heart:
-    - {at: [0.5, 82, 133.5, 0, 32], seconds: 3, title: "<red>The Molten Heart</red>", sound: "block.lava.pop", lines: ["|The causeway glows. The lava begins to churn."]}
-    - {at: [0.5, 70, 147.5, 0, 12], seconds: 4, title: "<gold><bold>Pyrrhax</bold></gold>", text: "<gray>The Ashen Sovereign</gray>", sound: "entity.blaze.death 0.4", fade: true, lines: ["Pyrrhax, the Ashen Sovereign|Who dares disturb my slumber?"]}
+    - {at: [0.5, 38, 268, 0, -2], to: [0.5, 40, 282, 0, -6], seconds: 6, sound: "entity.warden.heartbeat 0.5", title: "<red>The Molten Heart</red>", lines: ["|The Wardens' chains come out of the walls of the mountain, each link the size of a room, and go down into the fire. All of them are going to the same place."]}
+    - {at: [14, 42, 290, 20, -10], to: [8, 46, 296, 10, -22], seconds: 7, lines: ["|The chains go taut, and the sea stands up."]}
+    - {at: [0.5, 36, 280, 0, -24], to: [0.5, 36, 284, 0, -30], seconds: 5, title: "<gold><bold>Pyrrhax</bold></gold>", text: "<gray>The Ashen Sovereign</gray>", sound: "entity.ender_dragon.growl 0.4", lines: ["Pyrrhax, the Ashen Sovereign|WHO DARES?"]}
+  allies_arrive:
+    - {at: [0.5, 42, 274, 0, 2], to: [0.5, 44, 268, 0, -2], seconds: 4, sound: "block.bell.use 0.5", lines: ["vell|Not alone. Not this time. Everyone, now!"]}
+    - {at: [-46, 50, 262, -128, 8], to: [-42, 50, 266, -128, 6], seconds: 5, lines: ["cobb|Here's your water, friends! Every drop the Great Dam ever held!", "|High in the crater wall, somebody opens the last sluice in the world."]}
+    - {at: [40, 50, 262, 130, 8], to: [36, 50, 266, 130, 6], seconds: 5, lines: ["hesk|The plates! Get on the plates! Pull his chains back on him!"]}
+  the_binding:
+    - {at: [0.5, 40, 270, 0, -12], to: [0.5, 44, 278, 0, -24], seconds: 8, sound: "block.chain.place 0.5", lines: ["|The last chain goes round. He doesn't roar. It's the first time anyone has seen him afraid.", "Pyrrhax, the Ashen Sovereign|THE FIRE... ALWAYS... RETURNS..."]}
+    - {at: [20, 46, 284, 20, -2], to: [16, 40, 290, 20, 6], seconds: 8, lines: ["vell|And we'll be here. All of us. Every time."]}
 
 mobs:
-  "custom:flamewaker": {role: normal}
+  "custom:flamewaker": {role: normal, abilities: [fire_pools]}
   "custom:lava_brute": {role: elite, abilities: [cleave, charge]}
   "custom:rune_warden": {role: elite, abilities: [cleave, fire_pools]}
-  "custom:firesworn": {role: normal}
-  "custom:ember_hound": {role: normal}
+  "custom:firesworn": {role: normal, abilities: [frost_bolt], behavior: caster}
+  "custom:ember_hound": {role: normal, abilities: [leap]}
   "custom:son_of_flame": {role: elite, abilities: [slam]}
   "custom:cinder_thrall": {role: normal}
+  "custom:chain_warden": {role: elite, abilities: [cleave, tether]}
+  "custom:ash_penitent": {role: normal, abilities: [mend], behavior: caster}
+  "custom:keep_arbalest": {role: normal, abilities: [pin_shot], behavior: caster}
+  "custom:steward_guard": {role: elite, abilities: [cleave, rally]}
+
+# Enemies standing in the map. They wait until someone comes within `aggro` blocks in plain sight,
+# is hit, or a fight spills next to them, and they fight as a group.
+packs:
+  # The bridge, north end.
+  bridge_watch: {at: [3, 64, -218], mobs: {"custom:flamewaker": 3, "custom:keep_arbalest": 2}, aggro: 10}
+  bridge_chains: {at: [-3, 64, -208], mobs: {"custom:chain_warden": 1, "custom:flamewaker": 2}, aggro: 9}
+  # The bridge, south end.
+  bridge_south: {at: [3, 64, -142], mobs: {"custom:lava_brute": 1, "custom:keep_arbalest": 3}, aggro: 10}
+  barbican_guard: {at: [-3, 64, -130], mobs: {"custom:chain_warden": 2, "custom:cinder_thrall": 3}, aggro: 9}
+  # The outer ward.
+  ward_gate: {at: [0, 64, -106], mobs: {"custom:flamewaker": 4, "custom:keep_arbalest": 2}, aggro: 10}
+  ward_forge_north: {at: [-30, 64, -98], mobs: {"custom:lava_brute": 1, "custom:cinder_thrall": 4}}
+  ward_forge_mid: {at: [-34, 64, -80], mobs: {"custom:firesworn": 3, "custom:cinder_thrall": 2}}
+  ward_forge_south: {at: [-34, 64, -62], mobs: {"custom:lava_brute": 2, "custom:firesworn": 1}}
+  ward_east: {at: [34, 64, -96], mobs: {"custom:rune_warden": 1, "custom:flamewaker": 3}}
+  ward_kiln: {at: [8, 64, -62], mobs: {"custom:lava_brute": 1, "custom:firesworn": 2, "custom:flamewaker": 2}}
+  ward_walkers:
+    at: [-18, 64, -104]
+    mobs: {"custom:chain_warden": 1, "custom:flamewaker": 3}
+    aggro: 9
+    patrol: [[-18, 64, -104], [-18, 64, -58]]
+  # The pens' approach.
+  pens_kennel_west: {at: [-10, 64, -36], mobs: {"custom:ember_hound": 4}}
+  pens_kennel_east: {at: [10, 64, -30], mobs: {"custom:ember_hound": 3, "custom:flamewaker": 1}}
+  # The cathedral.
+  nave_doors: {at: [0, 64, 10], mobs: {"custom:ash_penitent": 4, "custom:flamewaker": 2}, aggro: 10}
+  nave_aisle_west: {at: [-15, 64, 26], mobs: {"custom:rune_warden": 1, "custom:ash_penitent": 2}}
+  nave_aisle_east: {at: [15, 64, 26], mobs: {"custom:lava_brute": 1, "custom:ash_penitent": 2}}
+  nave_mid: {at: [0, 64, 34], mobs: {"custom:firesworn": 3, "custom:ash_penitent": 3}}
+  transept_west: {at: [-30, 64, 45], mobs: {"custom:rune_warden": 2, "custom:firesworn": 1}}
+  transept_east: {at: [30, 64, 45], mobs: {"custom:rune_warden": 2, "custom:firesworn": 1}}
+  # The bellows' door.
+  bellows_door: {at: [0, 64, 92], mobs: {"custom:lava_brute": 1, "custom:flamewaker": 3}, aggro: 9}
+  # The throne hall.
+  throne_gate: {at: [0, 64, 132], mobs: {"custom:steward_guard": 2, "custom:keep_arbalest": 3}, aggro: 11}
+  throne_aisle_west: {at: [-11, 64, 146], mobs: {"custom:steward_guard": 1, "custom:firesworn": 2, "custom:flamewaker": 2}}
+  throne_aisle_east: {at: [11, 64, 146], mobs: {"custom:steward_guard": 1, "custom:firesworn": 2, "custom:flamewaker": 2}}
+  throne_walkers:
+    at: [-8, 64, 156]
+    mobs: {"custom:steward_guard": 2, "custom:lava_brute": 1}
+    aggro: 9
+    patrol: [[-8, 64, 156], [8, 64, 156]]
+  # The Last Stair.
+  stair_top: {at: [0, 46, 202], mobs: {"custom:son_of_flame": 1, "custom:firesworn": 2}, aggro: 7}
+  stair_foot: {at: [0, 32, 246], mobs: {"custom:son_of_flame": 2, "custom:firesworn": 2}, aggro: 8}
+  causeway_guard: {at: [0, 32, 258], mobs: {"custom:son_of_flame": 2, "custom:lava_brute": 1}, aggro: 8}
 
 # Loot containers: every player loots each once with their own roll. Secrets count toward the score.
 chests:
-  forgewright_crate: {at: [-8, 64, -100], kind: crate, title: "Forgewright's Crate"}
-  kennel_strongbox: {at: [-7, 64, 12], kind: chest, title: Kennel Strongbox}
-  runekeepers_hoard: {at: [14, 64, 44], kind: secret, title: "Runekeeper's Hoard"}
-  bellows_crate: {at: [-10, 64, 98], kind: crate, title: Bellows Crate}
+  forgewright_crate: {at: [24, 64, -108], kind: crate, title: "Forgewright's Crate"}
+  kennel_strongbox: {at: [-18, 64, -14], kind: chest, title: Kennel Strongbox}
+  runekeepers_hoard: {at: [31, 64, 39], kind: secret, title: "Runekeeper's Hoard"}
+  bellows_crate: {at: [-6, 64, 90], kind: crate, title: Bellows Crate}
+
+# Rare companions, kept off the guides on purpose: each player rolls this chance as they open the boss's chest.
+# Heroic and Mythic raise it.
+companion-drops:
+  chain_bridge: {companion: drakeling, chance: 0.01}
+  molten_heart: {companion: ashling, chance: 0.01}
 
 # Where the reward chests appear when the run is won.
 reward-chests:
-  free: [-3, 64, 135]
-  bonus: [3, 64, 135]
+  free: [-4, 32, 276]
+  bonus: [4, 32, 276]
 
 rooms:
-  descent:
-    title: The Scorched Descent
-    region: [-12, 61, -102, 12, 79, -74]
-    checkpoint: [0, 64, -100, 0]
-    gate: [-1, 64, -73, 1, 66, -73]
-    points: [[-5, 64, -96], [5, 64, -96], [-5, 64, -80], [5, 64, -80], [0, 64, -84], [-6, 64, -92]]
+  ember_gate:
+    title: The Ember Gate
+    region: [-16, 60, -240, 16, 92, -231]
+    points: [[0, 64, -232, 0]]
     encounter:
-      type: clear
-      waves:
-        - {"custom:flamewaker": 4, "custom:cinder_thrall": 2}
-        - {"custom:lava_brute": 2, "custom:sulfur_spawn": 2}
+      type: none
       scripts:
-        start: ["say hesk|They've seen you. Flamewakers! Keep off the lava and cross at the bridges."]
-        clear: ["say hesk|The kiln's beyond the bars. Mind Gorrak's charge."]
+        start: ["cutscene seals_open", "wait 1", "scene seals", "wait 13", "break ember_doors", "sound entity.generic.explode 0.4", "message <gold>The Ember Gate is open.</gold>"]
+  chain_bridge:
+    title: The Chain Bridge
+    region: [-20, 60, -192, 20, 120, -148]
+    requires: [ember_gate]
+    requires-packs: [bridge_watch, bridge_chains]
+    seal: [-6, 64, -194, 6, 68, -194]
+    gate: [-8, 64, -117, 8, 73, -117]
+    checkpoint: [0, 64, -190, 0]
+    # Its ground, then the middle of the circle it flies round.
+    points: [[0, 64, -170, 0], [0, 64, -170], [-12, 64, -180], [12, 64, -180], [-12, 64, -160], [12, 64, -160]]
+    loot:
+      marks: 120
+      items: {sovereign_ash: 6, gold_ingot: 6, blaze_rod: 4}
+    encounter:
+      type: boss
+      boss: custom:cindermaw
+      body: cindermaw
+      cast-reach: 70
+      # It comes over the Ember Gate out of the fog, low enough to feel.
+      entrance: {style: swoop, delay: 1, seconds: 9, sources: [[0, 92, -262, 0]]}
+      boss-level-bonus: 2
+      boss-damage: 0.9
+      abilities: [drake_breath, fire_pools, cleave]
+      phases:
+        - {at: 66, abilities: [drake_breath, fire_pools, cleave, meteor], title: "Cindermaw tears free"}
+        - {at: 33, abilities: [drake_breath, meteor, slam, charge], title: "Cindermaw burns the bridge"}
+      enrage-seconds: 480
+      adds-at-health: [80, 50, 25]
+      waves:
+        - {"custom:flamewaker": 3}
+        - {"custom:cinder_thrall": 3, "custom:keep_arbalest": 2}
+        - {"custom:lava_brute": 1, "custom:flamewaker": 2}
+      scripts:
+        start: ["cutscene drake_wakes", "wait 11", "flight 42 30 20", "say vell|It won't come down by itself. Harpoons, on the deck, all four corners!", "hazard start bridge_flames"]
+        landed: ["say vell|It's down! Hit it with everything before it tears loose!"]
+        health-66: ["flight 42 30 22", "say vell|It's up again! The ballistas are wound!"]
+        health-33: ["flight 42 30 16", "say The Steward's Voice|It has held this bridge for an age. Who are you?"]
+        clear: ["hazard stop bridge_flames", "say vell|It's dead. The bridge is ours, and the keep's right there. Light the fire."]
   kilnbreaker:
-    title: Gorrak's Kiln
-    region: [-15, 61, -72, 15, 85, -44]
-    checkpoint: [0, 64, -70, 0]
-    gate: [-1, 64, -43, 1, 66, -43]
-    points: [[0, 64, -52], [-8, 64, -58], [8, 64, -58], [-6, 64, -47], [6, 64, -47]]
+    title: "Gorrak's Kiln"
+    region: [-52, 60, -116, 52, 104, -44]
+    requires: [chain_bridge]
+    requires-packs: [ward_gate, ward_forge_north, ward_forge_mid, ward_forge_south, ward_east, ward_kiln, ward_walkers]
+    gate: [-3, 64, -43, 3, 71, -43]
+    checkpoint: [0, 64, -112, 0]
+    points: [[-4, 64, -74, 180], [-14, 64, -84], [10, 64, -84], [-14, 64, -60], [8, 64, -52]]
     unlocks: [nether]
     loot:
       marks: 120
-      items: {gold_ingot: 6, blaze_rod: 4, magma_cream: 4}
+      items: {sovereign_ash: 6, gold_ingot: 6, blaze_rod: 4, magma_cream: 4}
     encounter:
       type: boss
       boss: custom:gorrak_kilnbreaker
+      # Poured out of the kiln's mouth and hammered up, like everything else that comes out of it.
+      entrance: {style: forged, seconds: 9, sources: [[10, 64, -66]]}
       boss-level-bonus: 2
       abilities: [charge, fire_pools]
       phases:
@@ -128,34 +298,20 @@ rooms:
         - {"custom:ember_hound": 3}
         - {"custom:ember_hound": 2, "custom:firesworn": 2}
       scripts:
-        start: ["cutscene kiln", "wait 4", "sound entity.ravager.roar 0.6"]
-        health-50: ["title <red>The kiln roars|<gold>Fire spills across the floor</gold>", "hazard start kiln_fire"]
+        start: ["cutscene kiln", "wait 6", "sound entity.ravager.roar 0.6"]
+        health-50: ["title <red>The kiln roars|<gold>Fire spills across the yard</gold>", "hazard start kiln_fire"]
         clear: ["hazard stop kiln_fire", "say hesk|Gorrak's down! His hold on the Cinder Shelf is broken. The Nether is yours."]
-  slagfalls:
-    title: The Slagfalls
-    region: [-14, 61, -42, 14, 87, -12]
-    checkpoint: [0, 64, -40, 0]
-    gate: [-1, 64, -11, 1, 66, -11]
-    points: [[-5, 64, -37], [5, 64, -37], [-4, 64, -21], [4, 64, -21], [0, 64, -32], [0, 64, -18]]
-    encounter:
-      type: waves
-      waves:
-        - {"custom:flamewaker": 3, "custom:firesworn": 2}
-        - {mobs: {"custom:lava_brute": 2, "custom:flamewaker": 2}, delay-seconds: 3}
-        - {mobs: {"custom:son_of_flame": 2, "custom:firesworn": 2}, delay-seconds: 3}
-      scripts:
-        start: ["message <gold>Slag drips from the ceiling. Keep moving.</gold>", "hazard start slag_rain"]
-        wave-3: ["say hesk|Sons of Flame! Don't let them reach the casters."]
-        clear: ["hazard stop slag_rain", "say hesk|Light the fire by the far wall and rest. The hounds are next."]
   cinderhounds:
     title: The Hound Pens
-    region: [-14, 61, -10, 14, 80, 14]
-    checkpoint: [0, 64, -8, 0]
-    gate: [-1, 64, 15, 1, 66, 15]
-    points: [[-5, 64, 5], [5, 64, 5], [-6, 64, -2], [6, 64, -2], [0, 64, 10]]
+    region: [-22, 60, -40, 22, 90, -8]
+    requires: [kilnbreaker]
+    requires-packs: [pens_kennel_west, pens_kennel_east]
+    gate: [-3, 64, -2, 3, 71, -2]
+    checkpoint: [0, 64, -40, 0]
+    points: [[-6, 64, -18], [6, 64, -18], [-6, 64, -30], [6, 64, -30], [0, 64, -24]]
     loot:
       marks: 120
-      items: {gold_ingot: 6, quartz: 16, magma_cream: 4}
+      items: {sovereign_ash: 6, gold_ingot: 6, quartz: 16}
     encounter:
       type: council
       bosses: [custom:skarn, custom:vesh]
@@ -169,41 +325,30 @@ rooms:
       waves:
         - {"custom:ember_hound": 3}
       scripts:
-        start: ["cutscene hounds", "wait 4", "say hesk|Split them, but keep their health even. They have to die within ten seconds of each other!"]
+        start: ["cutscene hounds", "wait 5", "say hesk|Split them, but keep their health even. They have to die within ten seconds of each other!", "hazard start pen_cinders"]
         revive: ["sound entity.hoglin.angry 0.6"]
-        clear: ["say hesk|Both down. The runes are past the pens."]
-  rune_galleries:
-    title: The Rune Galleries
-    region: [-16, 61, 16, 16, 83, 46]
-    checkpoint: [0, 64, 18, 0]
-    gate: [-1, 64, 47, 1, 66, 47]
-    points: [[-12, 64, 27], [12, 64, 27], [6, 64, 40], [-4, 64, 20], [4, 64, 20], [-12, 64, 38]]
+        clear: ["hazard stop pen_cinders", "say hesk|Both down. That's the west door of the Ash Cathedral ahead of you. Go softly."]
+  slag_priest:
+    title: The Ash Cathedral
+    region: [-34, 60, 0, 34, 112, 84]
+    requires: [cinderhounds]
+    requires-packs: [nave_doors, nave_aisle_west, nave_aisle_east, nave_mid, transept_west, transept_east]
+    gate: [-3, 64, 86, 3, 71, 86]
+    checkpoint: [0, 64, 4, 0]
+    points: [[0, 66, 70, 0], [-4, 64, 62], [4, 64, 62], [-15, 64, 40], [15, 64, 40]]
+    loot:
+      marks: 140
+      items: {sovereign_ash: 8, gold_ingot: 8, blaze_rod: 6}
     puzzles:
       runes:
         type: levers
-        title: Quench the three rune valves
-        blocks: [[-13, 65, 31], [13, 65, 31], [7, 65, 43]]
-    encounter:
-      type: clear
-      waves:
-        - {"custom:rune_warden": 3, "custom:flamewaker": 3}
-        - {"custom:firesworn": 3}
-      scripts:
-        start: ["say hesk|The valves sit on the rune pedestals: west, east and past the lake. Turn all three."]
-        solved-runes: ["sound block.fire.extinguish 0.6", "message <aqua>Steam rises from the runes. The Heart's seal weakens.</aqua>"]
-        clear: ["say hesk|All three quenched! The Slag Priest keeps the chapel beyond."]
-  slag_priest:
-    title: The Slag Chapel
-    region: [-13, 61, 48, 13, 89, 74]
-    checkpoint: [0, 64, 50, 0]
-    gate: [-1, 64, 75, 1, 66, 75]
-    points: [[0, 64, 66], [-10, 64, 56], [10, 64, 56], [-10, 64, 66], [10, 64, 66]]
-    loot:
-      marks: 140
-      items: {gold_ingot: 8, blaze_rod: 6, experience_bottle: 4}
+        title: Shut the three rune valves
+        blocks: [[-32, 66, 45], [32, 66, 45], [0, 67, 81]]
     encounter:
       type: boss
       boss: custom:vael_slag_priest
+      # The chapel's fires catch, one after another, and run together at the altar.
+      entrance: {style: summon, delay: 1, seconds: 8, sources: [[-32, 69, 45], [32, 69, 45]]}
       boss-level-bonus: 2
       abilities: [fire_pools, mend]
       phases:
@@ -212,25 +357,28 @@ rooms:
       enrage-seconds: 480
       adds-at-health: [80, 50, 25]
       waves:
-        - {"custom:firesworn": 3}
-        - {"custom:firesworn": 2, "custom:flamewaker": 2}
+        - {"custom:ash_penitent": 3}
+        - {"custom:ash_penitent": 2, "custom:flamewaker": 2}
         - {"custom:son_of_flame": 2}
       scripts:
-        start: ["say Vael, the Slag Priest|Kneel, and be rendered into slag for the Sovereign's waking!"]
+        start: ["cutscene vael_rises", "wait 11", "say hesk|Three valves, west, east, and behind the altar! Shut them or the doors stay shut!", "hazard start nave_ash"]
         health-33: ["title <dark_red>The last rite|<gold>Spread out for the meteors</gold>"]
-        clear: ["say hesk|The chapel's quiet. Past the bellows is the Steward's hall."]
+        solved-runes: ["sound block.fire.extinguish 0.6", "message <aqua>The cathedral's fires sink.</aqua>"]
+        clear: ["hazard stop nave_ash", "say hesk|The altar's dark. Past it are the Great Bellows, and every forge in the keep breathes through them."]
   bellows:
     title: The Great Bellows
-    region: [-12, 61, 76, 12, 81, 100]
-    checkpoint: [0, 64, 78, 0]
-    gate: [-1, 64, 101, 1, 66, 101]
-    points: [[-6, 64, 79], [6, 64, 79], [-4, 64, 90], [4, 64, 90], [0, 64, 86], [0, 64, 96]]
+    region: [-22, 60, 88, 22, 92, 122]
+    requires: [slag_priest]
+    requires-packs: [bellows_door]
+    gate: [-3, 64, 124, 3, 71, 124]
+    checkpoint: [0, 64, 90, 0]
+    points: [[-8, 64, 94], [8, 64, 94], [-6, 64, 116], [6, 64, 116], [0, 64, 104], [0, 64, 118]]
     encounter:
       type: survive
       survive-seconds: 75
       waves:
         - {"custom:flamewaker": 3, "custom:firesworn": 1}
-        - {mobs: {"custom:son_of_flame": 2, "custom:sulfur_spawn": 2}, delay-seconds: 12}
+        - {mobs: {"custom:son_of_flame": 2, "custom:cinder_thrall": 2}, delay-seconds: 12}
         - {mobs: {"custom:lava_brute": 1, "custom:flamewaker": 2}, delay-seconds: 12}
       scripts:
         start:
@@ -238,95 +386,117 @@ rooms:
           - "hazard start bellows_vents"
           - "effect fire_resistance 25"
         timer-50: ["message <yellow>The bellows are failing. Twenty-five more seconds!</yellow>"]
-        clear: ["hazard stop bellows_vents", "say hesk|Light the Heartgate fire. The Steward won't come quietly."]
+        clear: ["hazard stop bellows_vents", "say hesk|They've stalled. Every forge in the keep just went cold. The Steward'll know. Light the fire."]
   steward:
-    title: The Steward's Hall
-    region: [-14, 61, 102, 14, 87, 128]
-    checkpoint: [0, 64, 104, 0]
-    gate: [-1, 64, 129, 1, 66, 129]
-    points: [[0, 64, 120], [-6, 64, 116], [6, 64, 116], [0, 64, 112], [-6, 64, 110], [6, 64, 110]]
+    title: The Steward's Throne
+    region: [-26, 60, 126, 26, 120, 200]
+    requires: [bellows]
+    requires-packs: [throne_gate, throne_aisle_west, throne_aisle_east, throne_walkers]
+    checkpoint: [0, 64, 130, 0]
+    points: [[0, 64, 171, 180], [-8, 64, 160], [8, 64, 160], [0, 64, 154], [-12, 64, 160], [12, 64, 160]]
     loot:
       marks: 160
-      items: {gold_block: 2, blaze_rod: 6, diamond: 1}
+      items: {sovereign_ash: 10, warden_chain_link: 1, gold_block: 2, diamond: 1}
     encounter:
       type: council
       bosses: [custom:steward_ashkar, custom:flamewaker_guard, custom:flamewaker_guard, custom:flamewaker_priest]
-      boss-level-bonus: 2
-      abilities: [cleave, fire_pools]
+      boss-level-bonus: 3
+      abilities: [ashen_decree, cleave, fire_pools]
       phases:
-        - {at: 50, abilities: [cleave, fire_pools, blink], title: "The Steward's guard closes ranks"}
+        - {at: 50, abilities: [ashen_decree, cleave, fire_pools, blink], title: "The Steward's guard closes ranks"}
       enrage-seconds: 540
       scripts:
-        start: ["say Steward Ashkar|You quenched the runes? Then you'll serve as kindling instead."]
+        start: ["cutscene steward_wakes", "wait 12", "say vell|Don't look at him when he speaks the word! Turn away!", "hazard start throne_fire"]
         down-1: ["say Steward Ashkar|Hold the line! The Sovereign must wake!"]
         down-3: ["say Steward Ashkar|Alone, then. So be it."]
         clear:
-          - "say Steward Ashkar|Enough... Go, then. Meet my lord, and burn."
-          - "build heart_causeway"
-          - "sound block.basalt.place 0.6"
-          - "message <gold>A causeway of stone rises across the moat of the Molten Heart.</gold>"
+          - "hazard stop throne_fire"
+          - "cutscene the_reward"
+          - "wait 3"
+          - "scene crush"
+          - "wait 8"
+          - "break throne_floor"
+          - "sound entity.generic.explode 0.4"
+          - "message <gold>The floor of the Steward's hall has fallen in. There's a stair under it, going down.</gold>"
   molten_heart:
     title: The Molten Heart
-    region: [-24, 61, 130, 24, 97, 176]
-    checkpoint: [0, 64, 133, 0]
-    points: [[0, 64, 159], [-8, 64, 147], [8, 64, 147], [-10, 64, 154], [10, 64, 154], [0, 64, 145]]
+    region: [-34, 26, 264, 34, 90, 338]
+    requires: [chain_bridge, kilnbreaker, cinderhounds, slag_priest, bellows, steward]
+    requires-packs: [stair_top, stair_foot, causeway_guard]
+    seal: [-3, 32, 263, 3, 42, 263]
+    checkpoint: [0, 32, 272, 0]
+    # After his own spot, the plates: ember, frost, stone. The last two are only where his sons come ashore.
+    points: [[0, 32, 334, 180], [-19, 32, 300], [19, 32, 300], [0, 32, 281], [-14, 32, 316], [14, 32, 316]]
     loot:
       marks: 300
-      items: {netherite_scrap: 2, diamond: 3, gold_block: 2}
+      items: {sovereign_ash: 16, warden_chain_link: 2, heart_of_the_mountain: 1, netherite_scrap: 2, diamond: 3}
     encounter:
       type: boss
       boss: custom:pyrrhax
+      body: pyrrhax
+      cast-reach: 80
+      # The chains go taut, the sea stands up, and what they're holding sits up out of it.
+      entrance: {style: awaken, delay: 1, seconds: 18, sources: [[-19, 32, 300], [19, 32, 300], [0, 32, 281]]}
       boss-level-bonus: 4
-      abilities: [wrath, fire_pools]
+      abilities: [sovereign_smash, wrath, fire_pools]
       phases:
-        - {at: 66, abilities: [wrath, fire_pools, meteor], title: "Sons of Flame", submerge-seconds: 30}
-        - {at: 33, abilities: [wrath, meteor, barrage, fire_pools], title: "The Sovereign's fury", submerge-seconds: 25}
-      enrage-seconds: 600
-      adds-at-health: [66, 33]
-      waves:
-        - {"custom:son_of_flame": 4, "custom:firesworn": 2}
-        - {"custom:son_of_flame": 4, "custom:lava_brute": 2}
+        - {at: 70, abilities: [sovereign_smash, wrath, engulfing_flames, living_meteor], title: "Sons of Flame", submerge-seconds: 30}
+        - {at: 40, abilities: [binding_chain, sovereign_smash, engulfing_flames, living_meteor], title: "All who came before", submerge-seconds: 16}
+        - {at: 12, abilities: [sovereign_smash, wrath, meteor, living_meteor], title: "The Sovereign tears free"}
+      enrage-seconds: 720
       scripts:
         start:
           - "cutscene heart"
-          - "wait 7"
-          - "say Pyrrhax, the Ashen Sovereign|TOO SOON! You have woken me too soon, mortals. Now you will burn!"
-          - "sound entity.blaze.death 0.4"
+          - "wait 19"
+          - "say vell|That's what they bound. Keep off the red, and watch the hammer!"
           - "hazard start heart_rockfall"
-        health-66: ["say Pyrrhax, the Ashen Sovereign|Come forth, my sons! Defend your master!"]
-        health-33: ["say Pyrrhax, the Ashen Sovereign|Enough! I will finish this myself!", "hazard start heart_eruptions"]
+        health-70: ["cast sons_of_flame", "say Pyrrhax, the Ashen Sovereign|COME FORTH, MY SONS. DEFEND YOUR MASTER.", "say hesk|Stop them! Don't let them reach the hammer!"]
+        health-40:
+          - "cutscene allies_arrive"
+          - "npc vell -58 45 256 90"
+          - "npc cobb -72 41 308 90"
+          - "npc hesk 58 45 256 -90"
+          - "npc ilsa 72 41 308 -90"
+          - "npc pell 0 49 228 0"
+          - "wait 2"
+          - "scene deluge"
+          - "effect strength 240"
+          - "effect resistance 240"
+          - "say vell|The plates, friends! Stand on the plates and pull his chains back on him!"
+        health-12: ["hazard start heart_eruptions", "say Pyrrhax, the Ashen Sovereign|I WILL BURN THE SKY YOU HIDE IN!", "say cobb|He's breaking loose! Finish it! Finish it now!"]
         clear:
           - "hazard stop heart_rockfall"
           - "hazard stop heart_eruptions"
-          - "say Pyrrhax, the Ashen Sovereign|This is not the end... The fire... always... returns..."
-          - "message <green>The Heart dims to embers. Step onto the crying obsidian by the entrance to leave.</green>"
+          - "cutscene the_binding"
+          - "wait 17"
+          - "say hesk|That's it. That's the end of it. Open your chests, friends, you've earned every one."
+          - "message <green>The Heart dims to embers. Your way out is on the near side of the disc.</green>"
 
 guide:
-  lore: "Cinder Keep was built over the place where the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone. For an age he slept while the islands drifted above. His Steward, Ashkar, never stopped serving: he raised the Huntsman, poisoned the Heart Tree, drove the Tidewarden to drown the waterworks and paid the Deep Foreman to dig. Now every forge in the deep burns at once, and the Sovereign stirs. Hesk the Forgewright, who once mined the Gloomforge, waits at the top of the stair."
-  overview: "Cinder Keep is a raid for two to eight players: five boss fights across nine caverns under the keep, ending at the Ashen Sovereign in the Molten Heart. Normal is tuned for pickup groups; Heroic and Mythic are for organised raids. Each boss pays its loot once per tier per week. Defeating Gorrak the Kilnbreaker opens the Nether's Cinder Shelf route to you."
+  lore: "Cinder Keep was built over the place where the Wardens bound Pyrrhax, the Ashen Sovereign, in a heart of molten stone. For an age he slept while the islands drifted above. His Steward, Ashkar, never stopped serving: he raised the Huntsman, poisoned the Heart Tree, drove the Tidewarden to drown the waterworks and paid the Deep Foreman to dig. Now every forge in the deep burns at once, and the Sovereign stirs. Everyone you've helped this season has come to the last landing. The three seals open the Ember Gate. What's behind it is the end of the story."
+  overview: "Cinder Keep is the season's last raid, for two to eight players. Open the Ember Gate, bring Cindermaw down on the Chain Bridge, take the outer ward from Gorrak, the pens from Skarn and Vesh, and the Ash Cathedral from Vael. Hold the Great Bellows, then face Steward Ashkar at his throne. Under it is the Molten Heart. Normal is tuned for pickup groups; Heroic and Mythic are for organised raids. Each boss pays its loot once per tier per week, and only this raid gives Sovereign Ash, Wardens' Chain Links and the Heart of the Mountain. Defeating Gorrak opens the Nether's Cinder Shelf route to you."
   tips:
-    - Bring fire resistance. Lava fills the channels, the moat and the falls, and many abilities set fires.
-    - Wither skeletons inflict Wither. Carry milk or plenty of food, and rest at each campfire you light.
+    - Bring fire resistance. Lava lies under the bridge and round the Heart, and many abilities set fires.
+    - Wither skeletons inflict Wither. Carry milk or plenty of food, and light every fire you pass.
+    - Cindermaw can't be touched in the air. Fire the ballistas on the deck to bring it down, and each ballista only fires once per flight.
     - Skarn and Vesh are linked. Bring their health down evenly and kill both within ten seconds, or the first one rises again.
-    - The Steward only comes out once all three rune valves in the galleries are turned.
-    - Pyrrhax's Wrath throws everyone inside its ring outward. Stand with your back to solid rock, not to the moat.
-    - Twice the Sovereign sinks out of reach and sends his Sons of Flame. Kill them all to bring him back sooner.
+    - The Ash Cathedral's doors stay shut until all three rune valves are turned, west, east and behind the altar.
+    - When the Steward speaks the Ashen Decree, turn your back on him.
+    - Sovereign Ash, Chain Links and the Heart of the Mountain only come from this raid. Take them to a forge.
   rooms:
-    descent: Flamewakers, wither skeletons, lava brutes and sulfur spawn, all at once. Cross the lava at the bridges.
-    kilnbreaker: Gorrak charges and splashes fire, then slams below half health while fire spills across the kiln. Ember hounds join at 70% and 35%.
-    slagfalls: Three waves along the lavafalls while slag drops from the ceiling. Light Slagfall Rest when it's over.
+    ember_gate: The three seals go into the wall and the doors come down.
+    chain_bridge: Cindermaw, a drake chained to the bridge. It circles out of reach until enough ballistas hit it, then it crashes to the deck. It goes up again at two-thirds and one-third. Fire runs across the deck the whole fight.
+    kilnbreaker: Gorrak charges and splashes fire, then slams below half health while fire spills across the yard. Ember hounds join at 70% and 35%. Beating him opens the Nether.
     cinderhounds: Skarn and Vesh, linked. They charge and leap, and add fire below 40%. Kill both within ten seconds.
-    rune_galleries: Rune wardens guard three valves around a lava lake. Kill them and turn all three valves.
-    slag_priest: Vael heals and scatters fire, calls firesworn at 80%, 50% and 25%, and drops meteors in the last third.
-    bellows: Survive 75 seconds of waves while the vents erupt. Light the Heartgate fire afterwards.
-    steward: Steward Ashkar, two guards and a priest. Kill the priest first; the causeway to the Heart rises when they fall.
-    molten_heart: Pyrrhax, the Ashen Sovereign. Wrath, fire pools, meteors, falling rock, and two submerges with Sons of Flame.
-  boss: "Pyrrhax fights from the central platform of the Molten Heart, ringed by a lava moat. His Wrath (a wide ring of flame) throws everyone inside it outward, so keep your back to solid rock. At 66% and 33% he sinks into the lava for up to half a minute and sends his Sons of Flame; kill them all to bring him back sooner. Below a third, the floor erupts. He enrages after ten minutes."
+    slag_priest: Vael heals and scatters fire, calls penitents at 80%, 50% and 25%, and drops meteors in the last third. Shut the three rune valves too.
+    bellows: Survive 75 seconds of waves while the vents erupt. Light the fire afterwards.
+    steward: Steward Ashkar, two guards and a priest. Kill the priest first, and look away when he speaks the Decree.
+    molten_heart: Pyrrhax, the Ashen Sovereign. See the boss briefing.
+  boss: "Pyrrhax fights from the fire at the far side of the disc, and he's far too big to miss. He raises the hammer over one side of the floor and a lane burns red: get out of it, and don't stand too close to it. His Wrath throws everyone inside its ring outward. At 70% he drives the hammer into the floor and goes under, and his Sons of Flame run for it: each one that reaches it burns everyone. Bands of the floor catch fire, and meteors roll after single players. At 40% everyone you've helped arrives. A plate lights on the floor, and enough of you on it pulls one of the Wardens' chains back round him, which costs him a tenth of his health each time. At 12% he tears loose."
 loot:
   marks: 200
   items: {gold_ingot: 8, quartz: 16, experience_bottle: 6}
 # Raid tiers: Normal is tuned for pickup groups; Heroic and Mythic are for organised raids.
 tiers:
-  normal: {lives: 15}
-  heroic: {lives: 10, health-multiplier: 1.9, damage-multiplier: 1.4}
+  heroic: {health-multiplier: 1.9, damage-multiplier: 1.4}
   mythic: {lives: 6, health-multiplier: 3.0, damage-multiplier: 1.8, modifiers: [fortified, tyrannical]}

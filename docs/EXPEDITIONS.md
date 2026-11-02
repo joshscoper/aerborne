@@ -148,7 +148,7 @@ and other members need only be allowed into the expedition itself.
 | `sunken_aqueduct` | Drowned valley at dawn, level 16, timed | 1–5 | The Long Span → the Pump House (Old Bess, three valves) → the Cistern (hold a minute while it floods) → the Pressure Gallery (Chief Engineer Hollis) → Floodgate Control (two plates) → the Tidewarden at the foot of the Great Dam. Optional: the Silt Mother, down the bastion's west tower |
 | `gloomforge_mines` | Five levels down, level 20, forces | 1–5 | The Pithead → the Upper Galleries → the Gullet (a terraced pit) → Grell's Shaft (Overseer Grell, falling loads) → the Mainline (waves, carts, refuges) → the Ore Line (the Blastmaster, carts on seven tracks) → the Round Foundry (waves + three dampers) → the Slag Pits (optional, the Slag Hound) → the Gloomforge (the Deep Foreman, in the great hall of a dwarven forge-palace cut into the cliff) |
 | `hall_of_wardens` | Sky citadel at dusk, level 24, bosses | 1–5 | The Long Stair → the High Gate (Thane Orrek) → the Hall of Seals, then three wings in any order: the Ash Court (the Keepers, four brazier targets) → Ember Throne; the Rime Stacks (four chimes in the shown order) → Frost Throne; the Court of Kings (four kings, three plates) → Stone Throne. With all three seals broken, a portal over the dais leads to the Unwritten, and Oriveth |
-| `cinder_keep` | **Raid**: Nether (basalt deltas), level 26 | 2–8 | Scorched Descent (clear) → Gorrak's Kiln (Gorrak the Kilnbreaker; opens the Cinder Shelf) → Slagfalls (3 waves, falling slag) → Hound Pens (Skarn and Vesh, linked) → Rune Galleries (clear + three rune valves) → Slag Chapel (Vael, the Slag Priest) → Great Bellows (survive 75 s, vents) → Steward's Hall (Steward Ashkar and his guard; raises the causeway) → Molten Heart (Pyrrhax, the Ashen Sovereign) |
+| `cinder_keep` | **Raid**: Nether (basalt deltas), level 26 | 2–8 | The Last Landing → the Ember Gate (three seals) → the Chain Bridge (Cindermaw, four harpoons) → the Outer Ward: Gorrak's Kiln (opens the Cinder Shelf) → the Pens (Skarn and Vesh, linked) → the Ash Cathedral (Vael, three valves) → the Great Bellows (survive) → the Throne Hall (Steward Ashkar; the floor falls in) → the Last Stair → the Molten Heart (Pyrrhax, the Ashen Sovereign) |
 
 **The campaign path.** Each campaign expedition opens once you've cleared the one before it
 (`requires:`): the Hollow Barrow, then Thornwood Canopy, the Sunken Aqueduct, Gloomforge Mines and
@@ -258,13 +258,32 @@ The guide book's **Expedition loot** page and each mob's drops show the same odd
 ## Raids
 
 A raid is an expedition file with `raid: true`: parties of up to eight, no hired allies, and loot
-paid per boss. **Cinder Keep** is the first: nine volcanic caverns under the keep with five boss
-fights, ending at Pyrrhax, the Ashen Sovereign, in the Molten Heart.
+paid per boss. **Cinder Keep** is the first, and the season's capstone: the Accord's seals open the
+Ember Gate, a drake is hauled out of the sky over the Chain Bridge, and the keep falls ward by ward
+to the Sovereign's own throne. Then the floor gives way, and everyone who helped along the campaign
+comes down into the Molten Heart for the end of it.
 
-- **Tiers.** Normal is tuned for pickup groups (15 lives). Heroic (10 lives, ×1.9 health, ×1.4
-  damage) and Mythic (6 lives, ×3.0 health, ×1.8 damage, Fortified and Tyrannical) are for organised
-  raids. They're set with `tiers:` overrides, which now accept `health-multiplier` and
-  `damage-multiplier`. Keystones never roll raids.
+- **Tiers.** Normal is tuned for pickup groups. Heroic (×1.9 health, ×1.4 damage) and Mythic
+  (6 lives, ×3.0 health, ×1.8 damage, Fortified and Tyrannical) are for organised raids. They're set
+  with `tiers:` overrides, which accept `health-multiplier` and `damage-multiplier`. Normal and
+  Heroic are run-back wipes like every dungeon: no lives, back from the last campfire. Keystones
+  never roll raids.
+- **Boss health past the ceiling.** Minecraft stops max health at 1024. In a raid, whatever a boss's
+  written health, tier and party size add up to past that comes back as toughness: it shows 1024 and
+  takes that much less from each player hit, so Pyrrhax's 24,000 is really 24,000 for a full raid.
+  Dungeons don't do this yet: their Heroic and keystone bosses still stop at 1024.
+- **Raid materials.** Sovereign Ash falls from every boss. The Steward and the Sovereign give a
+  Warden's Chain Link, and only the Sovereign gives a Heart of the Mountain. None of the three drop
+  anywhere else. Ash smelts into Bindingsteel, and the three together make The Binding, the Crown of
+  the Accord and the Sovereignbane Plate at Smithing 45.
+- **Flying bosses.** `flight across along height` in a script takes a boss off the ground: it
+  circles out of reach and can't be hurt. Each of the room's dispensers is a harpoon ballista, and a
+  landing takes two to four of them, by party size; a `landed` script fires when it hits the ground.
+  Cindermaw flies three times.
+- **Scenes and cast reach.** `scene seals|crush|deluge` plays a staged piece of the map (the Gate's
+  three seals, the giant's hand, the last sluice), and `entrance: swoop` and `awaken` are the raid's
+  two boss entrances. `cast-reach` on an encounter stretches how far a boss can cast, for a target
+  that can't walk to you.
 - **Boss loot and weekly lockouts.** A room with its own `loot:` pays it to everyone present when it
   clears. In a raid each boss room, and the finish, pays each player once per tier per week; after
   that they can still help, and are told the loot is spent. Lockouts reset on Monday (UTC) with the
@@ -278,8 +297,10 @@ fights, ending at Pyrrhax, the Ashen Sovereign, in the Molten Heart.
   within that time or it rises again at full health (a `revive` script trigger fires). Skarn and
   Vesh use it.
 - **Submerging bosses.** A phase with `submerge-seconds: 30` makes the boss sink out of reach:
-  untouchable, unseen and silent until the time is up or its adds are dead. Pyrrhax submerges at
-  66% and 33% and sends his Sons of Flame.
+  untouchable, unseen and silent until the time is up or its adds are dead. Pyrrhax sinks at 70% and
+  sends his Sons of Flame for the hammer. At 40% he sinks again while the allies come down and Cobb
+  opens the last sluice, and the Binding starts: chains hold him on three plates until, at 12%, he
+  tears free.
 - **Wrath** joins the ability kit: a wide ring, then a blast that throws everyone inside outward.
 - Encounter magma cubes no longer split and encounter piglins and hoglins no longer convert, and
   claim protection no longer shields expedition enemies that count as animals (hoglins).

@@ -55,6 +55,7 @@ import java.util.logging.Level;
 
 /** The live side of one run: its world, mobs, gates, bars, scripts and rewards. Rules live in {@link RunProgress}. */
 final class ExpeditionRun {
+    private static final double HEALTH_CEILING = 1024;
     enum State { PREPARING, ACTIVE, ENDING, CLOSED }
 
     record BlockPos(int x, int y, int z) { }
@@ -109,6 +110,9 @@ final class ExpeditionRun {
     private final Map<UUID, Long> exposedUntil = new HashMap<>();
     private RunLures lures;
     private RunPortals portals;
+    private RunFlight flight;
+    /** How much less a raid boss takes from each hit, for the health the attribute's ceiling can't hold. */
+    private final Map<UUID, Double> toughness = new HashMap<>();
     /** Whether each sealed room's door is shut now. */
     private final Map<String, Boolean> seals = new HashMap<>();
     /** When the active sealed fight last had a living member inside. */
@@ -345,7 +349,8 @@ final class ExpeditionRun {
             if (world.getPlayerCount() > 0) world.playSound(new Location(world, box.minX(), box.minY(), box.minZ()), Sound.BLOCK_IRON_DOOR_CLOSE, 1F, .7F);
         }
         Room active = progress.activeRoom();
-        if (active == null || active.seal() == null || active.region() == null || !progress.sealed(active.id())) {
+        // A scene's camera can leave the room mid-fight; nobody has run away.
+        if (active == null || active.seal() == null || active.region() == null || !progress.sealed(active.id()) || stage.cutsceneRunning()) {
             lastInside = now;
             return;
         }
@@ -386,6 +391,7 @@ final class ExpeditionRun {
         world = created;
         lures = new RunLures(plugin, this);
         portals = new RunPortals(plugin, this);
+        flight = new RunFlight(plugin, this);
         long now = System.currentTimeMillis();
         progress = new RunProgress(expedition, tier, modifiers, new HashSet<>(members), now);
         for (Room room : expedition.roomList()) {
@@ -487,7 +493,7 @@ final class ExpeditionRun {
         int alive = active == null ? 0 : alive(active.id());
         apply(progress.tick(now, alive), now);
         // A submerged boss surfaces when its time is up, or once its adds are dead.
-        if (surfaceAt > 0 && (now >= surfaceAt || alive == 0 && now - submergedAt > 3_000)) surface();
+        if (surfaceAt > 0 && !stage.cutsceneRunning() && (now >= surfaceAt || alive == 0 && now - submergedAt > 3_000)) surface();
         stage.tick(now);
         puzzles.tick(now);
         lures.tick();
@@ -664,9 +670,17 @@ final class ExpeditionRun {
 
     void send(Player player, Location to) { service.teleport(player, to); }
 
+    /** Runs one of the active room's scripts. */
+    void scriptHere(String trigger) {
+        Room active = progress.activeRoom();
+        if (active != null) runScript(active.id(), active.encounter().script(trigger), 0);
+    }
+
     double boonDealt() { return lures == null ? 1 : lures.dealt(); }
 
     /** Double for a boss whose shield has just gone down. */
+    double toughness(java.util.UUID enemy) { return toughness.getOrDefault(enemy, 1D); }
+
     double exposure(java.util.UUID enemy) { return exposedUntil.getOrDefault(enemy, 0L) > System.currentTimeMillis() ? 2 : 1; }
 
     double boonTaken() { return lures == null ? 1 : lures.taken(); }
@@ -906,7 +920,14 @@ final class ExpeditionRun {
                 else broadcast("<red>" + Chat.escape(died == null ? "A party member" : died.getName()) + " fell.</red> <gray>Lives left: <white>"
                     + Math.max(0, lives.remaining()) + "</white></gray>");
             }
-            case Effect.Complete complete -> complete(complete.seconds(), complete.underPar(), now);
+            case Effect.Complete complete -> {
+                // A scene on the last room's clear plays out first, and the win lands when it's over.
+                long scene = stage.sceneLeft();
+                if (scene == 0) complete(complete.seconds(), complete.underPar(), now);
+                else Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (state == State.ACTIVE) complete(complete.seconds(), complete.underPar(), System.currentTimeMillis());
+                }, scene / 50 + 40);
+            }
             case Effect.PuzzleSolved solved -> {
                 var puzzle = expedition.rooms().get(solved.room()).puzzles().get(solved.puzzle());
                 broadcast("<green>✔ " + Chat.escape(puzzle.title()) + "</green>");
@@ -1214,6 +1235,7 @@ final class ExpeditionRun {
             boss.setInvulnerable(true);
             boss.setVisibleByDefault(false);
             if (boss instanceof Mob mob) mob.setAware(false);
+            if (lures.body(boss) != null) lures.body(boss).sink(true);
             Caster caster = casters.get(uuid);
             if (caster != null) caster.nextCast = surfaceAt + 2_000;
         }
@@ -1228,6 +1250,7 @@ final class ExpeditionRun {
             boss.setInvulnerable(false);
             boss.setVisibleByDefault(true);
             if (boss instanceof Mob mob) mob.setAware(true);
+            if (lures.body(boss) != null) lures.body(boss).sink(false);
             world.spawnParticle(Particle.CLOUD, boss.getLocation(), 60, 1.2, .8, 1.2, .08);
             world.spawnParticle(Particle.EXPLOSION, boss.getLocation(), 2, .6, .4, .6, 0);
             world.playSound(boss.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.3F, .5F);
@@ -1280,6 +1303,21 @@ final class ExpeditionRun {
 
     private final AbilityCaster.Arena arena = new AbilityCaster.Arena() {
         @Override public boolean live() { return state == State.ACTIVE; }
+
+        @Override public double reach() {
+            Room room = progress.activeRoom();
+            return room == null || room.encounter().castReach() == 0 ? 24 : room.encounter().castReach();
+        }
+
+        @Override public LivingEntity spawn(String mob, Location at) {
+            Room room = progress.activeRoom();
+            return room == null ? null : spawnAt(room, mob, at, false);
+        }
+
+        @Override public void strike(LivingEntity caster, int side, float arm) {
+            MoltenBody body = lures == null ? null : lures.body(caster);
+            if (body != null) body.strike(side, arm);
+        }
 
         @Override public List<Location> marks() {
             Room room = progress.activeRoom();
@@ -1361,7 +1399,7 @@ final class ExpeditionRun {
             Caster caster = entry.getValue();
             if (caster.abilities.isEmpty() || now < caster.nextCast) continue;
             if (!(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity living) || living.isDead() || abilityCaster.busy(living)) continue;
-            if (packs.dormant(entry.getKey()) || fight.casting(entry.getKey()) || arena.targets(living, 20).isEmpty()) continue;
+            if (packs.dormant(entry.getKey()) || fight.casting(entry.getKey()) || arena.targets(living, Math.max(20, arena.reach())).isEmpty()) continue;
             if (roomFight.warding() && caster.role == ExpeditionDefinition.Role.BOSS) continue;
             List<String> ready = new ArrayList<>();
             for (String ability : caster.abilities)
@@ -1389,7 +1427,7 @@ final class ExpeditionRun {
     /** A right-clicked block: loot and reward chests (also after the finish), then campfires, crates and puzzles. */
     void interact(Player player, Block block) {
         if (state != State.ACTIVE && state != State.ENDING) return;
-        if (loot.interact(player, block) || state != State.ACTIVE || roomFight.interact(player, block) || stage.interact(player, block)) return;
+        if (loot.interact(player, block) || state != State.ACTIVE || flight.interact(player, block) || roomFight.interact(player, block) || stage.interact(player, block)) return;
         if (supplies(player, block)) return;
         puzzles.used(player, block);
     }
@@ -1462,7 +1500,12 @@ final class ExpeditionRun {
             if (asBoss && room.encounter().entrance() != null) entrance.hold(spawned);
             var max = spawned.getAttribute(Attribute.MAX_HEALTH);
             if (max != null) {
-                max.setBaseValue(max.getBaseValue() * health);
+                double full = health * (expedition.story().raid() ? Math.max(max.getBaseValue(), plugin.mobs().authoredHealth(mob)) : max.getBaseValue());
+                if (expedition.story().raid() && full > HEALTH_CEILING) {
+                    toughness.put(spawned.getUniqueId(), full / HEALTH_CEILING);
+                    full = HEALTH_CEILING;
+                }
+                max.setBaseValue(full);
                 spawned.setHealth(max.getValue());
             }
         });
@@ -1597,6 +1640,11 @@ final class ExpeditionRun {
             }
             case SAY -> stage.say(action.arg(0));
             case CUTSCENE -> stage.cutscene(action.arg(0));
+            case FLIGHT -> {
+                Room here = expedition.rooms().get(roomId);
+                for (UUID uuid : bosses.keySet()) if (Bukkit.getEntity(uuid) instanceof LivingEntity boss) flight.takeOff(boss, here, action.intArg(0, 30), action.intArg(1, 30), action.intArg(2, 20));
+            }
+            case SCENE -> entrance.scene(action.arg(0), expedition.rooms().get(roomId));
             case BUILD -> stage.build(action.arg(0));
             case BREAK -> stage.breakPiece(action.arg(0));
             case RESTORE -> stage.restore(action.arg(0));

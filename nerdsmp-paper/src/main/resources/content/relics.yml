@@ -1,4 +1,4 @@
-schema-version: 13
+schema-version: 16
 sets:
   wayfarer:
     name: Wayfarer
@@ -1675,6 +1675,68 @@ relics:
     rarity: rare
     lore:
       - "<gray>The burning heart of a fire elemental. It pulses against your palm.</gray>"
+  sovereign_ash:
+    material: gunpowder
+    name: "<aqua>Sovereign Ash</aqua>"
+    category: expedition material
+    slot: none
+    rarity: rare
+    lore:
+      - "<gray>What falls from the Keep's roof. It's warm, and it's never quite still.</gray>"
+  warden_chain_link:
+    material: iron_chain
+    name: "<light_purple>Wardens' Chain Link</light_purple>"
+    category: expedition material
+    slot: none
+    rarity: epic
+    lore:
+      - "<gray>One link of what bound him. Nobody living can make another.</gray>"
+  heart_of_the_mountain:
+    material: fire_charge
+    name: "<gold>Heart of the Mountain</gold>"
+    category: expedition material
+    slot: none
+    rarity: legendary
+    lore:
+      - "<gray>Torn out of the Molten Heart. It beats about once a minute.</gray>"
+  bindingsteel_ingot:
+    material: netherite_ingot
+    name: "<light_purple>Bindingsteel Ingot</light_purple>"
+    category: expedition material
+    slot: none
+    rarity: epic
+    lore:
+      - "<gray>The Wardens' own metal, worked with the ash of what it was made to hold.</gray>"
+  the_binding:
+    material: netherite_sword
+    name: "<gradient:#ffeaa7:#ff7675:#6c5ce7>The Binding</gradient>"
+    slot: main_hand
+    rarity: mythic
+    item-level: 42
+    sockets: 3
+    stats: {damage: 14, damage-percent: 12}
+    lore:
+      - "<gray>Forged from the chains that hold him. It has held worse than you.</gray>"
+  crown_of_the_accord:
+    material: netherite_helmet
+    name: "<gradient:#ffeaa7:#ff7675:#6c5ce7>Crown of the Accord</gradient>"
+    slot: head
+    rarity: mythic
+    item-level: 42
+    sockets: 3
+    stats: {defense: 11, max-health: 8, damage-percent: 4}
+    lore:
+      - "<gray>Worn by whoever went down and came back up.</gray>"
+  sovereignbane_plate:
+    material: netherite_chestplate
+    name: "<gradient:#ffeaa7:#ff7675:#6c5ce7>Sovereignbane Plate</gradient>"
+    slot: chest
+    rarity: mythic
+    item-level: 42
+    sockets: 3
+    stats: {defense: 18, max-health: 6}
+    lore:
+      - "<gray>It has never once been warm.</gray>"
   sovereigns_ember:
     material: nether_star
     name: "<light_purple>Sovereign's Ember</light_purple>"

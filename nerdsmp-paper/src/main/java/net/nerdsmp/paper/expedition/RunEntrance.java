@@ -58,7 +58,7 @@ final class RunEntrance {
     }
 
     private static final Set<EntranceStyle> ACTS = Set.of(EntranceStyle.HOIST, EntranceStyle.POWDER, EntranceStyle.ERUPT, EntranceStyle.FORGED, EntranceStyle.COLOSSUS,
-        EntranceStyle.PLUNGE, EntranceStyle.ICEBOUND, EntranceStyle.CONVERGE, EntranceStyle.STOKED, EntranceStyle.SPOUT);
+        EntranceStyle.PLUNGE, EntranceStyle.ICEBOUND, EntranceStyle.CONVERGE, EntranceStyle.STOKED, EntranceStyle.SPOUT, EntranceStyle.SWOOP, EntranceStyle.AWAKEN);
 
     private static final double DEPTH = 3, BODY = 3.6;
     private static final int LOOSE_BONES = 14, WISP_TICKS = 24, FLIGHT_TICKS = 8, CIRCLE_PLATES = 18;
@@ -293,8 +293,34 @@ final class RunEntrance {
             case CONVERGE -> acts.converge(set, boss, host.body(boss), home, marks, tick, length);
             case STOKED -> acts.stoked(set, boss, host.body(boss), home, marks, tick, length);
             case SPOUT -> acts.spout(set, boss, host.body(boss), home, marks.getFirst(), tick, length);
+            case SWOOP -> acts.swoop(set, boss, host.body(boss), home, marks.getFirst(), tick, length);
+            case AWAKEN -> acts.awaken(set, boss, host.body(boss), home, marks, tick, length);
             default -> { }
         }
+    }
+
+    /** A staged scene outside any boss's arrival, played where the room's first point is. */
+    void scene(String name, Room room) {
+        if (acts == null) acts = new RunActs(plugin, host.world());
+        Point at = room.points().getFirst();
+        Location spot = new Location(host.world(), at.x() + .5, at.y(), at.z() + .5, at.yaw(), 0);
+        List<Display> set = new ArrayList<>();
+        int length = "crush".equals(name) ? 150 : "deluge".equals(name) ? 200 : 160;
+        int[] clock = {0};
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            int tick = clock[0]++;
+            if (!host.live() || tick >= length) {
+                set.forEach(Display::remove);
+                task.cancel();
+                return;
+            }
+            switch (name) {
+                case "seals" -> acts.seals(set, spot, tick, length);
+                case "crush" -> acts.crush(set, spot, tick, length);
+                case "deluge" -> acts.deluge(set, spot, tick, length);
+                default -> { }
+            }
+        }, 0L, 1L);
     }
 
     private void rise(LivingEntity boss, Location home, int tick, int length) {

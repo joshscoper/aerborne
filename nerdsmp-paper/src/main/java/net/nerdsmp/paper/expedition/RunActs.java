@@ -750,6 +750,170 @@ final class RunActs {
         if (tick == length - 4) body.stance(0, 0);
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // The Ember Gate: the three seals go into their sockets, and the doors give way.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final Material[] SEAL_LIGHT = {Material.ORANGE_CONCRETE, Material.LIGHT_BLUE_CONCRETE, Material.LIME_CONCRETE};
+
+    void seals(List<Display> set, Location gate, int tick, int length) {
+        for (int seal = 0; seal < 3; seal++) {
+            int at = 24 + seal * 26;
+            Location socket = gate.clone().add(-16 + seal * 16, 36, 1);
+            if (tick == at) {
+                world.playSound(socket, Sound.BLOCK_END_PORTAL_FRAME_FILL, 3F, .6F + seal * .2F);
+                world.playSound(socket, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 3F, .7F);
+                world.spawnParticle(Particle.EXPLOSION, socket, 3, 1, 1, .2, 0);
+                set.add(beam(socket, gate.clone().add(0, 14, 1), SEAL_LIGHT[seal]));
+            }
+        }
+        if (tick == 110) {
+            world.playSound(gate, Sound.BLOCK_END_PORTAL_SPAWN, 4F, .6F);
+            world.playSound(gate, Sound.ENTITY_WARDEN_SONIC_BOOM, 3F, .5F);
+        }
+        if (tick > 100 && tick < 140) world.spawnParticle(Particle.FLAME, gate.clone().add(0, 12, 1), 40, 6, 10, .4, .05);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The Steward's reward: the floor of his own hall opens, and the hand he served comes up through it.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double[][] FINGERS = {{-5.6, 0, .9}, {-2.8, 2, 1}, {0, 3, 1.05}, {2.8, 2, 1}, {5.6, -1, .85}};
+
+    void crush(List<Display> set, Location at, int tick, int length) {
+        if (tick == 0) {
+            world.playSound(at, Sound.ENTITY_WARDEN_EMERGE, 3F, .5F);
+            for (int kneeler = 0; kneeler < 1; kneeler++) {
+                set.add(box(at, Material.POLISHED_BLACKSTONE, -.6F, 0, -.6F, 1.2F, 1.4F, 1.2F, 10));
+                set.add(box(at, Material.GOLD_BLOCK, -.45F, 1.4F, -.45F, .9F, .9F, .9F, 12));
+            }
+        }
+        if (tick < 40) {
+            if (tick % 4 == 0) world.spawnParticle(Particle.LAVA, at, 30, 7, .2, 7, 0);
+            if (tick % 12 == 0) world.playSound(at, Sound.ENTITY_IRON_GOLEM_STEP, 2.4F, .5F);
+        }
+        if (tick == 40) {
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 3, 4, .4, 4, 0);
+            world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, 3F, .5F);
+            Location palm = at.clone().subtract(0, 22, 0);
+            BlockDisplay wrist = box(palm, Material.BASALT, -6, -8, -5, 12, 14, 10, 10);
+            BlockDisplay hand = box(palm, Material.BLACKSTONE, -7.5F, 6, -5.5F, 15, 8, 11, 12);
+            BlockDisplay core = box(palm, Material.MAGMA_BLOCK, -5, 7, 5.6F, 10, 6, .4F, 15);
+            set.addAll(List.of(wrist, hand, core));
+            for (int finger = 0; finger < FINGERS.length; finger++) {
+                BlockDisplay part = box(palm, finger == 4 ? Material.BASALT : Material.BLACKSTONE, (float) FINGERS[finger][0] - 1.1F, 14, -1.2F, 2.2F, (float) (9 + FINGERS[finger][1]), 2.4F, 12);
+                set.add(part);
+                named.put("finger" + finger, part);
+            }
+            named.put("wrist", wrist);
+            named.put("hand", hand);
+            named.put("core", core);
+            debris(set, at.clone().add(0, .5, 0), new Material[]{Material.CRACKED_POLISHED_BLACKSTONE_BRICKS, Material.POLISHED_BLACKSTONE_BRICKS, Material.MAGMA_BLOCK}, 40, 14, 16);
+            world.playSound(at, Sound.ENTITY_RAVAGER_ROAR, 3F, .5F);
+        }
+        double up = tick < 40 ? 0 : tick < 70 ? eased((tick - 40) / 30D) : tick < 118 ? 1 : 1 - eased((tick - 118) / 30D);
+        if (tick >= 40) {
+            Location palm = at.clone().subtract(0, 22 - 22 * up, 0);
+            for (String part : new String[]{"wrist", "hand", "core", "finger0", "finger1", "finger2", "finger3", "finger4"}) {
+                Display piece = named.get(part);
+                if (piece != null && piece.isValid()) piece.teleport(palm);
+            }
+        }
+        // The fingers close over him, one after another.
+        if (tick == 80) for (int finger = 0; finger < FINGERS.length; finger++) {
+            Display part = named.get("finger" + finger);
+            if (part == null) continue;
+            Transformation now = part.getTransformation();
+            move(part, new Transformation(new Vector3f(now.getTranslation()).add(0, -7, 5), new Quaternionf().rotateX(1.25F), now.getScale(), new Quaternionf()), 8);
+        }
+        if (tick == 88) {
+            set.getFirst().remove();
+            set.get(1).remove();
+            world.playSound(at, Sound.ENTITY_PLAYER_ATTACK_CRIT, 3F, .5F);
+            world.playSound(at, Sound.BLOCK_ANVIL_LAND, 3F, .5F);
+            world.spawnParticle(Particle.LAVA, at.clone().add(0, 4, 0), 120, 3, 2, 3, 0);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Cobb opens the last sluice: water comes down the crater wall, and the fire gives ground.
+    // ---------------------------------------------------------------------------------------------
+
+    void deluge(List<Display> set, Location at, int tick, int length) {
+        if (tick == 0) {
+            world.playSound(at, Sound.ENTITY_GENERIC_SPLASH, 4F, .5F);
+            for (double[] spot : new double[][]{{-40, -22}, {40, -22}, {0, -46}}) {
+                Location top = at.clone().add(spot[0], 62, spot[1]);
+                BlockDisplay fall = box(top, Material.LIGHT_BLUE_STAINED_GLASS, -3, -60, -3, 6, 1, 6, 15);
+                set.add(fall);
+                move(fall, new Transformation(new Vector3f(-3, -60, -3), new Quaternionf(), new Vector3f(6, 62, 6), new Quaternionf()), 20);
+            }
+        }
+        if (tick % 3 == 0) for (Display fall : set) world.spawnParticle(Particle.CLOUD, fall.getLocation().subtract(0, 60, 0), 30, 5, 1, 5, .15);
+        if (tick % 14 == 0) world.playSound(at, Sound.BLOCK_FIRE_EXTINGUISH, 4F, .5F);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Cindermaw: it comes out of the fog at the far end of the bridge and goes over everyone's heads.
+    // ---------------------------------------------------------------------------------------------
+
+    void swoop(List<Display> set, LivingEntity boss, MoltenBody body, Location home, Location from, int tick, int length) {
+        double done = tick / (double) length;
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 4F, .6F);
+        }
+        double flown = eased(done);
+        Location at = from.clone().add(home.toVector().subtract(from.toVector()).multiply(flown));
+        at.add(0, Math.sin(done * Math.PI) * 10, 0);
+        at.setYaw(facing(from, home));
+        boss.teleport(at);
+        if (tick % 2 == 0) world.spawnParticle(Particle.FLAME, at.clone().subtract(0, 1, 0), 30, 1.4, .4, 1.4, .08);
+        if (tick % 10 == 0) world.playSound(at, Sound.ENTITY_ENDER_DRAGON_FLAP, 4F, .6F);
+        if (tick == length - 2) world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 4F, .5F);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Pyrrhax: the sea boils, the chains come taut, and what they were holding sits up.
+    // ---------------------------------------------------------------------------------------------
+
+    private static final double SHAKES = .3, HEAVES = .72;
+
+    void awaken(List<Display> set, LivingEntity boss, MoltenBody body, Location home, List<Location> shores, int tick, int length) {
+        double done = tick / (double) length;
+        if (tick == 0) {
+            boss.setVisibleByDefault(true);
+            body.eyes(false);
+            body.sink(true);
+            world.playSound(home, Sound.ENTITY_WARDEN_HEARTBEAT, 4F, .5F);
+        }
+        if (done < SHAKES) {
+            if (tick % 18 == 0) world.playSound(home, Sound.ENTITY_WARDEN_HEARTBEAT, 4F, .5F);
+            world.spawnParticle(Particle.LAVA, home.clone().add(0, 0, 8), 16, 16, .4, 12, 0);
+            for (Location shore : shores) world.spawnParticle(Particle.FLAME, shore, 8, 4, .4, 4, .05);
+        }
+        if (tick == (int) (length * SHAKES)) {
+            body.sink(false);
+            body.stance(2.4F, 0);
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, home, 6, 12, 1, 12, 0);
+            world.playSound(home, Sound.ENTITY_WITHER_SPAWN, 4F, .4F);
+            world.playSound(home, Sound.ENTITY_GENERIC_EXPLODE, 4F, .4F);
+        }
+        if (done >= SHAKES && done < HEAVES) {
+            world.spawnParticle(Particle.LAVA, home.clone().add(0, 8, 8), 30, 14, 8, 14, 0);
+            world.spawnParticle(Particle.FALLING_LAVA, home.clone().add(0, 24, 8), 40, 12, 10, 12, 0);
+            if (tick % 14 == 0) world.playSound(home, Sound.ENTITY_IRON_GOLEM_STEP, 4F, .4F);
+        }
+        if (tick == (int) (length * HEAVES)) {
+            body.eyes(true);
+            body.stance(1.6F, 0);
+            world.playSound(home, Sound.ENTITY_ENDER_DRAGON_GROWL, 5F, .4F);
+            world.playSound(home, Sound.ENTITY_RAVAGER_ROAR, 5F, .4F);
+            world.spawnParticle(Particle.FLAME, home.clone().add(0, 26, 4), 400, 14, 10, 8, .3);
+        }
+        if (tick == length - 20) body.stance(.3F, 0);
+    }
+
     private static float facing(Location from, Location to) {
         return (float) Math.toDegrees(Math.atan2(-(to.getX() - from.getX()), to.getZ() - from.getZ()));
     }

@@ -333,6 +333,12 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         return spawnLeveled(id, encounterType(id), location, level, beforeSpawn);
     }
 
+    /** An encounter mob's health as written, before any ceiling. Zero for a vanilla mob. */
+    public double authoredHealth(String id) {
+        MobDefinition definition = id.startsWith("custom:") ? definitions.get(id.substring(7)) : null;
+        return definition == null ? 0 : definition.health();
+    }
+
     private LivingEntity spawnLeveled(String id, EntityType type, Location location, int level, java.util.function.Consumer<LivingEntity> beforeSpawn) {
         Class<? extends LivingEntity> entityClass=type.getEntityClass().asSubclass(LivingEntity.class);
         MobDefinition definition=id.startsWith("custom:") ? definitions.get(id.substring(7)) : null;

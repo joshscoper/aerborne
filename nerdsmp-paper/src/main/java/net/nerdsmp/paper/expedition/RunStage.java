@@ -563,8 +563,15 @@ final class RunStage {
 
     boolean cutsceneRunning() { return !cameras.isEmpty(); }
 
+    private long sceneEnds;
+
+    /** How long the scene on now still has to run, in milliseconds. */
+    long sceneLeft() { return Math.max(0, sceneEnds - System.currentTimeMillis()); }
+
     void cutscene(String id) {
         if (!played.add(id)) return;
+        Cutscene scene = host.expedition().story().cutscenes().get(id);
+        if (scene != null) sceneEnds = Math.max(sceneEnds, System.currentTimeMillis() + scene.shots().stream().mapToLong(Shot::seconds).sum() * 1000);
         // A room can start mid-teleport (an ender pearl, a staff tp), before the player has arrived;
         // start next tick so the scene returns everyone to where they really are.
         Bukkit.getScheduler().runTask(plugin, () -> { if (host.live()) play(id); });

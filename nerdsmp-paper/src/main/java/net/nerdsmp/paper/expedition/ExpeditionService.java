@@ -192,7 +192,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             "41dbd3e34f7b8570f73afb098bf83f947273254aaecf6cebcbcc6716104b477e",
             "ca7699f1252bdc2c6fdc93e7c9feb580f76483225bb8fba6c0e1fa0af1e6040e",
             "fb3085e71b27aee47b1a1788465423c60fb2a5c8fd9fdf6b73bb12c5aba18dd3",
-            "fe527944259a82ca2c74dcdc70d52083f844a768a91647b4d0e0c6b64dc8b05d"));
+            "fe527944259a82ca2c74dcdc70d52083f844a768a91647b4d0e0c6b64dc8b05d",
+            "44f525181edee7667f8b52cf128741a2827716ec19edee22c97167c9db49c2ce"));
 
     private void installSamples() {
         if (!folder.isDirectory() && !folder.mkdirs()) throw new IllegalStateException("Could not create " + folder);
@@ -1314,9 +1315,9 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         var type = event.getClickedBlock().getType();
         // Food on a campfire or flint on it would change the rest point; the run handles campfires itself.
         if (type == org.bukkit.Material.CAMPFIRE || type == org.bukkit.Material.SOUL_CAMPFIRE) event.setCancelled(true);
-        // Chests, barrels and crates in a run are the run's: loot, reward chests and supply crates.
+        // Chests, barrels and crates in a run are the run's: loot, reward chests and supply crates. Dispensers are ballistas.
         if (type == org.bukkit.Material.CHEST || type == org.bukkit.Material.TRAPPED_CHEST || type == org.bukkit.Material.BARREL
-            || type == org.bukkit.Material.ENDER_CHEST) event.setCancelled(true);
+            || type == org.bukkit.Material.ENDER_CHEST || type == org.bukkit.Material.DISPENSER) event.setCancelled(true);
         var block = event.getClickedBlock();
         Bukkit.getScheduler().runTask(plugin, () -> run.interact(event.getPlayer(), block));
     }

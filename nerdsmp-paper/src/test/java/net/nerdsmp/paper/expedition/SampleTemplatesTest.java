@@ -38,7 +38,7 @@ class SampleTemplatesTest {
     }
 
     /** Maps laid out as one straight corridor south along X=0. */
-    private static final java.util.Set<String> LINEAR = java.util.Set.of("cinder_keep");
+    private static final java.util.Set<String> LINEAR = java.util.Set.of();
 
     @Test void everyStandingSpotHasFloorAndHeadroom() {
         List<String> problems = new java.util.ArrayList<>();
@@ -196,6 +196,10 @@ class SampleTemplatesTest {
 
     @Test void theAqueductCanBeWalkedFromTheHeadToTheDam() { canBeWalked("sunken_aqueduct"); }
 
+    @Test void theRaidsCamerasStayClearOfWalls() { camerasStayClearOfWalls("cinder_keep"); }
+
+    @Test void theRaidCanBeWalkedFromTheGateToTheHeart() { canBeWalked("cinder_keep"); }
+
     @Test void theMinesCanBeWalkedFromTheTopToTheForge() { canBeWalked("gloomforge_mines"); }
 
     @Test void theHallCanBeWalkedFromTheLandingToEveryThrone() { canBeWalked("hall_of_wardens"); }
@@ -205,6 +209,11 @@ class SampleTemplatesTest {
         var mines = definition(id);
         Map<Cell, Material> blocks = new HashMap<>(blocks(id));
         blocks.values().removeIf(material -> material == Material.IRON_BARS);
+        // A piece the story breaks open is open by the time anyone needs to get through it.
+        for (var piece : mines.story().setpieces().values()) if ("air".equals(piece.block())) {
+            var box = piece.box();
+            for (int x = box.minX(); x <= box.maxX(); x++) for (int y = box.minY(); y <= box.maxY(); y++) for (int z = box.minZ(); z <= box.maxZ(); z++) blocks.remove(new Cell(x, y, z));
+        }
         for (var room : mines.roomList()) {
             var gate = room.gate();
             if (gate == null) continue;
@@ -225,7 +234,7 @@ class SampleTemplatesTest {
             }
         }
         var targets = new java.util.ArrayList<>(List.of(mines.exit()));
-        for (var room : mines.roomList()) targets.add(room.checkpoint());
+        for (var room : mines.roomList()) if (room.checkpoint() != null) targets.add(room.checkpoint());
         for (var fire : mines.story().campfires().values()) targets.add(fire.at());
         for (var pack : mines.story().packs().values()) targets.add(pack.at());
         List<String> stranded = new java.util.ArrayList<>();
@@ -599,7 +608,7 @@ class SampleTemplatesTest {
         for (String id : ExpeditionService.SAMPLES) {
             assertSame(SampleTemplates.plan(id), SampleTemplates.plan(id));
             assertTrue(SampleTemplates.plan(id).size() > 5_000, id);
-            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> p.cell().x() > -256 && p.cell().x() < 400 && p.cell().z() > -256 && p.cell().z() < 400), id);
+            assertTrue(SampleTemplates.plan(id).placements().stream().allMatch(p -> p.cell().x() > -256 && p.cell().x() < 400 && p.cell().z() > -300 && p.cell().z() < 420), id);
         }
         assertNull(SampleTemplates.plan("nope"));
         assertTrue(blocks("cinder_keep").containsValue(Material.MAGMA_BLOCK));

@@ -62,6 +62,12 @@ public final class AbilityCaster {
         default LivingEntity fixture(String mob, Location at) { return null; }
         /** Shields as {@link #shield}, then leaves the caster taking double for this long when it breaks. */
         default void shield(LivingEntity caster, List<LivingEntity> helpers, int exposedSeconds) { shield(caster, helpers); }
+        /** How far this room's bosses can see to cast at. */
+        default double reach() { return 24; }
+        /** Spawns a room mob at a spot, free to move. */
+        default LivingEntity spawn(String mob, Location at) { return null; }
+        /** Holds one of the caster's body's arms up or down, in radians from hanging; side 0 lets both go. */
+        default void strike(LivingEntity caster, int side, float arm) { }
         /** The room's marked spots, past the boss's own. */
         default List<Location> marks() { return List.of(); }
     }
@@ -75,6 +81,9 @@ public final class AbilityCaster {
     private static final int SPEAR_STANDS = 50, BLADE_TICKS = 18, CHASE_STEPS = 28, BRAND_STEPS = 16;
     private static final double WELL_PULL = 11, WELL_CORE = 3, RIFT_RADIUS = 2.6, BOND_APART = 14, HARVEST_GAP = .28, STEP_BURST = 4.5;
     private static final int RIFT_PULSES = 16, HARVEST_TICKS = 120, HARVEST_SPACE = 26;
+    private static final double SMASH_OFFSET = 13, SMASH_LENGTH = 52, SMASH_HALF = 5, METEOR_SPEED = .17, BINDING_RADIUS = 5, BINDING_SHARE = .1;
+    private static final int SONS = 6, METEOR_TICKS = 240;
+    private static final String[] BINDING_NAMES = {"<gold><bold>The ember plate!</bold></gold>", "<aqua><bold>The frost plate!</bold></aqua>", "<green><bold>The stone plate!</bold></green>"};
     private static final double GEYSER_RADIUS = 3.2, SPOUT_REACH = 5, WAVE_REACH = 34, VINE_REACH = 10, SLIDE_REACH = 26, SILT_BURST = 4.5;
     private static final int EXPOSED_SECONDS = 12, PRESSURE_STEPS = 20;
     private static final String[] ECHOES = {"custom:echo_of_ember", "custom:echo_of_frost", "custom:echo_of_stone"};
@@ -96,7 +105,7 @@ public final class AbilityCaster {
      */
     public boolean cast(String ability, LivingEntity caster, Arena arena, double power) {
         if (!caster.isValid() || caster.isDead() || busy(caster)) return false;
-        List<Player> targets = arena.targets(caster, 24);
+        List<Player> targets = arena.targets(caster, arena.reach());
         if (targets.isEmpty() && !ability.equals("mend") && !ability.equals("ward")) return false;
         return switch (ability) {
             case "charge" -> charge(caster, arena, targets, power);
@@ -159,6 +168,13 @@ public final class AbilityCaster {
             case "binding_vines" -> bindingVines(caster, arena, targets, power);
             case "mudslide" -> mudslide(caster, arena, targets, power);
             case "awaken_silt" -> awakenSilt(caster, arena, targets, power);
+            case "sovereign_smash" -> sovereignSmash(caster, arena, power);
+            case "engulfing_flames" -> engulfingFlames(caster, arena, power);
+            case "sons_of_flame" -> sonsOfFlame(caster, arena, power);
+            case "living_meteor" -> livingMeteor(caster, arena, targets, power);
+            case "binding_chain" -> bindingChain(caster, arena, power);
+            case "drake_breath" -> drakeBreath(caster, arena, targets, power);
+            case "ashen_decree" -> ashenDecree(caster, arena, targets, power);
             default -> false;
         };
     }
@@ -1260,6 +1276,228 @@ public final class AbilityCaster {
             caster.getWorld().playSound(spot, Sound.BLOCK_MUD_BREAK, 2F, .6F);
             for (Player player : arena.near(spot, SILT_BURST)) hit(player, caster, 3.5 * power);
         }, () -> { });
+        return true;
+    }
+
+    /** Where the fight is, from a boss that stands off to one side of it: the middle of the room's marks. */
+    private static Location middle(LivingEntity caster, Arena arena) {
+        List<Location> marks = arena.marks();
+        if (marks.isEmpty()) return caster.getLocation();
+        Vector sum = new Vector();
+        for (Location mark : marks) sum.add(mark.toVector());
+        return sum.multiply(1D / marks.size()).toLocation(caster.getWorld());
+    }
+
+    /** One of his arms goes up, a lane across the floor burns red, and the hammer comes down along the whole of it. */
+    private boolean sovereignSmash(LivingEntity caster, Arena arena, double power) {
+        Location heart = middle(caster, arena);
+        Vector along = heart.toVector().subtract(caster.getLocation().toVector()).setY(0).normalize(), across = new Vector(-along.getZ(), 0, along.getX());
+        int side = ThreadLocalRandom.current().nextBoolean() ? 1 : -1;
+        double off = SMASH_OFFSET * side;
+        Location start = caster.getLocation().add(across.clone().multiply(off));
+        Location end = start.clone().add(along.clone().multiply(SMASH_LENGTH));
+        arena.strike(caster, side, 2.8F);
+        caster.getWorld().playSound(heart, Sound.ENTITY_RAVAGER_ROAR, 3F, .5F);
+        hold(caster, 50);
+        repeat(caster, arena, 10, 5, tick -> {
+            for (double lane = -SMASH_HALF; lane <= SMASH_HALF; lane += 2) Telegraph.line(start.clone().add(across.clone().multiply(lane)).add(0, .1, 0), end.clone().add(across.clone().multiply(lane)).add(0, .1, 0), Telegraph.FIRE);
+        }, () -> {
+            arena.strike(caster, side, 1.25F);
+            caster.getWorld().playSound(heart, Sound.ENTITY_GENERIC_EXPLODE, 4F, .4F);
+            caster.getWorld().playSound(heart, Sound.BLOCK_ANVIL_LAND, 4F, .4F);
+            for (double reach = 0; reach < SMASH_LENGTH; reach += 2) caster.getWorld().spawnParticle(Particle.LAVA, start.clone().add(along.clone().multiply(reach)), 8, SMASH_HALF / 2, .2, 1, 0);
+            caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, start.clone().add(along.clone().multiply(SMASH_LENGTH / 2)), 3, 2, .4, 12, 0);
+            for (Player player : arena.near(heart, 60)) {
+                Vector to = player.getLocation().toVector().subtract(start.toVector()).setY(0);
+                double on = to.dot(along), offLane = Math.abs(to.dot(across));
+                if (on < 0 || on > SMASH_LENGTH) continue;
+                if (offLane <= SMASH_HALF) hit(player, caster, 10 * power);
+                else if (offLane <= SMASH_HALF + 5) player.setVelocity(across.clone().multiply(Math.signum(to.dot(across)) * 1.1).setY(.5));
+            }
+            Bukkit.getScheduler().runTaskLater(plugin, () -> arena.strike(caster, side, 0), 30L);
+        });
+        return true;
+    }
+
+    /** One of three bands of the floor goes up in flame, and you've a moment to be somewhere else. */
+    private boolean engulfingFlames(LivingEntity caster, Arena arena, double power) {
+        Location heart = middle(caster, arena);
+        Vector along = heart.toVector().subtract(caster.getLocation().toVector()).setY(0).normalize(), across = new Vector(-along.getZ(), 0, along.getX());
+        double far = heart.distance(caster.getLocation()) + 26, near = Math.max(0, far - 54);
+        int band = ThreadLocalRandom.current().nextInt(3);
+        double from = near + band * 18, to = from + 18;
+        for (Player player : arena.near(heart, 60)) bar(player, "<red><bold>Engulfing Flames!</bold></red> <gray>Get out of the burning band.</gray>");
+        caster.getWorld().playSound(heart, Sound.ITEM_FIRECHARGE_USE, 3F, .5F);
+        Location base = caster.getLocation();
+        repeat(caster, arena, 8, 5, tick -> {
+            for (double across_ = -30; across_ <= 30; across_ += 5) {
+                Location a = base.clone().add(along.clone().multiply(from)).add(across.clone().multiply(across_)).add(0, .1, 0), b = base.clone().add(along.clone().multiply(to)).add(across.clone().multiply(across_)).add(0, .1, 0);
+                Telegraph.line(a, b, Telegraph.FIRE);
+            }
+        }, () -> repeat(caster, arena, 12, 5, tick -> {
+            for (double across_ = -30; across_ <= 30; across_ += 3) for (double up = from; up <= to; up += 3)
+                caster.getWorld().spawnParticle(Particle.FLAME, base.clone().add(along.clone().multiply(up)).add(across.clone().multiply(across_)), 2, 1, .4, 1, .03);
+            for (Player player : arena.near(heart, 60)) {
+                double on = player.getLocation().toVector().subtract(base.toVector()).setY(0).dot(along);
+                if (on >= from && on <= to) {
+                    hit(player, caster, 2 * power);
+                    player.setFireTicks(40);
+                }
+            }
+        }, () -> { }));
+        return true;
+    }
+
+    /** He drives the hammer into the middle of the floor and goes under, and his sons run for it. Any that gets there, it goes up. */
+    private boolean sonsOfFlame(LivingEntity caster, Arena arena, double power) {
+        Location heart = middle(caster, arena);
+        BlockDisplay hammer = caster.getWorld().spawn(heart.clone().add(0, 14, 0), BlockDisplay.class, display -> {
+            display.setBlock(Material.GILDED_BLACKSTONE.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(10);
+            display.setViewRange(4F);
+            display.setBrightness(new Display.Brightness(14, 14));
+            display.setTransformation(new Transformation(new Vector3f(-3, 0, -2), new Quaternionf(), new Vector3f(6, 5, 4), new Quaternionf()));
+        });
+        BlockDisplay haft = caster.getWorld().spawn(heart.clone().add(0, 14, 0), BlockDisplay.class, display -> {
+            display.setBlock(Material.POLISHED_BLACKSTONE.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(10);
+            display.setViewRange(4F);
+            display.setTransformation(new Transformation(new Vector3f(-.6F, -14, -.6F), new Quaternionf(), new Vector3f(1.2F, 14, 1.2F), new Quaternionf()));
+        });
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            hammer.teleport(heart.clone().add(0, 9, 0));
+            haft.teleport(heart.clone().add(0, 13, 0));
+            caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, heart, 3, 2, .4, 2, 0);
+            caster.getWorld().playSound(heart, Sound.BLOCK_ANVIL_LAND, 4F, .4F);
+        }, 4L);
+        for (Player player : arena.near(heart, 60)) bar(player, "<gold><bold>Sons of Flame!</bold></gold> <gray>Don't let them reach the hammer.</gray>");
+        List<LivingEntity> sons = new ArrayList<>();
+        for (int son = 0; son < SONS; son++) {
+            double angle = son * Math.TAU / SONS;
+            LivingEntity spawned = arena.spawn("custom:son_of_flame", heart.clone().add(Math.cos(angle) * 27, 0, Math.sin(angle) * 27));
+            if (spawned != null) sons.add(spawned);
+        }
+        repeat(caster, arena, 110, 5, tick -> {
+            for (LivingEntity son : List.copyOf(sons)) {
+                if (!son.isValid() || son.isDead()) {
+                    sons.remove(son);
+                    continue;
+                }
+                if (son instanceof Mob mob) mob.getPathfinder().moveTo(heart, .55);
+                if (son.getLocation().distanceSquared(heart) > 16) continue;
+                sons.remove(son);
+                son.remove();
+                caster.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, heart, 2, 2, .4, 2, 0);
+                caster.getWorld().playSound(heart, Sound.ENTITY_GENERIC_EXPLODE, 3F, .6F);
+                for (Player player : arena.near(heart, 60)) hit(player, caster, 6 * power);
+            }
+        }, () -> {
+            hammer.remove();
+            haft.remove();
+        });
+        return true;
+    }
+
+    /** A ball of the mountain's own heart breaks loose and rolls after one player until something stops it. */
+    private boolean livingMeteor(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player prey = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        Location heart = middle(caster, arena);
+        Location[] at = {heart.clone().add(ThreadLocalRandom.current().nextDouble(-16, 16), 0, ThreadLocalRandom.current().nextDouble(-16, 16))};
+        bar(prey, "<red><bold>A meteor is rolling for you!</bold></red> <gray>Run.</gray>");
+        BlockDisplay meteor = caster.getWorld().spawn(at[0], BlockDisplay.class, display -> {
+            display.setBlock(Material.MAGMA_BLOCK.createBlockData());
+            display.setPersistent(false);
+            display.setTeleportDuration(1);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setTransformation(new Transformation(new Vector3f(-1.6F, 0, -1.6F), new Quaternionf(), new Vector3f(3.2F, 3.2F, 3.2F), new Quaternionf()));
+        });
+        caster.getWorld().playSound(at[0], Sound.ENTITY_BLAZE_SHOOT, 2F, .5F);
+        repeat(caster, arena, METEOR_TICKS, 1, tick -> {
+            if (!prey.isOnline() || prey.getWorld() != caster.getWorld()) return;
+            Vector to = prey.getLocation().toVector().subtract(at[0].toVector()).setY(0);
+            if (to.lengthSquared() > .01) at[0].add(to.normalize().multiply(METEOR_SPEED));
+            meteor.teleport(at[0]);
+            if (tick % 3 == 0) caster.getWorld().spawnParticle(Particle.FLAME, at[0].clone().add(0, 1.4, 0), 8, 1, .8, 1, .02);
+            for (Player player : arena.near(at[0], 2.6)) {
+                hit(player, caster, 7 * power);
+                caster.getWorld().spawnParticle(Particle.EXPLOSION, at[0], 4, 1, 1, 1, 0);
+                player.setVelocity(player.getLocation().toVector().subtract(at[0].toVector()).setY(0).normalize().multiply(1.2).setY(.6));
+            }
+        }, meteor::remove);
+        return true;
+    }
+
+    /** A plate lights. Stand on it, enough of you, and one more of the Wardens' chains goes round him. */
+    private boolean bindingChain(LivingEntity caster, Arena arena, double power) {
+        List<Location> plates = arena.marks();
+        if (plates.size() < SEALS.length) return false;
+        int seal = ThreadLocalRandom.current().nextInt(SEALS.length);
+        Location plate = plates.get(seal);
+        int need = Math.max(1, (int) Math.ceil(arena.near(plate, 70).size() / 3D));
+        for (Player player : arena.near(plate, 70)) bar(player, BINDING_NAMES[seal] + " <gray>" + need + " to hold it.</gray>");
+        caster.getWorld().playSound(plate, Sound.BLOCK_BEACON_ACTIVATE, 3F, .6F);
+        hold(caster, 70);
+        repeat(caster, arena, 14, 5, tick -> {
+            Telegraph.ring(plate, BINDING_RADIUS, SEALS[seal]);
+            caster.getWorld().spawnParticle(Particle.END_ROD, plate.clone().add(0, 1, 0), 10, 2, 1, 2, .02);
+        }, () -> {
+            int standing = arena.near(plate, BINDING_RADIUS).size();
+            if (standing < need) {
+                caster.getWorld().playSound(plate, Sound.ENTITY_GENERIC_EXPLODE, 3F, .5F);
+                for (Player player : arena.near(plate, 70)) hit(player, caster, 9 * power);
+                return;
+            }
+            Location from = plate.clone().add(0, 1, 0), to = caster.getLocation().add(0, 8, 0);
+            Vector step = to.toVector().subtract(from.toVector());
+            for (double along = 0; along <= 1; along += .01) caster.getWorld().spawnParticle(Particle.END_ROD, from.clone().add(step.clone().multiply(along)), 1, 0, 0, 0, 0);
+            caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_CHAIN_PLACE, 5F, .4F);
+            caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ENDER_DRAGON_HURT, 4F, .4F);
+            double max = caster.getAttribute(Attribute.MAX_HEALTH) == null ? 0 : caster.getAttribute(Attribute.MAX_HEALTH).getValue();
+            caster.setHealth(Math.max(1, caster.getHealth() - max * BINDING_SHARE));
+        });
+        return true;
+    }
+
+    /** A long breath down a marked line. */
+    private boolean drakeBreath(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
+        Location from = caster.getLocation().add(0, 2, 0), to = target.getLocation().add(0, .1, 0);
+        Vector along = to.toVector().subtract(from.toVector()).setY(0);
+        if (along.lengthSquared() < 1) return false;
+        along.normalize();
+        Location floor = target.getLocation().add(0, .1, 0);
+        Location end = floor.clone().add(along.clone().multiply(14)), start = floor.clone().subtract(along.clone().multiply(14));
+        caster.getWorld().playSound(from, Sound.ENTITY_ENDER_DRAGON_GROWL, 3F, 1F);
+        repeat(caster, arena, 7, 5, tick -> Telegraph.line(start, end, Telegraph.FIRE), () -> {
+            caster.getWorld().playSound(floor, Sound.ENTITY_BLAZE_SHOOT, 3F, .5F);
+            for (double reach = -14; reach <= 14; reach += 1) caster.getWorld().spawnParticle(Particle.FLAME, floor.clone().add(along.clone().multiply(reach)), 10, .8, .5, .8, .04);
+            for (Player player : arena.near(floor, 15)) {
+                Vector to2 = player.getLocation().toVector().subtract(floor.toVector()).setY(0);
+                double off = to2.clone().subtract(along.clone().multiply(to2.dot(along))).length();
+                if (off <= 2.2) {
+                    hit(player, caster, 5 * power);
+                    player.setFireTicks(60);
+                }
+            }
+        });
+        return true;
+    }
+
+    /** The Steward speaks a word in the old tongue, and whoever's looking at him when he finishes it burns. Turn your back. */
+    private boolean ashenDecree(LivingEntity caster, Arena arena, List<Player> targets, double power) {
+        hold(caster, 34);
+        Location at = caster.getLocation().add(0, 2, 0);
+        for (Player player : targets) bar(player, "<gold><bold>The Ashen Decree!</bold></gold> <gray>Look away from him.</gray>");
+        caster.getWorld().playSound(at, Sound.ENTITY_WITHER_AMBIENT, 2F, .6F);
+        repeat(caster, arena, 7, 5, tick -> caster.getWorld().spawnParticle(Particle.FLAME, at, 20, 1, 1.4, 1, .08), () -> {
+            caster.getWorld().spawnParticle(Particle.EXPLOSION, at, 3, 1, 1, 1, 0);
+            for (Player player : arena.targets(caster, 40)) {
+                Vector look = player.getEyeLocation().getDirection(), toHim = at.toVector().subtract(player.getEyeLocation().toVector());
+                if (toHim.lengthSquared() > .1 && look.dot(toHim.normalize()) > .3) hit(player, caster, 6 * power);
+            }
+        });
         return true;
     }
 

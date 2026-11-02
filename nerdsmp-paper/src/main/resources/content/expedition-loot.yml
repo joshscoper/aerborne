@@ -63,3 +63,11 @@ expeditions:
     materials: [cinder_shard, smoldering_core, sovereigns_ember]
     gear: [kilnborn_crown, kilnborn_cuirass, kilnborn_greaves, kilnborn_sabatons, kilnbreaker_maul]
     signatures: [sovereigns_hammer, crown_of_embers, steward_ashkars_mantle]
+    finds: [gatewatch_buckler, ember_step_treads, ward_chain_collar, slagcloth_mantle, cinder_clasp, kilnkeepers_gloves, forgeguard_belt, ashen_signet, smoke_censer]
+    bosses:
+      chain_bridge: [drakescale_pauldrons, harpoon_band, gatewatch_fang]
+      kilnbreaker: [kiln_keepers_cuirass, firebrick_greaves, harpoon_band]
+      cinderhounds: [twinbound_collar, packmasters_treads, firebrick_greaves]
+      slag_priest: [rite_censer, priests_ash_stole, slag_chalice]
+      steward: [stewards_gauntlets, keys_of_the_keep, ashkars_decree, steward_ashkars_mantle]
+      molten_heart: [sovereigns_wrist, molten_crown_shard, hearthfire_band, sovereigns_hammer, crown_of_embers]

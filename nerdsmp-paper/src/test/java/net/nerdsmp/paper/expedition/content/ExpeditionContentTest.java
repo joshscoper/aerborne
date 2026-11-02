@@ -102,11 +102,12 @@ class ExpeditionContentTest {
         assertEquals(List.of("nether"), keep.rooms().get("kilnbreaker").unlocks());
         assertEquals(10, keep.rooms().get("cinderhounds").encounter().linkSeconds());
         assertEquals(30, keep.rooms().get("molten_heart").encounter().phases().getFirst().submergeSeconds());
+        assertEquals(List.of("ember_gate", "chain_bridge", "kilnbreaker", "cinderhounds", "slag_priest", "bellows", "steward", "molten_heart"), List.copyOf(keep.rooms().keySet()));
         assertTrue(keep.rooms().get("molten_heart").loot().marks() > 0);
         Tier mythic = Tier.DEFAULTS.get("mythic").apply(keep.tiers().get("mythic"), keep.lives());
         assertEquals(3.0, mythic.health());
         assertEquals(List.of("fortified", "tyrannical"), mythic.modifiers());
-        assertEquals(15, Tier.DEFAULTS.get("normal").apply(keep.tiers().get("normal"), keep.lives()).lives());
+        assertTrue(Tier.DEFAULTS.get("normal").apply(keep.tiers().get("normal"), keep.lives()).runBack());
         assertEquals(List.of(), errors(keep));
     }
 

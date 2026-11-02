@@ -17,7 +17,8 @@ import java.util.List;
  * A figure far bigger than any mob's model: the boss itself is hidden and this body is hung round it, swinging its limbs
  * as it walks. {@code colossus} is black rock and running fire; {@code unwritten} is a hooded shape that doesn't touch the
  * ground, with a stone of each seal turning round it; {@code old_bess} is a pump engine on piston legs; {@code tidewarden}
- * is hooded water with a bronze mantle and a trident. Sizes are in blocks, and each part hangs from a joint of the frame.
+ * is hooded water with a bronze mantle and a trident; {@code cindermaw} is a drake on the wing; {@code pyrrhax} is a god,
+ * from the waist up. Sizes are in blocks, and each part hangs from a joint of the frame.
  */
 final class MoltenBody {
     private static final int FRAME_TICKS = 3;
@@ -25,6 +26,7 @@ final class MoltenBody {
 
     /** Which joint a part hangs from. */
     private enum Joint {
+        WING_L(1.2F, 4.6F), WING_R(-1.2F, 4.6F),
         TRUNK(0, 0), LEFT_ARM(3.7F, 7.4F), RIGHT_ARM(-3.7F, 7.4F), LEFT_LEG(1.5F, 3.6F), RIGHT_LEG(-1.5F, 3.6F), ORBIT(0, 0);
         final float x, y;
 
@@ -100,6 +102,76 @@ final class MoltenBody {
         new Part(Joint.ORBIT, Material.MOSS_BLOCK, 3.14F, 7F, 4.6F, 1.1F, 1.1F, 1.1F, true),
         new Part(Joint.ORBIT, Material.CRYING_OBSIDIAN, 4.71F, 6.2F, 4.6F, 1.1F, 1.1F, 1.1F, true));
 
+    private static final List<Part> PYRRHAX = List.of(
+        // A trunk of black rock split by fire, from the waist; he has never needed legs to be seen.
+        new Part(Joint.TRUNK, Material.BASALT, -3.4F, 1F, -2.6F, 6.8F, 3F, 5.2F, false),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -3F, 3.8F, -2.2F, 6F, .6F, 4.4F, true),
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -3.8F, 4.3F, -2.7F, 7.6F, 4.3F, 5.4F, false),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -1.8F, 5F, 2.65F, 3.6F, 2.6F, .3F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -.5F, 4.4F, 2.7F, 1F, 3.6F, .35F, true),
+        new Part(Joint.TRUNK, Material.BASALT, -4.8F, 8.2F, -2.2F, 9.6F, 1.5F, 4.4F, false),
+        // Great shoulders, and gold set in them that the Wardens never got out.
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -4.9F, 9.1F, -1F, 9.8F, .3F, 2F, true),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -6F, 8.4F, -1.9F, 2.4F, 2.2F, 3.8F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, 3.6F, 8.4F, -1.9F, 2.4F, 2.2F, 3.8F, false),
+        // A low head, heavy-browed, with fire in the mouth and eyes.
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -1.7F, 9.6F, -1.1F, 3.4F, 3F, 3.4F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -1.9F, 11F, 1.8F, 3.8F, .5F, .8F, false),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -1.2F, 10.7F, 2.32F, .9F, .3F, .1F, true),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, .3F, 10.7F, 2.32F, .9F, .3F, .1F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -1F, 9.8F, 2.32F, 2F, .35F, .1F, true),
+        // The crown he was bound in: spikes of slag and old gold.
+        new Part(Joint.TRUNK, Material.GOLD_BLOCK, -2F, 12.5F, -1.3F, 4F, .5F, 3.8F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -1.8F, 13F, -.8F, .7F, 2F, .7F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, 1.1F, 13F, -.8F, .7F, 2F, .7F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -.4F, 13F, .9F, .8F, 2.8F, .8F, true),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -.4F, 13F, -1.2F, .8F, 2.3F, .8F, true),
+        // Arms like towers, broken chains still on the wrists.
+        new Part(Joint.LEFT_ARM, Material.BASALT, -1F, -1.4F, -1.8F, 3.4F, 3F, 3.6F, false),
+        new Part(Joint.LEFT_ARM, Material.MAGMA_BLOCK, -.3F, -4.4F, -1.1F, 2.2F, 3.2F, 2.2F, true),
+        new Part(Joint.LEFT_ARM, Material.BLACKSTONE, -.5F, -6.4F, -1.3F, 2.6F, 2.2F, 2.6F, false),
+        new Part(Joint.LEFT_ARM, Material.GOLD_BLOCK, -.6F, -6F, -1.4F, 2.8F, .4F, 2.8F, true),
+        new Part(Joint.LEFT_ARM, Material.BASALT, -.9F, -8.6F, -1.7F, 3.4F, 2.4F, 3.4F, false),
+        new Part(Joint.RIGHT_ARM, Material.BASALT, -2.4F, -1.4F, -1.8F, 3.4F, 3F, 3.6F, false),
+        new Part(Joint.RIGHT_ARM, Material.MAGMA_BLOCK, -1.9F, -4.4F, -1.1F, 2.2F, 3.2F, 2.2F, true),
+        new Part(Joint.RIGHT_ARM, Material.BLACKSTONE, -2.1F, -6.4F, -1.3F, 2.6F, 2.2F, 2.6F, false),
+        new Part(Joint.RIGHT_ARM, Material.GOLD_BLOCK, -2.2F, -6F, -1.4F, 2.8F, .4F, 2.8F, true),
+        new Part(Joint.RIGHT_ARM, Material.BASALT, -2.5F, -8.6F, -1.7F, 3.4F, 2.4F, 3.4F, false),
+        // The hammer: a haft in the right fist, and a head the size of a house.
+        new Part(Joint.RIGHT_ARM, Material.POLISHED_BLACKSTONE, -1.1F, -7.6F, .4F, .7F, .7F, 7F, false),
+        new Part(Joint.RIGHT_ARM, Material.GILDED_BLACKSTONE, -2.6F, -9F, 6.4F, 3.7F, 3.4F, 3.2F, false),
+        new Part(Joint.RIGHT_ARM, Material.MAGMA_BLOCK, -2.7F, -8F, 7.4F, 3.9F, 1.2F, 1.2F, true));
+
+    private static final List<Part> CINDERMAW = List.of(
+        // A long body, ribbed in black, with fire in the belly.
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -1.5F, 2.8F, -2.6F, 3F, 2.6F, 6F, false),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -1.1F, 2.5F, -2F, 2.2F, .5F, 4.8F, true),
+        new Part(Joint.TRUNK, Material.BASALT, -.3F, 5.3F, -2.4F, .6F, .5F, 5.6F, false),
+        // A neck going up and forward, and a long wedge of a head.
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -.9F, 3.8F, 3.2F, 1.8F, 1.8F, 2.4F, false),
+        new Part(Joint.TRUNK, Material.BASALT, -.7F, 4.8F, 5.2F, 1.4F, 1.5F, 2.2F, false),
+        new Part(Joint.TRUNK, Material.POLISHED_BLACKSTONE, -1F, 5.4F, 7F, 2F, 1.2F, 2.8F, false),
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -.7F, 4.9F, 8.2F, 1.4F, .5F, 2.2F, false),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -.6F, 5.3F, 8.6F, 1.2F, .2F, 1.7F, true),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, -.95F, 6.1F, 8.6F, .25F, .25F, .4F, true),
+        new Part(Joint.TRUNK, Material.SHROOMLIGHT, .7F, 6.1F, 8.6F, .25F, .25F, .4F, true),
+        new Part(Joint.TRUNK, Material.GILDED_BLACKSTONE, -.8F, 6.5F, 6.6F, .35F, 1.1F, .35F, false),
+        new Part(Joint.TRUNK, Material.GILDED_BLACKSTONE, .45F, 6.5F, 6.6F, .35F, 1.1F, .35F, false),
+        // A tail, thinning away behind it.
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -1F, 3.2F, -5.4F, 2F, 1.8F, 3F, false),
+        new Part(Joint.TRUNK, Material.BASALT, -.7F, 3.3F, -8F, 1.4F, 1.3F, 2.8F, false),
+        new Part(Joint.TRUNK, Material.BLACKSTONE, -.4F, 3.4F, -10.6F, .8F, .8F, 2.8F, false),
+        new Part(Joint.TRUNK, Material.MAGMA_BLOCK, -.2F, 3.5F, -12.4F, .4F, .4F, 2F, true),
+        // Great wings: an arm of bone, and sails of something that burned long ago.
+        new Part(Joint.WING_L, Material.BLACKSTONE, 0F, -.3F, -.6F, 10F, .6F, 1.2F, false),
+        new Part(Joint.WING_L, Material.RED_NETHER_BRICKS, .5F, -.15F, -4.6F, 9F, .3F, 4F, false),
+        new Part(Joint.WING_L, Material.NETHER_BRICKS, 3F, -.15F, -7F, 6F, .3F, 2.4F, false),
+        new Part(Joint.WING_R, Material.BLACKSTONE, -10F, -.3F, -.6F, 10F, .6F, 1.2F, false),
+        new Part(Joint.WING_R, Material.RED_NETHER_BRICKS, -9.5F, -.15F, -4.6F, 9F, .3F, 4F, false),
+        new Part(Joint.WING_R, Material.NETHER_BRICKS, -9F, -.15F, -7F, 6F, .3F, 2.4F, false),
+        new Part(Joint.LEFT_LEG, Material.BLACKSTONE, -.5F, -3.4F, -.6F, 1F, 3.4F, 1.4F, false),
+        new Part(Joint.RIGHT_LEG, Material.BLACKSTONE, -.5F, -3.4F, -.6F, 1F, 3.4F, 1.4F, false));
+
     private static final List<Part> OLD_BESS = List.of(
         // Two piston legs on iron feet.
         new Part(Joint.LEFT_LEG, Material.POLISHED_BLACKSTONE, -1.2F, -3.6F, -1.6F, 2.4F, 1F, 3.2F, false),
@@ -160,6 +232,14 @@ final class MoltenBody {
     private final Material glow;
     private final Particle trail;
     private final float hover;
+    /** How much bigger than authored, and how far down it stands from the mob that carries it. */
+    private float size = 1, drop;
+    private boolean winged;
+    /** Held arms for a blow, in radians from hanging: either can be up while the other hangs. */
+    private float leftArm, rightArm;
+    private boolean sunk;
+    private float sinking;
+    private int fallen = -1;
     private final List<BlockDisplay> displays = new ArrayList<>();
     private Location last;
     private double stride;
@@ -181,6 +261,22 @@ final class MoltenBody {
                 glow = Material.SHROOMLIGHT;
                 trail = Particle.CLOUD;
                 hover = .08F;
+            }
+            case "pyrrhax" -> {
+                parts = PYRRHAX;
+                glow = Material.SHROOMLIGHT;
+                trail = Particle.LAVA;
+                hover = .1F;
+                size = 4;
+                drop = 18;
+            }
+            case "cindermaw" -> {
+                parts = CINDERMAW;
+                glow = Material.SHROOMLIGHT;
+                trail = Particle.FLAME;
+                hover = .2F;
+                size = 1.7F;
+                winged = true;
             }
             case "tidewarden" -> {
                 parts = TIDEWARDEN;
@@ -209,7 +305,7 @@ final class MoltenBody {
             display.setPersistent(false);
             display.setTeleportDuration(2);
             display.setInterpolationDuration(FRAME_TICKS);
-            display.setViewRange(3F);
+            display.setViewRange(3F + body.size);
             if (part.lit()) display.setBrightness(new Display.Brightness(15, 15));
         }));
         Bukkit.getScheduler().runTaskTimer(plugin, task -> {
@@ -224,6 +320,15 @@ final class MoltenBody {
         this.crouch = crouch;
     }
 
+    /** Holds one arm up for a blow, or lets it go with {@code 0}. */
+    void strike(int side, float arm) {
+        if (side >= 0) leftArm = arm;
+        if (side <= 0) rightArm = arm;
+    }
+
+    /** Sends it under the surface, or brings it back up. */
+    void sink(boolean under) { sunk = under; }
+
     /** Eyes dark until it wakes. */
     void eyes(boolean lit) {
         for (int index = 0; index < parts.size(); index++) {
@@ -235,16 +340,31 @@ final class MoltenBody {
     /** False once the boss is gone. */
     private boolean step() {
         if (!boss.isValid()) {
+            // Anything this size goes down slowly.
+            if (size > 2) {
+                fallen++;
+                sinking = fallen * .5F;
+                if (fallen == 0) {
+                    arms = 2.2F;
+                    eyes(false);
+                    last.getWorld().playSound(last, org.bukkit.Sound.ENTITY_WITHER_DEATH, 5F, .4F);
+                }
+                if (fallen % 3 == 0) last.getWorld().spawnParticle(Particle.LAVA, last.clone().add(0, 8, 8), 60, 16, 4, 12, 0);
+                if (fallen % 20 == 0) last.getWorld().playSound(last, org.bukkit.Sound.ENTITY_GENERIC_EXPLODE, 4F, .5F);
+                if (tick++ % FRAME_TICKS == 0) pose();
+                if (fallen < 140) return true;
+            }
             Location at = last.clone().add(0, 5, 0);
             at.getWorld().spawnParticle(trail, at, 120, 2.5, 4, 2.5, 0);
             at.getWorld().spawnParticle(Particle.LARGE_SMOKE, at, 60, 2.5, 4, 2.5, .02);
             displays.forEach(BlockDisplay::remove);
             return false;
         }
+        sinking += ((sunk ? 44 : 0) - sinking) * .03F;
         Location at = boss.getLocation();
         at.setPitch(0);
         // Held for an entrance, it faces where it was put.
-        if (boss instanceof org.bukkit.entity.Mob mob && mob.hasAI()) at.setYaw(boss.getBodyYaw());
+        if (size <= 2 && boss instanceof org.bukkit.entity.Mob mob && mob.hasAI()) at.setYaw(boss.getBodyYaw());
         if (at.getWorld() == last.getWorld()) stride += Math.min(.5, at.distance(last)) * .9;
         last = at;
         for (BlockDisplay display : displays) display.teleport(at);
@@ -255,8 +375,16 @@ final class MoltenBody {
 
     private void pose() {
         float walk = (float) Math.sin(stride) * SWING, breath = (float) Math.sin(tick * .05) * hover;
+        float below = -drop - sinking;
         for (int index = 0; index < parts.size(); index++) {
             Part part = parts.get(index);
+            if (part.joint() == Joint.WING_L || part.joint() == Joint.WING_R) {
+                float flap = (float) Math.sin(tick * .14) * .7F * (part.joint() == Joint.WING_L ? 1 : -1);
+                displays.get(index).setInterpolationDelay(0);
+                displays.get(index).setTransformationMatrix(new Matrix4f().scale(size).translate(part.joint().x, part.joint().y + breath, 0).rotateZ(flap)
+                    .translate(part.x(), part.y(), part.z()).scale(part.wide(), part.high(), part.deep()));
+                continue;
+            }
             if (part.joint() == Joint.ORBIT) {
                 float turn = tick * .05F + part.x(), bob = (float) Math.sin(tick * .07 + part.x()) * .5F;
                 displays.get(index).setInterpolationDelay(0);
@@ -265,15 +393,15 @@ final class MoltenBody {
                 continue;
             }
             float swing = switch (part.joint()) {
-                case LEFT_ARM -> walk - arms;
-                case RIGHT_ARM -> -walk - arms;
+                case LEFT_ARM -> (leftArm != 0 ? 0 : walk) - arms - leftArm;
+                case RIGHT_ARM -> (rightArm != 0 ? 0 : -walk) - arms - rightArm;
                 case RIGHT_LEG -> walk;
                 case LEFT_LEG -> -walk;
-                case TRUNK, ORBIT -> 0;
+                case TRUNK, ORBIT, WING_L, WING_R -> 0;
             };
             boolean upper = part.joint() == Joint.TRUNK || part.joint() == Joint.LEFT_ARM || part.joint() == Joint.RIGHT_ARM;
             float lift = upper ? breath - crouch : 0;
-            Matrix4f shape = new Matrix4f().translate(part.joint().x, part.joint().y + lift, 0).rotateX(swing)
+            Matrix4f shape = new Matrix4f().translate(0, below, 0).scale(size).translate(part.joint().x, part.joint().y + lift, 0).rotateX(swing)
                 .translate(part.x(), part.y(), part.z()).scale(part.wide(), part.high(), part.deep());
             BlockDisplay display = displays.get(index);
             display.setInterpolationDelay(0);

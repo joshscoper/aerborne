@@ -467,3 +467,33 @@ tidelet:
     - { block: GOLD_BLOCK, at: [0, 10, 0], size: [2.6, 0.4, 2.6], group: head }
     - { block: BLUE_STAINED_GLASS, at: [0, 6.6, -2.2], size: [2.4, 1.6, 1.2], glow: true }
     - { block: LIGHT_BLUE_STAINED_GLASS, at: [0, 5.6, -3.2], size: [1.4, 1.2, 1], glow: true }
+drakeling:
+  bounce: none
+  pivots:
+    head: [0, 8, 3]
+  parts:
+    - { block: BLACKSTONE, at: [0, 6, 0], size: [3.6, 3, 6] }
+    - { block: MAGMA_BLOCK, at: [0, 4.5, 0], size: [2.8, 0.6, 4.4], glow: true }
+    - { block: BLACKSTONE, at: [0, 8, 4], size: [2.6, 2.4, 3.4], group: head }
+    - { block: SHROOMLIGHT, at: [-1, 8.6, 5.7], size: [0.5, 0.5, 0.2], glow: true, group: head }
+    - { block: SHROOMLIGHT, at: [1, 8.6, 5.7], size: [0.5, 0.5, 0.2], glow: true, group: head }
+    - { block: GILDED_BLACKSTONE, at: [-0.9, 9.8, 3.4], size: [0.4, 1.2, 0.4], group: head }
+    - { block: GILDED_BLACKSTONE, at: [0.9, 9.8, 3.4], size: [0.4, 1.2, 0.4], group: head }
+    - { block: RED_NETHER_BRICKS, at: [-5, 7, -0.4], size: [6, 0.3, 3.6] }
+    - { block: RED_NETHER_BRICKS, at: [5, 7, -0.4], size: [6, 0.3, 3.6] }
+    - { block: BLACKSTONE, at: [0, 6, -5], size: [1.4, 1.2, 4] }
+ashling:
+  bounce: trot
+  pivots:
+    head: [0, 9, 0]
+  parts:
+    - { block: BASALT, at: [0, 3.6, 0], size: [5, 3.4, 3.8] }
+    - { block: BLACKSTONE, at: [0, 6.4, 0], size: [6, 2.4, 4] }
+    - { block: SHROOMLIGHT, at: [0, 6.4, 2.1], size: [2.2, 1.4, 0.3], glow: true }
+    - { block: BLACKSTONE, at: [0, 9.2, 0.4], size: [3.2, 2.6, 3], group: head }
+    - { block: SHROOMLIGHT, at: [-0.8, 9.6, 2], size: [0.6, 0.4, 0.2], glow: true, group: head }
+    - { block: SHROOMLIGHT, at: [0.8, 9.6, 2], size: [0.6, 0.4, 0.2], glow: true, group: head }
+    - { block: GOLD_BLOCK, at: [0, 10.9, 0.4], size: [3.4, 0.5, 3.2], group: head }
+    - { block: MAGMA_BLOCK, at: [0, 11.8, 0.4], size: [0.8, 1.4, 0.8], glow: true, group: head }
+    - { block: MAGMA_BLOCK, at: [-3.8, 4, 0], size: [1.4, 4.4, 1.6], glow: true, group: leg_a }
+    - { block: MAGMA_BLOCK, at: [3.8, 4, 0], size: [1.4, 4.4, 1.6], glow: true, group: leg_b }

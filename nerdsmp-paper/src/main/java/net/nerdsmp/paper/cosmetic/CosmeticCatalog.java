@@ -127,6 +127,8 @@ public final class CosmeticCatalog {
                 new Companion("pipling", "Pipling", "A spare part of Old Bess", "pipling", 0.9D, false, "CLOUD", "gold", false, "Old Bess, very rarely"),
                 new Companion("siltpup", "Siltpup", "Fresh from the mud", "siltpup", 0.9D, false, "", "dark_green", false, "The Silt Mother, very rarely"),
                 new Companion("tidelet", "Tidelet", "A small, cold wave", "tidelet", 0.8D, true, "SPLASH", "aqua", false, "The Tidewarden, very rarely"),
+                new Companion("drakeling", "Drakeling", "Hatched in the bridge's cables", "drakeling", 0.8D, true, "SMALL_FLAME", "red", false, "Cindermaw, very rarely"),
+                new Companion("ashling", "Ashling", "A very small Sovereign", "ashling", 0.8D, false, "SMALL_FLAME", "gold", false, "Pyrrhax, very rarely"),
                 new Companion("cogling", "Cogling", "Runaway mine engine", "cogling", 0.9D, false, "", "gold", false, "The Blastmaster, very rarely"),
                 new Companion("embermutt", "Embermutt", "Slag hound pup", "embermutt", 0.9D, false, "SMALL_FLAME", "red", false, "The Slag Hound, very rarely"),
                 new Companion("lampwick", "Lampwick", "The last miner's lamp", "lampwick", 0.8D, true, "", "yellow", false, "The Deep Foreman, very rarely"),

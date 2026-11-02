@@ -441,7 +441,7 @@ public record ExpeditionDefinition(
     public enum EncounterType { NONE, WAVES, BOSS, SURVIVE, CLEAR, COUNCIL, PUZZLE }
 
     /** A boss rising out of the floor, or a pile of bones drawing in the room's soul fires and closing around it. */
-    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM, HOIST, POWDER, ERUPT, FORGED, COLOSSUS, PLUNGE, ICEBOUND, CONVERGE, STOKED, SPOUT }
+    public enum EntranceStyle { RISE, REANIMATE, SUMMON, DESCEND, BLOOM, HOIST, POWDER, ERUPT, FORGED, COLOSSUS, PLUNGE, ICEBOUND, CONVERGE, STOKED, SPOUT, SWOOP, AWAKEN }
 
     /** A boss's powers while it's nearer this spot than any other stance: fight it on the wrong side of the room at your cost. */
     public record Stance(Point at, String title, List<String> abilities) {
@@ -479,7 +479,7 @@ public record ExpeditionDefinition(
     public record Encounter(EncounterType type, List<Wave> waves, String boss, int bossLevelBonus,
                             int surviveSeconds, List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts,
                             double bossDamage, double bossHealth, List<String> bosses, List<String> abilities,
-                            List<Phase> phases, int enrageSeconds, int linkSeconds, Entrance entrance, String body, List<Stance> stances) {
+                            List<Phase> phases, int enrageSeconds, int linkSeconds, Entrance entrance, String body, List<Stance> stances, int castReach) {
         public static final Encounter NONE = new Encounter(EncounterType.NONE, List.of(), null, 0, 0, List.of(), Map.of(), 1, 1,
             List.of(), List.of(), List.of(), 0);
 
@@ -487,7 +487,7 @@ public record ExpeditionDefinition(
                          List<Integer> addsAtHealth, Map<String, List<ScriptAction>> scripts, double bossDamage, double bossHealth,
                          List<String> bosses, List<String> abilities, List<Phase> phases, int enrageSeconds) {
             this(type, waves, boss, bossLevelBonus, surviveSeconds, addsAtHealth, scripts, bossDamage, bossHealth, bosses, abilities,
-                phases, enrageSeconds, 0, null, null, List.of());
+                phases, enrageSeconds, 0, null, null, List.of(), 0);
         }
 
         public Encounter {

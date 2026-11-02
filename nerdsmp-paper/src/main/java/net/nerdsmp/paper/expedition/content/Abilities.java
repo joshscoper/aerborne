@@ -83,6 +83,13 @@ public final class Abilities {
         add("binding_vines", "Binding Vines", "Roots tie two players together. Pull too far apart and they drag you back and bite.", 22);
         add("mudslide", "Mudslide", "A long line of mud down a marked path. Step off it.", 11);
         add("awaken_silt", "Awaken the Silt", "Rings burst one after another. Move to ground that's already gone off.", 24);
+        add("sovereign_smash", "Sovereign's Smash", "He raises the hammer over one side of the floor and a lane burns red. Get out of it. Stand close to the lane and the blow throws you.", 12);
+        add("engulfing_flames", "Engulfing Flames", "One of three bands of the floor goes up in flame. Move to another.", 22);
+        add("sons_of_flame", "Sons of Flame", "He drives the hammer into the floor and goes under. Kill his sons before they reach it, or each one that does burns everyone.", 999);
+        add("living_meteor", "Living Meteor", "A ball of fire rolls after one player until it runs out. Keep moving, and keep it away from your friends.", 24);
+        add("binding_chain", "The Binding", "A plate lights. Enough of you on it puts one of the Wardens' chains round him, and it costs him dearly. Too few and everyone pays.", 28);
+        add("drake_breath", "Drake's Breath", "A long line of fire down a marked path. Step off it.", 9);
+        add("ashen_decree", "The Ashen Decree", "He speaks a word of the old tongue. Look away from him before he finishes it.", 18);
         add("sigil_brand", "Sigil Brand", "Everyone is branded with a seal. Reach that seal's plate before the brand burns in, or be found unworthy.", 26);
         add("spore_burst", "Spore Burst", "It bursts as it dies, and a cloud of spores hangs where it fell. Step away from the body.", 0);
     }

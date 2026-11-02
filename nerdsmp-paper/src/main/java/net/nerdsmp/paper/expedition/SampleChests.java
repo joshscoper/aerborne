@@ -25,8 +25,8 @@ final class SampleChests {
             new Spot(66, 94, 32, Material.CHEST)),
         "hall_of_wardens", List.of(new Spot(-9, 57, -68, Material.BARREL), new Spot(88, 64, 34, Material.CHEST),
             new Spot(154, 64, 10, Material.CHEST)),
-        "cinder_keep", List.of(new Spot(-8, 64, -100, Material.BARREL), new Spot(-7, 64, 12, Material.CHEST),
-            new Spot(14, 64, 44, Material.CHEST), new Spot(-10, 64, 98, Material.BARREL)));
+        "cinder_keep", List.of(new Spot(24, 64, -108, Material.BARREL), new Spot(-18, 64, -14, Material.CHEST),
+            new Spot(31, 64, 39, Material.CHEST), new Spot(-6, 64, 90, Material.BARREL)));
 
     private SampleChests() { }
 

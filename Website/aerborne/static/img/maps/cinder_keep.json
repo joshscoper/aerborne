@@ -1,21 +1,21 @@
 {
-  "version": "ee4da2f1903ac267",
+  "version": "ab8e5d69a5662ddf",
   "width": 1038,
   "height": 1400,
-  "entrance": {"x": 50.0, "y": 5.2},
+  "entrance": {"x": 50.0, "y": 5.4},
   "pins": [
-    {"name": "Gorrak the Kilnbreaker", "room": "Gorrak's Kiln", "icon": "shield", "color": "#c65642", "optional": false, "x": 50.0, "y": 24.1},
-    {"name": "Skarn, the Ash Hound & Vesh, the Ember Hound", "room": "The Hound Pens", "icon": "flame", "color": "#e2a030", "optional": false, "x": 47.9, "y": 42.1},
-    {"name": "Vael, the Slag Priest", "room": "The Slag Chapel", "icon": "staff", "color": "#9668b6", "optional": false, "x": 50.0, "y": 61.4},
-    {"name": "Steward Ashkar", "room": "The Steward's Hall", "icon": "flame", "color": "#5482a8", "optional": false, "x": 50.0, "y": 78.4},
-    {"name": "Pyrrhax, the Ashen Sovereign", "room": "The Molten Heart", "icon": "skull", "color": "#589660", "optional": false, "x": 50.0, "y": 90.7}
+    {"name": "Cindermaw", "room": "The Chain Bridge", "icon": "shield", "color": "#c65642", "optional": false, "x": 50.0, "y": 18.3},
+    {"name": "Gorrak the Kilnbreaker", "room": "Gorrak's Kiln", "icon": "shield", "color": "#e2a030", "optional": false, "x": 49.2, "y": 33.3},
+    {"name": "Skarn, the Ash Hound & Vesh, the Ember Hound", "room": "The Hound Pens", "icon": "flame", "color": "#9668b6", "optional": false, "x": 48.7, "y": 42.1},
+    {"name": "Vael, the Slag Priest", "room": "The Ash Cathedral", "icon": "staff", "color": "#5482a8", "optional": false, "x": 50.0, "y": 55.9},
+    {"name": "Steward Ashkar", "room": "The Steward's Throne", "icon": "flame", "color": "#589660", "optional": false, "x": 50.0, "y": 71.7},
+    {"name": "Pyrrhax, the Ashen Sovereign", "room": "The Molten Heart", "icon": "shield", "color": "#c4608c", "optional": false, "x": 50.0, "y": 97.3}
   ],
   "places": [
-    {"name": "The Scorched Descent", "kind": "room", "x": 49.9, "y": 12.9},
-    {"name": "The Slagfalls", "kind": "room", "x": 49.8, "y": 32.0},
-    {"name": "The Rune Galleries", "kind": "room", "x": 50.2, "y": 50.4},
-    {"name": "The Great Bellows", "kind": "room", "x": 50.2, "y": 68.3},
-    {"name": "Slagfall Rest", "kind": "fire", "x": 52.1, "y": 35.5},
-    {"name": "Heartgate Fire", "kind": "fire", "x": 47.9, "y": 71.5}
+    {"name": "The Ember Gate", "kind": "room", "x": 50.0, "y": 8.0},
+    {"name": "The Great Bellows", "kind": "room", "x": 50.0, "y": 61.4},
+    {"name": "The Chain Bridge", "kind": "fire", "x": 50.8, "y": 21.7},
+    {"name": "The Outer Ward", "kind": "fire", "x": 47.9, "y": 37.1},
+    {"name": "The Ash Cathedral", "kind": "fire", "x": 51.9, "y": 45.8}
   ]
 }

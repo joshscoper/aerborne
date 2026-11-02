@@ -44,7 +44,7 @@ import java.util.UUID;
 
 public final class PaperItemService implements ItemService<ItemStack> {
     private static final int SCHEMA_VERSION = 5;
-    private static final int CONTENT_SCHEMA_VERSION = 13;
+    private static final int CONTENT_SCHEMA_VERSION = 16;
     /**
      * Bump when the tooltip layout changes. Each catalog item carries a stamp of this and its catalog
      * entry, and the item updater re-renders any item whose stamp no longer matches.

@@ -347,7 +347,7 @@ public final class ExpeditionLoader {
         List<?> raw = entrance.getList("sources", List.of());
         for (int index = 0; index < raw.size(); index++) sources.add(point(raw.get(index), path + ".entrance.sources[" + (index + 1) + "]"));
         return new ExpeditionDefinition.Entrance(enumValue(ExpeditionDefinition.EntranceStyle.class, entrance.getString("style", "rise"),
-            path + ".entrance.style", "rise, reanimate, summon, descend, bloom, hoist, powder, erupt, forged, colossus, plunge, icebound, converge, stoked or spout"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
+            path + ".entrance.style", "rise, reanimate, summon, descend, bloom, hoist, powder, erupt, forged, colossus, plunge, icebound, converge, stoked, spout, swoop or awaken"), delay, seconds, sources, lowerOrNull(entrance.getString("block")));
     }
 
     private static <E extends Enum<E>> E enumValue(Class<E> type, String raw, String path, String choices) {
@@ -507,7 +507,7 @@ public final class ExpeditionLoader {
             multiplier(section, "boss-damage", path), multiplier(section, "boss-health", path), bosses,
             lower(section.getStringList("abilities")), phases(section, path),
             section.contains("enrage-seconds") ? integer(section, "enrage-seconds") : 0,
-            section.contains("link-seconds") ? integer(section, "link-seconds") : 0, entrance(section, path), lowerOrNull(section.getString("body")), stances(section, path));
+            section.contains("link-seconds") ? integer(section, "link-seconds") : 0, entrance(section, path), lowerOrNull(section.getString("body")), stances(section, path), section.getInt("cast-reach", 0));
     }
 
     @SuppressWarnings("unchecked")

@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public record ScriptAction(Verb verb, List<String> args, String text) {
     /** Triggers an encounter can attach actions to. */
     public static final Pattern TRIGGER = Pattern.compile(
-        "start|clear|enrage|revive|ward-broken|ward-failed|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
+        "landed|start|clear|enrage|revive|ward-broken|ward-failed|wave-[1-9][0-9]?|health-[1-9][0-9]?|timer-[1-9][0-9]{0,3}|down-[1-9]|solved-[a-z0-9_]{1,32}");
 
     public ScriptAction {
         args = List.copyOf(args);
@@ -41,6 +41,10 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
         COMMAND(1, true),
         /** {@code say <speaker>|<line>}: a line of dialogue. The speaker may be an npc id or any name. */
         SAY(1, true),
+        /** {@code flight <across> <along> <height>} sends the boss up to circle until it's harpooned down. */
+        FLIGHT(3, false),
+        /** {@code scene <name>} plays a staged scene: {@code seals}, {@code crush} or {@code deluge}. */
+        SCENE(1, false),
         /** {@code cutscene <id>} plays one of the expedition's cutscenes for the party. */
         CUTSCENE(1, false),
         /** {@code build <set piece>} fills a set piece in with its block. */
@@ -97,6 +101,11 @@ public record ScriptAction(Verb verb, List<String> args, String text) {
             }
             case WAIT -> positive(args.get(0), "wait seconds", 300);
             case WARD -> positive(args.get(0), "ward seconds", 120);
+            case FLIGHT -> {
+                positive(args.get(0), "flight width", 200);
+                positive(args.get(1), "flight length", 200);
+                positive(args.get(2), "flight height", 100);
+            }
             case SOUND -> { if (args.size() > 1) Double.parseDouble(args.get(1)); }
             case NPC -> {
                 number(args.get(1), "npc x");

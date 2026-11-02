@@ -297,11 +297,60 @@ mobs:
     name: "<gradient:#ff9f43:#c0392b><bold>Gorrak the Kilnbreaker</bold></gradient>"
     type: ravager
     boss: true
-    health: 900
+    health: 5000
     attack-damage: 12
     scale: 1.35
     ability: none
     mark-reward: 60
+  cindermaw:
+    rank: normal
+    name: "<gradient:#ffb347:#8b1a1a><bold>Cindermaw</bold></gradient>"
+    type: iron_golem
+    boss: true
+    health: 7000
+    attack-damage: 11
+    scale: 2
+    speed: 0.22
+    ability: none
+    mark-reward: 180
+  chain_warden:
+    rank: normal
+    name: "<#c77b4a>Chain Warden</#c77b4a>"
+    type: wither_skeleton
+    health: 120
+    attack-damage: 9
+    scale: 1.25
+    ability: none
+    mark-reward: 8
+    equipment: {head: netherite_helmet, chest: netherite_chestplate, hand: netherite_axe}
+  ash_penitent:
+    rank: normal
+    name: "<#a8a29e>Ash Penitent</#a8a29e>"
+    type: husk
+    health: 56
+    attack-damage: 6
+    ability: none
+    mark-reward: 4
+    equipment: {head: leather_helmet}
+  keep_arbalest:
+    rank: normal
+    name: "<#c77b4a>Keep Arbalest</#c77b4a>"
+    type: skeleton
+    health: 46
+    attack-damage: 6
+    ability: none
+    mark-reward: 4
+    equipment: {head: netherite_helmet, hand: crossbow}
+  steward_guard:
+    rank: normal
+    name: "<gold>Steward's Guard</gold>"
+    type: wither_skeleton
+    health: 150
+    attack-damage: 10
+    scale: 1.35
+    ability: none
+    mark-reward: 10
+    equipment: {head: golden_helmet, chest: netherite_chestplate, legs: golden_leggings, hand: golden_axe}
   ember_hound:
     name: "<gold>Ember Hound</gold>"
     type: hoglin
@@ -314,7 +363,7 @@ mobs:
     name: "<gradient:#bdc3c7:#7f8c8d><bold>Skarn, the Ash Hound</bold></gradient>"
     type: hoglin
     boss: true
-    health: 520
+    health: 3000
     attack-damage: 10
     scale: 1.8
     ability: none
@@ -323,7 +372,7 @@ mobs:
     name: "<gradient:#ffb142:#ff5252><bold>Vesh, the Ember Hound</bold></gradient>"
     type: hoglin
     boss: true
-    health: 520
+    health: 3000
     attack-damage: 10
     scale: 1.8
     ability: none
@@ -365,7 +414,7 @@ mobs:
     name: "<gradient:#a29bfe:#e17055><bold>Vael, the Slag Priest</bold></gradient>"
     type: witch
     boss: true
-    health: 700
+    health: 4500
     attack-damage: 8
     scale: 1.6
     ability: none
@@ -374,7 +423,7 @@ mobs:
     name: "<gradient:#fdcb6e:#d63031><bold>Steward Ashkar</bold></gradient>"
     type: piglin_brute
     boss: true
-    health: 640
+    health: 8000
     attack-damage: 12
     scale: 1.4
     ability: none
@@ -384,7 +433,7 @@ mobs:
     name: "<gold><bold>Flamewaker Guard</bold></gold>"
     type: wither_skeleton
     boss: true
-    health: 360
+    health: 1800
     attack-damage: 10
     scale: 1.25
     ability: none
@@ -402,15 +451,14 @@ mobs:
     equipment: {head: golden_helmet, hand: blaze_rod}
   pyrrhax:
     name: "<gradient:#ffeaa7:#ff7675:#d63031><bold>Pyrrhax, the Ashen Sovereign</bold></gradient>"
-    type: wither_skeleton
+    type: iron_golem
     boss: true
-    health: 1800
+    health: 24000
     attack-damage: 14
-    speed: 0.2
-    scale: 3.0
+    speed: 0.0001
+    scale: 5
     ability: none
-    mark-reward: 150
-    equipment: {head: netherite_helmet, chest: netherite_chestplate, legs: netherite_leggings, feet: netherite_boots, hand: mace}
+    mark-reward: 400
   son_of_flame:
     name: "<gradient:#ff7675:#fdcb6e>Son of Flame</gradient>"
     type: magma_cube

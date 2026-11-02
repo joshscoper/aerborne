@@ -34,6 +34,23 @@ abilities:
   molten_heart_stone: [ember_aura]
   deep_foremans_cuirass: [last_stand]
   gloomforge_signet: [ember_aura]
+  # Cinder Keep.
+  harpoon_band: [ember_aura]
+  gatewatch_fang: [ember_brand]
+  drakescale_pauldrons: [last_stand]
+  kiln_keepers_cuirass: [last_stand]
+  firebrick_greaves: [last_stand]
+  twinbound_collar: [ember_aura]
+  packmasters_treads: [fleet_stride]
+  rite_censer: [ember_aura]
+  priests_ash_stole: [last_stand]
+  slag_chalice: [last_stand]
+  stewards_gauntlets: [ember_aura]
+  keys_of_the_keep: [last_stand]
+  ashkars_decree: [ember_sweep]
+  sovereigns_wrist: [last_stand]
+  molten_crown_shard: [ember_aura]
+  hearthfire_band: [ember_aura]
   # The Sunken Aqueduct.
   safety_valve: [last_stand]
   flywheel_maul: [thunderclap]
@@ -1011,6 +1028,256 @@ items:
     stats: {max-health: 6, damage-percent: 3}
     lore:
       - "<gray>However far you carry it, it's never quite empty.</gray>"
+  gatewatch_buckler:
+    material: shield
+    name: "<blue>Gatewatch Buckler</blue>"
+    slot: off_hand
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {defense: 9}
+    lore:
+      - "<gray>Scorched in the shape of something's breath.</gray>"
+  ember_step_treads:
+    material: iron_boots
+    name: "<blue>Ember-Step Treads</blue>"
+    slot: feet
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {defense: 7}
+    lore:
+      - "<gray>You don't feel the heat through them. You do hear it.</gray>"
+  ward_chain_collar:
+    material: iron_nugget
+    name: "<blue>Ward-Chain Collar</blue>"
+    slot: neck
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {max-health: 7, damage-percent: 1}
+    lore:
+      - "<gray>It came off a hound. Best not to ask.</gray>"
+  slagcloth_mantle:
+    material: phantom_membrane
+    name: "<blue>Slagcloth Mantle</blue>"
+    slot: back
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {max-health: 7, defense: 2}
+    lore:
+      - "<gray>It was a tapestry, before the fires.</gray>"
+  cinder_clasp:
+    material: gold_nugget
+    name: "<blue>Cinder Clasp</blue>"
+    slot: wrists
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {defense: 5, max-health: 3}
+    lore:
+      - "<gray>The heat has welded it shut.</gray>"
+  kilnkeepers_gloves:
+    material: rabbit_hide
+    name: "<blue>Kilnkeeper's Gloves</blue>"
+    slot: hands
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {defense: 4, damage-flat: 2}
+    lore:
+      - "<gray>Burned through to the second layer.</gray>"
+  forgeguard_belt:
+    material: leather
+    name: "<blue>Forgeguard Belt</blue>"
+    slot: waist
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {defense: 5, max-health: 2}
+    lore:
+      - "<gray>Every buckle is a small crown.</gray>"
+  ashen_signet:
+    material: gold_nugget
+    name: "<blue>Ashen Signet</blue>"
+    slot: ring
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {max-health: 4, damage-percent: 2}
+    lore:
+      - "<gray>A burning crown, pressed into grey gold.</gray>"
+  smoke_censer:
+    material: gold_ingot
+    name: "<blue>Smoke Censer</blue>"
+    slot: trinket
+    rarity: rare
+    item-level: 32
+    sockets: 1
+    stats: {max-health: 5, damage-percent: 1}
+    lore:
+      - "<gray>It's still lit. It was lit before you were born.</gray>"
+  drakescale_pauldrons:
+    material: iron_chestplate
+    name: "<light_purple>Drakescale Pauldrons</light_purple>"
+    slot: shoulders
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {defense: 8, damage-percent: 2}
+    lore:
+      - "<gray>Each scale is the size of a shield.</gray>"
+  harpoon_band:
+    material: iron_nugget
+    name: "<light_purple>Harpoon Band</light_purple>"
+    slot: ring
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {max-health: 5, damage-percent: 3}
+    lore:
+      - "<gray>Cut from the barb that brought it down.</gray>"
+  gatewatch_fang:
+    material: iron_sword
+    name: "<light_purple>Gatewatch Fang</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {damage: 11, damage-percent: 3}
+    lore:
+      - "<gray>It's still hot where the root was.</gray>"
+  kiln_keepers_cuirass:
+    material: netherite_chestplate
+    name: "<light_purple>Kiln-Keeper's Cuirass</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {defense: 15}
+    lore:
+      - "<gray>It came out of the kiln with him.</gray>"
+  firebrick_greaves:
+    material: netherite_leggings
+    name: "<light_purple>Firebrick Greaves</light_purple>"
+    slot: legs
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {defense: 11, max-health: 3}
+    lore:
+      - "<gray>Heavier than they ought to be, and warmer.</gray>"
+  twinbound_collar:
+    material: gold_nugget
+    name: "<light_purple>Twinbound Collar</light_purple>"
+    slot: neck
+    rarity: epic
+    item-level: 34
+    sockets: 2
+    stats: {max-health: 9, damage-percent: 2}
+    lore:
+      - "<gray>Two collars, riveted into one.</gray>"
+  packmasters_treads:
+    material: netherite_boots
+    name: "<light_purple>Packmaster's Treads</light_purple>"
+    slot: feet
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    stats: {defense: 8, max-health: 3}
+    lore:
+      - "<gray>Worn at the heel, where something kept catching up.</gray>"
+  rite_censer:
+    material: gold_ingot
+    name: "<light_purple>Censer of the Last Rite</light_purple>"
+    slot: trinket
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    stats: {max-health: 6, damage-percent: 3}
+    lore:
+      - "<gray>It swings by itself in a still room.</gray>"
+  priests_ash_stole:
+    material: phantom_membrane
+    name: "<light_purple>Ash Priest's Stole</light_purple>"
+    slot: back
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    stats: {max-health: 9, defense: 3}
+    lore:
+      - "<gray>Every thread of it has been something else.</gray>"
+  slag_chalice:
+    material: shield
+    name: "<light_purple>Slag Chalice</light_purple>"
+    slot: off_hand
+    rarity: epic
+    item-level: 35
+    sockets: 2
+    stats: {defense: 10, max-health: 3}
+    lore:
+      - "<gray>A bowl beaten flat and strapped to an arm. It has never been clean.</gray>"
+  stewards_gauntlets:
+    material: rabbit_hide
+    name: "<light_purple>Steward's Gauntlets</light_purple>"
+    slot: hands
+    rarity: epic
+    item-level: 36
+    sockets: 2
+    stats: {defense: 6, damage-flat: 3}
+    lore:
+      - "<gray>He didn't take them off. They came off.</gray>"
+  keys_of_the_keep:
+    material: gold_ingot
+    name: "<light_purple>Keys of the Keep</light_purple>"
+    slot: waist
+    rarity: epic
+    item-level: 36
+    sockets: 2
+    stats: {defense: 6, max-health: 4}
+    lore:
+      - "<gray>Every door he ever opened for someone else.</gray>"
+  ashkars_decree:
+    material: netherite_axe
+    name: "<gold>Ashkar's Decree</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 37
+    sockets: 3
+    stats: {damage: 13, damage-percent: 5}
+    lore:
+      - "<gray>It reads, in the old tongue: Everything was for him.</gray>"
+  sovereigns_wrist:
+    material: gold_ingot
+    name: "<light_purple>Shackle of the Sovereign</light_purple>"
+    slot: wrists
+    rarity: epic
+    item-level: 38
+    sockets: 2
+    stats: {defense: 7, max-health: 5}
+    lore:
+      - "<gray>A broken link from his own arm, and it's as wide as your waist.</gray>"
+  molten_crown_shard:
+    material: netherite_helmet
+    name: "<gold>Molten Crown Shard</gold>"
+    slot: head
+    rarity: legendary
+    item-level: 38
+    sockets: 3
+    stats: {defense: 10, damage-percent: 4}
+    lore:
+      - "<gray>A spike off the crown he was bound in. It's trying to go home.</gray>"
+  hearthfire_band:
+    material: gold_nugget
+    name: "<gold>Band of the Hearthfire</gold>"
+    slot: ring
+    rarity: legendary
+    item-level: 38
+    sockets: 3
+    stats: {max-health: 8, damage-percent: 4}
+    lore:
+      - "<gray>It keeps time with something very far down.</gray>"
   rangers_roundel:
     material: shield
     name: "<green>Ranger's Roundel</green>"

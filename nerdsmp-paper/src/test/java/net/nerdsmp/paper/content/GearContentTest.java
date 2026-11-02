@@ -24,7 +24,7 @@ final class GearContentTest {
     @Test
     void sixRelicCollectionsShipExactlyThreePiecesEach() throws IOException {
         String content = resource("/content/relics.yml");
-        assertTrue(content.startsWith("schema-version: 13"));
+        assertTrue(content.startsWith("schema-version: 16"));
         for (String set : RELIC_SETS) {
             long pieces = Pattern.compile("(?m)^    set: " + Pattern.quote(set) + "$").matcher(content).results().count();
             assertEquals(3L, pieces, set + " must contain exactly three items");

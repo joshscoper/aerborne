@@ -5,6 +5,27 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Cinder Keep, the season's last raid (November 1)
+- **A new map, and it's the size of a raid.** The party lands on the last rock in a burning gulf. Three seals light on the Ember
+  Gate, and it opens on a bridge hung from chains over the lava. Past it are the outer ward, the kiln and the
+  hound pens, the Ash Cathedral, the Great Bellows, and a throne hall of kneeling stone kings. Under its floor a stair goes down to
+  the Molten Heart, an island of black stone in a crater of fire. Best times on the map reset.
+- **Six boss fights and a story.** The Accord's people walk in with you, and the Steward's voice follows you through the keep.
+  Cindermaw flies, and has to be harpooned out of the sky three times from the bridge's ballistas. Gorrak still breaks out of his
+  kiln, Skarn and Vesh still have to die together, and Vael's valves are now in the Cathedral. Steward Ashkar's Decree punishes
+  anyone looking at him. When he falls, something enormous reaches up through the hall, and the floor goes.
+- **Pyrrhax, the Ashen Sovereign.** He rises out of the fire, a colossus chained to the crater. At 70% he sinks and his Sons of Flame
+  run for the hammer. At 40% everyone who helped along the campaign comes down into the crater, Cobb opens the last sluice in the
+  world, and the Binding begins: stand on the plates and drag his chains back on. At 12% he tears free.
+- **Bosses that last.** Raid bosses were stopped at 1024 health by a Minecraft limit, so the Sovereign had the same health as the
+  drake and Heroic and Mythic added none. Health past the limit now becomes toughness, and the raid's bosses run from 3,000 to
+  24,000 for a full raid. These numbers come from the best weapons' stats and haven't been played by a real group yet.
+- **Materials only the raid gives.** Sovereign Ash from every boss, Warden's Chain Links from the last two, and one Heart of the
+  Mountain from the Sovereign. Ash smelts into Bindingsteel, and the three make The Binding, the Crown of the Accord and the
+  Sovereignbane Plate at Smithing 45. 25 pieces of raid gear, two companions, and 27 packs of mobs came with it.
+- **Installed servers get new items and recipes.** The relic catalog moves to version 16. The metallurgy catalog now has a version
+  too, so a server that already has the file gets new recipes without losing its own edits.
+
 ### The Sunken Aqueduct, rebuilt (November 1)
 - **A new map, up a drowned valley.** The Long Span carries the channel away from the quay on three tiers of Roman arches, past a
   bastion, to the Pump House, a cathedral of beam engines and flywheels. Under it is the Cistern, a forest of columns beneath brick

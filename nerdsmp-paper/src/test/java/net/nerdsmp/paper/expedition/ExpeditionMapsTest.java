@@ -53,7 +53,9 @@ class ExpeditionMapsTest {
         if (write) Files.createDirectories(FOLDER);
         for (String id : ExpeditionService.SAMPLES) {
             ExpeditionMapPainter painter = painter(id);
-            if (write) {
+            // Only a stale map is rewritten: a running website holds the rest open.
+            boolean stale = !Files.isRegularFile(FOLDER.resolve(id + ".json")) || !Files.readString(FOLDER.resolve(id + ".json")).replace("\r\n", "\n").equals(painter.json());
+            if (write && stale) {
                 Files.write(FOLDER.resolve(id + ".jpg"), painter.paint());
                 Files.writeString(FOLDER.resolve(id + ".json"), painter.json());
             }
