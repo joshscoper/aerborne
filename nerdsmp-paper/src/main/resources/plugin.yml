@@ -293,6 +293,10 @@ commands:
   tpcancel:
     description: Cancel your outgoing teleport request.
     usage: /tpcancel
+  checkpoint:
+    description: Stuck in an expedition? Go back to the room you're in, or the last checkpoint.
+    usage: /checkpoint
+    aliases: [stuck]
   back:
     description: Return to your previous travel or death location.
     usage: /back

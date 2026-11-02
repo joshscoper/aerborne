@@ -24,6 +24,7 @@ Code: `nerdsmp-paper/.../expedition/` (service, runs, setup, menu, worlds), with
 | `/expedition forge` | The Expedition Forge: trade an expedition's materials for pieces of its set. |
 | `/expedition rewards` / `bonus` | Open your reward chest, or the bonus chest (for Marks), after a win. |
 | `/expedition leave` | Leave the queue, a ready check, or the run you're in. |
+| `/checkpoint` | Stuck? Go back to the room you're in, or the last checkpoint. Not mid-fight, and once every 30 seconds. Also `/stuck`. |
 | `/expedition list` / `info <id>` / `status` | Open expeditions, one expedition's tiers and records, your queue or run. |
 | `/expedition guide <id>` | The expedition's guide book: route, boss notes, every mob with its possible drops, and rewards. |
 
@@ -272,6 +273,9 @@ comes down into the Molten Heart for the end of it.
   written health, tier and party size add up to past that comes back as toughness: it shows 1024 and
   takes that much less from each player hit, so Pyrrhax's 24,000 is really 24,000 for a full raid.
   Dungeons don't do this yet: their Heroic and keystone bosses still stop at 1024.
+- **Testing alone.** Anyone with `nerdsmp.expedition.admin` can start any expedition by themselves
+  with `/expedition start`, whatever its party size, on the real rules and with the real rewards.
+  `/expedition test` still runs one with no rewards. The harpoons and the Binding work solo.
 - **Raid materials.** Sovereign Ash falls from every boss. The Steward and the Sovereign give a
   Warden's Chain Link, and only the Sovereign gives a Heart of the Mountain. None of the three drop
   anywhere else. Ash smelts into Bindingsteel, and the three together make The Binding, the Crown of

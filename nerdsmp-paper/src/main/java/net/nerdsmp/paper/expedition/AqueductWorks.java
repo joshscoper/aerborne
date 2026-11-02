@@ -112,11 +112,20 @@ final class AqueductWorks {
         }
         for (int x = 16; x <= 20; x++) for (int y = Y + 1; y <= Y + 5; y++) b.block(x, y, 129, Material.IRON_BARS, "north=false,south=false,east=true,west=true");
         b.block(-22, Y + 1, 139, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");
-        // Three valve wheels on the west wall.
+        // Three great valve wheels on the west wall, each with a bulb over it that lights when it's turned.
         for (int z : new int[]{124, 137, 150}) {
-            b.block(-HALL_HALF, Y + 2, z, DRESSED);
-            b.block(-HALL_HALF + 1, Y + 2, z, Material.STONE_BUTTON, "face=wall,facing=east,powered=false");
-            for (int up = 0; up <= 4; up++) b.block(-HALL_HALF, Y + 3 + up, z, PIPE);
+            b.block(-HALL_HALF, Y + 3, z, DRESSED);
+            b.block(-HALL_HALF + 1, Y + 3, z, Material.STONE_BUTTON, "face=wall,facing=east,powered=false");
+            for (int dy = -2; dy <= 2; dy++) for (int dz = -2; dz <= 2; dz++) {
+                int reach = Math.abs(dy) + Math.abs(dz);
+                if (reach == 0 || reach == 4) continue;
+                if (Math.max(Math.abs(dy), Math.abs(dz)) == 2) b.block(-HALL_HALF + 1, Y + 3 + dy, z + dz, Material.WAXED_CUT_COPPER);
+                else if (dy == 0) b.block(-HALL_HALF + 1, Y + 3, z + dz, Material.IRON_CHAIN, "axis=z,waterlogged=false");
+                else if (dz == 0) b.block(-HALL_HALF + 1, Y + 3 + dy, z, Material.IRON_CHAIN, "axis=y,waterlogged=false");
+            }
+            for (int up = 1; up <= 2; up++) b.block(-HALL_HALF, Y + 3 + up, z, PIPE);
+            b.block(-HALL_HALF, Y + 6, z, Material.WAXED_COPPER_BULB, "lit=false,powered=false");
+            for (int up = 4; up <= 5; up++) b.block(-HALL_HALF, Y + 3 + up, z, PIPE);
         }
     }
 

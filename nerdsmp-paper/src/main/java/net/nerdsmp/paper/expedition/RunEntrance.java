@@ -113,6 +113,7 @@ final class RunEntrance {
 
         void remove() {
             bones.forEach(bone -> bone.display.remove());
+            skull.display.remove();
             extras.forEach(Display::remove);
         }
     }

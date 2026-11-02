@@ -28,6 +28,7 @@ final class ApiSnapshots implements AutoCloseable {
     private BukkitTask task;
     private String catalog = "{}";
     private long catalogAt;
+    private Class<?> snapshotFault;
     private static final int LEADERBOARD_SIZE = 25;
     private String leaderboards = ApiSnapshot.NO_LEADERBOARDS;
     private Map<String, String> players = Map.of();
@@ -139,8 +140,11 @@ final class ApiSnapshots implements AutoCloseable {
         try {
             if (plugin.expeditions() != null) expeditions = PublicGameJson.expeditions(plugin, sampled);
             if (plugin.campaign() != null) campaign = PublicGameJson.campaign(plugin, sampled);
+            snapshotFault = null;
         } catch (RuntimeException failure) {
-            plugin.getLogger().warning("Web API expedition/campaign snapshot failed: " + failure.getMessage());
+            // This runs every few seconds, so a standing fault is only reported once.
+            if (!failure.getClass().equals(snapshotFault)) plugin.getLogger().log(java.util.logging.Level.WARNING, "Web API expedition/campaign snapshot failed", failure);
+            snapshotFault = failure.getClass();
         }
         publish.accept(new ApiSnapshot(now, status.toString(), telemetry.toString(), catalog, leaderboards, players, expeditions, campaign));
     }

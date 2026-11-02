@@ -150,6 +150,9 @@ public final class RunProgress {
     public ExpeditionDefinition expedition() { return expedition; }
     /** Room id or {@code campfire:<id>} players respawn at, or null for the party spawn. */
     public String checkpoint() { return checkpoint; }
+
+    /** The active room's enemies are done, and only its puzzles are left. */
+    public boolean fightOver() { return active >= 0 && encounterDone; }
     public Set<UUID> present() { return Set.copyOf(present); }
     public boolean dead(UUID member) { return dead.contains(member); }
     public long finishedSeconds() { return finishedSeconds; }

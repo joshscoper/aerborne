@@ -1,5 +1,5 @@
 {
-  "version": "89df458db2748aee",
+  "version": "4f47834844f97253",
   "width": 1039,
   "height": 1400,
   "entrance": {"x": 50.2, "y": 14.1},
@@ -10,7 +10,7 @@
     {"name": "The Tidewarden", "room": "The Tidewarden's Basin", "icon": "shield", "color": "#5482a8", "optional": false, "x": 50.2, "y": 81.6}
   ],
   "places": [
-    {"name": "The Cistern", "kind": "room", "x": 50.3, "y": 51.3},
+    {"name": "The Cistern", "kind": "room", "x": 50.2, "y": 51.3},
     {"name": "Floodgate Control", "kind": "room", "x": 50.2, "y": 70.9},
     {"name": "The Bastion", "kind": "fire", "x": 53.8, "y": 35.4},
     {"name": "The Pump House", "kind": "fire", "x": 43.4, "y": 50.6}

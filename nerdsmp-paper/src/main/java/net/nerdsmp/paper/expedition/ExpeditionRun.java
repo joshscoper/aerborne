@@ -56,6 +56,7 @@ import java.util.logging.Level;
 /** The live side of one run: its world, mobs, gates, bars, scripts and rewards. Rules live in {@link RunProgress}. */
 final class ExpeditionRun {
     private static final double HEALTH_CEILING = 1024;
+    private static final long UNSTICK_COOLDOWN = 30_000;
     enum State { PREPARING, ACTIVE, ENDING, CLOSED }
 
     record BlockPos(int x, int y, int z) { }
@@ -111,6 +112,7 @@ final class ExpeditionRun {
     private RunLures lures;
     private RunPortals portals;
     private RunFlight flight;
+    private final Map<UUID, Long> unstuck = new HashMap<>();
     /** How much less a raid boss takes from each hit, for the health the attribute's ceiling can't hold. */
     private final Map<UUID, Double> toughness = new HashMap<>();
     /** Whether each sealed room's door is shut now. */
@@ -182,6 +184,8 @@ final class ExpeditionRun {
         this.abilityCaster = new AbilityCaster(plugin);
         ExpeditionRun run = this;
         this.puzzles = new RunPuzzles(plugin, new RunPuzzles.Host() {
+            @Override public boolean sceneRunning() { return run.stage.cutsceneRunning(); }
+            @Override public boolean fightOver() { return run.progress != null && run.progress.fightOver(); }
             @Override public World world() { return run.world; }
             @Override public Room activeRoom() { return run.progress == null ? null : run.progress.activeRoom(); }
             @Override public List<Player> online() { return run.online(); }
@@ -1422,6 +1426,22 @@ final class ExpeditionRun {
 
     /** The player hit or was hit; campfires won't heal them for a few seconds. */
     void combat(Player player) { combat.put(player.getUniqueId(), System.currentTimeMillis()); }
+
+    /** Sends a stuck player back to the room they're in, or the last checkpoint. Says why not, or null when they've gone. */
+    String unstick(Player player) {
+        if (stage.inCutscene(player)) return "Wait for the scene to finish.";
+        if (player.isDead()) return "You're already on your way back.";
+        long now = System.currentTimeMillis();
+        if (now - combat.getOrDefault(player.getUniqueId(), 0L) < 6_000) return "You can't do that in the middle of a fight.";
+        long wait = unstuck.getOrDefault(player.getUniqueId(), 0L) + UNSTICK_COOLDOWN - now;
+        if (wait > 0) return "You can do that again in " + Chat.duration(Duration.ofMillis(wait + 999)) + ".";
+        unstuck.put(player.getUniqueId(), now);
+        Room room = progress == null ? null : progress.activeRoom();
+        service.teleport(player, room != null && room.checkpoint() != null ? location(room.checkpoint()) : respawnLocation());
+        player.setFallDistance(0);
+        player.setVelocity(new org.bukkit.util.Vector());
+        return null;
+    }
 
     /** A player right-clicked a block in the run: campfires, then puzzle blocks. */
     /** A right-clicked block: loot and reward chests (also after the finish), then campfires, crates and puzzles. */

@@ -39,7 +39,13 @@ final class RunPuzzles {
         List<Player> online();
         void solved(String room, String puzzle);
         void teleport(Player player, Location to);
+        /** A scene is playing, so nobody can see the room. */
+        default boolean sceneRunning() { return false; }
+        /** The room's enemies are done, and only its puzzles are holding the door. */
+        default boolean fightOver() { return false; }
     }
+
+    private static final long SHOW_EVERY = 12_000, NUDGE_EVERY = 20_000;
 
     private final Plugin plugin;
     private final Host host;
@@ -47,6 +53,8 @@ final class RunPuzzles {
     private final Map<String, Integer> sequenceStep = new HashMap<>();
     private final Map<String, Set<Integer>> targetHits = new HashMap<>();
     private final Map<String, Long> targetWindow = new HashMap<>();
+    private final Map<String, Long> shown = new HashMap<>();
+    private final Map<String, Long> nudged = new HashMap<>();
     private final Set<String> solved = new HashSet<>();
     private final Map<java.util.UUID, Long> slipNotices = new HashMap<>();
     /** Where each puzzle's set blocks show it: the top of the pedestal the switch is fixed to. */
@@ -70,16 +78,36 @@ final class RunPuzzles {
         }
     }
 
-    /** A room just started: flash any sequences it shows. */
+    /** A room just started. */
     void started(Room room) {
         for (Puzzle puzzle : room.puzzles().values()) {
             sequenceStep.remove(key(room, puzzle));
             targetHits.remove(key(room, puzzle));
             targetWindow.remove(key(room, puzzle));
             solved.remove(key(room, puzzle));
+            shown.remove(key(room, puzzle));
+            nudged.remove(key(room, puzzle));
             rewind(room, puzzle);
-            if (puzzle.type() == PuzzleType.SEQUENCE && puzzle.show()) flash(puzzle);
         }
+    }
+
+    /** A sequence keeps showing its order until someone starts it, and once the fight's over the party hears what's still holding the door. */
+    private void remind(Room room, Puzzle puzzle, long now) {
+        if (host.sceneRunning()) return;
+        String key = key(room, puzzle);
+        if (puzzle.type() == PuzzleType.SEQUENCE && puzzle.show() && sequenceStep.getOrDefault(key, 0) == 0 && now - shown.getOrDefault(key, 0L) >= SHOW_EVERY) {
+            shown.put(key, now);
+            flash(puzzle);
+        }
+        if (!host.fightOver() || now - nudged.getOrDefault(key, 0L) < NUDGE_EVERY) return;
+        nudged.put(key, now);
+        for (Player player : host.online()) Chat.notice(player, "The way's still shut. " + Chat.escape(puzzle.title()) + ".");
+        for (Point point : puzzle.blocks()) mark(point);
+    }
+
+    private void mark(Point point) {
+        Location at = new Location(host.world(), point.x() + .5, point.y() + .8, point.z() + .5);
+        host.world().spawnParticle(Particle.END_ROD, at.clone().add(0, 1.6, 0), 30, .2, 1.6, .2, .01);
     }
 
     /** Once a second: levers, plates, jump goals and target windows. */
@@ -89,6 +117,7 @@ final class RunPuzzles {
         if (room == null) return;
         for (Puzzle puzzle : room.puzzles().values()) {
             if (solved.contains(key(room, puzzle))) continue;
+            remind(room, puzzle, now);
             switch (puzzle.type()) {
                 case LEVERS, PLATES -> {
                     for (Point point : puzzle.blocks()) beacon(room, puzzle, block(point), powered(block(point)));
@@ -103,6 +132,7 @@ final class RunPuzzles {
                     if (opened != null && puzzle.seconds() > 0 && now - opened > puzzle.seconds() * 1000L) {
                         targetWindow.remove(key(room, puzzle));
                         targetHits.remove(key(room, puzzle));
+                        rewind(room, puzzle);
                         for (Player player : host.online()) Chat.notice(player, "Too slow. The targets reset.");
                         sound(Sound.BLOCK_NOTE_BLOCK_BASS, .6F);
                     }
@@ -138,19 +168,19 @@ final class RunPuzzles {
                 player.getWorld().playSound(block.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1F, .5F);
                 player.getWorld().spawnParticle(Particle.SMOKE, block.getLocation().add(.5, .8, .5), 10, .2, .2, .2, .01);
                 for (Player member : host.online()) Chat.notice(member, "Wrong order. The sequence resets" + (puzzle.show() ? "; watch it again." : "."));
-                if (puzzle.show()) Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (host.activeRoom() == room && !solved.contains(key)) flash(puzzle);
-                }, 30L);
+                if (puzzle.show()) shown.put(key, System.currentTimeMillis() - SHOW_EVERY + 1_500);
             }
         }
     }
 
     /** A projectile hit a block. */
-    void hit(Block block, long now) {
+    void hit(Block struck, long now) {
         Room room = host.activeRoom();
         if (room == null) return;
         for (Puzzle puzzle : room.puzzles().values()) {
             if (puzzle.type() != PuzzleType.TARGETS) continue;
+            // An arrow that lands in the fire on top of a target counts for the target.
+            Block block = struck.getType() == Material.CAMPFIRE ? struck.getRelative(BlockFace.DOWN) : struck;
             int index = indexOf(puzzle, block);
             if (index < 0) continue;
             String key = key(room, puzzle);
@@ -160,6 +190,7 @@ final class RunPuzzles {
             if (hits.add(index)) {
                 block.getWorld().playSound(block.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1F, .8F + hits.size() * .1F);
                 block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(.5, .5, .5), 8, .4, .4, .4, 0);
+                beacon(room, puzzle, block, true);
             }
             if (hits.size() >= puzzle.blocks().size()) solve(room, puzzle);
         }
@@ -297,7 +328,7 @@ final class RunPuzzles {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (host.activeRoom() != room || solved.contains(key(room, puzzle))) return;
                 Location at = new Location(host.world(), point.x() + .5, point.y() + .8, point.z() + .5);
-                host.world().spawnParticle(Particle.END_ROD, at, 14, .25, .25, .25, .02);
+                mark(point);
                 host.world().playSound(at, Sound.BLOCK_NOTE_BLOCK_CHIME, 1.2F, .7F + note * .15F);
             }, 20L + step * 20L);
         }

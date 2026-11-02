@@ -258,7 +258,9 @@ final class PublicGameJson {
             List<String> own = table.bossLoot().get(room.id());
             if (own == null) continue;
             JsonObject row = new JsonObject();
-            row.addProperty("boss", plugin.mobs().sheet(room.encounter().boss()).map(sheet -> plainText(sheet.name())).orElse(room.title()));
+            // A council has no one boss to name, so it goes by its room.
+            var leaders = room.encounter().bossList();
+            row.addProperty("boss", leaders.size() != 1 ? room.title() : plugin.mobs().sheet(leaders.getFirst()).map(sheet -> plainText(sheet.name())).orElse(room.title()));
             row.addProperty("room", room.title());
             row.addProperty("optional", room.optional());
             row.add("items", gearRows(plugin, own));

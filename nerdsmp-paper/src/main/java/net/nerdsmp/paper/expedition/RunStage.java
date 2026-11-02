@@ -650,7 +650,27 @@ final class RunStage {
     private Location pose(Cutscene cutscene, int tick) {
         Moment now = moment(cutscene, tick);
         Shot shot = cutscene.shots().get(now.shot());
-        return lerp(shot.frame(), end(cutscene, now.shot()), Math.min(1, (tick - now.start()) / (double) (shot.seconds() * 20)));
+        ExpeditionDefinition.Frame a = shot.frame(), b = end(cutscene, now.shot());
+        // Shots that run into each other keep the camera moving across the join; a scene's first and last stop eases.
+        Shot before = now.shot() > 0 && end(cutscene, now.shot() - 1).equals(a) ? cutscene.shots().get(now.shot() - 1) : null;
+        Shot after = now.shot() + 1 < cutscene.shots().size() && cutscene.shots().get(now.shot() + 1).frame().equals(b) && !a.equals(b) ? cutscene.shots().get(now.shot() + 1) : null;
+        ExpeditionDefinition.Frame c = after == null ? b : end(cutscene, now.shot() + 1);
+        double t = Math.min(1, (tick - now.start()) / (double) (shot.seconds() * 20));
+        double yawA = a.yaw(), yawB = yawA + wrap(b.yaw() - a.yaw());
+        return new Location(host.world(),
+            glide(a.x(), b.x(), before == null ? a.x() : before.frame().x(), c.x(), shot, before, after, t),
+            glide(a.y(), b.y(), before == null ? a.y() : before.frame().y(), c.y(), shot, before, after, t),
+            glide(a.z(), b.z(), before == null ? a.z() : before.frame().z(), c.z(), shot, before, after, t),
+            (float) glide(yawA, yawB, before == null ? yawA : yawA - wrap(a.yaw() - before.frame().yaw()), after == null ? yawB : yawB + wrap(c.yaw() - b.yaw()), shot, before, after, t),
+            (float) glide(a.pitch(), b.pitch(), before == null ? a.pitch() : before.frame().pitch(), c.pitch(), shot, before, after, t));
+    }
+
+    /** One value along a shot, carrying the speed it has across a join with the shot before or after. */
+    private static double glide(double from, double to, double prior, double next, Shot shot, Shot before, Shot after, double t) {
+        double seconds = shot.seconds();
+        double in = before == null ? 0 : (to - prior) / (before.seconds() + seconds), out = after == null ? 0 : (next - from) / (seconds + after.seconds());
+        double t2 = t * t, t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * from + (t3 - 2 * t2 + t) * seconds * in + (3 * t2 - 2 * t3) * to + (t3 - t2) * seconds * out;
     }
 
     /** True when this tick starts a shot somewhere other than where the last one left the camera. */
@@ -762,13 +782,6 @@ final class RunStage {
 
     private Location location(ExpeditionDefinition.Frame frame) {
         return new Location(host.world(), frame.x(), frame.y(), frame.z(), frame.yaw(), frame.pitch());
-    }
-
-    private Location lerp(ExpeditionDefinition.Frame a, ExpeditionDefinition.Frame b, double t) {
-        double eased = t * t * (3 - 2 * t);
-        float yaw = (float) (a.yaw() + wrap(b.yaw() - a.yaw()) * eased);
-        return new Location(host.world(), a.x() + (b.x() - a.x()) * eased, a.y() + (b.y() - a.y()) * eased, a.z() + (b.z() - a.z()) * eased,
-            yaw, (float) (a.pitch() + (b.pitch() - a.pitch()) * eased));
     }
 
     private static double wrap(double degrees) {

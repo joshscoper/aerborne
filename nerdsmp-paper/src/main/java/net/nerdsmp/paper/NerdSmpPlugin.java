@@ -726,7 +726,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "forge", "enchants", "recipes", "daily", "playtime", "npc", "reputation", "nerdadmin", "staff", "report",
             "settings", "social", "friends", "ignore", "unignore", "msg", "reply", "channel", "globalchat",
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
-            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips"
+            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
             "companion", "trail", "emote", "journal", "worldpack", "dev"
         );

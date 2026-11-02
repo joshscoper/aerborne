@@ -65,6 +65,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "worldstudio" -> plugin.worldStudio().command(sender,args);
             case "npcstudio" -> plugin.npcStudio().command(sender,args);
             case "recipestudio" -> plugin.recipeStudio().command(sender,args);
+            case "checkpoint" -> plugin.expeditions().checkpoint(sender);
             case "expedition" -> plugin.expeditions().command(sender, args);
             case "island" -> {
                 if (plugin.skyblock() == null) {

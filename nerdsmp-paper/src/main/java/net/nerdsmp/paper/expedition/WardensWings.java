@@ -176,7 +176,8 @@ final class WardensWings {
             for (int h = 1; h <= 4; h++) c.set(chime[0], h, COURT + chime[1], Material.PACKED_ICE);
             c.set(chime[0], 5, COURT + chime[1], Material.BLUE_ICE);
             int toward = chime[1] < 0 ? 1 : -1;
-            c.set(chime[0], 2, COURT + chime[1] + toward, Material.POLISHED_DIORITE);
+            c.set(chime[0], 1, COURT + chime[1] + toward, Material.PACKED_ICE);
+            c.set(chime[0], 2, COURT + chime[1] + toward, Material.GOLD_BLOCK);
             c.set(chime[0], 3, COURT + chime[1] + toward, Material.STONE_BUTTON, "face=floor,facing=north,powered=false");
         }
         c.set(13, 1, COURT, Material.CAMPFIRE, "lit=false,signal_fire=false,facing=north");

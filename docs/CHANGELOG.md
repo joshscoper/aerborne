@@ -5,6 +5,20 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Playtest fixes for the Hall, the Aqueduct and the raid (November 1)
+- **The Hall of the Three Wardens.** Arrows now light the fires on the Ash Court's targets, and the fires go out if the window
+  closes. The opening is one unbroken flight up the stair, over the gate and round the Hall past each wing, and every boss scene is
+  one continuous move instead of two shots with a jump between them. The Stone Warden no longer leaves a block hanging in the air.
+- **The Rime Stacks.** When a room's enemies are dead and a puzzle is what's holding the door, the room now says so and marks it.
+  Sequences keep showing their order until someone starts them, and they wait for a cutscene to finish. The chimes stand on gold.
+- **The Sunken Aqueduct.** The Pump House valves were small stone buttons on the wall. They're now copper wheels with a bulb over
+  each one that lights when it's turned. Killing the Silt Mother now gives the party speed and protection for the rest of the run.
+- **`/checkpoint`.** A stuck player can go back to the room they're in or the last checkpoint.
+- **Testing a raid alone.** Staff can start any expedition by themselves.
+- **Camera moves.** Shots that run into each other now keep moving across the join instead of stopping at it.
+- **Website export.** The raid's council rooms crashed the expedition export, which blanked that data and filled the console.
+  A repeated export failure is now reported once, with its full error.
+
 ### Cinder Keep, the season's last raid (November 1)
 - **A new map, and it's the size of a raid.** The party lands on the last rock in a burning gulf. Three seals light on the Ember
   Gate, and it opens on a bridge hung from chains over the lava. Past it are the outer ward, the kiln and the

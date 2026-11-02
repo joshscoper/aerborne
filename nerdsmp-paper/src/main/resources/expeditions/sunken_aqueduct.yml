@@ -35,7 +35,7 @@ npcs:
       - "Old Bess is still running in the Pump House. Nobody's stoking her. When the valve drones are on her she can't be touched, so stop the drones, then hit her with everything while she's wide open."
       - "Under the pumps is the Cistern. When the water comes up, hold on. The pumps need a minute to catch."
       - "The chief engineer went down to the Gallery the night the gates shut. If he's still down there, he isn't himself. When a tank starts to go, break its valve fast."
-      - "There's a stair down the west tower of the bastion, to the silt. I wouldn't. Something's been feeding down there."
+      - "There's a stair down the west tower of the bastion, to the silt. I wouldn't. Something's been feeding down there, and it's choking the whole line. Clear it and everything downstream runs easier, if you live."
       - "When she calls the tide, get behind the bollards. That water won't go round you."
 
 campfires:
@@ -160,7 +160,7 @@ rooms:
       valves:
         type: sequence
         title: Turn the valves in order
-        blocks: [[-25, 65, 124], [-25, 65, 137], [-25, 65, 150]]
+        blocks: [[-25, 66, 124], [-25, 66, 137], [-25, 66, 150]]
         order: [2, 3, 1]
         show: true
     encounter:
@@ -253,6 +253,8 @@ rooms:
     requires-packs: [silt_flats, silt_reeds]
     seal: [-26, 33, 57, -26, 38, 63]
     checkpoint: [-31, 33, 60, 90]
+    # The silt has been choking the works since the valley flooded. Kill what's feeding in it and the whole line runs clean.
+    boon: {title: "The Clear Line", speed: 1, guard: 8}
     points: [[-46, 33, 60, 90], [-38, 33, 50], [-38, 33, 70], [-52, 33, 44], [-52, 33, 76]]
     encounter:
       type: boss
@@ -269,7 +271,7 @@ rooms:
       scripts:
         start: ["cutscene silt_wakes", "wait 7", "say cobb|What did I say? WHAT did I say?"]
         health-50: ["hazard start silt_fall"]
-        clear: ["hazard stop silt_fall", "say cobb|You went down there and killed it. On purpose. I'd like that noted in the guild records, and I'd like it noted that I said not to."]
+        clear: ["hazard stop silt_fall", "say cobb|You went down there and killed it. On purpose. I'd like that noted in the guild records, and I'd like it noted that I said not to.", "wait 4", "say cobb|Hang on. Feel that? She was what was choking the line. The whole works is running clean, and you'll feel it on your feet all the way to the dam."]
   tidewardens_basin:
     title: The Tidewarden's Basin
     region: [-30, 42, 248, 30, 96, 306]
@@ -317,7 +319,7 @@ guide:
     cistern: Hold a minute while the water rises, geysers burst and the drowned keep coming.
     pressure_gallery: Chief Engineer Hollis. When a tank's valve starts to go, break it within ten seconds, or the tank bursts, hits the whole party and makes him stronger. It stacks.
     floodgate_control: Sluice Keepers chain and freeze you. Weigh down both plates with counterweights from the supply crate.
-    silt_bed: Optional. The Silt Mother drags a line of mud through someone, binds two players with roots so they have to stay close, and in the second half wakes the bed ring by ring.
+    silt_bed: Optional, down the bastion's west tower. Killing the Silt Mother gives the whole party speed and protection for the rest of the run, and she has her own loot. She drags a line of mud through someone, binds two players with roots so they have to stay close, and in the second half wakes the bed ring by ring.
     tidewardens_basin: The Tidewarden, at the foot of the Great Dam. See the boss briefing.
   boss: The Tidewarden throws geysers under people and chains them to her. Her Tidal Wave crosses the whole floor, so get behind a bollard. At two-thirds and one-third she stands in a waterspout and can't be hurt until her witches are dead. In the last third the sluices open and the basin floods.
 loot:

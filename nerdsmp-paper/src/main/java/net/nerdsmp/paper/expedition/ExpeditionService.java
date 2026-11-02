@@ -164,7 +164,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         "sunken_aqueduct", Set.of("805c8a9d7c6ac4beea0684c163532fdeb96d52bcbc59cabf3c057c05150e6c38",
             "211143e698ae6e4f09b27ce5072f2d42893f6410552911370546b4af8e551f85",
             "b88195d3d642eaad1da15d2ef31e583ee259af233ff105fd5add54565f01c1b5",
-            "eb62fe1ccc99b56ffdef4fac621c05a9d806cdf9ef061d50c20e808ccc30391d"),
+            "eb62fe1ccc99b56ffdef4fac621c05a9d806cdf9ef061d50c20e808ccc30391d",
+            "535eccfaab7d198976c750ca7ba993222012eb0ca1ad4ec6bcbe3fdd4c3a6054"),
         "gloomforge_mines", Set.of("04063c37f02051a353f18004f8b7234bb1672861ab8de36d1519c706a7cdb2c2",
             "66fe0c92770df4d03f3bd6cff50b6495456f02ecaa3bf1f1d09bef9fcdb8fd07",
             "68ecbced26e68dd599978d1b9a11bd1931208749eb5b583399a2a7720ed87781",
@@ -178,7 +179,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         "hall_of_wardens", Set.of("5b2c69d285025bd7f0b9af878ef4fc513782d4f5398da5f6cef4a8cce7a111d9",
             "8fea84e3654465e6795274aa04f601a7ac837600bbfe81c0de63c562fc621e31",
             "434cacf4dc64073543d4cd3ee72faac553495b06ab4c423cc240669e7016c0c3",
-            "d1639fd5a14118530d2d4bc5bf507c7e07299d9fbe39b67edca370ed3f01241b"),
+            "d1639fd5a14118530d2d4bc5bf507c7e07299d9fbe39b67edca370ed3f01241b",
+            "3fac521fad7dbb6904b786ba1e19553b64850a047c7482fba5c2f96120f5af33"),
         "hollow_barrow", Set.of("a506c7500ee46650bb94e5e29bef7cdb2ae1c0607a30e5daf296dfab1d504db9",
             "e6f4341ca87e703ee9acd3c86d96f5c2a75718a99cc23b24df0f769a2996e797",
             "d962e922f84c8636bd3ac0f78b9362652144e60a110b2a2e29f30e199998d6e0",
@@ -523,7 +525,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
                 if (problem.isPresent()) { Chat.error(leader, Chat.escape(problem.get())); return; }
             }
             List<UUID> ids = members.stream().map(Player::getUniqueId).toList();
-            boolean full = members.size() >= definition.minParty();
+            // Staff can test anything alone, on the real rules and with the real rewards.
+            boolean full = members.size() >= definition.minParty() || leader.hasPermission(ADMIN);
             if (!queue && full && runs.size() + checks.size() < maxInstances) {
                 if (ids.size() == 1) launch(definition, tier.get(), ids, List.of(), false);
                 else startCheck(definition, tier.get(), ids, List.of(), leader.getUniqueId());
@@ -846,7 +849,8 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     void launch(ExpeditionDefinition definition, Tier tier, List<UUID> members, List<Matchmaker.Ticket> tickets, boolean test, int allyCount,
                 ExpeditionRun.KeyRun key) {
         List<UUID> online = members.stream().filter(member -> Bukkit.getPlayer(member) != null && !runByPlayer.containsKey(member)).toList();
-        if (online.isEmpty() || online.size() + allyCount < (test ? 1 : definition.minParty())) {
+        boolean staff = online.stream().map(Bukkit::getPlayer).anyMatch(player -> player != null && player.hasPermission(ADMIN));
+        if (online.isEmpty() || online.size() + allyCount < (test || staff ? 1 : definition.minParty())) {
             if (key != null) keysInUse.remove(key.account());
             matchmaker.requeue(tickets.stream().filter(ticket -> online.containsAll(ticket.members())).toList());
             online.forEach(member -> Chat.notice(Bukkit.getPlayer(member), "A player dropped out before the run began."));
@@ -1303,6 +1307,17 @@ public final class ExpeditionService implements Listener, AutoCloseable {
     @EventHandler(ignoreCancelled = true)
     public void onLaunch(org.bukkit.event.entity.ProjectileLaunchEvent event) {
         if (event.getEntity() instanceof org.bukkit.entity.BreezeWindCharge && runIn(event.getEntity().getWorld()) != null) event.setCancelled(true);
+    }
+
+    /** {@code /checkpoint}: a stuck player goes back to the room they're in, or the last checkpoint. */
+    public boolean checkpoint(org.bukkit.command.CommandSender sender) {
+        if (!(sender instanceof Player player)) { Chat.error(sender, "Only players can use this."); return true; }
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        if (run == null || !player.getWorld().equals(run.world)) { Chat.error(player, "You're not in an expedition."); return true; }
+        String problem = run.unstick(player);
+        if (problem != null) Chat.error(player, problem);
+        else Chat.success(player, "Back to the checkpoint.");
+        return true;
     }
 
     /** Campfires and puzzle blocks. Levers and buttons still work as normal; the run reads them. */

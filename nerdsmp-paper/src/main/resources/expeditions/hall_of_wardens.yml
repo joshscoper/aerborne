@@ -112,34 +112,36 @@ outro:
   - "Archivist Vell: 'With these, the Ember Gate will open. Cinder Keep waits below the clouds. Ashkar must not wake his master.'"
 
 cutscenes:
-  # Up the whole axis, the way the party has to go.
+  # One unbroken flight: up the stair, over the gate, and once round the Hall past each of its wings. Every shot runs into the next.
   prologue:
-    - {at: [0.5, 46, -180, 0, -14], to: [0.5, 53, -152, 0, -18], seconds: 6, title: "<gold>The Hall of the Three Wardens</gold>", text: "<gray>The sky archive</gray>", sound: "block.beacon.ambient", lines: ["|Here the Wardens of Ember, Frost and Stone kept the record of the Binding.", "vell|And here they left their echoes, to guard the seals until they were needed."]}
-    - {at: [0.5, 72, -38, 0, -26], to: [0.5, 70, -20, 0, -30], seconds: 5, fade: true, lines: ["vell|The High Gate. Three Wardens stand over it, and a thane who never left his post stands under them."]}
-    - {at: [0.5, 68, 28, 0, -58], to: [0.5, 69, 38, 0, -72], seconds: 5, fade: true, lines: ["vell|Behind it, the Hall of Seals. Each seal is a key to the road below. The Steward wants them. We need them first."]}
-    - {at: [-100.5, 86, 46.5, 90, -6], to: [-106.5, 84, 46.5, 90, -8], seconds: 4, fade: true, lines: ["|Ember to the west."]}
-    - {at: [100.5, 86, 46.5, -90, -6], to: [106.5, 84, 46.5, -90, -8], seconds: 3, fade: true, lines: ["|Frost to the east."]}
-    - {at: [0.5, 86, 146, 0, -6], to: [0.5, 84, 152, 0, -8], seconds: 3, fade: true, lines: ["|Stone to the south. The order is yours."]}
+    - {at: [0.5, 47, -182, 0, -10], seconds: 6, title: "<gold>The Hall of the Three Wardens</gold>", text: "<gray>The sky archive</gray>", sound: "block.beacon.ambient", lines: ["|Here the Wardens of Ember, Frost and Stone kept the record of the Binding.", "vell|And here they left their echoes, to guard the seals until they were needed."]}
+    - {at: [0.5, 62, -118, 0, -14], seconds: 6, lines: ["vell|The High Gate. Three Wardens stand over it, and a thane who never left his post stands under them."]}
+    - {at: [0.5, 100, -52, 0, -18], seconds: 5, lines: ["vell|Behind it, the Hall of Seals. Each seal is a key to the road below. The Steward wants them. We need them first."]}
+    - {at: [0.5, 136, -16, 0, -2], seconds: 4}
+    - {at: [-50, 130, -18, 52, 8], seconds: 4}
+    - {at: [-72, 124, 46, 90, 12], seconds: 5, lines: ["|Ember to the west."]}
+    - {at: [0.5, 120, 118, 0, 14], seconds: 5, lines: ["|Stone to the south."]}
+    - {at: [72, 124, 46, -90, 12], to: [86, 128, 46, -90, 16], seconds: 5, lines: ["|Frost to the east. The order is yours."]}
   orrek_wakes:
-    - {at: [0.5, 66, -30, 0, -44], to: [0.5, 66, -27, 0, -48], seconds: 4, sound: "item.goat_horn.sound.2 0.6", lines: ["|High over the gate, someone is standing where nobody should be able to stand."]}
-    - {at: [8, 66, -12, 150, -38], to: [6, 66, -14, 165, -24], seconds: 3, title: "<gold>Thane Orrek</gold>", text: "<gray>Warder of the High Gate</gray>", lines: ["Thane Orrek|None pass while the watch stands. The watch stands."]}
+    - {at: [0.5, 66, -40, 0, -48], seconds: 4, sound: "item.goat_horn.sound.2 0.6", lines: ["|High over the gate, someone is standing where nobody should be able to stand."]}
+    - {at: [0.5, 66, -34, 0, -52], to: [9, 67, -27, 42, 8], seconds: 4, title: "<gold>Thane Orrek</gold>", text: "<gray>Warder of the High Gate</gray>", lines: ["Thane Orrek|None pass while the watch stands. The watch stands."]}
   keepers_wake:
     - {at: [-60, 69, 46, 90, 4], to: [-64, 69, 46, 90, 4], seconds: 4, title: "<gold>The Keepers of the Flame</gold>", text: "<gray>Sael and Oren</gray>", sound: "block.fire.ambient 0.6", lines: ["Keeper Sael|The fire is not yours to carry.", "Keeper Oren|Nor ours to give."]}
   ember_wakes:
-    - {at: [-118, 72, 46, 90, 8], to: [-122, 72, 46, 90, 8], seconds: 4, sound: "block.fire.ambient 0.6", lines: ["|The two great braziers catch by themselves, and the fire runs in across the floor."]}
-    - {at: [-128, 70, 46, 90, -4], to: [-130, 69, 46, 90, -8], seconds: 5, title: "<gold>The Ember Warden</gold>", text: "<gray>Echo of the first Warden</gray>", lines: ["The Ember Warden|I sealed the fire once. Show me you could do the same."]}
+    - {at: [-116, 73, 46, 90, 10], seconds: 4, sound: "block.fire.ambient 0.6", lines: ["|The two great braziers catch by themselves, and the fire runs in across the floor."]}
+    - {at: [-124, 71, 46, 90, 2], to: [-130, 69, 46, 90, -8], seconds: 6, title: "<gold>The Ember Warden</gold>", text: "<gray>Echo of the first Warden</gray>", lines: ["The Ember Warden|I sealed the fire once. Show me you could do the same."]}
   frost_wakes:
-    - {at: [118, 72, 46, -90, 8], to: [122, 72, 46, -90, 8], seconds: 4, sound: "block.glass.break 0.6", lines: ["|The cold comes in from every side of the arena at once, and it all comes to one place."]}
-    - {at: [128, 69, 46, -90, -2], to: [130, 68, 46, -90, -6], seconds: 5, title: "<aqua>The Frost Warden</aqua>", text: "<gray>Echo of the second Warden</gray>", lines: ["The Frost Warden|Cold kept him sleeping. Is your nerve as cold?"]}
+    - {at: [116, 73, 46, -90, 10], seconds: 4, sound: "block.glass.break 0.6", lines: ["|The cold comes in from every side of the arena at once, and it all comes to one place."]}
+    - {at: [124, 71, 46, -90, 2], to: [130, 68, 46, -90, -6], seconds: 5, title: "<aqua>The Frost Warden</aqua>", text: "<gray>Echo of the second Warden</gray>", lines: ["The Frost Warden|Cold kept him sleeping. Is your nerve as cold?"]}
   kings_wake:
     - {at: [0.5, 72, 104, 0, 16], to: [0.5, 71, 108, 0, 12], seconds: 5, title: "<green>The Court of Kings</green>", text: "<gray>Four thrones, four kings</gray>", sound: "block.deepslate.break 0.5", lines: ["|Four thrones, and on the first of them the dust moves.", "King Harl|Who comes before the court? Stand, and be judged."]}
   stone_wakes:
-    - {at: [0.5, 72, 164, 0, 10], to: [0.5, 71, 170, 0, 8], seconds: 4, sound: "block.stone.break 0.5", lines: ["|The moss on the floor lifts. There are bones of stone under it, and they are moving."]}
-    - {at: [0.5, 70, 174, 0, -2], to: [0.5, 69, 176, 0, -6], seconds: 5, title: "<green>The Stone Warden</green>", text: "<gray>Echo of the third Warden</gray>", lines: ["The Stone Warden|Stone holds. Stone endures. Do you?"]}
+    - {at: [0.5, 73, 162, 0, 12], seconds: 4, sound: "block.stone.break 0.5", lines: ["|The moss on the floor lifts. There are bones of stone under it, and they are moving."]}
+    - {at: [0.5, 71, 170, 0, 6], to: [0.5, 69, 176, 0, -6], seconds: 6, title: "<green>The Stone Warden</green>", text: "<gray>Echo of the third Warden</gray>", lines: ["The Stone Warden|Stone holds. Stone endures. Do you?"]}
   oriveth_wakes:
-    - {at: [320.5, 76, 276, 0, 4], to: [320.5, 80, 284, 0, -10], seconds: 5, sound: "ambient.soul_sand_valley.mood 0.5", lines: ["|There is nothing written here. There never was. The seals' plates are burning on a floor that left the Hall a long time ago."]}
-    - {at: [320.5, 70, 282, 0, -22], to: [320.5, 70, 286, 0, -34], seconds: 6, lines: ["Oriveth|Three to hold the fire, and one to hold the three. Did your archivist leave that part out?", "Oriveth|No. She couldn't have read it. I took it out myself."]}
-    - {at: [334, 70, 288, 45, -8], to: [332, 69, 290, 45, -12], seconds: 4, title: "<dark_purple>Oriveth</dark_purple>", text: "<gray>The Unwritten Warden</gray>", sound: "entity.ender_dragon.growl 0.5", lines: ["Oriveth|You carried my seals all this way. How kind."]}
+    - {at: [320.5, 76, 276, 0, 4], seconds: 5, sound: "ambient.soul_sand_valley.mood 0.5", lines: ["|There is nothing written here. There never was. The seals' plates are burning on a floor that left the Hall a long time ago."]}
+    - {at: [320.5, 80, 284, 0, -10], seconds: 6, lines: ["Oriveth|Three to hold the fire, and one to hold the three. Did your archivist leave that part out?", "Oriveth|No. She couldn't have read it. I took it out myself."]}
+    - {at: [322, 70, 286, 8, -28], to: [332, 69, 290, 45, -12], seconds: 4, title: "<dark_purple>Oriveth</dark_purple>", text: "<gray>The Unwritten Warden</gray>", sound: "entity.ender_dragon.growl 0.5", lines: ["Oriveth|You carried my seals all this way. How kind."]}
 
 mobs:
   "custom:hall_aspirant": {abilities: [leap]}
@@ -326,7 +328,7 @@ rooms:
         - {"custom:frostmarked": 2, "custom:rime_stalker": 1}
         - {mobs: {"custom:rime_hound": 3}, delay-seconds: 5}
       scripts:
-        start: ["say vell|The archive's stacks, frozen where they stood. Watch the frost on the pillars: it shows the order of the chimes."]
+        start: ["say vell|The archive's stacks, frozen where they stood. Those four gold chimes hold the east gate. Watch the frost rise from them: that's the order to ring them in."]
         solved-chimes: ["sound block.note_block.chime 1.0", "message <aqua>The last note rings out.</aqua>"]
         clear: ["message <aqua>The ice in the east gate cracks, and the way to the Frost Throne is open.</aqua>"]
   frost_throne:
