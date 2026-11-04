@@ -172,6 +172,19 @@ class TebexTest(SiteTest):
             with self.assertRaises(tebex.TebexError) as error:
                 tebex.api('/baskets/test/packages', {'package_id': 123})
             self.assertNotIn('secret', str(error.exception))
+            # A wrong private key comes back as a 422 too; the shopper is told it's the store, not their username.
+            opener.return_value.open.side_effect = HTTPError('https://secret-url', 422, 'secret body', {},
+                io.BytesIO(b'{"status":422,"title":"Request payload error","detail":"Invalid basic auth credentials"}'))
+            with self.assertLogs(self.app.logger, 'ERROR') as logged, self.assertRaises(tebex.TebexError) as error:
+                tebex.api('/accounts/test-public-token/baskets', {'username': 'Test_Player'})
+            self.assertIn('temporarily unavailable', str(error.exception))
+            self.assertNotIn('username', str(error.exception))
+            self.assertIn('AERBORNE_TEBEX_PRIVATE_KEY', ' '.join(logged.output))
+            opener.return_value.open.side_effect = HTTPError('https://secret-url', 422, 'secret body', {},
+                io.BytesIO(b'{"status":422,"detail":"The username could not be found"}'))
+            with self.assertRaises(tebex.TebexError) as error:
+                tebex.api('/accounts/test-public-token/baskets', {'username': 'Test_Player'})
+            self.assertIn('username', str(error.exception))
             opener.return_value.open.side_effect = URLError('server-secret')
             with self.assertRaises(tebex.TebexError) as error:
                 tebex.api('/accounts/test-public-token')

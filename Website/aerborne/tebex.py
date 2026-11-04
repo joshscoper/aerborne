@@ -60,11 +60,24 @@ def api(path, data=None):
     except HTTPError as exc:
         # Upstream bodies and URLs can contain credentials, basket IDs and customer details.
         current_app.logger.warning('Tebex API HTTP %s', exc.code)
+        if exc.code in (401, 403) or exc.code == 422 and _rejected_keys(exc):
+            # Tebex answers a wrong private key with a 422, which is the store's fault, never the shopper's.
+            current_app.logger.error('Tebex rejected the store keys: check AERBORNE_TEBEX_PUBLIC_TOKEN and AERBORNE_TEBEX_PRIVATE_KEY, then restart the app')
+            raise TebexError('Checkout is temporarily unavailable while the store reconnects to Tebex. Your cart is saved; please try again later.')
         if exc.code in (400, 422):
             raise TebexError('Tebex could not prepare this order. Check your Minecraft username and try again. If it continues, contact purchase support.')
         raise TebexError('Tebex checkout is temporarily unavailable. Please try again shortly.')
     except (URLError, OSError, ValueError, TypeError):
         raise TebexError('We cannot reach Tebex right now. Your cart is saved; please try again shortly.')
+
+
+def _rejected_keys(exc):
+    """True when Tebex refused the request for its credentials. Only its short detail line is read, never logged."""
+    try:
+        detail = json.loads(exc.read(8192).decode('utf-8', 'replace')).get('detail', '')
+    except Exception:
+        return False
+    return isinstance(detail, str) and 'auth credentials' in detail.lower()
 
 
 def account_path(suffix=''):
