@@ -48,6 +48,28 @@ last. Their edges are arcs round a point by the keep, so the city wraps its crag
 - **Terrace walls** are faced in weathered stone, with buttresses below and parapets and lamps along the top.
 - **A ring wall** with towers closes the east from the north wall to the lip.
 
+## The capital pass (as built, 2026-11-04, second review)
+The user's second review asked for a city that proves it is the capital, economically, militarily, diplomatically
+and culturally. This pass answers it:
+- **Military:** Highcrown Keep is now an octagonal citadel on an enlarged crag:
+  - a curtain wall with machicolations and eight round towers;
+  - a twin-towered gatehouse with a portcullis at the head of the citadel steps;
+  - the **Crown Keep** (throne hall, empty crown, chandeliers, banners);
+  - barracks, stables, an armory and a training yard with butts and dummies.
+
+  The walls form one circuit: the north wall runs into the castle's towers, the ring wall has postern arches where
+  streets pass, a rim wall with towers runs along the gorge, and a parapet follows the lip.
+- **Diplomatic:** the **Hall of Accord** in the castle, where envoys sit under the banners of the Reach's peoples.
+- **Economic:** the treasury holds the banker, and the Market Hall the broker. Guild Street shops are furnished
+  and signed, each with its keeper behind the counter. Warehouses and a quayside line the docks, three sky-galleons
+  sit at the docks (one coming in), and the piers stand on trusses anchored in the cliff.
+- **Cultural:** the Lantern Fane and its churchyard, the Archive, the Wayfarers' Hall on the plaza, the waystone
+  arch, a copper statue of Aldren the First Skyfarer in the dock square, and the plaza fountain.
+- **People where they belong:** every service NPC is placed in their venue (`highcrown.npc_<id>`), and a test
+  fails if any NPC has nowhere to stand.
+- **Craft:** every plan is settled like hand-placed blocks (corner stairs, joined fences, walls and panes). Every
+  house is furnished, chimneys hide their fires, and street corners are rounded.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].

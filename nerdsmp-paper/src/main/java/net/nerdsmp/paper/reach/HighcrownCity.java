@@ -48,6 +48,14 @@ final class HighcrownCity {
     private final List<int[]> lots = new ArrayList<>();
     private int crafterCount;
 
+    /** A business that takes the next house a row builds: who keeps it, what it's for, and the sign at its door. */
+    private record Venue(String npc, ReachInteriors.Use use, ReachInteriors.Trade trade, Material sign) { }
+
+    /** The venues still waiting for a house in the rows being built now; null builds plain homes. */
+    private java.util.Deque<Venue> venues;
+
+    private static java.util.Deque<Venue> queue(Venue... v) { return new java.util.ArrayDeque<>(List.of(v)); }
+
     private HighcrownCity(ReachTerrain terrain) {
         this.terrain = terrain;
         this.kit = new ReachKit(terrain);
@@ -60,6 +68,7 @@ final class HighcrownCity {
         city.kingsgate();
         city.northWall();
         city.ringWall();
+        city.westWall();
         city.plaza();
         city.citadel();
         city.fane();
@@ -71,10 +80,12 @@ final class HighcrownCity {
         city.dockSquare();
         city.docks();
         city.dockQuarter();
+        city.roundCorners();
         city.terraceWalls();
         city.streetLife();
         city.cityGreen();
         city.relayDoorsteps();
+        city.lipParapet();
         city.runs.write(city.canvas);
         return new ReachFeatures.Built(city.canvas, city.marks.stream()
             .map(m -> new ReachFeatures.Spot(m.id(), m.x() + 0.5, m.y(), m.z() + 0.5, m.yaw())).toList());
@@ -152,6 +163,13 @@ final class HighcrownCity {
         for (Map.Entry<Long, double[]> e : new ArrayList<>(streets.entrySet())) {
             int x = (int) (e.getKey() >> 32), z = e.getKey().intValue();
             if (Math.abs(x) == AVENUE_HALF + 1) canvas.set(x, (int) e.getValue()[0] - 1, z, Material.POLISHED_ANDESITE);
+        }
+        // The city's banners on tall poles down both sides of the avenue in the Crown Ward.
+        for (int z = GATE_Z + 50; z < STAIR_A - 4; z += 10) for (int x : new int[] {-AVENUE_HALF - 2, AVENUE_HALF + 2}) {
+            if (!onPlatform(x, z)) continue;
+            canvas.set(x, CROWN, z, Material.STONE_BRICK_WALL, "up=true");
+            for (int y = CROWN + 1; y <= CROWN + 5; y++) canvas.set(x, y, z, Material.DARK_OAK_FENCE);
+            canvas.set(x, CROWN + 6, z, Material.GREEN_BANNER, "rotation=" + (x < 0 ? 4 : 12));
         }
         int lower = grandStair(-AVENUE_HALF, AVENUE_HALF, STAIR_A, CROWN, CROWN - MARKET);
         grandStair(-AVENUE_HALF, AVENUE_HALF, STAIR_B, MARKET, MARKET - DOCK);
@@ -334,7 +352,14 @@ final class HighcrownCity {
     // ------------------------------------------------------------------ walls
 
     /** A curtain wall section on one column: stone from the ground to the walk, crenellated on the outer face. */
-    private void wallColumn(int x, int z, int walk, boolean outer, boolean inner) {
+    private void wallColumn(int x, int z, int walk, boolean outer, boolean inner) { wallColumn(x, z, walk, outer, inner, -1); }
+
+    /**
+     * One column of a curtain wall: stone from the ground to the walk, merlons on the outer face, a rail on the inner.
+     * With {@code gate} set to a street level, the column is an arch over that street instead: the way stays open
+     * five blocks high and paved, and the wall carries on above it, so no wall ever blocks a street.
+     */
+    private void wallColumn(int x, int z, int walk, boolean outer, boolean inner, int gate) {
         ReachTerrain.Column c = terrain.column(x, z);
         if (!c.land() || c.wet()) return;
         for (int y = c.top() - 1; y < walk; y++) canvas.set(x, y, z, kitWeather(x, y, z));
@@ -343,19 +368,92 @@ final class HighcrownCity {
         if (outer) {
             canvas.set(x, walk, z, Material.STONE_BRICKS);
             if (Math.floorMod(x + z, 2) == 0) canvas.set(x, walk + 1, z, Material.STONE_BRICKS);
-            else canvas.set(x, walk + 1, z, Material.STONE_BRICK_SLAB, "type=bottom");
         } else if (inner) runs.wall(x, walk, z, Material.STONE_BRICK_WALL);
+        if (gate > 0) {
+            pave(x, z, gate, 0.4);
+            for (int y = gate; y <= gate + 4; y++) canvas.set(x, y, z, Material.AIR);
+            canvas.set(x, gate + 5, z, Material.CHISELED_STONE_BRICKS);
+        }
         reserve(x, z);
+    }
+
+    /** The west wall: down the gorge side from the Kingsgate to the water, then along the rim of the gorge to the lip. */
+    private void westWall() {
+        for (int x = -22; x >= -48; x--) {
+            int zc = GATE_Z + 3;
+            ReachTerrain.Column c = terrain.column(x, zc);
+            if (!c.land() || c.wet()) break;
+            int walk = Math.max(c.top() + 8, CROWN + 12 + (x + 22));
+            for (int dz = 0; dz < 4; dz++) wallColumn(x, zc + dz, walk, dz == 0, dz == 3);
+        }
+        // The rim: for each step south, the last level column of the city before the drop into the gorge.
+        List<double[]> rim = new ArrayList<>();
+        for (int z = 838; z <= 1072; z += 3) {
+            int last = Integer.MIN_VALUE;
+            for (int x = -8; x > -200; x--) {
+                ReachTerrain.Column c = terrain.column(x, z);
+                if (!c.land() || c.wet() || c.river() < 6 || c.edge() < 3 || c.top() != ReachTerrain.highcrownTop(x, z)) break;
+                last = x;
+            }
+            if (last != Integer.MIN_VALUE && last < -12) rim.add(new double[] {last + 1, z});
+        }
+        // Smooth the line so the wall bends like a built one, not like the noise.
+        List<int[]> line = new ArrayList<>();
+        for (int i = 0; i < rim.size(); i++) {
+            double sx = 0; int n = 0;
+            for (int k = Math.max(0, i - 3); k <= Math.min(rim.size() - 1, i + 3); k++) { sx += rim.get(k)[0]; n++; }
+            line.add(new int[] {(int) Math.round(Math.max(sx / n, rim.get(i)[0])), (int) rim.get(i)[1]});
+        }
+        int[] prev = null;
+        int steps = 0;
+        for (int[] p : line) {
+            List<int[]> cells = new ArrayList<>();
+            if (prev == null) cells.add(p);
+            else {
+                int x = prev[0], z = prev[1];
+                while (x != p[0] || z != p[1]) {
+                    if (x != p[0] && (z == p[1] || Math.abs(p[0] - x) >= Math.abs(p[1] - z))) x += Integer.signum(p[0] - x); else z += Integer.signum(p[1] - z);
+                    cells.add(new int[] {x, z});
+                }
+            }
+            for (int[] cell : cells) {
+                int y = street(cell[0], cell[1]);
+                ReachTerrain.Column c = terrain.column(cell[0], cell[1]);
+                if (!c.land() || c.wet()) continue;
+                wallColumn(cell[0], cell[1], Math.max(y + 6, c.top() + 6), true, false);
+                wallColumn(cell[0] + 1, cell[1], Math.max(y + 6, c.top() + 6), false, true);
+                if (++steps % 46 == 0) {
+                    kit.keepTower(new ReachBrush(canvas, cell[0] - 3, y, cell[1] - 3, 0), 7, 15, ReachKit.Style.SLATE, steps);
+                    for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) reserve(cell[0] + dx, cell[1] + dz);
+                }
+            }
+            prev = p;
+        }
+    }
+
+    /** A low parapet along the lip wherever the city meets the sky, except the quay where ships come in. */
+    private void lipParapet() {
+        for (int x = -200; x <= 200; x++) for (int z = 900; z <= 1100; z++) {
+            if (Math.abs(x) <= 64 && z > 1062) continue;
+            ReachTerrain.Column c = terrain.column(x, z);
+            if (!c.land() || c.wet() || c.edge() >= 2.5 || c.edge() < 0.8 || Math.hypot(x, z - 905) > 175) continue;
+            if (reserved.contains(key(x, z)) && !streets.containsKey(key(x, z))) continue;
+            int y = c.top() + 1;
+            if (!isAir(x, y, z) || !isAir(x, y + 1, z)) continue;
+            runs.wall(x, y, z, Material.STONE_BRICK_WALL);
+        }
     }
 
     /** The north wall from the gate east past the keep's crag to the ring wall, rising with the ground. */
     private void northWall() {
-        for (int x = 23; x <= 141; x++) {
+        // From the Kingsgate's east tower to the castle's north-west tower, then from its north-east tower to the ring.
+        for (int x = 21; x <= 141; x++) {
+            if (x > 96 && x < 128) continue;
             int zc = GATE_Z + 3 + (int) Math.round(6 * Math.sin(x / 40.0));
             int ground = terrain.column(x, zc).top();
             int walk = Math.max(CROWN + 12, ground + 9);
             for (int dz = 0; dz < 4; dz++) wallColumn(x, zc + dz, walk, dz == 0, dz == 3);
-            if (x % 44 == 0) kit.keepTower(new ReachBrush(canvas, x - 4, Math.max(CROWN, ground + 1), zc - 2, 0), 9, walk - Math.max(CROWN, ground + 1) + 12, ReachKit.Style.SLATE, x);
+            if (x == 46 || x == 72) kit.keepTower(new ReachBrush(canvas, x - 4, Math.max(CROWN, ground + 1), zc - 2, 0), 9, walk - Math.max(CROWN, ground + 1) + 12, ReachKit.Style.SLATE, x);
         }
     }
 
@@ -370,7 +468,11 @@ final class HighcrownCity {
                 ReachTerrain.Column c = terrain.column(x, z);
                 if (!c.land() || c.edge() < 3) continue;
                 int walk = Math.max(street(x, z) + 8, c.top() + 6);
-                wallColumn(x, z, walk, r > 161, r < 159);
+                // Postern arches where the ring streets, the terrace walk and the dock street pass through.
+                double rc = ring(x, z);
+                int level = street(x, z);
+                boolean way = level == MARKET && (rc >= 99.5 && rc < 107 || rc >= 136.5 && rc < 146) || level == DOCK && rc >= 164.5 && rc < 172;
+                wallColumn(x, z, walk, r > 161, r < 159, way && c.top() == level - 1 ? level : -1);
             }
         }
         for (double a : new double[] {-12, 22, 52}) {
@@ -399,11 +501,7 @@ final class HighcrownCity {
             if (r > 4.4) { canvas.set(x, CROWN, z, Material.STONE_BRICK_SLAB, "type=bottom"); canvas.set(x, CROWN - 1, z, Material.STONE_BRICKS); }
             else { canvas.set(x, CROWN - 1, z, Material.STONE_BRICKS); canvas.set(x, CROWN, z, Material.WATER); }
         }
-        for (int y = CROWN; y < CROWN + 4; y++) canvas.set(0, y, cz, Material.STONE_BRICKS);
-        canvas.set(0, CROWN + 4, cz, Material.CHISELED_STONE_BRICKS);
-        for (int y = CROWN + 5; y < CROWN + 9; y++) canvas.set(0, y, cz, y == CROWN + 8 ? Material.POLISHED_DEEPSLATE : Material.POLISHED_ANDESITE);
-        canvas.set(0, CROWN + 9, cz, Material.GOLD_BLOCK);
-        for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) canvas.set(d[0], CROWN + 4, cz + d[1], Material.WATER);
+        fountain(0, cz);
         for (int[] p : new int[][] {{-22, z0 + 3}, {26, z0 + 3}, {-22, z1 - 3}, {26, z1 - 3}, {-12, z0 + 1}, {12, z0 + 1}})
             if (onPlatform(p[0], p[1])) ReachProps.lamp(new ReachBrush(canvas, p[0], CROWN, p[1], 0), Material.DARK_OAK_LOG, Material.SPRUCE_TRAPDOOR);
         for (int[] p : new int[][] {{-16, cz + 9}, {16, cz + 9}})
@@ -413,6 +511,30 @@ final class HighcrownCity {
         marks.add(new Mark("plaza_guide", 6, CROWN, z0 + 5, 180F));
         int[] ring = {-20, -14, -8, 14, 20, 26, -2};
         for (int i = 0; i < ring.length; i++) marks.add(new Mark("gate_ring_" + i, ring[i], CROWN, z0 + 4, 0F));
+    }
+
+    /**
+     * The plaza fountain: a carved pedestal holding a bowl, a spring welling up in its middle and spilling over all
+     * four lips in falling sheets into the basin. The water is placed already flowing, in the states the game itself
+     * settles on, so it looks alive the moment the chunk loads and no update can change it.
+     */
+    private void fountain(int cx, int cz) {
+        int c = CROWN;
+        for (int y = c; y <= c + 2; y++) canvas.set(cx, y, cz, y == c + 1 ? Material.CHISELED_STONE_BRICKS : Material.POLISHED_ANDESITE);
+        for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) canvas.set(cx + d[0], c, cz + d[1], Material.STONE_BRICK_STAIRS,
+            "facing=" + (d[0] == 1 ? "west" : d[0] == -1 ? "east" : d[1] == 1 ? "north" : "south") + ",half=bottom");
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            boolean corner = dx != 0 && dz != 0;
+            canvas.set(cx + dx, c + 3, cz + dz, corner ? Material.CHISELED_STONE_BRICKS : Material.POLISHED_ANDESITE);
+            if (corner) canvas.set(cx + dx, c + 4, cz + dz, Material.STONE_BRICK_WALL, "up=true");
+        }
+        canvas.set(cx, c + 4, cz, Material.WATER);
+        for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            canvas.set(cx + d[0], c + 4, cz + d[1], Material.WATER, "level=1");
+            canvas.set(cx + 2 * d[0], c + 4, cz + 2 * d[1], Material.WATER, "level=2");
+            for (int y = c + 1; y <= c + 3; y++) canvas.set(cx + 2 * d[0], y, cz + 2 * d[1], Material.WATER, "level=8");
+        }
+        for (int[] c4 : new int[][] {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) canvas.set(cx + c4[0], c + 5, cz + c4[1], Material.LANTERN);
     }
 
     /** The citadel street from the plaza, the steps up the crag and Highcrown Keep on top. */
@@ -427,9 +549,8 @@ final class HighcrownCity {
             for (int z = z0; z <= z1; z++) treadAt(x, z, l);
             x++;
         }
-        for (; x <= 90; x++) for (int z = z0; z <= z1; z++) treadAt(x, z, KEEP);
-        // Parapets and lamps up both sides.
-        for (int k = 49; k <= 90; k++) {
+        // Parapets and lamps up both sides, as far as the castle's gatehouse.
+        for (int k = 49; k <= 71; k++) {
             int walk = Math.min(KEEP, CROWN + Math.max(0, (k - 48) / 2));
             for (int z : new int[] {z0 - 1, z1 + 1}) {
                 ReachTerrain.Column c = terrain.column(k, z);
@@ -441,7 +562,10 @@ final class HighcrownCity {
             }
         }
         marks.add(new Mark("citadel_steps", 44, CROWN, z0, 90F));
-        keep();
+        new HighcrownCastle(terrain, canvas, kit, new HighcrownCastle.Site() {
+            @Override public void mark(String id, int x, int y, int z, float yaw) { marks.add(new Mark(id, x, y, z, yaw)); }
+            @Override public void reserve(int x, int z) { HighcrownCity.this.reserve(x, z); }
+        }).build();
     }
 
     private void stepEast(int x, int z, int l) {
@@ -458,51 +582,6 @@ final class HighcrownCity {
         canvas.set(x, l - 1, z, (z & 1) == 0 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
         for (int y = l; y <= Math.max(l + 4, c.top()); y++) canvas.set(x, y, z, Material.AIR);
         reserve(x, z);
-    }
-
-    /** Highcrown Keep on its crag: a curtain wall with corner towers and a tall donjon holding the empty crown. */
-    private void keep() {
-        int cx = 112, cz = 868, top = KEEP, half = 22;
-        ReachKit.Style s = ReachKit.Style.SLATE;
-        for (int x = cx - half; x <= cx + half; x++) for (int z = cz - half; z <= cz + half; z++) {
-            reserve(x, z);
-            boolean wall = Math.abs(x - cx) >= half - 2 || Math.abs(z - cz) >= half - 2;
-            int ground = terrain.column(x, z).top();
-            for (int y = Math.min(ground, top - 1); y < top - 1; y++) canvas.set(x, y, z, Material.STONE_BRICKS);
-            if (!wall) {
-                canvas.set(x, top - 1, z, terrain.patch(x, z, 0.2) > 0.3 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
-                for (int y = top; y < top + 6; y++) canvas.set(x, y, z, Material.AIR);
-                continue;
-            }
-            for (int y = top - 1; y < top + 12; y++) canvas.set(x, y, z, kitWeather(x, y, z));
-            if (Math.floorMod(x + z, 2) == 0 && (Math.abs(x - cx) == half || Math.abs(z - cz) == half)) canvas.set(x, top + 12, z, Material.STONE_BRICKS);
-        }
-        for (int z = cz - 3; z <= cz + 3; z++) for (int y = top; y < top + 7; y++) for (int x = cx - half; x <= cx - half + 2; x++)
-            canvas.set(x, y, z, Material.AIR);
-        for (int[] c : new int[][] {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}})
-            kit.tower(new ReachBrush(canvas, cx + c[0] * half - 4, top, cz + c[1] * half - 4, 0), 9, 22, s, c[0] * 3 + c[1]);
-        ReachBrush donjon = new ReachBrush(canvas, cx + 2, top, cz - 8, 0);
-        int dw = 15, dd = 15, dh = 34;
-        for (int x = 0; x < dw; x++) for (int z = 0; z < dd; z++) for (int y = 0; y < dh; y++) {
-            boolean wall = x == 0 || x == dw - 1 || z == 0 || z == dd - 1;
-            boolean floor = y % 8 == 7;
-            if (!wall) { donjon.set(x, y, z, floor ? Material.SPRUCE_PLANKS : Material.AIR); continue; }
-            boolean pier = x % 7 == 0 || z % 7 == 0;
-            donjon.set(x, y, z, pier ? Material.POLISHED_DEEPSLATE : kitWeather(donjon.wx(x, z), top + y, donjon.wz(x, z)));
-        }
-        for (int y = 2; y < dh - 3; y += 8) for (int k : new int[] {3, 4, 10, 11}) {
-            donjon.set(k, y, 0, Material.GLASS_PANE, "east=true,west=true"); donjon.set(k, y + 1, 0, Material.GLASS_PANE, "east=true,west=true");
-            donjon.set(0, y, k, Material.GLASS_PANE, "north=true,south=true"); donjon.set(0, y + 1, k, Material.GLASS_PANE, "north=true,south=true");
-        }
-        donjon.air(6, 0, 0, 8, 4, 0);
-        kit.spire(donjon, -1, dw, dh, s);
-        donjon.set(7, 0, 9, Material.POLISHED_BLACKSTONE_BRICKS);
-        donjon.set(7, 1, 9, Material.GOLD_BLOCK);
-        donjon.set(7, 2, 9, Material.LIGHTNING_ROD);
-        // Banners down the donjon's face toward the city.
-        for (int k : new int[] {2, 12}) donjon.set(k, dh - 6, -1, Material.GREEN_WALL_BANNER, "facing=north");
-        marks.add(new Mark("keep_hall", cx + 9, top, cz - 2, 180F));
-        marks.add(new Mark("keep_court", cx - 8, top, cz + 6, 270F));
     }
 
     /**
@@ -622,15 +701,14 @@ final class HighcrownCity {
             canvas.set(x, y, z, open ? Material.AIR : pier ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
         }
         canvas.set(18, f + 32, tc, Material.BELL, "attachment=floor,facing=west");
-        // The spire: rings of slate stepping in, steep, with a gilded finial.
+        // The spire: courses of slate shingles, three to each step in, so it rises steep and smooth to a gilded finial.
         int y = f + 37;
         for (int lo = tx0 - 1, hi = tx1 + 1, zlo = tz0 - 1, zhi = tz1 + 1; lo <= hi; lo++, hi--, zlo++, zhi--) {
             for (int k = 0; k < 3; k++, y++) for (int x = lo; x <= hi; x++) for (int z = zlo; z <= zhi; z++) {
                 boolean edge = x == lo || x == hi || z == zlo || z == zhi;
-                if (!edge) continue;
-                if (k == 0) canvas.set(x, y, z, Material.DEEPSLATE_TILE_STAIRS, x == lo ? "facing=east,half=bottom" : x == hi ? "facing=west,half=bottom"
+                if (!edge) { canvas.set(x, y, z, Material.DEEPSLATE_TILES); continue; }
+                canvas.set(x, y, z, Material.DEEPSLATE_TILE_STAIRS, x == lo ? "facing=east,half=bottom" : x == hi ? "facing=west,half=bottom"
                     : z == zlo ? "facing=south,half=bottom" : "facing=north,half=bottom");
-                else canvas.set(x, y, z, Material.DEEPSLATE_TILES);
             }
             if (hi - lo <= 0) break;
         }
@@ -651,9 +729,25 @@ final class HighcrownCity {
             if (walk < 1.6) street(x, z, CROWN, 0.5);
             else if (!canvas.has(x, CROWN - 1, z)) canvas.set(x, CROWN - 1, z, terrain.grain(x, z, 0.3) > 0.6 ? Material.MOSS_BLOCK : Material.GRASS_BLOCK);
         }
-        ReachTrees.oak(canvas, 24, CROWN, 908, 9001);
+        ReachTrees.oak(canvas, 26, CROWN, 908, 9001);
+        churchyard();
         ReachTrees.oak(canvas, 46, CROWN, 909, 9002);
         for (int x : new int[] {30, 38}) ReachProps.bench(new ReachBrush(canvas, x, CROWN, 916, 2), Material.SPRUCE_STAIRS, Material.SPRUCE_TRAPDOOR);
+    }
+
+    /** The Fane's churchyard: rows of weathered headstones over grassy mounds, candles and flowers, and its keeper. */
+    private void churchyard() {
+        Material[] stones = {Material.MOSSY_STONE_BRICK_WALL, Material.STONE_BRICK_WALL, Material.COBBLESTONE_WALL, Material.ANDESITE_WALL};
+        int n = 0;
+        for (int x = 14; x <= 20; x += 3) for (int z = 905; z <= 914; z += 4) {
+            if (!onPlatform(x, z) || street(x, z) != CROWN || reserved.contains(key(x, z)) && !streets.containsKey(key(x, z))) continue;
+            Material stone = stones[n++ % stones.length];
+            canvas.set(x, CROWN, z, stone, "up=true");
+            if (n % 3 == 0) canvas.set(x, CROWN + 1, z, Material.CANDLE, "candles=1,lit=true");
+            for (int k = 1; k <= 2; k++) canvas.set(x, CROWN - 1, z + k, k == 1 ? Material.PODZOL : Material.COARSE_DIRT);
+            if (n % 2 == 0) canvas.set(x, CROWN, z + 2, Material.POPPY);
+        }
+        marks.add(new Mark("npc_tamsin_wake", 18, CROWN, 918, 0F));
     }
 
     /** The Hall of Callings on the avenue below the plaza: skills, mastery, jobs and parties. */
@@ -661,7 +755,11 @@ final class HighcrownCity {
         int x0 = -24, x1 = -10, z0 = 867, z1 = 883;
         ReachBrush b = lotBrush(x0, z0, x1, z1, 1, CROWN);
         int[] size = lotSize(x0, z0, x1, z1, 1);
-        kit.house(b, size[0], size[1], 2, ReachKit.Style.SLATE, true, false, 4242);
+        kit.house(b, size[0], size[1], 2, ReachKit.Style.SLATE, true, false, 4242, ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS);
+        ReachKit.shopSign(b, size[0] / 2 + 2, 2, Material.DARK_OAK_WALL_HANGING_SIGN);
+        String[] mentors = {"pell_wren", "fen_calder", "nima_hart"};
+        int[][] desks = {{2, 3}, {size[0] - 3, 3}, {2, 6}};
+        for (int i = 0; i < mentors.length; i++) marks.add(new Mark("npc_" + mentors[i], b.wx(desks[i][0], desks[i][1]), CROWN, b.wz(desks[i][0], desks[i][1]), 270F));
         lots.add(new int[] {x0 - 2, z0 - 1, x1 + 3, z1 + 1});
         for (int z = z0 - 1; z <= z1 + 1; z++) for (int x = x0 - 1; x <= x1; x++) reserve(x, z);
         for (int z : new int[] {z0 + 2, z1 - 2}) {
@@ -673,11 +771,47 @@ final class HighcrownCity {
 
     /** The steward's houses round the plaza and along the citadel street, and a house below the Hall. */
     private void crownWard() {
-        ReachKit.Style[] slate = {ReachKit.Style.SLATE, ReachKit.Style.SLATE, ReachKit.Style.HIGHCROWN};
-        int n = 0;
-        for (int z = 836; z + 8 <= 861; z += 9) tryHouse(36, z, 45, z + 7, 3, CROWN, slate[n % 3], 2 + n % 2, 7100 + n++, Trade.NONE);
-        for (int x = 47; x + 7 <= 60; x += 9) tryHouse(x, 851, x + 7, 861, 2, CROWN, slate[n % 3], 2, 7100 + n++, Trade.NONE);
-        tryHouse(-21, 887, -12, 895, 1, CROWN, ReachKit.Style.SLATE, 1, 7150, Trade.NONE);
+        // The Wayfarers' Hall: the expedition house on the plaza's east side, its desks for maps, claims, surveys,
+        // brokers and fixers.
+        int x0 = 35, x1 = 48, z0 = 835, z1 = 861;
+        ReachBrush hall = lotBrush(x0, z0, x1, z1, 3, CROWN);
+        int[] size = lotSize(x0, z0, x1, z1, 3);
+        kit.site(hall, -1, -2, size[0], size[1], 2, Material.STONE_BRICKS);
+        kit.house(hall, size[0], size[1], 2, ReachKit.Style.SLATE, true, false, 7301, ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS);
+        ReachKit.shopSign(hall, size[0] / 2 + 2, 2, Material.SPRUCE_WALL_HANGING_SIGN);
+        lots.add(new int[] {x0 - 3, z0 - 1, x1 + 1, z1 + 1});
+        String[] wayfarers = {"elian_quill", "gilda_penn", "hessa_clay", "garrick_mott", "bram_tallow"};
+        int[][] desks = {{2, 3}, {size[0] - 3, 3}, {2, 6}, {size[0] - 3, 6}, {2, 9}};
+        for (int i = 0; i < wayfarers.length; i++) marks.add(new Mark("npc_" + wayfarers[i], hall.wx(desks[i][0], desks[i][1]), CROWN, hall.wz(desks[i][0], desks[i][1]), 90F));
+        for (int z : new int[] {z0 + 4, z1 - 4}) canvas.set(x0 - 2, CROWN + 6, z, Material.BLUE_WALL_BANNER, "facing=west");
+        // A steward's house beside it on the citadel street.
+        tryHouse(50, 851, 57, 861, 2, CROWN, ReachKit.Style.SLATE, 2, 7110, Trade.NONE);
+        // The Archive below the Hall of Callings, where the research commissioner keeps the Reach's records.
+        venues = queue(new Venue("lyra_senn", ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS, Material.DARK_OAK_WALL_HANGING_SIGN));
+        tryHouse(-21, 887, -12, 896, 1, CROWN, ReachKit.Style.SLATE, 2, 7150, Trade.NONE);
+        if (!venues.isEmpty()) tryHouse(-20, 886, -12, 894, 1, CROWN, ReachKit.Style.SLATE, 1, 7151, Trade.NONE);
+        venues = null;
+        waystone(-23, 856);
+    }
+
+    /**
+     * The waystone arch on the plaza: a ring of carved stone and amethyst round a shimmer of glass, where the portal
+     * master opens the ways to the islands and expeditions.
+     */
+    private void waystone(int x, int cz) {
+        for (int dz = -3; dz <= 3; dz++) for (int dy = 0; dy <= 7; dy++) {
+            double r = Math.hypot(dz, (dy - 3) * 0.85);
+            if (r > 3.6) continue;
+            boolean ring = r > 2.6;
+            canvas.set(x, CROWN + dy, cz + dz, ring ? ((dy + dz) % 3 == 0 ? Material.AMETHYST_BLOCK : Material.CHISELED_STONE_BRICKS)
+                : Material.PURPLE_STAINED_GLASS_PANE, ring ? "" : "north=true,south=true");
+        }
+        for (int dz : new int[] {-4, 4}) {
+            canvas.set(x, CROWN, cz + dz, Material.STONE_BRICKS);
+            canvas.set(x, CROWN + 1, cz + dz, Material.AMETHYST_CLUSTER, "facing=up");
+        }
+        for (int dz = -3; dz <= 3; dz++) canvas.set(x, CROWN - 1, cz + dz, Material.POLISHED_BLACKSTONE_BRICKS);
+        marks.add(new Mark("npc_kestrel_way", x + 2, CROWN, cz + 2, 90F));
     }
 
     // ------------------------------------------------------------------ the Market Ward
@@ -702,11 +836,15 @@ final class HighcrownCity {
             marks.add(new Mark("stall_w_" + i, -AVENUE_HALF + 1, MARKET, z + 2, 90F));
             marks.add(new Mark("stall_e_" + i, AVENUE_HALF - 1, MARKET, z + 2, 270F));
         }
-        // Strings of lanterns across the avenue between the stall rows.
-        for (int z = 924; z <= 964; z += 10) for (int x = -AVENUE_HALF; x <= AVENUE_HALF; x++) {
-            int sag = (int) Math.round(1.2 * (1 - Math.pow(x / (double) AVENUE_HALF, 2)));
-            canvas.set(x, MARKET + 6 - sag, z, Material.IRON_CHAIN, "axis=x");
-            if (x % 3 == 0) canvas.set(x, MARKET + 5 - sag, z, Material.LANTERN, "hanging=true");
+        // Garlands of lanterns across the avenue: a straight chain between two poles that rise from the stalls' posts.
+        for (int i = 1; i <= 7; i += 2) {
+            int z = 922 + i * 5 + 4;
+            for (int x : new int[] {-AVENUE_HALF - 1, AVENUE_HALF + 1}) for (int y = MARKET + 5; y <= MARKET + 7; y++)
+                canvas.set(x, y, z, y == MARKET + 7 ? Material.DARK_OAK_LOG : Material.DARK_OAK_FENCE, y == MARKET + 7 ? "axis=y" : "");
+            for (int x = -AVENUE_HALF; x <= AVENUE_HALF; x++) {
+                canvas.set(x, MARKET + 7, z, Material.IRON_CHAIN, "axis=x");
+                if (x % 3 == 0) canvas.set(x, MARKET + 6, z, Material.LANTERN, "hanging=true");
+            }
         }
         marketHall(-31, 928, -15, 958);
         marketCross(21, 941);
@@ -718,6 +856,11 @@ final class HighcrownCity {
         for (int x : new int[] {15, 27}) ReachProps.planter(new ReachBrush(canvas, x, MARKET, 970, 0), 3, x);
         for (int x = -33; x <= 33; x++) for (int z = z0 - 1; z <= z1 + 1; z++) reserve(x, z);
         marks.add(new Mark("market", 20, MARKET, 948, 180F));
+        marks.add(new Mark("npc_orris_bell", -23, MARKET, 943, 90F));
+        marks.add(new Mark("npc_highcrown_folk_widow", AVENUE_HALF - 1, MARKET, 963, 270F));
+        marks.add(new Mark("npc_highcrown_folk_urchin", 3, MARKET, 950, 180F));
+        canvas.set(AVENUE_HALF + 1, MARKET + 1, 963, Material.POTTED_POPPY);
+        canvas.set(AVENUE_HALF + 1, MARKET + 1, 965, Material.POTTED_CORNFLOWER);
     }
 
     /**
@@ -808,14 +951,34 @@ final class HighcrownCity {
         }
         ReachKit.Style[] guild = {ReachKit.Style.HIGHCROWN, ReachKit.Style.HIGHCROWN, ReachKit.Style.EMBER, ReachKit.Style.SLATE};
         // East: Guild Street.
+        venues = queue(
+            new Venue("alba_meadow", ReachInteriors.Use.SHOP, ReachInteriors.Trade.GROCER, Material.OAK_WALL_HANGING_SIGN),
+            new Venue("highcrown_folk_baker", ReachInteriors.Use.SHOP, ReachInteriors.Trade.BAKER, Material.SPRUCE_WALL_HANGING_SIGN),
+            new Venue("vera_lune", ReachInteriors.Use.SHOP, ReachInteriors.Trade.TAILOR, Material.CHERRY_WALL_HANGING_SIGN),
+            new Venue("nyra_vell", ReachInteriors.Use.SHOP, ReachInteriors.Trade.ARCANE, Material.CRIMSON_WALL_HANGING_SIGN),
+            new Venue("rook_salen", ReachInteriors.Use.SHOP, ReachInteriors.Trade.RELICS, Material.DARK_OAK_WALL_HANGING_SIGN),
+            new Venue("rowan_ashwood", ReachInteriors.Use.SHOP, ReachInteriors.Trade.TIMBER, Material.SPRUCE_WALL_HANGING_SIGN),
+            new Venue("dain_slate", ReachInteriors.Use.SHOP, ReachInteriors.Trade.STONE, Material.DARK_OAK_WALL_HANGING_SIGN),
+            new Venue("petra_mason", ReachInteriors.Use.SHOP, ReachInteriors.Trade.BUILDER, Material.OAK_WALL_HANGING_SIGN),
+            new Venue("hob_copper", ReachInteriors.Use.WORKSHOP, ReachInteriors.Trade.MECHANIST, Material.WARPED_WALL_HANGING_SIGN));
         arcRow(89, 98.5, 48, 92, true, MARKET, guild, 8100, Trade.NONE);
         arcRow(107.5, 119, 46, 92, false, MARKET, guild, 8200, Trade.NONE);
         arcRow(122.5, 136, 40, 92, true, MARKET, guild, 8300, Trade.NONE);
+        java.util.Deque<Venue> leftOver = venues;
         // West: Crafters' Row along the gorge.
         ReachKit.Style[] crafts = {ReachKit.Style.VALE_SPRUCE, ReachKit.Style.HIGHCROWN, ReachKit.Style.VALE_SPRUCE};
+        venues = queue(
+            new Venue("torren_pike", ReachInteriors.Use.WORKSHOP, ReachInteriors.Trade.SMITH, Material.DARK_OAK_WALL_HANGING_SIGN),
+            new Venue("sella_mire", ReachInteriors.Use.SHOP, ReachInteriors.Trade.ALCHEMY, Material.CRIMSON_WALL_HANGING_SIGN),
+            new Venue("veyra_loom", ReachInteriors.Use.SHOP, ReachInteriors.Trade.ENCHANTER, Material.WARPED_WALL_HANGING_SIGN));
+        venues.addAll(leftOver);
         arcRow(107.5, 119, 128, 178, false, MARKET, crafts, 8400, Trade.SMITH);
         arcRow(89, 98.5, 130, 178, true, MARKET, crafts, 8500, Trade.WEAVER);
         arcRow(122.5, 136, 128, 178, true, MARKET, crafts, 8600, Trade.CARPENTER);
+        // Anyone still without a shop keeps a stall in the market square instead.
+        int stall = 0;
+        for (Venue v : venues) marks.add(new Mark("npc_" + v.npc(), stall % 2 == 0 ? -AVENUE_HALF + 1 : AVENUE_HALF - 1, MARKET, 924 + (stall++ / 2) * 5, stall % 2 == 1 ? 90F : 270F));
+        venues = null;
         // Side stairs down from the terrace walk to the Dock Quarter, east and west of the avenue.
         sideStair(78, 82, 984);
         sideStair(-64, -60, 952);
@@ -900,8 +1063,17 @@ final class HighcrownCity {
         boolean gable = warehouse || (seed >> 15 & 1) == 0;
         if (warehouse) floors = 2;
         boolean jetty = floors > 1 || (seed & 32) == 0;
-        kit.house(b, size[0], size[1], floors, style, jetty, gable, seed);
+        Venue venue = venues == null || warehouse ? null : venues.poll();
+        ReachInteriors.Use use = venue != null ? venue.use() : warehouse ? ReachInteriors.Use.WAREHOUSE : ReachInteriors.Use.HOME;
+        ReachInteriors.Trade kind = venue != null ? venue.trade() : ReachInteriors.Trade.GENERAL;
+        int[] keeper = kit.house(b, size[0], size[1], floors, style, jetty, gable, seed, use, kind);
         int door = size[0] / 2;
+        if (venue != null) {
+            if (keeper != null) marks.add(new Mark("npc_" + venue.npc(), b.wx(keeper[0], keeper[2]), level + keeper[1], b.wz(keeper[0], keeper[2]), yawFacing(turn)));
+            if (venue.sign() != null) ReachKit.shopSign(b, door + 2, 2, venue.sign());
+            if (venue.use() == ReachInteriors.Use.SHOP) ReachProps.marketCrates(b.at(1, 0, -2, 0), seed);
+            return true;
+        }
         if (warehouse) {
             // A hoist beam out of the gable with its chain and a load of cargo hanging over the loading balcony.
             int front = jetty ? -1 : 0, top = 4 + floors * 4, apex = top + (size[0] + 2) / 2, beam = apex - 2;
@@ -980,14 +1152,8 @@ final class HighcrownCity {
             boolean point = Math.abs(Math.sin(a * 4)) < 0.18 && r > 3;
             canvas.set(x, DOCK - 1, z, r > 8.5 ? Material.POLISHED_DEEPSLATE : point ? Material.SMOOTH_STONE : r < 3.4 ? Material.CHISELED_STONE_BRICKS : Material.POLISHED_ANDESITE);
         }
-        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
-            canvas.set(dx, DOCK, mz + dz, Math.abs(dx) == 2 || Math.abs(dz) == 2 ? Material.STONE_BRICK_SLAB : Material.STONE_BRICKS, Math.abs(dx) == 2 || Math.abs(dz) == 2 ? "type=bottom" : "");
-            if (Math.abs(dx) < 2 && Math.abs(dz) < 2) canvas.set(dx, DOCK + 1, mz + dz, Material.STONE_BRICKS);
-        }
-        for (int y = DOCK + 2; y < DOCK + 7; y++) canvas.set(0, y, mz, y % 2 == 0 ? Material.POLISHED_DEEPSLATE : Material.DEEPSLATE_TILES);
-        canvas.set(0, DOCK + 7, mz, Material.CHISELED_STONE_BRICKS);
-        for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) canvas.set(d[0], DOCK + 7, mz + d[1], Material.OXIDIZED_COPPER);
-        canvas.set(0, DOCK + 8, mz, Material.LIGHTNING_ROD);
+        // Aldren the First Skyfarer, sword raised, facing the piers where every islander steps ashore.
+        ReachProps.statue(new ReachBrush(canvas, 0, DOCK, mz, 2));
         for (int px : new int[] {-20, 20}) {
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 boolean rim = Math.abs(dx) == 2 || Math.abs(dz) == 2;
@@ -1014,7 +1180,8 @@ final class HighcrownCity {
         quayside();
         // The Tethered Gull: a wide inn on the east side of the square, its front on the square.
         ReachBrush gull = new ReachBrush(canvas, 34, DOCK, DOCK_SQUARE_Z + 16, 3);
-        kit.house(gull, 15, 13, 2, ReachKit.Style.HARBOUR, true, false, 77);
+        int[] host = kit.house(gull, 15, 13, 2, ReachKit.Style.HARBOUR, true, false, 77, ReachInteriors.Use.INN, ReachInteriors.Trade.GENERAL);
+        if (host != null) marks.add(new Mark("npc_gull_innkeeper", gull.wx(host[0], host[2]), DOCK, gull.wz(host[0], host[2]), 90F));
         ReachKit.shopSign(gull, 9, 2, Material.SPRUCE_WALL_HANGING_SIGN);
         lots.add(new int[] {31, DOCK_SQUARE_Z, 48, DOCK_SQUARE_Z + 18});
         for (int x = 31; x <= 48; x++) for (int z = DOCK_SQUARE_Z; z <= DOCK_SQUARE_Z + 18; z++) reserve(x, z);
@@ -1034,11 +1201,15 @@ final class HighcrownCity {
         int n = 0;
         // Two rows back to back in each block: one facing the quay, one facing the dock square.
         for (int[] row : new int[][] {{1055, 1066, 2}, {1043, 1053, 0}}) for (int[] bl : blocks) for (int x = bl[0]; x + 6 <= bl[1]; ) {
+            venues = row[2] == 2 && bl[0] == 7 ? queue(new Venue("ivo_reed", ReachInteriors.Use.SHOP, ReachInteriors.Trade.GENERAL, Material.SPRUCE_WALL_HANGING_SIGN))
+                : row[2] == 0 && bl[0] == -17 ? queue(new Venue("aeron_vale", ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS, Material.DARK_OAK_WALL_HANGING_SIGN))
+                : row[2] == 0 && bl[0] == 7 ? queue(new Venue("cato_flint", ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS, Material.DARK_OAK_WALL_HANGING_SIGN)) : null;
             long h = ReachFlora.hash(x * 13 + 7, row[0]);
             int w = Math.min(bl[1] - x + 1, 8 + (int) Math.floorMod(h, 3L));
             if (w < 7) break;
             boolean built = tryHouse(x, row[0], x + w - 1, row[1], row[2], DOCK, harbour[n++ % harbour.length], 1 + (int) Math.floorMod(h >> 5, 2L), h, Trade.NONE);
             x += built ? w + 1 : 2;
+            venues = null;
         }
         for (int x = -60; x <= 60; x++) {
             int z = 1070;
@@ -1073,37 +1244,90 @@ final class HighcrownCity {
         canvas.set(x, DOCK + 4, z + 9, Material.BARREL, "facing=up");
     }
 
-    /** Three piers over the cloud sea, the Dockmaster's Tower and the Guildhall, and two moored airships. */
+    /**
+     * The piers: decks seven wide on log stringers, railed and lamp-lit, each carried out over the void on a pair of
+     * timber trusses. The trusses are deep at the root and shallow at the tip, with posts and diagonals. Each root sits
+     * on a stone buttress stepped out of the cliff, with knee braces from the rock, and a pier head with a crane.
+     */
     private void docks() {
-        int lip = 1094;
+        int lip = 1094, end = lip + 44;
         for (int px : new int[] {-24, 0, 24}) {
-            for (int z = lip - 12; z <= lip + 52; z++) for (int x = px - 2; x <= px + 2; x++) {
-                canvas.set(x, DOCK - 1, z, Math.abs(x - px) == 2 ? Material.STRIPPED_SPRUCE_LOG : Material.SPRUCE_PLANKS, Math.abs(x - px) == 2 ? "axis=z" : "");
+            int root = lip - 12;
+            while (root < end && terrain.column(px, root + 1).land()) root++;
+            for (int z = lip - 12; z <= end; z++) for (int x = px - 3; x <= px + 3; x++) {
+                boolean edge = Math.abs(x - px) == 3;
+                canvas.set(x, DOCK - 1, z, edge ? Material.STRIPPED_SPRUCE_LOG : (z % 5 == 0 ? Material.STRIPPED_SPRUCE_LOG : Material.SPRUCE_PLANKS),
+                    edge ? "axis=z" : z % 5 == 0 ? "axis=x" : "");
                 for (int y = DOCK; y < DOCK + 4; y++) if (!canvas.has(x, y, z)) canvas.set(x, y, z, Material.AIR);
+                if (edge && z > root - 2 && !gangway(px, x, z, lip)) runs.fence(x, DOCK, z, Material.SPRUCE_FENCE);
             }
-            for (int z = lip - 8; z <= lip + 52; z += 6) for (int x : new int[] {px - 2, px + 2}) {
-                canvas.set(x, DOCK, z, Material.SPRUCE_FENCE);
-                canvas.set(x, DOCK + 1, z, z % 12 == 0 ? Material.LANTERN : Material.SPRUCE_FENCE);
-                for (int k = 1; k <= 6 && z - k * 2 > lip - 14; k++) canvas.set(x, DOCK - 1 - k, z - k * 2 + 1, Material.STRIPPED_SPRUCE_LOG, "axis=y");
-                canvas.set(x, DOCK - 2, z, Material.IRON_CHAIN, "axis=y");
-                canvas.set(x, DOCK - 3, z, Material.IRON_CHAIN, "axis=y");
+            for (int z = root; z <= end; z += 8) for (int x : new int[] {px - 3, px + 3}) {
+                for (int y = DOCK; y <= DOCK + 2; y++) canvas.set(x, y, z, Material.SPRUCE_FENCE);
+                canvas.set(x, DOCK + 3, z, Material.LANTERN);
             }
-            kit.clutter(new ReachBrush(canvas, px - 1, DOCK, lip + 48, 0), px);
+            // The trusses, under both edges of the deck beyond the cliff.
+            for (int z = root; z <= end; z++) {
+                double t = (z - root) / (double) Math.max(1, end - root);
+                int depth = 2 + (int) Math.round(11 * (1 - t));
+                for (int x : new int[] {px - 3, px + 3}) {
+                    canvas.set(x, DOCK - 1 - depth, z, Material.STRIPPED_DARK_OAK_LOG, "axis=z");
+                    if ((z - root) % 4 == 0) for (int y = DOCK - depth; y < DOCK - 1; y++) canvas.set(x, y, z, Material.STRIPPED_SPRUCE_LOG, "axis=y");
+                    else {
+                        int k = (z - root) % 4, y = DOCK - 1 - depth + (int) Math.round(depth * k / 4.0);
+                        if (y < DOCK - 1) canvas.set(x, y, z, Material.STRIPPED_SPRUCE_LOG, "axis=z");
+                    }
+                }
+                if ((z - root) % 4 == 0) for (int x = px - 2; x <= px + 2; x++) canvas.set(x, DOCK - 2, z, Material.STRIPPED_DARK_OAK_LOG, "axis=x");
+            }
+            // The buttress the pier springs from, stepped out of the cliff face, and knee braces up to the trusses.
+            for (int k = 0; k <= 14; k++) for (int x = px - 4; x <= px + 4; x++) {
+                int y = DOCK - 2 - k, reach = root - k / 3;
+                for (int z = root - 4; z <= reach; z++) if (!terrain.column(x, z).land() || y > terrain.column(x, z).top() || y < terrain.column(x, z).bottom())
+                    canvas.set(x, y, z, Math.abs(x - px) == 4 || k % 5 == 4 ? Material.STONE_BRICKS : Material.MOSSY_STONE_BRICKS);
+            }
+            for (int x : new int[] {px - 3, px + 3}) for (int k = 0; k <= 10; k++) for (int dz = 0; dz <= 1; dz++)
+                canvas.set(x, DOCK - 16 + k, root - 4 + 2 * k + dz, Material.STRIPPED_DARK_OAK_LOG, "axis=z");
+            // The pier head: a wider platform with bollards and a crane.
+            for (int z = end - 5; z <= end; z++) for (int x = px - 5; x <= px + 5; x++) {
+                if (Math.abs(x - px) <= 3) continue;
+                canvas.set(x, DOCK - 1, z, Material.SPRUCE_PLANKS);
+                canvas.set(x, DOCK - 2, z, Material.STRIPPED_DARK_OAK_LOG, "axis=x");
+                if (Math.abs(x - px) == 5) runs.fence(x, DOCK, z, Material.SPRUCE_FENCE);
+            }
+            for (int x = px - 5; x <= px + 5; x++) runs.fence(x, DOCK, end + 1, Material.SPRUCE_FENCE);
+            for (int x = px - 5; x <= px + 5; x++) canvas.set(x, DOCK - 1, end + 1, Material.STRIPPED_SPRUCE_LOG, "axis=x");
+            ReachProps.crates(new ReachBrush(canvas, px - 4, DOCK, end - 3, 0), px);
+            canvas.set(px + 4, DOCK, end - 1, Material.POLISHED_DEEPSLATE_WALL, "up=true");
             marks.add(new Mark("pier_" + (px < 0 ? "west" : px > 0 ? "east" : "mid"), px, DOCK, lip + 4, 0F));
         }
         kit.tower(new ReachBrush(canvas, -48, DOCK, lip - 18, 0), 9, 36, ReachKit.Style.HARBOUR, 41);
         kit.tower(new ReachBrush(canvas, 40, DOCK, lip - 18, 0), 9, 32, ReachKit.Style.HARBOUR, 42);
         marks.add(new Mark("dockmaster", -44, DOCK, lip - 21, 180F));
         marks.add(new Mark("guildhall", 44, DOCK, lip - 21, 180F));
-        net.nerdsmp.paper.expedition.BuildCanvas ships = new net.nerdsmp.paper.expedition.BuildCanvas();
-        net.nerdsmp.paper.expedition.SkyShip.moor(ships, 0, 0, 0);
-        stamp(ships, new ReachBrush(canvas, -12, DOCK + 1, lip + 34, 1));
-        stamp(ships, new ReachBrush(canvas, 12, DOCK + 1, lip + 30, 1));
-        for (int x = -60; x <= 60; x++) for (int z = lip - 24; z <= lip + 52; z++) reserve(x, z);
+        marks.add(new Mark("npc_dockmaster_ebb", -44, DOCK, lip - 15, 180F));
+        marks.add(new Mark("npc_captain_wren", 44, DOCK, lip - 15, 180F));
+        marks.add(new Mark("npc_cassia_dawn", 2, DOCK, lip - 8, 180F));
+        marks.add(new Mark("npc_highcrown_folk_porter", -14, DOCK, 1077, 180F));
+        // Two sky-galleons moored between the piers, gangways out to them and mooring chains to the bollards.
+        int[][] ships = {{-12, 0}, {12, 1}};
+        for (int[] s : ships) {
+            ReachAirship.build(new ReachBrush(canvas, s[0], DOCK - 1, lip + 6, 0), 34, 9, s[1] == 0 ? Material.GREEN_TERRACOTTA : Material.RED_TERRACOTTA, 700 + s[1]);
+            int side = s[0] < 0 ? -1 : 1, pierEdge = s[0] + side * 9, hull = s[0] + side * 4;
+            for (int x = Math.min(pierEdge, hull); x <= Math.max(pierEdge, hull); x++) for (int z = lip + 19; z <= lip + 21; z++) {
+                canvas.set(x, DOCK - 1, z, z == lip + 20 ? Material.SPRUCE_PLANKS : Material.STRIPPED_SPRUCE_LOG, z == lip + 20 ? "" : "axis=x");
+                canvas.set(x, DOCK, z, z == lip + 20 ? Material.AIR : Material.SPRUCE_FENCE);
+                canvas.set(x, DOCK + 1, z, Material.AIR);
+            }
+            for (int z : new int[] {lip + 10, lip + 32}) for (int x = Math.min(pierEdge, hull) + 1; x < Math.max(pierEdge, hull); x++) canvas.set(x, DOCK, z, Material.IRON_CHAIN, "axis=x");
+        }
+        // A third galleon coming in to moor, high over the cloud sea east of the piers, turned toward the city.
+        ReachAirship.build(new ReachBrush(canvas, 78, DOCK + 22, lip + 64, 2), 30, 9, Material.BLUE_TERRACOTTA, 703);
+        for (int x = -60; x <= 60; x++) for (int z = lip - 24; z <= end + 10; z++) reserve(x, z);
     }
 
-    private static void stamp(net.nerdsmp.paper.expedition.BuildCanvas source, ReachBrush at) {
-        source.blocks().forEach((cell, spec) -> at.set(cell.x(), cell.y(), cell.z(), spec.material(), spec.properties()));
+    /** True where a pier's railing opens onto a gangway out to a moored ship. */
+    private static boolean gangway(int px, int x, int z, int lip) {
+        return z >= lip + 19 && z <= lip + 21 && (px == -24 && x == px + 3 || px == 24 && x == px - 3);
     }
 
     /** Warehouses backing onto the Market Ward's wall, facing a dock street, under red and dark roofs. */
@@ -1214,6 +1438,42 @@ final class HighcrownCity {
                 }
             }
         }
+    }
+
+    /**
+     * Rounds the street network's corners: a closing of the paved area (grow it by a few blocks, then shrink it back)
+     * fills every inside corner where two ways meet with a curved fillet, so streets turn the way walked ground wears
+     * rather than at right angles. Only free, level ground of the same terrace is paved.
+     */
+    private void roundCorners() {
+        final int radius = 3;
+        java.util.List<int[]> disk = new ArrayList<>();
+        for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) if (dx * dx + dz * dz <= radius * radius) disk.add(new int[] {dx, dz});
+        Map<Long, Integer> grown = new HashMap<>();
+        for (Map.Entry<Long, double[]> e : streets.entrySet()) {
+            int x = (int) (e.getKey() >> 32), z = e.getKey().intValue(), y = (int) e.getValue()[0];
+            for (int[] d : disk) grown.putIfAbsent(key(x + d[0], z + d[1]), y);
+        }
+        List<int[]> fill = new ArrayList<>();
+        for (Map.Entry<Long, Integer> e : grown.entrySet()) {
+            if (streets.containsKey(e.getKey())) continue;
+            int x = (int) (e.getKey() >> 32), z = e.getKey().intValue(), y = e.getValue();
+            boolean kept = true;
+            for (int[] d : disk) {
+                Integer level = grown.get(key(x + d[0], z + d[1]));
+                if (level == null || level != y) { kept = false; break; }
+            }
+            if (!kept || reserved.contains(e.getKey()) || street(x, z) != y) continue;
+            ReachTerrain.Column col = terrain.column(x, z);
+            if (!col.land() || col.wet() || col.top() != y - 1) continue;
+            if (!isAir(x, y, z) || !isAir(x, y + 1, z)) continue;
+            ReachCanvas.Spec below = canvas.get(x, y - 1, z);
+            if (below != null && !below.state().contains("grass") && !below.state().contains("dirt") && !below.state().contains("moss")) continue;
+            boolean nearLot = false;
+            for (int[] l : lots) if (x >= l[0] && x <= l[2] && z >= l[1] && z <= l[3]) { nearLot = true; break; }
+            if (!nearLot) fill.add(new int[] {x, z, y});
+        }
+        for (int[] f : fill) street(f[0], f[1], f[2], 0.7);
     }
 
     /** True within two blocks of a door, a gate or a step, so props never block a way in. */

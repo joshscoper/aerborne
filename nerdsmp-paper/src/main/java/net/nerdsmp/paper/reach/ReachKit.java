@@ -148,6 +148,15 @@ final class ReachKit {
      * puts the gable to the street (the narrow-lot look of ref 7); otherwise the eaves face the street.
      */
     void house(ReachBrush b, int w, int d, int floors, Style s, boolean jetty, boolean gableFront, long seed) {
+        house(b, w, d, floors, s, jetty, gableFront, seed, ReachInteriors.Use.HOME, ReachInteriors.Trade.GENERAL);
+    }
+
+    /**
+     * As above, furnished for {@code use}; returns where its keeper stands (local x, y, z), or null when it has
+     * none, so a town can put its shopkeeper behind the counter.
+     */
+    int[] house(ReachBrush b, int w, int d, int floors, Style s, boolean jetty, boolean gableFront, long seed,
+                ReachInteriors.Use use, ReachInteriors.Trade trade) {
         int ground = 4, storey = 4;
         site(b, -1, jetty ? -2 : -1, w, d, 2, s.base());
         approach(b, w / 2, 3, s);
@@ -213,13 +222,53 @@ final class ReachKit {
         // Eaves to the street: the same roof in a frame turned a quarter, so its ridge runs along the front.
         else roof(b.at(w - 1, 0, 0, 1), front - 1, d, -1, w, top + 1, s, true, true);
         int span = gableFront ? w + 2 : d - front + 2;
-        chimney(b, gableFront ? ((seed & 1) == 0 ? 1 : w - 2) : 1, d - 2, top + span / 2 + 2, s);
+        int chimX = gableFront ? ((seed & 1) == 0 ? 1 : w - 2) : 1;
+        chimney(b, chimX, d - 2, top + span / 2 + 2, s);
         // A dormer breaks a long roof facing the street.
         if (!gableFront && w >= 9) dormer(b, w / 2 + ((seed & 2) == 0 ? -2 : 2), top + 1, front - 1, s);
         // Life at the door: a barrel, a crate or a bench, and a pot of flowers.
         b.set(door + 2, 0, -1, (seed & 4) == 0 ? Material.BARREL : Material.COMPOSTER, (seed & 4) == 0 ? "facing=up" : "level=4");
         if ((seed & 8) == 0) b.set(door - 2, 0, -1, s.roofStair(), "facing=north,half=bottom");
         if ((seed & 16) == 0) b.set(door + 3, 0, -1, Material.POTTED_AZURE_BLUET);
+        sides(b, w, d, floors, front, s, seed);
+        return ReachInteriors.furnish(b, new ReachInteriors.Layout(w, d, floors, front, chimX), use, trade, seed);
+    }
+
+    /**
+     * Detail on the side walls, which a street sees as much as the front: upper-floor windows with flower boxes,
+     * a diagonal brace in the frame, and a lean-to or a log store against the ground storey.
+     */
+    private void sides(ReachBrush b, int w, int d, int floors, int front, Style s, long seed) {
+        for (int side : new int[] {0, w - 1}) {
+            int out = side == 0 ? -1 : 1;
+            String along = "north=true,south=true";
+            for (int f = 0; f < floors; f++) {
+                int fy = 4 + f * 4;
+                for (int z = front + 2; z < d - 2; z += 3) {
+                    if (b.has(side, fy + 1, z) && b.canvas.get(b.wx(side, z), b.oy + fy + 1, b.wz(side, z)).state().contains("_log")) continue;
+                    b.set(side, fy + 1, z, Material.GLASS_PANE, along);
+                    b.set(side, fy + 2, z, Material.GLASS_PANE, along);
+                    setIfEmpty(b, side + out, fy, z, s.trapdoor(), "facing=" + (out < 0 ? "east" : "west") + ",half=top,open=false");
+                    setIfEmpty(b, side + out, fy + 1, z, (seed + z) % 2 == 0 ? Material.POTTED_POPPY : Material.POTTED_DANDELION, "");
+                }
+                // A diagonal brace between two posts, as a timber frame would have.
+                if (d >= 8 && (seed >> f & 1) == 0) for (int k = 0; k < 3; k++) {
+                    int z = front + 4 + k, y = fy + 1 + k;
+                    if (z < d - 1 && y < fy + 4 && !b.canvas.get(b.wx(side, z), b.oy + y, b.wz(side, z)).state().contains("pane")) b.set(side, y, z, s.beam(), "axis=z");
+                }
+            }
+            if ((seed >> 20 & 3) == (side == 0 ? 0 : 1) && d >= 8) {
+                // A lean-to store against the ground floor: posts, a sloping roof, logs stacked inside.
+                for (int z = 2; z <= 5; z++) {
+                    setIfEmpty(b, side + out * 2, 0, z, z == 2 || z == 5 ? s.fence() : Material.STRIPPED_SPRUCE_LOG, z == 2 || z == 5 ? "" : "axis=z");
+                    setIfEmpty(b, side + out, 0, z, Material.STRIPPED_SPRUCE_LOG, "axis=z");
+                    setIfEmpty(b, side + out, 1, z, (z & 1) == 0 ? Material.SPRUCE_LOG : Material.STRIPPED_SPRUCE_LOG, "axis=z");
+                    setIfEmpty(b, side + out * 2, 1, z, z == 2 || z == 5 ? s.fence() : Material.AIR, "");
+                    setIfEmpty(b, side + out, 2, z, s.roofStair(), "facing=" + (out < 0 ? "east" : "west") + ",half=bottom");
+                    setIfEmpty(b, side + out * 2, 2, z, s.roofSlab(), "type=bottom");
+                }
+            }
+        }
     }
 
     /** Sets a block only where nothing is built yet, so additions never cut into a neighbour. */
@@ -277,8 +326,9 @@ final class ReachKit {
         b.set(x, 1, z, Material.GLASS_PANE, "east=true,west=true");
         b.set(x, 2, z, Material.GLASS_PANE, "east=true,west=true");
         b.set(x, 0, z - 1, s.roofStair(), "facing=south,half=top");
-        b.set(x - 1, 1, z - 1, s.trapdoor(), "facing=west,half=bottom,open=true");
-        b.set(x + 1, 1, z - 1, s.trapdoor(), "facing=east,half=bottom,open=true");
+        // Open shutters lie flat against the wall either side of the window.
+        for (int side : new int[] {-1, 1}) for (int y = 1; y <= 2; y++)
+            setIfEmpty(b, x + side, y, z - 1, s.trapdoor(), "facing=north,half=" + (y == 1 ? "bottom" : "top") + ",open=true");
     }
 
     private void groundWindowSide(ReachBrush b, int x, int z, int out, Style s) {
@@ -372,10 +422,19 @@ final class ReachKit {
         }
     }
 
+    /**
+     * A chimney: a stone flue up through the house, then a three-by-three brick stack above the roof with a hollow
+     * core. The fire sits two blocks down inside it on a bale of hay, so smoke climbs out of the top and no flame shows.
+     */
     private void chimney(ReachBrush b, int x, int z, int top, Style s) {
-        for (int y = 0; y <= top; y++) if (!b.has(x, y, z) || y > 3) b.set(x, y, z, y > top - 3 ? Material.BRICKS : s.base());
-        b.set(x, top + 1, z, Material.CAMPFIRE, "lit=true,signal_fire=false");
-        b.set(x, top + 2, z, Material.AIR);
+        for (int y = 0; y < top - 5; y++) if (!b.has(x, y, z) || y > 3) b.set(x, y, z, s.base());
+        for (int y = top - 5; y <= top; y++) for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            boolean core = dx == 0 && dz == 0;
+            if (!core) b.set(x + dx, y, z + dz, y == top - 5 || y == top ? Material.STONE_BRICKS : Material.BRICKS);
+            else b.set(x, y, z, y >= top - 1 ? Material.AIR : y == top - 2 ? Material.CAMPFIRE : y == top - 3 ? Material.HAY_BLOCK : Material.BRICKS,
+                y == top - 2 ? "lit=true,signal_fire=false" : y == top - 3 ? "axis=y" : "");
+        }
+        for (int[] c : new int[][] {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) b.set(x + c[0], top + 1, z + c[1], Material.BRICK_SLAB, "type=bottom");
     }
 
     // ------------------------------------------------------------------ towers (ref 5)
@@ -392,7 +451,7 @@ final class ReachKit {
         for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) b.footing(terrain, x, -1, z, s.base());
         for (int y = -1; y < height; y++) for (int x = 0; x < size; x++) for (int z = 0; z < size; z++) {
             boolean wall = x == 0 || x == size - 1 || z == 0 || z == size - 1;
-            if (!wall) { b.set(x, y, z, y % 6 == 5 ? s.plank() : Material.AIR); continue; }
+            if (!wall) { b.set(x, y, z, y == -1 || y % 6 == 5 ? s.plank() : Material.AIR); continue; }
             boolean corner = (x == 0 || x == size - 1) && (z == 0 || z == size - 1);
             if (y < baseTop) b.set(x, y, z, corner ? s.baseAccent() : weathered(b, x, y, z, s.base()));
             else if (corner || x == r || z == r) b.set(x, y, z, s.post(), "axis=y");
@@ -432,6 +491,56 @@ final class ReachKit {
         }
         spire(b, -2, size + 1, top + 4, s);
         b.set(r, top + 2, r, Material.LANTERN);
+        towerDetail(b, size, height, baseTop, s, seed);
+    }
+
+    /**
+     * What makes a tower read as built rather than extruded: a corbelled string course at each floor, shutters and
+     * sills on the long windows, a balcony on brackets halfway up, banners on the face, and stepped piers at the foot.
+     */
+    private void towerDetail(ReachBrush b, int size, int height, int baseTop, Style s, long seed) {
+        int r = size / 2;
+        String[] outFace = {"south", "west", "north", "east"};
+        // String courses: upside-down stairs round the tower at every floor line of the timber part.
+        for (int y = baseTop; y < height - 2; y += 6) for (int k = 0; k < size; k++) {
+            setIfEmpty(b, k, y, -1, s.roofStair(), "facing=south,half=top");
+            setIfEmpty(b, k, y, size, s.roofStair(), "facing=north,half=top");
+            setIfEmpty(b, -1, y, k, s.roofStair(), "facing=east,half=top");
+            setIfEmpty(b, size, y, k, s.roofStair(), "facing=west,half=top");
+        }
+        // Sills under the long windows and shutters flat against the wall either side.
+        for (int y = baseTop + 2; y < height - 3; y += 6) for (int k = 1; k < size - 1; k++) if (k != r && Math.abs(k - r) <= 2) {
+            setIfEmpty(b, k, y - 1, -1, s.roofStair(), "facing=south,half=top");
+            setIfEmpty(b, k, y - 1, size, s.roofStair(), "facing=north,half=top");
+        }
+        for (int y = baseTop + 2; y < height - 3; y += 6) for (int dy = 0; dy <= 1; dy++) for (int side : new int[] {r - 3, r + 3}) {
+            if (side <= 0 || side >= size - 1) continue;
+            setIfEmpty(b, side, y + dy, -1, s.trapdoor(), "facing=north,half=bottom,open=true");
+            setIfEmpty(b, side, y + dy, size, s.trapdoor(), "facing=south,half=bottom,open=true");
+        }
+        // A balcony on brackets round the front at the floor above the stone base.
+        int by = baseTop + 5;
+        if (height >= 24) {
+            for (int x = -1; x <= size; x++) {
+                setIfEmpty(b, x, by, -1, s.plank(), "");
+                setIfEmpty(b, x, by, -2, s.plank(), "");
+                setIfEmpty(b, x, by + 1, -3, s.fence(), "");
+                if (x % 2 == 0) setIfEmpty(b, x, by - 1, -1, s.roofStair(), "facing=south,half=top");
+            }
+            for (int z = -3; z <= -1; z++) { setIfEmpty(b, -2, by + 1, z, s.fence(), ""); setIfEmpty(b, size + 1, by + 1, z, s.fence(), ""); }
+            b.set(r, by + 1, 0, s.door(), "facing=north,half=lower,hinge=left,open=false");
+            b.set(r, by + 2, 0, s.door(), "facing=north,half=upper,hinge=left,open=false");
+            setIfEmpty(b, r + 2, by + 3, -1, Material.LANTERN, "hanging=true");
+        }
+        // Banners down the faces, under the top storey.
+        Material banner = (seed & 1) == 0 ? Material.GREEN_WALL_BANNER : Material.BLUE_WALL_BANNER;
+        int bannerY = height - 4;
+        setIfEmpty(b, r, bannerY, -1, banner, "facing=north");
+        setIfEmpty(b, size, bannerY, r, banner, "facing=east");
+        setIfEmpty(b, -1, bannerY, r, banner, "facing=west");
+        // Stepped piers at the foot of each corner.
+        for (int[] cc : new int[][] {{-1, -1}, {size, -1}, {-1, size}, {size, size}}) for (int y = -1; y <= 2; y++)
+            b.set(cc[0], y, cc[1], y == 2 ? Material.STONE_BRICK_SLAB : s.baseAccent(), y == 2 ? "type=bottom" : "");
     }
 
     /**

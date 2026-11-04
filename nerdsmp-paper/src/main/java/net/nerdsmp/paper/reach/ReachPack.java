@@ -15,7 +15,7 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */
@@ -28,31 +28,18 @@ public final class ReachPack {
 
     private static Map<String, String> anchors() {
         Map<String, String> a = new LinkedHashMap<>();
-        // Highcrown: the arrival line, the docks, the Gate Ring, the Hall of Callings, the exchange, the keep.
-        a.put("highcrown.arrival_0", "cassia_dawn");
-        a.put("highcrown.arrival_1", "aeron_vale");
-        a.put("highcrown.arrival_2", "cato_flint");
-        a.put("highcrown.guildhall", "captain_wren");
-        a.put("highcrown.dockmaster", "dockmaster_ebb");
-        a.put("highcrown.tethered_gull", "gull_innkeeper");
-        a.put("highcrown.memorial", "tamsin_wake");
-        String[] ring = {"kestrel_way", "elian_quill", "gilda_penn", "hessa_clay", "ivo_reed", "bram_tallow", "garrick_mott"};
-        for (int i = 0; i < ring.length; i++) a.put("highcrown.gate_ring_" + i, ring[i]);
-        String[] hall = {"pell_wren", "fen_calder", "nima_hart"};
-        for (int i = 0; i < hall.length; i++) a.put("highcrown.hall_" + i, hall[i]);
-        String[] crafters = {"torren_pike", "sella_mire", "veyra_loom"};
-        for (int i = 0; i < crafters.length; i++) a.put("highcrown.crafter_" + i, crafters[i]);
-        String[] exchange = {"nyra_vell", "rook_salen", "orris_bell", "mara_venn", "vera_lune", "alba_meadow", "rowan_ashwood",
-            "dain_slate", "petra_mason", "hob_copper"};
-        for (int i = 0; i < exchange.length; i++) a.put("highcrown.stall_" + (i % 2 == 0 ? "w_" : "e_") + (i / 2 + 1), exchange[i]);
-        String[] folk = {"highcrown_folk_baker", "highcrown_folk_porter", "highcrown_folk_widow", "highcrown_folk_urchin"};
-        for (int i = 0; i < folk.length; i++) a.put("highcrown.stall_" + (i % 2 == 0 ? "w_" : "e_") + (i / 2 + 7), folk[i]);
-        a.put("highcrown.keep_hall", "reach_steward_aldric");
-        a.put("highcrown.keep_court", "orin_ledger");
-        a.put("highcrown.citadel_steps", "arlen_voss");
-        a.put("highcrown.plaza", "dorian_ash");
-        a.put("highcrown.plaza_guide", "lyra_senn");
+        // Highcrown: every service NPC stands where their work is, behind a counter, at a desk or at their post
+        // (HighcrownCity marks each as npc_<id>): the guide at the pier, the masters in their towers, keepers in their
+        // shops, mentors in the Hall of Callings, wayfarers in their hall, the Steward on the throne-hall floor.
+        String[] highcrown = {"cassia_dawn", "aeron_vale", "cato_flint", "captain_wren", "dockmaster_ebb", "gull_innkeeper",
+            "tamsin_wake", "kestrel_way", "elian_quill", "gilda_penn", "hessa_clay", "ivo_reed", "bram_tallow", "garrick_mott",
+            "pell_wren", "fen_calder", "nima_hart", "torren_pike", "sella_mire", "veyra_loom", "nyra_vell", "rook_salen",
+            "orris_bell", "mara_venn", "vera_lune", "alba_meadow", "rowan_ashwood", "dain_slate", "petra_mason", "hob_copper",
+            "highcrown_folk_baker", "highcrown_folk_porter", "highcrown_folk_widow", "highcrown_folk_urchin",
+            "reach_steward_aldric", "orin_ledger", "arlen_voss", "dorian_ash", "lyra_senn"};
+        for (String npc : highcrown) a.put("highcrown.npc_" + npc, npc);
         a.put("highcrown.kingsgate", "highcrown_watch");
+        a.put("highcrown.castle_gate", "highcrown_watch");
         // Goldenreach Vale.
         a.put("goldenreach.reeve_hall", "reeve_hollis");
         a.put("goldenreach.inn", "wenna_marr");

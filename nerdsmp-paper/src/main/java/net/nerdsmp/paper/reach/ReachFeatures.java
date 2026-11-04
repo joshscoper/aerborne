@@ -70,6 +70,7 @@ public final class ReachFeatures {
             done = built.get(feature.id());
             if (done != null) return done;
             Built result = feature.build().apply(terrain);
+            ReachSettle.settle(result.canvas(), terrain);
             spots.put(feature.id(), List.copyOf(result.spots()));
             ReachCanvas.Frozen frozen = result.canvas().freeze();
             built.put(feature.id(), frozen);

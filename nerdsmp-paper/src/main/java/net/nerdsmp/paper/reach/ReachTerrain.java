@@ -79,7 +79,7 @@ public final class ReachTerrain {
 
     private static final List<Pad> FIXED_PADS = List.of(
         new Pad("highcrown", 0, 905, 165, 107, 45),
-        new Pad("highcrown_keep", 112, 868, 40, ReachTerrain.CROWN_TOP + 12, 22),
+        new Pad("highcrown_keep", 112, 868, 46, ReachTerrain.CROWN_TOP + 12, 18),
         new Pad("last_light", 285, -325, 34, 112, 20)
     );
     static final double MILLBROOK_X = 40, MILLBROOK_Z = 560;

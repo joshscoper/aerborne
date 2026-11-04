@@ -69,6 +69,17 @@ public final class ReachCanvas {
                 for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) set(x, y, z, material);
     }
 
+    /** Visits every written block in world coordinates. */
+    public void forEachBlock(BlockVisitor visitor) {
+        chunks.forEach((key, cells) -> {
+            int cx = (int) (key >> 32), cz = (int) (long) key;
+            cells.forEach((packed, index) -> visitor.visit((cx << 4) + (packed >> 14 & 15), (packed & 1023) - 64, (cz << 4) + (packed >> 10 & 15), palette.get(index)));
+        });
+    }
+
+    /** A block position and its state. */
+    public interface BlockVisitor { void visit(int x, int y, int z, Spec spec); }
+
     public int size() { return chunks.values().stream().mapToInt(Map::size).sum(); }
     public boolean empty() { return chunks.isEmpty(); }
     public int minX() { return minX; }
