@@ -25,9 +25,30 @@ rewards:
   # At most this many paid votes per player in a day, whatever the sites send.
   max-paid-per-day: 8
 
-# The sites /vote lists, with each one's vote page. 'service' is the name the site sends with its votes.
-# /nerdadmin vote shows the names of the latest votes, so after a test vote copy it from there.
+# The /vote menu. The title can use colours, like <gold> or <gradient:#C59AFA:#8CE8ED>.
+menu:
+  title: '<gold><bold>Vote for Aerborne</bold></gold>'
+
+# The sites in the /vote menu, one tile each. Clicking a tile gives the player that site's vote link.
+#   name         what the tile says (up to 40 letters)
+#   url          the site's vote page for the server (https://)
+#   service      the name the site sends with each vote. If it differs from 'name', votes still pay, but
+#                the tile can't tell when the player can vote again. /nerdadmin vote shows the names of
+#                the latest votes, so after a site's test vote copy it from there.
+#   icon         any item, like grass_block, diamond or emerald (paper if left out)
+#   slot         optional: 10-16, 19-25 or 28-34 in the menu. Sites without one line up in the middle.
+#   description  optional: a line or two under the name
+# After editing, /nerdadmin vote reload shows the change without a restart.
 sites: []
+# Remove the [] above and the # in front of these lines, then put in your own pages:
 #  - name: Planet Minecraft
 #    url: https://www.planetminecraft.com/server/your-server/vote/
 #    service: PlanetMinecraft.com
+#    icon: grass_block
+#    description: The biggest Minecraft community site.
+#  - name: Minecraft Server List
+#    url: https://minecraft-server-list.com/server/your-server/vote/
+#    icon: diamond
+#  - name: TopG
+#    url: https://topg.org/minecraft-servers/server-your-server
+#    icon: emerald

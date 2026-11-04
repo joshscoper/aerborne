@@ -1070,7 +1070,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 java.util.stream.Stream.of("list", "off"), plugin.cosmetics().ownership(player).trails().stream()).toList() : List.of();
             case "emote" -> args.length == 1 ? plugin.cosmetics().catalog().emoteIds() : List.of();
             case "booster" -> args.length == 1 ? List.of("use") : List.of();
-            case "vote" -> args.length == 1 ? List.of("top") : List.of();
+            case "vote" -> args.length == 1 ? List.of("top", "list") : List.of();
             case "cosmetics" -> args.length == 1 ? List.of("title", "aura", "finisher")
                 : args.length == 2 && sender instanceof Player player ? java.util.stream.Stream.concat(java.util.stream.Stream.of("off"),
                     switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
@@ -1099,7 +1099,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 ? ADMIN_SUBCOMMANDS
                 : args.length == 3 && args[0].equalsIgnoreCase("xp")
                     ? Arrays.stream(Skill.values()).map(skill -> skill.name().toLowerCase(Locale.ROOT)).toList()
-                : args.length == 2 && args[0].equalsIgnoreCase("vote") ? List.of("status", "test")
+                : args.length == 2 && args[0].equalsIgnoreCase("vote") ? List.of("status", "reload", "test")
                 : args.length == 3 && args[0].equalsIgnoreCase("mob") ? plugin.mobs().ids()
                 : args.length == 3 && args[0].equalsIgnoreCase("geode")
                     ? Arrays.stream(net.nerdsmp.paper.forge.GeodeGrade.values())

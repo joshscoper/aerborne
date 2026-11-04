@@ -22,9 +22,30 @@ On the site's page for the server:
 - **Token / public key:** the contents of one of the files above.
 
 Then press the site's test button and run `/nerdadmin vote`. It shows whether the port is open and the latest
-votes, with the name each site sends. Put that name in `votes.yml` under `sites` as the site's `service`, with
-its vote page, so `/vote` can link it and show when each player can vote there again. Restart after editing
-`votes.yml`.
+votes, with the name each site sends.
+
+## The /vote menu
+
+`/vote` opens a menu with a tile for each site in `votes.yml` under `sites`. A site the player can vote on now
+glows; one they've voted on says when it opens again. A menu can't open a web page, so clicking a tile closes
+it and puts that site's vote link in chat, ready to click. The menu also shows what voting pays, the player's
+own record, and the month's top voters (click for the top 10). `/vote list` gives the same in chat, which is
+also what the console gets.
+
+Each site takes:
+
+| Key | |
+|---|---|
+| `name` | What the tile says, up to 40 letters. |
+| `url` | The site's vote page for the server. Must be `https://`. |
+| `service` | The name the site sends with each vote (from `/nerdadmin vote`). Without the right one, votes still pay, but the tile can't tell when the player can vote again. Defaults to `name`. |
+| `icon` | Any item, like `grass_block` or `diamond`. Defaults to `paper`. |
+| `slot` | Optional: 10-16, 19-25 or 28-34. Sites without one line up in the middle row. |
+| `description` | Optional text under the name. |
+
+`menu.title` sets the menu's title, with colour tags. After editing, `/nerdadmin vote reload` applies the sites,
+rewards and title without a restart. If the file has a mistake, the reload says what and keeps the old
+settings. Changes to `listener` still take a restart.
 
 Moving from NuVotifier: copy its `rsa/public.key` and `rsa/private.key` into `security/votifier/` before first
 start and the sites keep working with the key they already have. Remove NuVotifier, or give it a different port.

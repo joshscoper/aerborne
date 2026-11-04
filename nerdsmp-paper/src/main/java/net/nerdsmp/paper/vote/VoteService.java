@@ -43,9 +43,10 @@ import java.util.logging.Level;
  * when each can be voted on again, and {@code /vote top} the month's top voters.
  */
 public final class VoteService implements Listener, AutoCloseable {
-    record Site(String name, String url, String service) {}
+    /** A vote site: its menu tile, vote page and the name it sends with each vote. {@code slot} is -1 to place it automatically. */
+    record Site(String name, String url, String service, String icon, int slot, String description) {}
 
-    record Settings(boolean enabled, String host, int port, VoteLedger.Rules rules, List<Site> sites) {
+    record Settings(boolean enabled, String host, int port, VoteLedger.Rules rules, String title, List<Site> sites) {
         static Settings read(ConfigurationSection yaml) {
             int port = yaml.getInt("listener.port", 9027);
             if (port < 1 || port > 65535) throw new IllegalArgumentException("votes.yml listener.port must be 1-65535");
@@ -60,25 +61,42 @@ public final class VoteService implements Listener, AutoCloseable {
                 throw new IllegalArgumentException("votes.yml has a reward setting out of range");
             }
             List<Site> sites = new ArrayList<>();
+            java.util.Set<Integer> taken = new java.util.HashSet<>();
             for (Map<?, ?> raw : yaml.getMapList("sites")) {
-                String name = String.valueOf(raw.get("name")).strip();
-                String url = String.valueOf(raw.get("url")).strip();
-                String service = raw.get("service") == null ? name : String.valueOf(raw.get("service")).strip();
-                URI uri = URI.create(url);
+                String name = text(raw, "name", "");
+                String url = text(raw, "url", "");
+                URI uri;
+                try { uri = URI.create(url); }
+                catch (IllegalArgumentException invalid) { uri = URI.create("invalid:x"); }
                 if (name.isEmpty() || name.length() > 40 || !"https".equals(uri.getScheme()) || url.matches(".*['\"<>\\s].*")) {
-                    throw new IllegalArgumentException("votes.yml site '" + name + "' needs a name and an https:// url");
+                    throw new IllegalArgumentException("votes.yml site '" + name + "' needs a name (up to 40 letters) and an https:// url");
                 }
-                sites.add(new Site(name, url, service));
+                int slot = raw.get("slot") instanceof Number number ? number.intValue() : -1;
+                if (slot != -1 && (!VoteMenu.siteSlot(slot) || !taken.add(slot))) {
+                    throw new IllegalArgumentException("votes.yml site '" + name + "' has slot " + slot + "; use a free slot from 10-16, 19-25 or 28-34");
+                }
+                sites.add(new Site(name, url, text(raw, "service", name), text(raw, "icon", "paper").toLowerCase(Locale.ROOT), slot, text(raw, "description", "")));
+            }
+            if (sites.size() > VoteMenu.SITE_SLOTS.length) {
+                throw new IllegalArgumentException("votes.yml lists more sites than the menu has room for (" + VoteMenu.SITE_SLOTS.length + ")");
             }
             return new Settings(yaml.getBoolean("listener.enabled", true), yaml.getString("listener.host", "0.0.0.0"), port,
-                new VoteLedger.Rules(marks, bonus, cap, every, Duration.ofHours(repeat), perDay), List.copyOf(sites));
+                new VoteLedger.Rules(marks, bonus, cap, every, Duration.ofHours(repeat), perDay),
+                yaml.getString("menu.title", "<gold><bold>Vote for Aerborne</bold></gold>"), List.copyOf(sites));
+        }
+
+        private static String text(Map<?, ?> raw, String key, String fallback) {
+            Object value = raw.get(key);
+            return value == null ? fallback : String.valueOf(value).strip();
         }
     }
 
     private record Received(String site, String username, long at, String outcome) {}
 
     private final NerdSmpPlugin plugin;
-    private final Settings settings;
+    private final File file;
+    private Settings settings;
+    private final VoteMenu menu;
     private final File tallyFile;
     private final ZoneId zone = ZoneId.systemDefault();
     private final Deque<Received> recent = new ArrayDeque<>();
@@ -89,9 +107,10 @@ public final class VoteService implements Listener, AutoCloseable {
 
     public VoteService(NerdSmpPlugin plugin) {
         this.plugin = plugin;
-        File file = new File(plugin.getDataFolder(), "votes.yml");
+        file = new File(plugin.getDataFolder(), "votes.yml");
         if (!file.exists()) plugin.saveResource("votes.yml", false);
         settings = Settings.read(YamlConfiguration.loadConfiguration(file));
+        menu = new VoteMenu(plugin, this);
         tallyFile = new File(plugin.getDataFolder(), "vote-tally.yml");
         YamlConfiguration saved = YamlConfiguration.loadConfiguration(tallyFile);
         month = saved.getString("month", YearMonth.now(zone).toString());
@@ -101,6 +120,7 @@ public final class VoteService implements Listener, AutoCloseable {
 
     /** Opens the Votifier port. A problem here is logged and shown in {@code /nerdadmin vote}; the rest of the server carries on. */
     public void start() {
+        Bukkit.getPluginManager().registerEvents(menu, plugin);
         if (!settings.enabled()) return;
         try {
             Path security = plugin.getDataFolder().toPath().resolve("security");
@@ -218,6 +238,11 @@ public final class VoteService implements Listener, AutoCloseable {
             top(sender);
             return true;
         }
+        // Players get the menu; the console, and anyone who asks for /vote list, get the same in chat.
+        if (sender instanceof Player opener && (args.length == 0 || !args[0].equalsIgnoreCase("list"))) {
+            menu.open(opener);
+            return true;
+        }
         VoteLedger.Rules rules = settings.rules();
         Chat.send(sender, "<gold><bold>Vote for Aerborne</bold></gold> <gray>· each vote pays</gray> " + Chat.marksTag(rules.marksPerVote())
             + (rules.streakBonus() > 0 ? "<gray>, and " + Chat.marks(rules.streakBonus()) + " more for each day in a row</gray>" : ""));
@@ -250,10 +275,8 @@ public final class VoteService implements Listener, AutoCloseable {
         return tally.entrySet().stream().filter(entry -> entry.getKey().equalsIgnoreCase(name)).mapToInt(Map.Entry::getValue).findFirst().orElse(0);
     }
 
-    private void top(CommandSender sender) {
-        boolean current = YearMonth.now(zone).toString().equals(month);
-        List<Map.Entry<String, Integer>> best = current ? tally.entrySet().stream()
-            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey())).limit(10).toList() : List.of();
+    void top(CommandSender sender) {
+        List<Map.Entry<String, Integer>> best = leaders(10);
         Chat.send(sender, "<gold><bold>Top voters</bold></gold> <gray>· " + YearMonth.now(zone).getMonth().getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH) + "</gray>");
         if (best.isEmpty()) Chat.send(sender, "<gray>No votes yet this month. Be the first: </gray>" + Chat.command("/vote"));
         int place = 1;
@@ -263,7 +286,7 @@ public final class VoteService implements Listener, AutoCloseable {
         }
     }
 
-    /** {@code /nerdadmin vote [status|test <player> [site]]}. */
+    /** {@code /nerdadmin vote [status|reload|test <player> [site]]}. */
     public boolean admin(CommandSender sender, String[] args) {
         if (args.length >= 3 && args[1].equalsIgnoreCase("test")) {
             String service = args.length >= 4 ? String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)) : "Test";
@@ -272,8 +295,18 @@ public final class VoteService implements Listener, AutoCloseable {
             receive(service, args[2]);
             return true;
         }
+        if (args.length == 2 && args[1].equalsIgnoreCase("reload")) {
+            try {
+                settings = Settings.read(YamlConfiguration.loadConfiguration(file));
+                Chat.success(sender, "Reloaded votes.yml: " + settings.sites().size() + " site" + (settings.sites().size() == 1 ? "" : "s")
+                    + ". Changes to the listener take a restart.");
+            } catch (RuntimeException invalid) {
+                Chat.error(sender, Chat.escape(String.valueOf(invalid.getMessage())) + ". The old settings are still in use.");
+            }
+            return true;
+        }
         if (args.length > 1 && !args[1].equalsIgnoreCase("status")) {
-            Chat.usage(sender, "/nerdadmin vote [status|test <player> [site]]");
+            Chat.usage(sender, "/nerdadmin vote [status|reload|test <player> [site]]");
             return true;
         }
         if (listener != null) Chat.info(sender, "Votifier is listening on <white>" + settings.host() + ":" + listener.port() + "</white> (v1 and v2).");
@@ -288,6 +321,19 @@ public final class VoteService implements Listener, AutoCloseable {
         }
         return true;
     }
+
+    Settings settings() { return settings; }
+
+    ZoneId zone() { return zone; }
+
+    /** This month's leaders, most votes first. */
+    List<Map.Entry<String, Integer>> leaders(int limit) {
+        if (!YearMonth.now(zone).toString().equals(month)) return List.of();
+        return tally.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+            .limit(limit).toList();
+    }
+
+    int monthVotes(String name) { return monthCount(name); }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {

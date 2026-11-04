@@ -10,7 +10,9 @@ date are placed where the README had them. Each linked doc has the detail.
   Planet Minecraft can tell the server when someone votes. No separate Votifier plugin is needed.
 - **Rewards.** Each vote pays 100 Marks, 10 more for each day in a row up to a week, and every 20th vote earns an
   XP booster. Players who are offline are paid anyway and told when they next join.
-- **`/vote`** lists the sites with when each can be voted on again; `/vote top` ranks the month's voters.
+- **`/vote` menu.** A tile for each site in `votes.yml` (name, link, icon, slot, description) that glows when you can
+  vote there and gives you the link when clicked, plus your record and the month's top voters. `/vote top` ranks
+  the month in chat; `/nerdadmin vote reload` applies edits to `votes.yml` without a restart.
   Staff have `/nerdadmin vote` (status and latest votes) and `/nerdadmin vote test <player> [site]`. See [VOTING.md](VOTING.md).
 
 ### Cosmetics suite and XP boosters (November 3)
