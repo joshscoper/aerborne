@@ -566,6 +566,12 @@ tips:
 
 # Shipped content for known maps (zones, NPCs, quests' places, warps, dig sites and ore veins). A pack only
 # applies to a world whose seed and landmark blocks match it; staff edits are kept. /worldpack shows status.
+# The Wardens' Reach: the generated story map (docs/vault). Created only when staff run /reach generate.
+reach:
+  enabled: true
+  world: aerborne_reach
+  # Chunks generating at once during /reach generate.
+  pregen-in-flight: 24
 world-packs:
   enabled: true
   # Worlds (by folder name) whose pack NPCs are always restored: on every start each pack NPC is put back at its

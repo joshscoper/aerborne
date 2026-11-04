@@ -222,6 +222,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.worldpack.WorldPackService worldPacks;
     public net.nerdsmp.paper.quest.QuestService quests() { return quests; }
     public net.nerdsmp.paper.worldpack.WorldPackService worldPacks() { return worldPacks; }
+    private net.nerdsmp.paper.reach.ReachService reach;
+    public net.nerdsmp.paper.reach.ReachService reach() { return reach; }
     private net.nerdsmp.paper.digsite.DigSiteCommand digSiteCommands;
     public net.nerdsmp.paper.digsite.DigSiteService digSites() { return digSites; }
     public net.nerdsmp.paper.digsite.DigSiteCommand digSiteCommands() { return digSiteCommands; }
@@ -526,6 +528,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         digSiteCommands = new net.nerdsmp.paper.digsite.DigSiteCommand(this);
         quests = new net.nerdsmp.paper.quest.QuestService(this);
         worldPacks = new net.nerdsmp.paper.worldpack.WorldPackService(this);
+        reach = new net.nerdsmp.paper.reach.ReachService(this);
         guide = new PlayerGuideService(this, settings);
         rewardDrops = new RewardDropService(this, mobs, forge, items, sessions, economy);
         expansionLoot = new net.nerdsmp.paper.loot.ExpansionLootService(this);
@@ -695,6 +698,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         zoneSpawner.start();
         if (digSites != null) digSites.start();
         quests.start();
+        reach.start();
         worldPacks.start();
         try { webApi = net.nerdsmp.paper.webapi.WebApi.start(this); }
         catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Web API unavailable; no port-9028 listener enabled", failure); }
@@ -740,7 +744,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
             "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint", "booster", "vote"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
-            "companion", "trail", "emote", "journal", "worldpack", "dev"
+            "companion", "trail", "emote", "journal", "worldpack", "reach", "dev"
         );
         for (String name : names) {
             PluginCommand command = getCommand(name);

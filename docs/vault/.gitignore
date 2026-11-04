@@ -1,0 +1,6 @@
+# Obsidian per-machine state
+.obsidian/workspace*.json
+.obsidian/cache
+.trash/
+# Reference images are third-party art: kept locally for viewing, never committed
+_refs/

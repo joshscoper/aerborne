@@ -1,0 +1,51 @@
+---
+tags: [zone, capital]
+levels: safe
+status: proposal
+refs: [ref-04-city-gate-street, ref-05-harbour-towers]
+---
+# Highcrown (the capital)
+
+> The city at the end of the world: a promontory of grey stone and dark timber jutting out over the cloud sea, its
+> docks hanging off the lip and its great gate facing the Vale.
+
+## Role
+- Where islanders arrive (sky docks) and where every service lives (bank, forge, enchanter, identifier, market,
+  wardrobe, jobs, parties, graves, relics, expeditions, contracts). The 31 service NPCs already have Highcrown
+  backstories, so they move here as they are.
+- Start of the main story ([[Main Story#Prologue Above the Clouds (your island → Highcrown)]]) and of First Flight.
+- Safe zone. No combat, trading allowed anywhere inside.
+
+## Shape (south to north, one axis)
+The arrival walk is one straight line, so a new player can't get lost: **dock → stair → market avenue → plaza →
+Kingsgate**, with the keep on its crag to the east, always in view.
+
+| District | Where | What's there | Service NPCs (existing) |
+| --- | --- | --- | --- |
+| **Sky Docks** | the south lip, y ~110 | Three long timber piers over the void with moored airships; the **Dockmaster's Tower** and **Guildhall**, tall narrow timber-and-stone towers (ref 5); cranes; **Highfall** roaring off the lip beside them | Portal master, Captain Wren, skiff master, Kestrel Way (routes) |
+| **Harbour Ward** | above the docks | Warehouses, the Tethered Gull inn, a stair climbing to the avenue | Innkeeper, Bram Tallow, angler |
+| **Market Avenue** | the spine | A straight paved avenue lined with stalls (ref 4), rising gently north to the plaza | All shop NPCs, Mara Venn, Vera Lune (cosmetics) |
+| **Crafters' Row** | west of the avenue, on the Goldwater | Forge, enchanter, alchemist, waterwheels | Torren Pike, Sella Mire, Veyra Loom, Nyra Vell, Rook Salen |
+| **Keep Hill** | east, on a crag | Highcrown Keep, the empty crown, the Steward's hall, bank vaults under it | Steward Aldric, Orin Ledger (bank), Arlen Voss, Dorian Ash, Cato Flint |
+| **Archive Walk** | the keep's lower terrace | Scholars' cloister | Lyra Senn |
+| **Hall of Callings** | the plaza's west side | Skills, mastery, jobs, parties | Pell Wren, Fen Calder, Nima Hart |
+| **Memorial Terrace** | the cliff by Highfall | Graves, a lookout over the clouds | Tamsin Wake |
+| **Kingsgate Plaza** | the north end | The **Kingsgate**: a huge twin-towered gatehouse with the Highcrown emblem over it (ref 4); the herald; signposts to the Vale | Herald, Cassia Dawn (guide), Aeron Vale, Elian Quill, Gilda Penn, Hessa Clay, Ivo Reed, Garrick Mott |
+
+## Look
+- **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
+  spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].
+- **Hero:** the Kingsgate, seen from the whole avenue. Secondary heroes: the keep on its crag; the dock towers from
+  the piers.
+- Stalls: wool awnings in four colours only (red, white, blue, purple) with barrels, crates and composters.
+
+## Population
+Every existing service NPC, plus Captain Wren, the skiff master, an innkeeper, 6 patrolling Watch guards (the pack
+already supports patrol routes), 8 townsfolk with gossip that points at the Vale.
+
+## POIs (discoveries)
+Sky Docks · Highfall · The Tethered Gull · Market Avenue · Crafters' Row · Highcrown Keep · Memorial Terrace ·
+Kingsgate.
+
+## Chests
+None (safe city), except one tier II chest hidden behind Highfall on the cliff path (an early taste of the lip).

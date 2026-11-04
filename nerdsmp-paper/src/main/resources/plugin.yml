@@ -90,6 +90,9 @@ commands:
     description: Show or re-apply the shipped content for a known world map.
     usage: /worldpack [status|apply [force]]
     permission: nerdsmp.zone.admin
+  reach:
+    description: Travel to the Wardens' Reach, or (staff) generate and inspect it.
+    usage: /reach [go|status|generate|stop|tp <x> <z>|where]
   marks:
     description: View your earned Marks balance.
     usage: /marks
@@ -506,4 +509,10 @@ permissions:
     default: op
   nerdsmp.worldpack.bypass:
     description: Lets staff cross a world pack's map border (spectators always can).
+    default: op
+  nerdsmp.reach.admin:
+    description: Generate, pre-generate and inspect the Wardens' Reach.
+    default: op
+  nerdsmp.reach.visit:
+    description: Travel to the Wardens' Reach with /reach (staff only until the Reach replaces the old map).
     default: op
