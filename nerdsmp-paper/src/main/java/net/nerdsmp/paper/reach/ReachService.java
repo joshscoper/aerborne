@@ -209,8 +209,9 @@ public final class ReachService implements Listener {
     // ------------------------------------------------------------------ rebuilding a feature in place
 
     /**
-     * Regenerates the columns inside each feature's footprint into the live world, a slice per tick: the same
-     * terrain and blocks a fresh chunk would get, so changes to a kit show up without regenerating the map.
+     * Regenerates the columns each feature builds in into the live world, a slice per tick: the same terrain and
+     * blocks a fresh chunk would get, so changes to a kit show up without regenerating the map. Plants outside the
+     * build are left alone; blocks an older version built where the new one doesn't are not cleared.
      */
     private void rebuild(World world, List<ReachFeatures.Feature> chosen, CommandSender sender) {
         ReachGenerator generator = (ReachGenerator) world.getGenerator();
@@ -236,7 +237,8 @@ public final class ReachService implements Listener {
                 generator.generateNoise(world, new java.util.Random(0), cx, cz, data);
                 for (int lx = 0; lx < 16; lx++) for (int lz = 0; lz < 16; lz++) {
                     int x = (cx << 4) + lx, z = (cz << 4) + lz;
-                    boolean inside = chosen.stream().anyMatch(f -> f.footprint().contains(x, z));
+                    // Only columns the feature builds in: everything else keeps its plants and terrain.
+                    boolean inside = chosen.stream().anyMatch(f -> f.footprint().contains(x, z) && features.plan(f).occupies(x, z));
                     if (!inside) continue;
                     for (int y = lowY; y < highY; y++) {
                         org.bukkit.block.data.BlockData want = data.getBlockData(lx, y, lz);
