@@ -94,7 +94,14 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "campaign" -> campaign(sender, args);
             case "grave" -> grave(sender, args);
             case "duel" -> duel(sender, args);
-            case "cosmetics" -> cosmetics(sender);
+            case "cosmetics" -> cosmetics(sender, args);
+            case "booster" -> {
+                if (player(sender) instanceof Player player) {
+                    if (args.length >= 1 && args[0].equalsIgnoreCase("use")) plugin.boosters().use(player);
+                    else plugin.boosters().status(player);
+                }
+                yield true;
+            }
             case "companion" -> companion(sender, args);
             case "trail" -> trail(sender, args);
             case "emote" -> emote(sender, args);
@@ -572,9 +579,24 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         return true;
     }
 
-    private boolean cosmetics(CommandSender sender) {
+    private boolean cosmetics(CommandSender sender, String[] args) {
         Player player = player(sender);
         if (player == null) {
+            return true;
+        }
+        if (args.length >= 1) {
+            var kind = switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
+                case "title", "titles" -> net.nerdsmp.paper.cosmetic.CosmeticService.Kind.TITLE;
+                case "aura", "auras" -> net.nerdsmp.paper.cosmetic.CosmeticService.Kind.AURA;
+                case "finisher", "finishers" -> net.nerdsmp.paper.cosmetic.CosmeticService.Kind.FINISHER;
+                default -> null;
+            };
+            if (kind == null) {
+                Chat.usage(player, "/cosmetics [title|aura|finisher] [name|off]");
+                return true;
+            }
+            if (args.length == 1) plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.COSMETICS);
+            else plugin.cosmetics().wear(player, kind, String.join("-", java.util.Arrays.copyOfRange(args, 1, args.length)));
             return true;
         }
         plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.COSMETICS);
@@ -877,6 +899,10 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 catalog.tiers().forEach(t -> sender.sendRichMessage("<white>" + t.product() + "</white> <gray>" + t.name() + " rank</gray>"));
                 catalog.companions().forEach(c -> sender.sendRichMessage("<white>" + c.product() + "</white> <gray>" + c.name() + " companion</gray>"));
                 catalog.trails().forEach(t -> sender.sendRichMessage("<white>" + t.product() + "</white> <gray>" + t.name() + " trail</gray>"));
+                catalog.titles().stream().filter(t -> t.earned() == null).forEach(t -> sender.sendRichMessage("<white>" + t.product() + "</white> <gray>" + t.name() + " title</gray>"));
+                catalog.auras().stream().filter(a -> a.earned() == null).forEach(a -> sender.sendRichMessage("<white>" + a.product() + "</white> <gray>" + a.name() + " aura</gray>"));
+                catalog.finishers().stream().filter(f -> f.earned() == null).forEach(f -> sender.sendRichMessage("<white>" + f.product() + "</white> <gray>" + f.name() + " finisher</gray>"));
+                sender.sendRichMessage("<white>" + net.nerdsmp.paper.booster.BoosterService.PRODUCT + "</white> <gray>One server-wide XP booster (grant once per purchase)</gray>");
                 catalog.bundles().forEach(b -> sender.sendRichMessage("<white>" + b.product() + "</white> <gray>" + b.name() + ": "
                     + String.join(", ", b.contents().stream().map(catalog::describe).toList()) + "</gray>"));
                 return true;
@@ -930,7 +956,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     }
 
     private boolean allowedPaidProduct(String product) {
-        return plugin.cosmetics().catalog().known(product);
+        // A booster helps everyone online at once, so it gives nobody an edge; everything else sold is visual.
+        return plugin.cosmetics().catalog().known(product) || net.nerdsmp.paper.booster.BoosterService.PRODUCT.equals(product);
     }
 
     private void refund(AccountId accountId, long amount, String reason) {
@@ -1040,6 +1067,15 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "trail" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
                 java.util.stream.Stream.of("list", "off"), plugin.cosmetics().ownership(player).trails().stream()).toList() : List.of();
             case "emote" -> args.length == 1 ? plugin.cosmetics().catalog().emoteIds() : List.of();
+            case "booster" -> args.length == 1 ? List.of("use") : List.of();
+            case "cosmetics" -> args.length == 1 ? List.of("title", "aura", "finisher")
+                : args.length == 2 && sender instanceof Player player ? java.util.stream.Stream.concat(java.util.stream.Stream.of("off"),
+                    switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
+                        case "title" -> plugin.cosmetics().ownership(player).titles().stream();
+                        case "aura" -> plugin.cosmetics().ownership(player).auras().stream();
+                        case "finisher" -> plugin.cosmetics().ownership(player).finishers().stream();
+                        default -> java.util.stream.Stream.<String>empty();
+                    }).toList() : List.of();
             case "duel" -> args.length == 1 ? List.of("on", "off", "status") : List.of();
             case "relics" -> args.length == 1 ? List.of("inspect", "sets") : List.of();
             case "npc" -> plugin.npcs().tabCompleteNpc(sender, args);

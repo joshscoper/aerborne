@@ -14,14 +14,19 @@ import java.util.Set;
  * Every cosmetic Aerborne offers, matching the website's Companions page and store.
  *
  * <p>Store purchases arrive as entitlements named after the store item: {@code cosmetic.companion.pufflet},
- * {@code cosmetic.trail.cloudstep}, {@code cosmetic.rank.starweaver} and {@code cosmetic.bundle.cloudberry}.
- * Nothing here changes gameplay. Pure data so it can be tested without a server.
+ * {@code cosmetic.trail.cloudstep}, {@code cosmetic.rank.starweaver}, {@code cosmetic.title.skyborne},
+ * {@code cosmetic.aura.glimmer-halo}, {@code cosmetic.finisher.starburst} and {@code cosmetic.bundle.cloudberry}.
+ * Cosmetics earned in play are granted the same way, under the same ids. Nothing here changes gameplay.
+ * Pure data so it can be tested without a server.
  */
 public final class CosmeticCatalog {
     public static final String COMPANION = "cosmetic.companion.";
     public static final String TRAIL = "cosmetic.trail.";
     public static final String RANK = "cosmetic.rank.";
     public static final String BUNDLE = "cosmetic.bundle.";
+    public static final String TITLE = "cosmetic.title.";
+    public static final String AURA = "cosmetic.aura.";
+    public static final String FINISHER = "cosmetic.finisher.";
     /** The older subscription products. They carry every supporter perk, shown with the classic gold star. */
     public static final Set<String> LEGACY_SUPPORTER = Set.of("supporter_monthly", "supporter_annual");
 
@@ -72,9 +77,34 @@ public final class CosmeticCatalog {
 
     public record Emote(String id, String name, String action, String particle) {}
 
+    /**
+     * A title worn after the name in chat and the tab list.
+     *
+     * @param earned what earns it, as an {@link #earnedBy} key, or null when it's sold
+     * @param how    how to get it, in words, for the wardrobe
+     */
+    public record Title(String slug, String name, String color, String earned, String how) {
+        public String product() { return TITLE + slug; }
+    }
+
+    /** A particle aura round a player standing still. {@code pattern} picks the shape; see {@link AuraPatterns}. */
+    public record Aura(String slug, String name, String summary, String pattern, String particle, String color, String earned, String how) {
+        public String product() { return AURA + slug; }
+    }
+
+    /** A burst where a player's kill falls. {@code pattern} picks the shape; see {@link AuraPatterns#finisher}. */
+    public record Finisher(String slug, String name, String summary, String pattern, String particle, String color, String earned, String how) {
+        public String product() { return FINISHER + slug; }
+    }
+
     /** What a player owns once their entitlements are read. */
-    public record Ownership(Set<String> companions, Set<String> trails, Optional<Tier> tier) {
+    public record Ownership(Set<String> companions, Set<String> trails, Optional<Tier> tier,
+                            Set<String> titles, Set<String> auras, Set<String> finishers) {
         public static final Ownership NONE = new Ownership(Set.of(), Set.of(), Optional.empty());
+
+        public Ownership(Set<String> companions, Set<String> trails, Optional<Tier> tier) {
+            this(companions, trails, tier, Set.of(), Set.of(), Set.of());
+        }
         public boolean supporter() { return tier.isPresent(); }
         public boolean emotes() { return tier.map(Tier::emotes).orElse(false); }
         public boolean presets() { return tier.map(Tier::presets).orElse(false); }
@@ -87,10 +117,22 @@ public final class CosmeticCatalog {
     private final Map<String, Tier> tiers = new LinkedHashMap<>();
     private final Map<String, Bundle> bundles = new LinkedHashMap<>();
     private final Map<String, Emote> emotes = new LinkedHashMap<>();
+    private final Map<String, Title> titles = new LinkedHashMap<>();
+    private final Map<String, Aura> auras = new LinkedHashMap<>();
+    private final Map<String, Finisher> finishers = new LinkedHashMap<>();
     private final Tier legacy;
 
     public CosmeticCatalog(Collection<Companion> companions, Collection<Trail> trails, Collection<Tier> tiers,
                            Collection<Bundle> bundles, Collection<Emote> emotes) {
+        this(companions, trails, tiers, bundles, emotes, List.of(), List.of(), List.of());
+    }
+
+    public CosmeticCatalog(Collection<Companion> companions, Collection<Trail> trails, Collection<Tier> tiers,
+                           Collection<Bundle> bundles, Collection<Emote> emotes,
+                           Collection<Title> titles, Collection<Aura> auras, Collection<Finisher> finishers) {
+        titles.forEach(t -> this.titles.put(t.slug(), t));
+        auras.forEach(a -> this.auras.put(a.slug(), a));
+        finishers.forEach(f -> this.finishers.put(f.slug(), f));
         companions.forEach(c -> this.companions.put(c.slug(), c));
         trails.forEach(t -> this.trails.put(t.slug(), t));
         tiers.forEach(t -> this.tiers.put(t.slug(), t));
@@ -136,7 +178,10 @@ public final class CosmeticCatalog {
                 new Companion("kilnling", "Kilnling", "A brazier that followed you", "kilnling", 0.9D, false, "SMALL_FLAME", "gold", false, "The Ember Warden, very rarely"),
                 new Companion("rimepup", "Rimepup", "Runt of the Warden's pack", "rimepup", 0.9D, false, "SNOWFLAKE", "aqua", false, "The Frost Warden, very rarely"),
                 new Companion("pebblewarden", "Pebblewarden", "A very small colossus", "pebblewarden", 0.8D, false, "", "green", false, "The Stone Warden, very rarely"),
-                new Companion("inkling", "Inkling", "A blot that got off the page", "inkling", 0.8D, true, "REVERSE_PORTAL", "dark_purple", false, "Oriveth, very rarely")),
+                new Companion("inkling", "Inkling", "A blot that got off the page", "inkling", 0.8D, true, "REVERSE_PORTAL", "dark_purple", false, "Oriveth, very rarely"),
+                new Companion("glimmerbee", "Glimmerbee", "Lantern bee", "glimmerbee", 0.9D, true, "WAX_ON", "yellow", false),
+                new Companion("bramblehog", "Bramblehog", "Hedge hedgehog", "bramblehog", 0.9D, false, "", "gold", false),
+                new Companion("driftfin", "Driftfin", "Sky koi", "driftfin", 1.0D, true, "BUBBLE_POP", "red", false)),
             List.of(
                 new Trail("cloudstep", "Cloudstep", "Small puffs of cloud with every step.", "steps", "CLOUD", "white", false),
                 new Trail("petal-skip", "Petal Skip", "Petals that skip along behind you.", "scatter", "CHERRY_LEAVES", "light_purple", false),
@@ -145,7 +190,10 @@ public final class CosmeticCatalog {
                 new Trail("bubblehop", "Bubblehop", "Bubbles that bob up and pop.", "rise", "BUBBLE_POP", "aqua", false),
                 new Trail("comet-tail", "Comet Tail", "A streak of starlight behind you.", "streak", "END_ROD", "white", false),
                 new Trail("dandelion-drift", "Dandelion Drift", "Dandelion seeds carried on the breeze.", "drift", "WHITE_ASH", "white", false),
-                new Trail("stardust-waltz", "Stardust Waltz", "Stardust that swirls when you turn.", "swirl", "WAX_ON", "gold", false)),
+                new Trail("stardust-waltz", "Stardust Waltz", "Stardust that swirls when you turn.", "swirl", "WAX_ON", "gold", false),
+                new Trail("snowdrift", "Snowdrift", "A soft fall of snow wherever you go.", "drift", "SNOWFLAKE", "white", false),
+                new Trail("ember-wake", "Ember Wake", "A wake of embers off your heels.", "streak", "SMALL_FLAME", "gold", false),
+                new Trail("glowspore", "Glowspore", "Glowing spores that drift up behind you.", "rise", "GLOW", "green", false)),
             List.of(
                 new Tier("skyfarer", "Skyfarer", 1, "<aqua>✦</aqua>", "aqua", List.of("aqua", "green", "yellow"),
                     false, false, false),
@@ -163,7 +211,48 @@ public final class CosmeticCatalog {
                 new Emote("heart", "Heart", "sends some love", "HEART"),
                 new Emote("bow", "Bow", "takes a bow", "END_ROD"),
                 new Emote("dance", "Dance", "dances", "NOTE"),
-                new Emote("sparkle", "Sparkle", "sparkles", "ELECTRIC_SPARK")));
+                new Emote("sparkle", "Sparkle", "sparkles", "ELECTRIC_SPARK")),
+            List.of(
+                new Title("skyborne", "Skyborne", "aqua", null, "From the store"),
+                new Title("stormchaser", "Stormchaser", "dark_aqua", null, "From the store"),
+                new Title("starlit", "Starlit", "light_purple", null, "From the store"),
+                new Title("windrider", "Windrider", "white", null, "From the store"),
+                new Title("fledgling", "Fledgling", "gray", "expedition:first_flight", "Clear First Flight"),
+                new Title("barrow-breaker", "Barrow Breaker", "dark_green", "expedition:hollow_barrow", "Clear the Hollow Barrow"),
+                new Title("canopy-ranger", "Canopy Ranger", "green", "expedition:thornwood_canopy", "Clear Thornwood Canopy"),
+                new Title("floodwalker", "Floodwalker", "aqua", "expedition:sunken_aqueduct", "Clear the Sunken Aqueduct"),
+                new Title("deep-delver", "Deep Delver", "gold", "expedition:gloomforge_mines", "Clear Gloomforge Mines"),
+                new Title("seal-breaker", "Seal Breaker", "dark_purple", "expedition:hall_of_wardens", "Clear the Hall of the Three Wardens"),
+                new Title("sovereigns-bane", "Sovereign's Bane", "red", "expedition:cinder_keep", "Defeat Pyrrhax in Cinder Keep"),
+                new Title("keystone-master", "Keystone Master", "gold", "tier:mythic", "Clear any expedition on Mythic")),
+            List.of(
+                new Aura("glimmer-halo", "Glimmer Halo", "A faint halo of light over your head.", "halo", "END_ROD", "white", null, "From the store"),
+                new Aura("petal-orbit", "Petal Orbit", "Petals that circle you slowly.", "orbit", "CHERRY_LEAVES", "light_purple", null, "From the store"),
+                new Aura("snow-globe", "Snow Globe", "Your own little flurry.", "flurry", "SNOWFLAKE", "white", null, "From the store"),
+                new Aura("void-motes", "Void Motes", "Specks of the Unwritten that won't let you go.", "orbit", "REVERSE_PORTAL", "dark_purple", "expedition:hall_of_wardens:heroic", "Clear the Hall of the Three Wardens on Heroic or Mythic"),
+                new Aura("sovereigns-embers", "Sovereign's Embers", "Embers off the Molten Heart, still rising.", "rise", "SMALL_FLAME", "gold", "expedition:cinder_keep:heroic", "Clear Cinder Keep on Heroic or Mythic")),
+            List.of(
+                new Finisher("starburst", "Starburst", "A burst of sparks where your foe falls.", "burst", "FIREWORK", "yellow", null, "From the store"),
+                new Finisher("confetti-pop", "Confetti Pop", "A celebration, whether they wanted one or not.", "fountain", "TOTEM_OF_UNDYING", "green", null, "From the store"),
+                new Finisher("soul-release", "Soul Release", "The fallen rise as a column of soul fire.", "column", "SOUL_FIRE_FLAME", "aqua", null, "From the store"),
+                new Finisher("sovereigns-wrath", "Sovereign's Wrath", "Your kills go up the way the Heart did.", "column", "LAVA", "red", "expedition:cinder_keep:mythic", "Clear Cinder Keep on Mythic")));
+    }
+
+    /** What a run's clear earns: {@code expedition:<id>}, {@code expedition:<id>:<tier>} (Heroic counts for Heroic and up), and {@code tier:<tier>}. */
+    public static List<String> clearKeys(String expedition, String tier) {
+        List<String> keys = new ArrayList<>(List.of("expedition:" + expedition, "tier:" + tier));
+        if (tier.equals("heroic") || tier.equals("mythic")) keys.add("expedition:" + expedition + ":heroic");
+        if (tier.equals("mythic")) keys.add("expedition:" + expedition + ":mythic");
+        return keys;
+    }
+
+    /** Every product an earned key unlocks. */
+    public List<String> earnedBy(Collection<String> keys) {
+        List<String> out = new ArrayList<>();
+        for (Title title : titles.values()) if (title.earned() != null && keys.contains(title.earned())) out.add(title.product());
+        for (Aura aura : auras.values()) if (aura.earned() != null && keys.contains(aura.earned())) out.add(aura.product());
+        for (Finisher finisher : finishers.values()) if (finisher.earned() != null && keys.contains(finisher.earned())) out.add(finisher.product());
+        return out;
     }
 
     public Collection<Companion> companions() { return companions.values(); }
@@ -184,6 +273,12 @@ public final class CosmeticCatalog {
     public Optional<Trail> trail(String slug) { return Optional.ofNullable(trails.get(normalise(slug))); }
     public Optional<Tier> tier(String slug) { return Optional.ofNullable(tiers.get(normalise(slug))); }
     public Optional<Emote> emote(String id) { return Optional.ofNullable(emotes.get(normalise(id))); }
+    public Collection<Title> titles() { return titles.values(); }
+    public Collection<Aura> auras() { return auras.values(); }
+    public Collection<Finisher> finishers() { return finishers.values(); }
+    public Optional<Title> title(String slug) { return Optional.ofNullable(titles.get(normalise(slug))); }
+    public Optional<Aura> aura(String slug) { return Optional.ofNullable(auras.get(normalise(slug))); }
+    public Optional<Finisher> finisher(String slug) { return Optional.ofNullable(finishers.get(normalise(slug))); }
 
     /** True for every product the store may grant: the listed cosmetics, bundles, tiers and the old subscriptions. */
     public boolean known(String product) {
@@ -195,7 +290,10 @@ public final class CosmeticCatalog {
     private boolean knownSingle(String id) {
         return id.startsWith(COMPANION) && companions.containsKey(id.substring(COMPANION.length()))
             || id.startsWith(TRAIL) && trails.containsKey(id.substring(TRAIL.length()))
-            || id.startsWith(RANK) && tiers.containsKey(id.substring(RANK.length()));
+            || id.startsWith(RANK) && tiers.containsKey(id.substring(RANK.length()))
+            || id.startsWith(TITLE) && titles.containsKey(id.substring(TITLE.length()))
+            || id.startsWith(AURA) && auras.containsKey(id.substring(AURA.length()))
+            || id.startsWith(FINISHER) && finishers.containsKey(id.substring(FINISHER.length()));
     }
 
     /** Works out what a set of active entitlements unlocks, adding the free cosmetics. */
@@ -222,7 +320,12 @@ public final class CosmeticCatalog {
             if (expanded.contains(tier.product()) && (best == null || tier.level() > best.level())) best = tier;
         }
         if (best == null && legacy != null && expanded.stream().anyMatch(LEGACY_SUPPORTER::contains)) best = legacy;
-        return new Ownership(Set.copyOf(ownedCompanions), Set.copyOf(ownedTrails), Optional.ofNullable(best));
+        Set<String> ownedTitles = new LinkedHashSet<>(), ownedAuras = new LinkedHashSet<>(), ownedFinishers = new LinkedHashSet<>();
+        for (Title title : titles.values()) if (expanded.contains(title.product())) ownedTitles.add(title.slug());
+        for (Aura aura : auras.values()) if (expanded.contains(aura.product())) ownedAuras.add(aura.slug());
+        for (Finisher finisher : finishers.values()) if (expanded.contains(finisher.product())) ownedFinishers.add(finisher.slug());
+        return new Ownership(Set.copyOf(ownedCompanions), Set.copyOf(ownedTrails), Optional.ofNullable(best),
+            Set.copyOf(ownedTitles), Set.copyOf(ownedAuras), Set.copyOf(ownedFinishers));
     }
 
     /** Readable name for a product id, for receipts and the wardrobe. */
@@ -232,6 +335,9 @@ public final class CosmeticCatalog {
         if (id.startsWith(COMPANION)) return companion(id.substring(COMPANION.length())).map(c -> c.name() + " companion").orElse(id);
         if (id.startsWith(TRAIL)) return trail(id.substring(TRAIL.length())).map(t -> t.name() + " trail").orElse(id);
         if (id.startsWith(RANK)) return tier(id.substring(RANK.length())).map(t -> t.name() + " rank").orElse(id);
+        if (id.startsWith(TITLE)) return title(id.substring(TITLE.length())).map(t -> t.name() + " title").orElse(id);
+        if (id.startsWith(AURA)) return aura(id.substring(AURA.length())).map(a -> a.name() + " aura").orElse(id);
+        if (id.startsWith(FINISHER)) return finisher(id.substring(FINISHER.length())).map(f -> f.name() + " finisher").orElse(id);
         if (id.startsWith(BUNDLE)) {
             Bundle bundle = bundles.get(id.substring(BUNDLE.length()));
             return bundle == null ? id : bundle.name() + " bundle";

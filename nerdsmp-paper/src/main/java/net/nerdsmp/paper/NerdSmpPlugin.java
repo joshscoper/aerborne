@@ -137,6 +137,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private PlayerSettingsService settings;
     private SocialManager social;
     private net.nerdsmp.paper.cosmetic.CosmeticService cosmetics;
+    private net.nerdsmp.paper.booster.BoosterService boosters;
     private ChannelChatManager chat;
     private TradeManager trade;
     private TravelManager travel;
@@ -320,6 +321,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (cosmetics != null) {
             cosmetics.close();
         }
+        if (boosters != null) boosters.close();
         if (social != null) {
             social.close();
         }
@@ -403,6 +405,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         } else {
             throw new IllegalArgumentException("Unsupported storage.mode: " + storageMode);
         }
+        // Server-wide XP boosters raise every award, whichever store keeps it.
+        progression = new net.nerdsmp.paper.booster.BoostedProgressionService(progression, () -> boosters == null ? 1D : boosters.multiplier());
         economy = new net.nerdsmp.paper.economy.ObservedEconomyService(economy);
 
         var regionPolicy = new net.nerdsmp.paper.claim.ClaimRegionPolicy(getConfig(), getServer().getWorlds());
@@ -500,6 +504,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         staff = new StaffManager(this);
         social = new SocialManager(this, settings);
         cosmetics = new net.nerdsmp.paper.cosmetic.CosmeticService(this);
+        boosters = new net.nerdsmp.paper.booster.BoosterService(this);
         chat = new ChannelChatManager(this, settings, social, presentation, sessions);
         trade = new TradeManager(this, settings, social);
         if (skyblockEnabled) skyblock = new net.nerdsmp.paper.skyblock.SkyblockController(this);
@@ -615,6 +620,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(social, this);
         plugins.registerEvents(cosmetics, this);
         cosmetics.start();
+        plugins.registerEvents(boosters, this);
+        boosters.start();
         plugins.registerEvents(chat, this);
         plugins.registerEvents(trade, this);
         plugins.registerEvents(travel, this);
@@ -726,7 +733,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "forge", "enchants", "recipes", "daily", "playtime", "npc", "reputation", "nerdadmin", "staff", "report",
             "settings", "social", "friends", "ignore", "unignore", "msg", "reply", "channel", "globalchat",
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
-            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint"
+            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint", "booster"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
             "companion", "trail", "emote", "journal", "worldpack", "dev"
         );
@@ -937,6 +944,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     public net.nerdsmp.paper.cosmetic.CosmeticService cosmetics() {
         return cosmetics;
+    }
+
+    public net.nerdsmp.paper.booster.BoosterService boosters() {
+        return boosters;
     }
 
     public ChannelChatManager chat() {

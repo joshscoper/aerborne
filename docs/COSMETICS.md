@@ -1,7 +1,9 @@
-# Cosmetics: companions, trails and supporter ranks
+# Cosmetics: companions, trails, titles, auras, finishers, supporter ranks and XP boosters
 
-Everything the website store sells is in game, and all of it is visual only: seven companions, eight trails,
-three supporter ranks and three bundles. Code lives in `nerdsmp-paper/src/main/java/net/nerdsmp/paper/cosmetic/`.
+Everything here is visual only, except XP boosters, which help everyone online at once. The store sells ten
+companions, eleven trails, four titles, three auras, three finishers, three supporter ranks, three bundles and
+XP boosters. More titles, auras, finishers and companions are earned in play. Code lives in
+`nerdsmp-paper/src/main/java/net/nerdsmp/paper/cosmetic/` and `.../booster/`.
 
 ## For players
 
@@ -10,9 +12,15 @@ three supporter ranks and three bundles. Code lives in `nerdsmp-paper/src/main/j
 | `/cosmetics` (`/wardrobe`) | The wardrobe: summon companions, wear trails, pick a name colour, use presets, claim the keepsake. |
 | `/companion [name]` / `/companion dismiss` | Summon a companion you own / send it home. `/companion list` shows them all. |
 | `/trail [name]` / `/trail off` | Wear a trail you own / take it off. `/trail list` shows them all. |
+| `/cosmetics title <name>` / `off` | Wear a title: it shows before your name in chat and the tab list. |
+| `/cosmetics aura <name>` / `off` | Wear an aura: particles round you while you stand still (your trail takes over when you move). |
+| `/cosmetics finisher <name>` / `off` | Wear a finisher: a burst where your kills fall. |
+| `/booster` / `/booster use` | See the server's XP booster and how many you have / use one: everyone online gets +50% XP for an hour. |
 | `/emote <name>` | wave, cheer, heart, bow, dance, sparkle. Cloudkeeper and Starweaver only; players within 24 blocks see it, unless they ignore you. |
 
-The chosen companion, trail and name colour are saved per account and come back after logging in.
+The wardrobe opens on a hub with a page for each kind: companions, trails, titles, auras and finishers. Locked
+items show how to get them. The chosen companion, trail, title, aura, finisher and name colour are saved per account,
+come back after logging in, and are stored in Starweaver presets.
 `/settings` → *Other players' companions and trails* hides everyone else's cosmetics for that player.
 
 ## What each purchase gives
@@ -24,6 +32,12 @@ The chosen companion, trail and name colour are saved per account and come back 
 | Starweaver | `cosmetic.rank.starweaver` | ✧ badge; 7 name colours; emotes; 3 wardrobe presets; Starweaver Lantern keepsake |
 | Pufflet … Lilypip companion | `cosmetic.companion.<name>` | That companion (`pufflet`, `kitekit`, `mossbun`, `cindlet`, `moonmoth`, `starwhisk`, `lilypip`) |
 | Cloudstep … Stardust Waltz trail | `cosmetic.trail.<name>` | That trail (`petal-skip`, `firefly-drift`, `rune-ripple`, `comet-tail`, `dandelion-drift`, `stardust-waltz`) |
+| Glimmerbee, Bramblehog, Driftfin companion | `cosmetic.companion.<name>` | That companion (`glimmerbee`, `bramblehog`, `driftfin`) |
+| Snowdrift, Ember Wake, Glowspore trail | `cosmetic.trail.<name>` | That trail (`snowdrift`, `ember-wake`, `glowspore`) |
+| Skyborne, Stormchaser, Starlit, Windrider title | `cosmetic.title.<name>` | That title (`skyborne`, `stormchaser`, `starlit`, `windrider`) |
+| Glimmer Halo, Petal Orbit, Snow Globe aura | `cosmetic.aura.<name>` | That aura (`glimmer-halo`, `petal-orbit`, `snow-globe`) |
+| Starburst, Confetti Pop, Soul Release finisher | `cosmetic.finisher.<name>` | That finisher (`starburst`, `confetti-pop`, `soul-release`) |
+| XP Booster | `booster.xp` | One server-wide booster. Grant it once per purchase; a pack of three is three grants with three transaction ids. |
 | Cloudberry bundle | `cosmetic.bundle.cloudberry` | Pufflet + Cloudstep + Skyfarer rank |
 | Blooming Skies bundle | `cosmetic.bundle.blooming-skies` | Mossbun + Petal Skip + Skyfarer rank |
 | Celestial Dreams bundle | `cosmetic.bundle.celestial-dreams` | Starwhisk + Stardust Waltz + Skyfarer rank |
@@ -34,6 +48,25 @@ revoking it removes that source of Skyfarer without removing separately owned ra
 
 Higher ranks include everything below them. The older `supporter_monthly` and `supporter_annual` products
 still work and carry every perk, shown with the classic gold ✦.
+
+## Earned in play
+
+Clearing an expedition earns its title, once per account: Fledgling (First Flight), Barrow Breaker, Canopy Ranger,
+Floodwalker, Deep Delver, Seal Breaker and Sovereign's Bane (Cinder Keep). Any Mythic clear earns Keystone Master.
+The Hall of the Three Wardens on Heroic or Mythic earns the Void Motes aura, Cinder Keep on Heroic or Mythic earns
+Sovereign's Embers, and Cinder Keep on Mythic earns the Sovereign's Wrath finisher. Each one is granted as an
+entitlement with a fixed transaction id (`earned:<product>:<account>`), so earning it twice changes nothing. Clearing
+Cinder Keep also earns one XP booster, once per tier a week (`earned:raid:<id>:<tier>:<week>:<account>`). The rules
+are in `CosmeticCatalog.clearKeys` and `earnedBy`.
+
+## XP boosters
+
+Using one gives everyone online +50% skill and adventurer XP for an hour. Using another while one runs adds an hour.
+Everyone sees a boss bar with the time left and who to thank, and the server says who used it. The state survives a
+restart in `plugins/NerdSMP/boosters.yml`. Every XP award passes through `BoostedProgressionService`; staff grants
+(`/nerdadmin xp`) aren't raised. A player's boosters are their `booster.xp` entitlements less the ones they've spent
+(`boosters.spent` in their player data), so a refund before use takes it away and a refund after use changes nothing.
+Boosters can be sold because they give nobody an edge over anyone else online.
 
 ## Connecting Tebex
 
@@ -94,7 +127,9 @@ Players who hide other players' cosmetics don't see it. Nothing can interact wit
 
 ## Tests
 
-`CosmeticCatalogTest` covers the catalog, product ids, bundles, tiers and older subscriptions.
+`CosmeticCatalogTest` covers the catalog, product ids, bundles, tiers, older subscriptions, the new kinds, what each
+clear earns, aura and finisher frame sizes, and that a server with its own cosmetic settings keeps every kind.
+`BoostedProgressionServiceTest` covers the booster's arithmetic.
 `CompanionMotionTest` covers following, snapping, facing and trail particle limits. `SculptureTest` checks every
 bundled model (real blocks, size, part count) and that legs, wings and flames pivot from the right place. Run them with the
 plugin's test suite.

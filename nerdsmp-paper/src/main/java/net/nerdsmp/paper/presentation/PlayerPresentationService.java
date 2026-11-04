@@ -215,11 +215,18 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
 
     public Component chatPrefix(Player player) {
         PlayerView view = view(player);
+        String title = titleTag(player);
         return switch (view.role()) {
-            case STAFF -> miniMessage.deserialize("<red><bold>STAFF</bold></red> <dark_gray>•</dark_gray> ");
-            case SUPPORTER -> miniMessage.deserialize(supporterBadge(player) + " ");
-            case ADVENTURER -> Component.empty();
+            case STAFF -> miniMessage.deserialize("<red><bold>STAFF</bold></red> <dark_gray>•</dark_gray> " + title);
+            case SUPPORTER -> miniMessage.deserialize(supporterBadge(player) + " " + title);
+            case ADVENTURER -> title.isEmpty() ? Component.empty() : miniMessage.deserialize(title);
         };
+    }
+
+    /** The worn title in brackets, ready to go before a name, or empty. */
+    private String titleTag(Player player) {
+        String title = plugin.cosmetics() == null ? "" : plugin.cosmetics().titleTag(player);
+        return title.isEmpty() ? "" : "<dark_gray>[</dark_gray>" + title + "<dark_gray>]</dark_gray> ";
     }
 
     /** The supporter tier's badge, with the tier name on hover. */
@@ -481,7 +488,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         String nameTag = supporterColor == null ? "white" : NamedTextColor.NAMES.key(supporterColor);
         String listName = "<dark_gray>[</dark_gray><aqua>Lv " + view.adventurerLevel()
             + "</aqua> <dark_gray>•</dark_gray> <light_purple>" + escape(view.adventurerRank())
-            + "</light_purple><dark_gray>]</dark_gray> " + role + separator
+            + "</light_purple><dark_gray>]</dark_gray> " + role + separator + titleTag(player)
             + "<" + nameTag + ">" + player.getName() + "</" + nameTag + ">";
         String header = plugin.branding().tabHeaderMarkup();
         String footer = "<gray>" + Bukkit.getOnlinePlayers().size() + " online</gray> <dark_gray>•</dark_gray> "

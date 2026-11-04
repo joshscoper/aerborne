@@ -144,9 +144,13 @@ commands:
     description: Opt into or out of consensual PvP.
     usage: /duel <on|off|status>
   cosmetics:
-    description: Open your wardrobe of companions, trails and supporter perks.
-    usage: /cosmetics
+    description: Open your wardrobe, or wear a title, aura or finisher.
+    usage: /cosmetics [title|aura|finisher] [name|off]
     aliases: [wardrobe]
+  booster:
+    description: See the server's XP booster, or use one of yours to give everyone +50% XP for an hour.
+    usage: /booster [use]
+    aliases: [boosters]
   companion:
     description: Summon or send home one of your companions.
     usage: /companion [list|dismiss|<name>]

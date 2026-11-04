@@ -7,19 +7,68 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The wardrobe matches the website: seven companions, eight trails, three supporter ranks and three bundles. */
+/** The wardrobe: ten store companions, eleven trails, three ranks, three bundles, and titles, auras and finishers sold or earned. */
 class CosmeticCatalogTest {
     private final CosmeticCatalog catalog = CosmeticCatalog.defaults();
 
     @Test void matchesTheWebsiteCatalog() {
-        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip"),
+        assertEquals(List.of("pufflet", "kitekit", "mossbun", "cindlet", "moonmoth", "starwhisk", "lilypip", "glimmerbee", "bramblehog", "driftfin"),
             catalog.companions().stream().filter(companion -> companion.source() == null).map(CosmeticCatalog.Companion::slug).toList());
         assertEquals(List.of("rattlebones", "weepling", "hollow-hound", "silkling", "thistlewing", "sproutling", "windpip", "pipling", "siltpup", "tidelet", "drakeling", "ashling", "cogling", "embermutt", "lampwick", "smeltling", "kilnling", "rimepup", "pebblewarden", "inkling"),
             catalog.companions().stream().filter(companion -> companion.source() != null).map(CosmeticCatalog.Companion::slug).toList());
         assertEquals(List.of("cloudstep", "petal-skip", "firefly-drift", "rune-ripple", "bubblehop", "comet-tail",
-            "dandelion-drift", "stardust-waltz"), catalog.trailSlugs());
+            "dandelion-drift", "stardust-waltz", "snowdrift", "ember-wake", "glowspore"), catalog.trailSlugs());
         assertEquals(List.of("skyfarer", "cloudkeeper", "starweaver"), catalog.tiers().stream().map(CosmeticCatalog.Tier::slug).toList());
         assertEquals(3, catalog.bundles().size());
+    }
+
+    @Test void titlesAurasAndFinishersAreProductsLikeTheRest() {
+        assertTrue(catalog.known("cosmetic.title.skyborne"));
+        assertTrue(catalog.known("cosmetic.aura.glimmer-halo"));
+        assertTrue(catalog.known("cosmetic.finisher.starburst"));
+        assertFalse(catalog.known("cosmetic.title.emperor"), "an unknown title is refused");
+        var owned = catalog.ownership(List.of("cosmetic.title.skyborne", "cosmetic.aura.snow-globe", "cosmetic.finisher.starburst"));
+        assertEquals(Set.of("skyborne"), owned.titles());
+        assertEquals(Set.of("snow-globe"), owned.auras());
+        assertEquals(Set.of("starburst"), owned.finishers());
+        assertEquals("Skyborne title", catalog.describe("cosmetic.title.skyborne"));
+        for (var title : catalog.titles()) assertNotNull(net.kyori.adventure.text.format.NamedTextColor.NAMES.value(title.color()), title.slug() + " has a real colour");
+    }
+
+    @Test void aServerWithItsOwnCosmeticSettingsStillHasEveryKind() {
+        var settings = new org.bukkit.configuration.file.YamlConfiguration();
+        settings.set("companions.pufflet.scale", 1.5);
+        var loaded = CosmeticService.load(settings, null);
+        assertEquals(catalog.titles().size(), loaded.titles().size());
+        assertEquals(catalog.auras().size(), loaded.auras().size());
+        assertEquals(catalog.finishers().size(), loaded.finishers().size());
+        assertTrue(loaded.known("cosmetic.title.skyborne"), "the store can grant a title on a configured server");
+    }
+
+    @Test void clearsEarnTheRightThingsAndNothingSold() {
+        assertEquals(List.of("cosmetic.title.sovereigns-bane"), catalog.earnedBy(CosmeticCatalog.clearKeys("cinder_keep", "normal")));
+        assertEquals(List.of("cosmetic.title.sovereigns-bane", "cosmetic.aura.sovereigns-embers"),
+            catalog.earnedBy(CosmeticCatalog.clearKeys("cinder_keep", "heroic")));
+        assertEquals(List.of("cosmetic.title.sovereigns-bane", "cosmetic.title.keystone-master", "cosmetic.aura.sovereigns-embers", "cosmetic.finisher.sovereigns-wrath"),
+            catalog.earnedBy(CosmeticCatalog.clearKeys("cinder_keep", "mythic")));
+        for (var title : catalog.titles()) if (title.earned() == null) assertTrue(catalog.earnedBy(List.of("expedition:" + title.slug())).isEmpty());
+        for (String expedition : List.of("first_flight", "hollow_barrow", "thornwood_canopy", "sunken_aqueduct", "gloomforge_mines", "hall_of_wardens", "cinder_keep"))
+            assertFalse(catalog.earnedBy(CosmeticCatalog.clearKeys(expedition, "normal")).isEmpty(), expedition + " earns a title");
+    }
+
+    @Test void aurasAndFinishersStaySmall() {
+        for (var aura : catalog.auras()) {
+            for (long tick = 0; tick < 40; tick++) {
+                var puffs = AuraPatterns.aura(aura.pattern(), tick);
+                assertTrue(puffs.stream().mapToInt(TrailPatterns.Puff::count).sum() <= 6, aura.slug() + " frame size");
+            }
+            assertTrue(java.util.stream.LongStream.range(0, 8).anyMatch(tick -> !AuraPatterns.aura(aura.pattern(), tick).isEmpty()), aura.slug() + " draws");
+            assertEquals(aura.particle(), CosmeticService.particle(aura.particle(), null) == null ? null : aura.particle(), aura.slug() + " particle needs no data");
+        }
+        for (var finisher : catalog.finishers()) {
+            assertFalse(AuraPatterns.finisher(finisher.pattern()).isEmpty(), finisher.slug() + " draws");
+            assertNotNull(CosmeticService.particle(finisher.particle(), null), finisher.slug() + " particle needs no data");
+        }
     }
 
     @Test void onlyKnownStoreProductsCanBeGranted() {

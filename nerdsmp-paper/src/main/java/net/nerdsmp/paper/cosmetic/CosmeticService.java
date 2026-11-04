@@ -49,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * Companions, trails, supporter badges, name colours, emotes, wardrobe presets and keepsakes.
+ * Companions, trails, titles, auras, finishers, supporter badges, name colours, emotes, wardrobe presets and keepsakes.
  *
  * <p>Ownership comes from store entitlements (see {@link CosmeticCatalog}), read when a player joins and
  * every minute after. The chosen look is saved per account. Companions are block sculptures, in the style of
@@ -70,10 +70,22 @@ public final class CosmeticService implements Listener, AutoCloseable {
         static final Style PLAIN = new Style("", null, false, "");
     }
 
-    /** The saved look: which companion and trail are out, and the chosen name colour. */
-    public record Loadout(String companion, String trail, String nameColor) {
-        static final Loadout EMPTY = new Loadout("", "", "");
+    /** The saved look: which companion, trail, title, aura and finisher are on, and the chosen name colour. */
+    public record Loadout(String companion, String trail, String nameColor, String title, String aura, String finisher) {
+        static final Loadout EMPTY = new Loadout("", "", "", "", "", "");
+
+        public Loadout(String companion, String trail, String nameColor) { this(companion, trail, nameColor, "", "", ""); }
+
+        Loadout withCompanion(String slug) { return new Loadout(slug, trail, nameColor, title, aura, finisher); }
+        Loadout withTrail(String slug) { return new Loadout(companion, slug, nameColor, title, aura, finisher); }
+        Loadout withNameColor(String colour) { return new Loadout(companion, trail, colour, title, aura, finisher); }
+        Loadout withTitle(String slug) { return new Loadout(companion, trail, nameColor, slug, aura, finisher); }
+        Loadout withAura(String slug) { return new Loadout(companion, trail, nameColor, title, slug, finisher); }
+        Loadout withFinisher(String slug) { return new Loadout(companion, trail, nameColor, title, aura, slug); }
     }
+
+    /** The kinds of cosmetic worn one at a time from the wardrobe's pages. */
+    public enum Kind { TITLE, AURA, FINISHER }
 
     private final NerdSmpPlugin plugin;
     private final CosmeticCatalog catalog;
@@ -149,6 +161,18 @@ public final class CosmeticService implements Listener, AutoCloseable {
             if (!before.trails().contains(slug)) catalog.trail(slug).ifPresent(t ->
                 Chat.success(player, "Your <white>" + t.name() + "</white> trail is ready. Wear it with <white>/trail " + t.slug() + "</white>."));
         }
+        for (String slug : after.titles()) {
+            if (!before.titles().contains(slug)) catalog.title(slug).ifPresent(t ->
+                Chat.success(player, "New title: <" + t.color() + ">" + t.name() + "</" + t.color() + ">. Wear it with <white>/cosmetics title " + t.slug() + "</white>."));
+        }
+        for (String slug : after.auras()) {
+            if (!before.auras().contains(slug)) catalog.aura(slug).ifPresent(a ->
+                Chat.success(player, "New aura: <white>" + a.name() + "</white>. Wear it with <white>/cosmetics aura " + a.slug() + "</white>."));
+        }
+        for (String slug : after.finishers()) {
+            if (!before.finishers().contains(slug)) catalog.finisher(slug).ifPresent(f ->
+                Chat.success(player, "New finisher: <white>" + f.name() + "</white>. Wear it with <white>/cosmetics finisher " + f.slug() + "</white>."));
+        }
         if (after.tier().isPresent() && !after.tier().equals(before.tier())) {
             Chat.success(player, "Thank you for supporting Aerborne! Your " + after.tier().get().badge() + " <white>"
                 + after.tier().get().name() + "</white> perks are on. Open <white>/cosmetics</white> to choose your look.");
@@ -161,7 +185,8 @@ public final class CosmeticService implements Listener, AutoCloseable {
 
     private Loadout readLoadout(AccountId account) {
         return plugin.playerData().read(account, yaml -> new Loadout(yaml.getString("cosmetics.companion", ""),
-            yaml.getString("cosmetics.trail", ""), yaml.getString("cosmetics.name-color", "")));
+            yaml.getString("cosmetics.trail", ""), yaml.getString("cosmetics.name-color", ""), yaml.getString("cosmetics.title", ""),
+            yaml.getString("cosmetics.aura", ""), yaml.getString("cosmetics.finisher", "")));
     }
 
     private void save(Player player, Loadout next) {
@@ -173,6 +198,9 @@ public final class CosmeticService implements Listener, AutoCloseable {
                 yaml.set("cosmetics.companion", next.companion());
                 yaml.set("cosmetics.trail", next.trail());
                 yaml.set("cosmetics.name-color", next.nameColor());
+                yaml.set("cosmetics.title", next.title());
+                yaml.set("cosmetics.aura", next.aura());
+                yaml.set("cosmetics.finisher", next.finisher());
             });
         } catch (RuntimeException error) {
             plugin.getLogger().log(Level.WARNING, "Could not save cosmetics for " + player.getName(), error);
@@ -202,8 +230,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
             Chat.error(player, "You don't have " + companion.get().name() + " yet. Companions come from the store at aerborne.net/store.");
             return;
         }
-        Loadout look = loadout(player);
-        save(player, new Loadout(companion.get().slug(), look.trail(), look.nameColor()));
+        save(player, loadout(player).withCompanion(companion.get().slug()));
         despawn(player.getUniqueId());
         respawnAt.put(player.getUniqueId(), 0L);
         Chat.success(player, companion.get().name() + " is here.");
@@ -215,7 +242,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
             Chat.notice(player, "You don't have a companion out.");
             return;
         }
-        save(player, new Loadout("", look.trail(), look.nameColor()));
+        save(player, look.withCompanion(""));
         despawn(player.getUniqueId());
         Chat.success(player, "Your companion is resting.");
     }
@@ -223,7 +250,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
     public void wearTrail(Player player, String slug) {
         Loadout look = loadout(player);
         if (slug == null || slug.isEmpty() || slug.equalsIgnoreCase("off")) {
-            save(player, new Loadout(look.companion(), "", look.nameColor()));
+            save(player, look.withTrail(""));
             Chat.success(player, "Trail off.");
             return;
         }
@@ -236,8 +263,60 @@ public final class CosmeticService implements Listener, AutoCloseable {
             Chat.error(player, "You don't have the " + trail.get().name() + " trail yet. Trails come from the store at aerborne.net/store.");
             return;
         }
-        save(player, new Loadout(look.companion(), trail.get().slug(), look.nameColor()));
+        save(player, look.withTrail(trail.get().slug()));
         Chat.success(player, "Wearing the <white>" + trail.get().name() + "</white> trail.");
+    }
+
+    /** Wears a title, aura or finisher the player owns; {@code off} takes it off. */
+    public void wear(Player player, Kind kind, String slug) {
+        Loadout look = loadout(player);
+        CosmeticCatalog.Ownership own = ownership(player);
+        String noun = kind.name().toLowerCase(Locale.ROOT);
+        if (slug == null || slug.isEmpty() || slug.equalsIgnoreCase("off")) {
+            save(player, switch (kind) { case TITLE -> look.withTitle(""); case AURA -> look.withAura(""); case FINISHER -> look.withFinisher(""); });
+            plugin.presentation().refresh(player);
+            Chat.success(player, net.nerdsmp.paper.presentation.VisualFormat.titleCase(noun) + " off.");
+            return;
+        }
+        Optional<String> name = switch (kind) {
+            case TITLE -> catalog.title(slug).filter(t -> own.titles().contains(t.slug())).map(CosmeticCatalog.Title::name);
+            case AURA -> catalog.aura(slug).filter(a -> own.auras().contains(a.slug())).map(CosmeticCatalog.Aura::name);
+            case FINISHER -> catalog.finisher(slug).filter(f -> own.finishers().contains(f.slug())).map(CosmeticCatalog.Finisher::name);
+        };
+        if (name.isEmpty()) {
+            Chat.error(player, "You don't have a " + noun + " called that. See yours in <white>/cosmetics</white>.");
+            return;
+        }
+        String chosen = CosmeticCatalog.normalise(slug);
+        save(player, switch (kind) { case TITLE -> look.withTitle(chosen); case AURA -> look.withAura(chosen); case FINISHER -> look.withFinisher(chosen); });
+        plugin.presentation().refresh(player);
+        Chat.success(player, "Wearing the <white>" + name.get() + "</white> " + noun + ".");
+    }
+
+    /** The worn title as chat markup, or empty. */
+    public String titleTag(Player player) {
+        String worn = loadout(player).title();
+        if (worn.isEmpty() || !ownership(player).titles().contains(worn)) return "";
+        return catalog.title(worn).map(t -> "<" + t.color() + ">" + Chat.escape(t.name()) + "</" + t.color() + ">").orElse("");
+    }
+
+    /**
+     * Grants whatever a feat unlocks (see {@link CosmeticCatalog#clearKeys}), once per account: the transaction id
+     * is fixed, so earning it again changes nothing.
+     */
+    public void earn(Player player, java.util.Collection<String> keys) {
+        AccountId account = account(player);
+        if (account == null) return;
+        List<String> products = catalog.earnedBy(keys);
+        if (products.isEmpty()) return;
+        List<java.util.concurrent.CompletableFuture<?>> grants = new ArrayList<>();
+        for (String product : products)
+            grants.add(plugin.entitlements().grant(account, product, "earned:" + product + ":" + account.value(), null).toCompletableFuture());
+        java.util.concurrent.CompletableFuture.allOf(grants.toArray(java.util.concurrent.CompletableFuture[]::new))
+            .whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (error != null) plugin.getLogger().log(Level.WARNING, "Could not grant earned cosmetics to " + player.getName(), error);
+                if (player.isOnline()) refresh(player);
+            }));
     }
 
     /** Moves to the next colour in the player's palette, ending at their tier's own colour. Returns the new choice. */
@@ -250,7 +329,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
         Loadout look = loadout(player);
         int index = palette.indexOf(look.nameColor());
         String next = index + 1 >= palette.size() ? "" : palette.get(index + 1);
-        save(player, new Loadout(look.companion(), look.trail(), next));
+        save(player, look.withNameColor(next));
         plugin.presentation().refresh(player);
         return next;
     }
@@ -297,7 +376,8 @@ public final class CosmeticService implements Listener, AutoCloseable {
             String base = "cosmetics.presets." + slot;
             if (!yaml.isConfigurationSection(base)) return Optional.empty();
             return Optional.of(new Loadout(yaml.getString(base + ".companion", ""), yaml.getString(base + ".trail", ""),
-                yaml.getString(base + ".name-color", "")));
+                yaml.getString(base + ".name-color", ""), yaml.getString(base + ".title", ""), yaml.getString(base + ".aura", ""),
+                yaml.getString(base + ".finisher", "")));
         });
     }
 
@@ -314,6 +394,9 @@ public final class CosmeticService implements Listener, AutoCloseable {
             yaml.set(base + ".companion", look.companion());
             yaml.set(base + ".trail", look.trail());
             yaml.set(base + ".name-color", look.nameColor());
+            yaml.set(base + ".title", look.title());
+            yaml.set(base + ".aura", look.aura());
+            yaml.set(base + ".finisher", look.finisher());
         });
         Chat.success(player, "Saved your current look to preset " + slot + ".");
     }
@@ -332,7 +415,10 @@ public final class CosmeticService implements Listener, AutoCloseable {
         Loadout look = preset.get();
         Loadout usable = new Loadout(own.companions().contains(look.companion()) ? look.companion() : "",
             own.trails().contains(look.trail()) ? look.trail() : "",
-            own.palette().contains(look.nameColor()) ? look.nameColor() : "");
+            own.palette().contains(look.nameColor()) ? look.nameColor() : "",
+            own.titles().contains(look.title()) ? look.title() : "",
+            own.auras().contains(look.aura()) ? look.aura() : "",
+            own.finishers().contains(look.finisher()) ? look.finisher() : "");
         save(player, usable);
         despawn(player.getUniqueId());
         applyLoadout(player);
@@ -414,6 +500,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
             if (nextRefresh.getOrDefault(id, 0L) <= now && owned.containsKey(id)) refresh(player);
             try {
                 moveCompanion(player, now);
+                drawAura(player);
                 drawTrail(player);
             } catch (RuntimeException error) {
                 plugin.getLogger().log(Level.WARNING, "Cosmetics paused for " + player.getName(), error);
@@ -569,6 +656,45 @@ public final class CosmeticService implements Listener, AutoCloseable {
         }
     }
 
+    // --- Auras and finishers -----------------------------------------------------------------
+
+    /** An aura shows while its wearer stands still; once they move, their trail has the stage. */
+    private void drawAura(Player player) {
+        Optional<CosmeticCatalog.Aura> aura = catalog.aura(loadout(player).aura());
+        Location before = lastSeen.get(player.getUniqueId()), now = player.getLocation();
+        if (aura.isEmpty() || !ownership(player).auras().contains(aura.get().slug()) || hidden(player) || before == null
+            || !before.getWorld().equals(now.getWorld())) return;
+        double dx = now.getX() - before.getX(), dz = now.getZ() - before.getZ();
+        if (dx * dx + dz * dz > 0.0025D) return;
+        List<TrailPatterns.Puff> puffs = AuraPatterns.aura(aura.get().pattern(), tick);
+        if (puffs.isEmpty()) return;
+        Particle particle = particle(aura.get().particle(), Particle.END_ROD);
+        List<Player> viewers = viewers(player);
+        for (TrailPatterns.Puff puff : puffs) {
+            Location spot = now.clone().add(puff.x(), puff.y(), puff.z());
+            for (Player viewer : viewers) viewer.spawnParticle(particle, spot, puff.count(), puff.spread(), puff.spread(), puff.spread(), 0.0D);
+        }
+    }
+
+    /** A worn finisher goes off where its wearer's kill falls. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onKill(org.bukkit.event.entity.EntityDeathEvent event) {
+        Player killer = event.getEntity().getKiller();
+        if (killer == null || event.getEntity() == killer || hidden(killer)) return;
+        Optional<CosmeticCatalog.Finisher> finisher = catalog.finisher(loadout(killer).finisher());
+        if (finisher.isEmpty() || !ownership(killer).finishers().contains(finisher.get().slug())) return;
+        Particle particle = particle(finisher.get().particle(), Particle.FIREWORK);
+        Location at = event.getEntity().getLocation();
+        List<Player> viewers = viewers(killer);
+        for (TrailPatterns.Puff puff : AuraPatterns.finisher(finisher.get().pattern())) {
+            Location spot = at.clone().add(puff.x(), puff.y(), puff.z());
+            for (Player viewer : viewers) {
+                if (viewer.getWorld().equals(spot.getWorld()))
+                    viewer.spawnParticle(particle, spot, puff.count(), puff.spread(), puff.spread(), puff.spread(), 0.02D);
+            }
+        }
+    }
+
     /** The owner plus nearby players who show other players' cosmetics. */
     private List<Player> viewers(Player owner) {
         List<Player> out = new ArrayList<>();
@@ -684,7 +810,8 @@ public final class CosmeticService implements Listener, AutoCloseable {
                 b, contents.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList())));
         }
         try {
-            return new CosmeticCatalog(companions, trails, defaults.tiers(), bundles, defaults.emotes());
+            return new CosmeticCatalog(companions, trails, defaults.tiers(), bundles, defaults.emotes(),
+                defaults.titles(), defaults.auras(), defaults.finishers());
         } catch (IllegalArgumentException invalid) {
             plugin.getLogger().warning("Ignoring cosmetics settings in config.yml: " + invalid.getMessage());
             return defaults;

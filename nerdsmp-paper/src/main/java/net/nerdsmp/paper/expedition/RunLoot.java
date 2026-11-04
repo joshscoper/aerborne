@@ -222,7 +222,10 @@ final class RunLoot {
         if (run.test || plugin.skills() == null) return;
         long experience = ExpeditionLoot.finishExperience(run.expedition.level(), luck);
         plugin.skills().awardMilestone(player, Skill.HUNTING, experience, "expedition-finish:" + run.id);
-        Chat.success(player, "You learned from the run: <green>+" + experience + " Hunting XP</green>.");
+        // A running booster raises the award as it's stored, so say what actually lands.
+        double boost = plugin.boosters() == null ? 1D : plugin.boosters().multiplier();
+        Chat.success(player, "You learned from the run: <green>+" + Math.round(experience * boost) + " Hunting XP</green>"
+            + (boost > 1D ? " <gold>(XP booster +50%)</gold>" : "") + ".");
     }
 
     private static ExpeditionLoot.Source source(ExpeditionDefinition.Role role) {

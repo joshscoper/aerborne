@@ -1382,38 +1382,21 @@ public final class MenuManager implements Listener, AutoCloseable {
             tier.map(t -> t.badge() + " <white>" + t.name() + "</white>").orElse("<white>Your wardrobe</white>"), List.of(
                 "<gray>Everything here is visual only and stays with your account.</gray>",
                 tier.isPresent() ? "<gray>Thank you for supporting Aerborne.</gray>"
-                    : "<gray>Companions, trails and ranks: aerborne.net/store</gray>"
+                    : "<gray>From the store at aerborne.net/store, or earned out in the world.</gray>"
             ), ignored -> { });
-        int slot = 10;
-        for (var companion : catalog.companions()) {
-            if (net.nerdsmp.paper.cosmetic.CosmeticCatalog.hidden(companion, own)) continue;
-            boolean has = own.companions().contains(companion.slug());
-            boolean out = companion.slug().equals(look.companion());
-            button(menu, slot++, has ? cosmetics.icon(companion) : Material.GRAY_DYE,
-                (has ? "<" + companion.color() + ">" : "<gray>") + companion.name() + (out ? " <green>✔</green>" : "") + "</" + (has ? companion.color() : "gray") + ">",
-                List.of("<gray>" + companion.species() + "</gray>",
-                    has ? (out ? "<yellow>Click to send it home.</yellow>" : "<yellow>Click to summon.</yellow>")
-                        : "<dark_gray>Locked · aerborne.net/store</dark_gray>"),
-                target -> {
-                    if (!has) return;
-                    if (out) cosmetics.dismiss(target); else cosmetics.summon(target, companion.slug());
-                    openCosmetics(target);
-                });
-        }
-        slot = 18;
-        for (var trail : catalog.trails()) {
-            boolean has = own.trails().contains(trail.slug());
-            boolean worn = trail.slug().equals(look.trail());
-            button(menu, slot++, has ? trailIcon(trail.slug()) : Material.GRAY_DYE,
-                (has ? "<" + trail.color() + ">" : "<gray>") + trail.name() + " trail" + (worn ? " <green>✔</green>" : "") + "</" + (has ? trail.color() : "gray") + ">",
-                List.of("<gray>" + trail.summary() + "</gray>",
-                    has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
-                        : "<dark_gray>Locked · aerborne.net/store</dark_gray>"),
-                target -> {
-                    if (!has) return;
-                    cosmetics.wearTrail(target, worn ? "off" : trail.slug());
-                    openCosmetics(target);
-                });
+        // One tile per kind of cosmetic; each opens its own page, so no kind ever runs into another's row.
+        long companions = catalog.companions().stream().filter(c -> !net.nerdsmp.paper.cosmetic.CosmeticCatalog.hidden(c, own)).count();
+        String[][] kinds = {
+            {"companions", "Companions", own.companions().size() + "/" + companions, "Little friends that follow you."},
+            {"trails", "Trails", own.trails().size() + "/" + catalog.trails().size(), "Particles behind you as you walk."},
+            {"titles", "Titles", own.titles().size() + "/" + catalog.titles().size(), "A title after your name in chat and the tab list."},
+            {"auras", "Auras", own.auras().size() + "/" + catalog.auras().size(), "Particles round you while you stand still."},
+            {"finishers", "Finishers", own.finishers().size() + "/" + catalog.finishers().size(), "A burst where your kills fall."}};
+        Material[] tiles = {Material.LEAD, Material.FEATHER, Material.NAME_TAG, Material.GLOWSTONE_DUST, Material.FIREWORK_STAR};
+        for (int index = 0; index < kinds.length; index++) {
+            String[] kind = kinds[index];
+            button(menu, 20 + index, tiles[index], "<white>" + kind[1] + "</white> <gray>" + kind[2] + "</gray>",
+                List.of("<gray>" + kind[3] + "</gray>", "<yellow>Click to open.</yellow>"), target -> openCosmeticList(target, kind[0], 0));
         }
         if (!own.palette().isEmpty()) {
             var style = cosmetics.style(player);
@@ -1451,13 +1434,99 @@ public final class MenuManager implements Listener, AutoCloseable {
                         openCosmetics(target);
                     });
                 button(menu, 40 + number, Material.WRITABLE_BOOK, "<white>Save to preset " + number + "</white>",
-                    List.of("<gray>Stores your current companion, trail and name colour.</gray>"), target -> {
+                    List.of("<gray>Stores your whole current look.</gray>"), target -> {
                         cosmetics.savePreset(target, number);
                         openCosmetics(target);
                     });
             }
         }
         open(player, menu.inventory());
+    }
+
+    private record WardrobeEntry(Material icon, String name, List<String> lore, Consumer<Player> click) { }
+
+    private static final int[] WARDROBE_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43};
+
+    /** One kind of cosmetic, a page at a time: what you own lit, the rest grey with how to get it. */
+    private void openCosmeticList(Player player, String kind, int page) {
+        var cosmetics = plugin.cosmetics();
+        var catalog = cosmetics.catalog();
+        var own = cosmetics.ownership(player);
+        var look = cosmetics.loadout(player);
+        List<WardrobeEntry> entries = new ArrayList<>();
+        String heading = switch (kind) {
+            case "companions" -> {
+                for (var companion : catalog.companions()) {
+                    if (net.nerdsmp.paper.cosmetic.CosmeticCatalog.hidden(companion, own)) continue;
+                    boolean has = own.companions().contains(companion.slug()), out = companion.slug().equals(look.companion());
+                    entries.add(new WardrobeEntry(has ? cosmetics.icon(companion) : Material.GRAY_DYE, owned(has, companion.color(), companion.name(), out),
+                        List.of("<gray>" + companion.species() + "</gray>", has ? (out ? "<yellow>Click to send it home.</yellow>" : "<yellow>Click to summon.</yellow>")
+                            : "<dark_gray>Locked · " + (companion.source() == null ? "aerborne.net/store" : companion.source()) + "</dark_gray>"),
+                        target -> { if (out) cosmetics.dismiss(target); else cosmetics.summon(target, companion.slug()); }));
+                }
+                yield "Companions";
+            }
+            case "trails" -> {
+                for (var trail : catalog.trails()) {
+                    boolean has = own.trails().contains(trail.slug()), worn = trail.slug().equals(look.trail());
+                    entries.add(new WardrobeEntry(has ? trailIcon(trail.slug()) : Material.GRAY_DYE, owned(has, trail.color(), trail.name() + " trail", worn),
+                        List.of("<gray>" + trail.summary() + "</gray>", has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
+                            : "<dark_gray>Locked · aerborne.net/store</dark_gray>"),
+                        target -> cosmetics.wearTrail(target, worn ? "off" : trail.slug())));
+                }
+                yield "Trails";
+            }
+            case "titles" -> {
+                for (var title : catalog.titles()) {
+                    boolean has = own.titles().contains(title.slug()), worn = title.slug().equals(look.title());
+                    entries.add(new WardrobeEntry(has ? Material.NAME_TAG : Material.GRAY_DYE, owned(has, title.color(), title.name(), worn),
+                        List.of(has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
+                            : "<dark_gray>Locked · " + title.how() + "</dark_gray>"),
+                        target -> cosmetics.wear(target, net.nerdsmp.paper.cosmetic.CosmeticService.Kind.TITLE, worn ? "off" : title.slug())));
+                }
+                yield "Titles";
+            }
+            case "auras" -> {
+                for (var aura : catalog.auras()) {
+                    boolean has = own.auras().contains(aura.slug()), worn = aura.slug().equals(look.aura());
+                    entries.add(new WardrobeEntry(has ? Material.GLOWSTONE_DUST : Material.GRAY_DYE, owned(has, aura.color(), aura.name() + " aura", worn),
+                        List.of("<gray>" + aura.summary() + "</gray>", has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
+                            : "<dark_gray>Locked · " + aura.how() + "</dark_gray>"),
+                        target -> cosmetics.wear(target, net.nerdsmp.paper.cosmetic.CosmeticService.Kind.AURA, worn ? "off" : aura.slug())));
+                }
+                yield "Auras";
+            }
+            default -> {
+                for (var finisher : catalog.finishers()) {
+                    boolean has = own.finishers().contains(finisher.slug()), worn = finisher.slug().equals(look.finisher());
+                    entries.add(new WardrobeEntry(has ? Material.FIREWORK_STAR : Material.GRAY_DYE, owned(has, finisher.color(), finisher.name() + " finisher", worn),
+                        List.of("<gray>" + finisher.summary() + "</gray>", has ? (worn ? "<yellow>Click to take it off.</yellow>" : "<yellow>Click to wear.</yellow>")
+                            : "<dark_gray>Locked · " + finisher.how() + "</dark_gray>"),
+                        target -> cosmetics.wear(target, net.nerdsmp.paper.cosmetic.CosmeticService.Kind.FINISHER, worn ? "off" : finisher.slug())));
+                }
+                yield "Finishers";
+            }
+        };
+        int pages = Math.max(1, (entries.size() + WARDROBE_SLOTS.length - 1) / WARDROBE_SLOTS.length), shown = Math.clamp(page, 0, pages - 1);
+        MenuInventory menu = detailMenu(View.COSMETICS, 54, "<gold><bold>" + heading + "</bold></gold>" + (pages > 1 ? " <gray>" + (shown + 1) + "/" + pages + "</gray>" : ""));
+        for (int index = 0; index < WARDROBE_SLOTS.length && shown * WARDROBE_SLOTS.length + index < entries.size(); index++) {
+            WardrobeEntry entry = entries.get(shown * WARDROBE_SLOTS.length + index);
+            boolean usable = entry.icon() != Material.GRAY_DYE;
+            button(menu, WARDROBE_SLOTS[index], entry.icon(), entry.name(), entry.lore(), target -> {
+                if (!usable) return;
+                entry.click().accept(target);
+                openCosmeticList(target, kind, shown);
+            });
+        }
+        button(menu, MenuKit.backSlot(54), Material.ARROW, "<white>Back to the wardrobe</white>", List.of(), this::openCosmetics);
+        if (shown > 0) button(menu, 45, Material.SPECTRAL_ARROW, "<white>Previous page</white>", List.of(), target -> openCosmeticList(target, kind, shown - 1));
+        if (shown + 1 < pages) button(menu, 53, Material.SPECTRAL_ARROW, "<white>Next page</white>", List.of(), target -> openCosmeticList(target, kind, shown + 1));
+        open(player, menu.inventory());
+    }
+
+    private static String owned(boolean has, String color, String name, boolean worn) {
+        String tint = has ? color : "gray";
+        return "<" + tint + ">" + name + (worn ? " <green>✔</green>" : "") + "</" + tint + ">";
     }
 
     private static Material trailIcon(String slug) {
@@ -1470,6 +1539,9 @@ public final class MenuManager implements Listener, AutoCloseable {
             case "comet-tail" -> Material.FIREWORK_ROCKET;
             case "dandelion-drift" -> Material.DANDELION;
             case "stardust-waltz" -> Material.AMETHYST_SHARD;
+            case "snowdrift" -> Material.SNOWBALL;
+            case "ember-wake" -> Material.BLAZE_POWDER;
+            case "glowspore" -> Material.GLOW_LICHEN;
             default -> Material.BLAZE_POWDER;
         };
     }

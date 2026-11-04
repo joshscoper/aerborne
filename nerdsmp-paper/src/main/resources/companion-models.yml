@@ -497,3 +497,70 @@ ashling:
     - { block: MAGMA_BLOCK, at: [0, 11.8, 0.4], size: [0.8, 1.4, 0.8], glow: true, group: head }
     - { block: MAGMA_BLOCK, at: [-3.8, 4, 0], size: [1.4, 4.4, 1.6], glow: true, group: leg_a }
     - { block: MAGMA_BLOCK, at: [3.8, 4, 0], size: [1.4, 4.4, 1.6], glow: true, group: leg_b }
+
+glimmerbee:
+  bounce: none
+  pivots:
+    head: [0, 6, 2.5]
+    wing_left: [-1.5, 7.6, 0]
+    wing_right: [1.5, 7.6, 0]
+  parts:
+    - { block: YELLOW_WOOL, at: [0, 6, 0.5], size: [4, 4, 4] }
+    - { block: BLACK_WOOL, at: [0, 6, -1.9], size: [4.2, 4.2, 1] }
+    - { block: OCHRE_FROGLIGHT, at: [0, 5.6, -3.6], size: [3.4, 3.4, 2.6], glow: true }
+    - { block: BLACK_WOOL, at: [0, 5.4, -5.2], size: [1.4, 1.4, 0.8] }
+    - { block: BLACK_WOOL, at: [0, 6.4, 3.6], size: [3, 3, 2.4], group: head }
+    - { block: WHITE_CONCRETE, at: [-0.8, 6.9, 4.85], size: [0.8, 0.8, 0.2], group: head, glow: true }
+    - { block: WHITE_CONCRETE, at: [0.8, 6.9, 4.85], size: [0.8, 0.8, 0.2], group: head, glow: true }
+    - { block: BLACK_CONCRETE, at: [-0.7, 8.9, 4.2], size: [0.3, 2, 0.3], group: ear }
+    - { block: BLACK_CONCRETE, at: [0.7, 8.9, 4.2], size: [0.3, 2, 0.3], group: ear }
+    - { block: WHITE_STAINED_GLASS, at: [-3.2, 7.8, 0], size: [4, 0.3, 3], group: wing_left }
+    - { block: WHITE_STAINED_GLASS, at: [3.2, 7.8, 0], size: [4, 0.3, 3], group: wing_right }
+    - { block: BLACK_CONCRETE, at: [-1, 3.6, 0.5], size: [0.4, 1.2, 0.4], group: leg_a }
+    - { block: BLACK_CONCRETE, at: [1, 3.6, 0.5], size: [0.4, 1.2, 0.4], group: leg_b }
+
+bramblehog:
+  bounce: trot
+  pivots:
+    head: [0, 3.5, 3]
+  parts:
+    - { block: BROWN_WOOL, at: [0, 3.2, -0.5], size: [6, 4.4, 7] }
+    - { block: SMOOTH_SANDSTONE, at: [0, 2.6, 0.2], size: [4.6, 2.4, 6.2] }
+    - { block: SPRUCE_PLANKS, at: [-1.6, 5.8, -0.5], size: [1, 1.6, 1] }
+    - { block: SPRUCE_PLANKS, at: [1.6, 5.8, -1.4], size: [1, 1.6, 1] }
+    - { block: SPRUCE_PLANKS, at: [0, 6, 0.6], size: [1, 1.6, 1] }
+    - { block: SPRUCE_PLANKS, at: [-0.2, 5.8, -2.6], size: [1, 1.6, 1] }
+    - { block: OAK_LEAVES, at: [1.2, 5.9, 1.4], size: [1.6, 1, 1.6] }
+    - { block: RED_CONCRETE, at: [1.5, 6.7, 1.5], size: [0.8, 0.8, 0.8] }
+    - { block: RED_CONCRETE, at: [0.6, 6.5, 2], size: [0.7, 0.7, 0.7] }
+    - { block: SMOOTH_SANDSTONE, at: [0, 3, 3.7], size: [3.2, 2.6, 2.4], group: head }
+    - { block: SMOOTH_SANDSTONE, at: [0, 2.6, 5.3], size: [1.6, 1.4, 1.4], group: head }
+    - { block: BLACK_CONCRETE, at: [0, 2.8, 6.05], size: [0.8, 0.7, 0.3], group: head }
+    - { block: BLACK_CONCRETE, at: [-0.9, 3.7, 4.95], size: [0.6, 0.6, 0.2], group: head }
+    - { block: BLACK_CONCRETE, at: [0.9, 3.7, 4.95], size: [0.6, 0.6, 0.2], group: head }
+    - { block: BROWN_TERRACOTTA, at: [-1.6, 0.6, 1.8], size: [1.2, 1.2, 1.2], group: leg_a }
+    - { block: BROWN_TERRACOTTA, at: [1.6, 0.6, 1.8], size: [1.2, 1.2, 1.2], group: leg_b }
+    - { block: BROWN_TERRACOTTA, at: [-1.6, 0.6, -2.4], size: [1.2, 1.2, 1.2], group: leg_b }
+    - { block: BROWN_TERRACOTTA, at: [1.6, 0.6, -2.4], size: [1.2, 1.2, 1.2], group: leg_a }
+
+driftfin:
+  bounce: none
+  pivots:
+    tail: [0, 6, -4]
+    wing_left: [-1.8, 5.5, 1]
+    wing_right: [1.8, 5.5, 1]
+  parts:
+    - { block: WHITE_CONCRETE, at: [0, 6, 0.5], size: [3.6, 3.6, 8] }
+    - { block: ORANGE_CONCRETE, at: [0, 7.6, 1.5], size: [3, 0.6, 3.4] }
+    - { block: ORANGE_CONCRETE, at: [-1.6, 6.4, -1.6], size: [0.6, 2, 2.2] }
+    - { block: RED_CONCRETE, at: [1.6, 6.6, 2.6], size: [0.6, 1.6, 1.8] }
+    - { block: WHITE_CONCRETE, at: [0, 5.8, 5.1], size: [2.6, 2.6, 1.4] }
+    - { block: BLACK_CONCRETE, at: [-1.35, 6.4, 4.4], size: [0.2, 0.8, 0.8] }
+    - { block: BLACK_CONCRETE, at: [1.35, 6.4, 4.4], size: [0.2, 0.8, 0.8] }
+    - { block: GOLD_BLOCK, at: [-0.9, 5.1, 6.1], size: [0.2, 0.2, 1.6] }
+    - { block: GOLD_BLOCK, at: [0.9, 5.1, 6.1], size: [0.2, 0.2, 1.6] }
+    - { block: ORANGE_STAINED_GLASS, at: [0, 8.6, 0], size: [0.3, 1.8, 3.6] }
+    - { block: ORANGE_STAINED_GLASS, at: [0, 6.4, -5.2], size: [0.4, 4, 2.6], group: tail }
+    - { block: WHITE_STAINED_GLASS, at: [0, 6.4, -6.6], size: [0.3, 5, 1.6], group: tail }
+    - { block: ORANGE_STAINED_GLASS, at: [-2.6, 5, 1], size: [2, 0.3, 2.2], group: wing_left }
+    - { block: ORANGE_STAINED_GLASS, at: [2.6, 5, 1], size: [2, 0.3, 2.2], group: wing_right }

@@ -5,6 +5,17 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Cosmetics suite and XP boosters (November 3)
+- **Titles.** A title shows before your name in chat and the tab list. Four are sold, and one is earned for clearing
+  each expedition, plus Keystone Master for any Mythic clear.
+- **Auras and finishers.** An aura draws round you while you stand still; a finisher bursts where your kills fall.
+  Three of each are sold, and the Hall and Cinder Keep earn more on Heroic and Mythic.
+- **Three companions and three trails.** Glimmerbee, Bramblehog and Driftfin; Snowdrift, Ember Wake and Glowspore.
+- **The wardrobe** is now a hub with a page for each kind, so owning many companions no longer pushes them into
+  the trail row. Locked items say how to get them, and presets keep the whole look.
+- **XP boosters.** Using one gives everyone online +50% XP for an hour, shown on a boss bar with who to thank.
+  Sold in the store (`booster.xp`) and earned by clearing Cinder Keep, once per tier a week.
+
 ### Second round of raid fixes (November 1)
 - **Exits.** The exit refused to work while any boss chest in the run was unopened, with only a line on the action bar to say so.
   It now stops you once, names the chest, and lets you go if you step out and back in.

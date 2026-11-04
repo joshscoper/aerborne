@@ -1008,6 +1008,12 @@ final class ExpeditionRun {
             if (player == null || account.isEmpty()) continue;
             party.put(account.get().toString(), player.getName());
             if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), key != null ? "mythic" : tier.id());
+            // Titles, auras and finishers some clears earn; granted once, before any lockout can turn the rest away.
+            if (!test && plugin.cosmetics() != null)
+                plugin.cosmetics().earn(player, net.nerdsmp.paper.cosmetic.CosmeticCatalog.clearKeys(expedition.id(), key != null ? "mythic" : tier.id()));
+            // The raid pays an XP booster too, once per tier a week like its bosses.
+            if (!test && expedition.story().raid() && plugin.boosters() != null)
+                plugin.boosters().earn(player, "raid:" + expedition.id() + ":" + tier.id() + ":" + service.raidWeek());
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
             // A raid's finish pays once per tier per week, like its bosses.
             if (expedition.story().raid() && !test
