@@ -23,6 +23,8 @@ public record WorldPack(
     long seed,
     String difficulty,
     boolean naturalMonsters,
+    /** A generated world the pack belongs to by name; null for a map matched by seed and landmarks. */
+    String world,
     List<Landmark> landmarks,
     Point spawn,
     Border border,
@@ -43,7 +45,8 @@ public record WorldPack(
         zones = unmodifiable(zones);
         npcs = unmodifiable(npcs);
         sites = unmodifiable(sites);
-        if (landmarks.isEmpty()) throw new IllegalArgumentException("A world pack needs landmark blocks so it never applies to another map");
+        if (landmarks.isEmpty() && (world == null || world.isBlank()))
+            throw new IllegalArgumentException("A world pack needs landmark blocks (or a generated world's name) so it never applies to another map");
         List<Zone> list = List.copyOf(zones.values());
         for (int i = 0; i < list.size(); i++) for (int j = i + 1; j < list.size(); j++)
             if (list.get(i).overlaps(list.get(j))) throw new IllegalArgumentException("Pack zones " + list.get(i).id() + " and " + list.get(j).id() + " overlap");
@@ -155,7 +158,7 @@ public record WorldPack(
         if (integer(root.get("schema-version"), "schema-version") != SCHEMA_VERSION) throw new IllegalArgumentException("Unsupported world pack schema");
         Map<?, ?> match = map(root.get("match"), "match");
         List<Landmark> landmarks = new ArrayList<>();
-        for (Object raw : list(match.get("landmarks"), "landmarks")) {
+        if (match.containsKey("landmarks")) for (Object raw : list(match.get("landmarks"), "landmarks")) {
             List<?> item = list(raw, "landmark");
             if (item.size() != 4) throw new IllegalArgumentException("Landmarks are [x, y, z, material]");
             landmarks.add(new Landmark(integer(item.get(0), "x"), integer(item.get(1), "y"), integer(item.get(2), "z"),
@@ -198,7 +201,8 @@ public record WorldPack(
         return new WorldPack(string(root.get("id"), "id"), integer(root.get("version"), "version"), string(root.get("title"), "title"),
             number(match.get("seed"), "seed").longValue(),
             root.containsKey("difficulty") ? string(root.get("difficulty"), "difficulty").toLowerCase(Locale.ROOT) : null,
-            !Boolean.FALSE.equals(root.get("natural-monsters")), landmarks, root.containsKey("spawn") ? point(root.get("spawn")) : null,
+            !Boolean.FALSE.equals(root.get("natural-monsters")), match.containsKey("world") ? string(match.get("world"), "world") : null,
+            landmarks, root.containsKey("spawn") ? point(root.get("spawn")) : null,
             root.containsKey("border") ? border(root.get("border")) : null,
             warps, zones, npcs, sites);
     }

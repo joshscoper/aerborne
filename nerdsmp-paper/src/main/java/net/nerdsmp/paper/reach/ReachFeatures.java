@@ -16,8 +16,11 @@ import java.util.function.Function;
  * other chunks read their slice. Feature footprints also tell the plant populator where not to grow trees.
  */
 public final class ReachFeatures {
-    /** A point a player stands at: arrival, an NPC, a chest. */
-    public record Spot(double x, double y, double z, float yaw) { }
+    /** A named point a player stands at: arrival, an NPC, a chest. */
+    public record Spot(String id, double x, double y, double z, float yaw) { }
+
+    /** What a feature builds: its blocks, and the named spots its NPCs, chests and doors use. */
+    public record Built(ReachCanvas canvas, List<Spot> spots) { }
 
     /** A feature's reserved rectangle, which plants keep out of. */
     public record Footprint(int minX, int minZ, int maxX, int maxZ) {
@@ -27,11 +30,12 @@ public final class ReachFeatures {
         }
     }
 
-    public record Feature(String id, Footprint footprint, Function<ReachTerrain, ReachCanvas> build) { }
+    public record Feature(String id, Footprint footprint, Function<ReachTerrain, Built> build) { }
 
     private final ReachTerrain terrain;
     private final List<Feature> features;
     private final Map<String, ReachCanvas.Frozen> built = new ConcurrentHashMap<>();
+    private final Map<String, List<Spot>> spots = new ConcurrentHashMap<>();
     private final Map<String, BlockData> states = new ConcurrentHashMap<>();
 
     public ReachFeatures(ReachTerrain terrain, List<Feature> features) {
@@ -43,7 +47,25 @@ public final class ReachFeatures {
 
     /** Builds (once) and returns a feature's plan. */
     public ReachCanvas.Frozen plan(Feature feature) {
-        return built.computeIfAbsent(feature.id(), id -> feature.build().apply(terrain).freeze());
+        return built.computeIfAbsent(feature.id(), id -> {
+            Built result = feature.build().apply(terrain);
+            spots.put(id, List.copyOf(result.spots()));
+            return result.canvas().freeze();
+        });
+    }
+
+    /** Every named spot of every feature, prefixed with the feature's id ({@code highcrown.plaza}). */
+    public Map<String, Spot> spots() {
+        Map<String, Spot> all = new java.util.LinkedHashMap<>();
+        for (Feature feature : features) {
+            plan(feature);
+            for (Spot spot : spots.getOrDefault(feature.id(), List.of())) all.put(feature.id() + "." + spot.id(), spot);
+        }
+        return all;
+    }
+
+    public java.util.Optional<Feature> feature(String id) {
+        return features.stream().filter(f -> f.id().equals(id)).findFirst();
     }
 
     /** Writes every feature's blocks that fall in this chunk. */
@@ -55,16 +77,22 @@ public final class ReachFeatures {
         }
     }
 
-    /** True where a feature has reserved the ground. */
+    /** True where a feature builds something in this column, or right beside it, so plants keep clear. */
     public boolean occupied(int x, int z) {
-        for (Feature feature : features) if (feature.footprint().contains(x, z)) return true;
+        for (Feature feature : features) {
+            if (!feature.footprint().contains(x, z)) continue;
+            ReachCanvas.Frozen plan = plan(feature);
+            if (plan.occupies(x, z) || plan.occupies(x + 1, z) || plan.occupies(x - 1, z) || plan.occupies(x, z + 1) || plan.occupies(x, z - 1)) return true;
+        }
         return false;
     }
 
     /** Where islanders land: the end of Highcrown's main pier until the docks are built, then the docks. */
     public Spot arrival() {
+        Spot pier = spots().get("highcrown.pier_mid");
+        if (pier != null) return new Spot("arrival", pier.x(), pier.y(), pier.z() + 30, 180F);
         ReachTerrain.Column column = terrain.column(0, 1040);
-        return new Spot(0.5, column.top() + 1, 1040.5, 180F);
+        return new Spot("arrival", 0.5, column.top() + 1, 1040.5, 180F);
     }
 
     /** All features covering this chunk, for tests. */

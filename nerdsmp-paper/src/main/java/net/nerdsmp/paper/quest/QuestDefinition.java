@@ -53,11 +53,12 @@ public record QuestDefinition(
         return id != null && id.matches("[a-z0-9][a-z0-9_-]{0,47}");
     }
 
-    public enum Type { KILL, HARVEST, DIG, VISIT, TALK, DELIVER }
+    public enum Type { KILL, HARVEST, DIG, VISIT, TALK, DELIVER, CLEAR }
 
     /**
      * {@code targets} are mob ids ({@code custom:x}, {@code vanilla:zombie}) for KILL, material names for
-     * HARVEST, DIG and DELIVER (DIG may leave them empty for any soil) and NPC ids for TALK. {@code zone}
+     * HARVEST, DIG and DELIVER (DIG may leave them empty for any soil), NPC ids for TALK and expedition ids for
+     * CLEAR (finish a run of that expedition on any tier). {@code zone}
      * restricts where the objective counts; VISIT needs it.
      */
     public record Objective(Type type, Set<String> targets, String zone, int count, String description) {
@@ -77,7 +78,7 @@ public record QuestDefinition(
             for (String target : targets) {
                 boolean valid = switch (type) {
                     case KILL -> target.matches("(custom|vanilla):[a-z0-9_-]{1,64}");
-                    case TALK -> validId(target);
+                    case TALK, CLEAR -> validId(target);
                     default -> target.matches("[A-Z0-9_]{1,64}");
                 };
                 if (!valid) throw new IllegalArgumentException("Invalid " + type + " objective target " + target);

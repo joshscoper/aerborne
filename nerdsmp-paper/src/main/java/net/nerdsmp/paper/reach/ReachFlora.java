@@ -19,7 +19,8 @@ import java.util.Random;
 final class ReachFlora extends BlockPopulator {
     private final ReachTerrain terrain;
     private final ReachFeatures features;
-    private final BlockData grassLower, grassUpper, fernLower, fernUpper, lilacLower, lilacUpper, wheatRipe, wheatGreen, snow;
+    private final BlockData grassLower, grassUpper, fernLower, fernUpper, lilacLower, lilacUpper, wheatRipe, wheatGreen, snow,
+        carrots, potatoes, beetroots, hedge, hay;
 
     ReachFlora(ReachTerrain terrain, ReachFeatures features) {
         this.terrain = terrain;
@@ -33,6 +34,11 @@ final class ReachFlora extends BlockPopulator {
         wheatRipe = Bukkit.createBlockData("minecraft:wheat[age=7]");
         wheatGreen = Bukkit.createBlockData("minecraft:wheat[age=5]");
         snow = Bukkit.createBlockData("minecraft:snow[layers=1]");
+        carrots = Bukkit.createBlockData("minecraft:carrots[age=7]");
+        potatoes = Bukkit.createBlockData("minecraft:potatoes[age=7]");
+        beetroots = Bukkit.createBlockData("minecraft:beetroots[age=3]");
+        hedge = Bukkit.createBlockData("minecraft:oak_leaves[persistent=true]");
+        hay = Bukkit.createBlockData("minecraft:hay_block[axis=y]");
     }
 
     @Override
@@ -48,11 +54,26 @@ final class ReachFlora extends BlockPopulator {
             long hash = hash(x, z);
             double roll = (hash & 0xFFFF) / 65536.0, roll2 = ((hash >>> 16) & 0xFFFF) / 65536.0;
             if (ground == Material.FARMLAND) {
-                region.setBlockData(x, y, z, terrain.patch(x, z, 0.06) > 0.35 ? wheatGreen : wheatRipe);
+                region.setBlockData(x, y, z, switch (terrain.field(x, z)) {
+                    case 2 -> wheatGreen;
+                    case 3 -> carrots;
+                    case 4 -> potatoes;
+                    case 5 -> beetroots;
+                    default -> terrain.patch(x, z, 0.08) > 0.55 ? wheatGreen : wheatRipe;
+                });
                 continue;
             }
             if (ground == Material.SNOW_BLOCK) { region.setBlockData(x, y, z, snow); continue; }
             if (c.road() > 0.05 || (c.river() >= 0 && c.river() < 4) || c.edge() < 4 || features.occupied(x, z)) continue;
+            if (c.zone() == ReachTerrain.Zone.GOLDENREACH && terrain.field(x, z) == 0 && ground == Material.GRASS_BLOCK) {
+                // A hedge between plots, broken by gaps so the fields can be walked.
+                if ((Math.floorMod(x * 7 + z * 3, 23)) > 2) region.setBlockData(x, y, z, hedge);
+                continue;
+            }
+            if (c.zone() == ReachTerrain.Zone.GOLDENREACH && terrain.field(x, z) == 6 && roll < 0.01) {
+                region.setBlockData(x, y, z, hay);
+                continue;
+            }
             boolean soil = ground == Material.GRASS_BLOCK || ground == Material.PODZOL || ground == Material.MOSS_BLOCK
                 || ground == Material.COARSE_DIRT || ground == Material.MUD || ground == Material.RED_SAND;
             if (!soil) continue;

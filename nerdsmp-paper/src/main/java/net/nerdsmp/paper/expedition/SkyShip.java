@@ -10,7 +10,7 @@ import static net.nerdsmp.paper.expedition.SampleKit.noise;
  * It lies along X with its bow east, and is moored by its south side. {@code (cx, deck, cz)} is the middle of the
  * main deck; {@code rel} below is height above that deck, {@code dx} and {@code dz} the offsets from the middle.
  */
-final class SkyShip {
+public final class SkyShip {
     static final Material RAIL = Material.DARK_OAK_FENCE;
     private static final int LENGTH = 27, FOREDECK = 14, AFT = -11, QUARTER = -19;
     /** The gas bag: its middle, half its length, and how far it reaches each way. */
@@ -30,7 +30,7 @@ final class SkyShip {
         this.cz = cz;
     }
 
-    static void moor(BuildCanvas b, int cx, int deck, int cz) {
+    public static void moor(BuildCanvas b, int cx, int deck, int cz) {
         SkyShip ship = new SkyShip(b, cx, deck, cz);
         ship.hull();
         ship.forecastle();

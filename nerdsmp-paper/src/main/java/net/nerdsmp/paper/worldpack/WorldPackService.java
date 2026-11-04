@@ -57,6 +57,12 @@ public final class WorldPackService implements org.bukkit.event.Listener {
 
     public List<WorldPack> packs() { return List.copyOf(packs); }
 
+    /** Adds a pack built in code (a generated world's), before {@link #start()}. */
+    public void register(WorldPack pack) {
+        packs.removeIf(existing -> existing.id().equals(pack.id()));
+        packs.add(pack);
+    }
+
     /** Runs once the worlds and every content service are ready. */
     public void start() {
         if (!plugin.getConfig().getBoolean("world-packs.enabled", true)) return;
@@ -195,7 +201,9 @@ public final class WorldPackService implements org.bukkit.event.Listener {
     }
 
     boolean matches(WorldPack pack, World world) {
-        if (world.getEnvironment() != World.Environment.NORMAL || world.getSeed() != pack.seed()) return false;
+        if (world.getEnvironment() != World.Environment.NORMAL) return false;
+        if (pack.world() != null) return world.getName().equals(pack.world());
+        if (world.getSeed() != pack.seed()) return false;
         if (plugin.skyblock() != null && plugin.skyblock().isIslandWorld(world)) return false;
         for (WorldPack.Landmark landmark : pack.landmarks()) {
             world.getChunkAt(landmark.x() >> 4, landmark.z() >> 4);

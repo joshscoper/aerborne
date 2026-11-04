@@ -70,12 +70,15 @@ public final class ReachTerrain {
     /** Direction from the Scar's centre to the Emberpass, the one gap in the Brimwall. */
     private static final double EMBERPASS = Math.atan2(-330 - SCAR_Z, 290 - SCAR_X);
 
-    static final List<Pad> PADS = List.of(
+    private static final List<Pad> FIXED_PADS = List.of(
         new Pad("highcrown", 0, 905, 165, 107, 45),
         new Pad("highcrown_keep", 112, 868, 40, 124, 22),
-        new Pad("millbrook", 40, 560, 52, 103, 30),
         new Pad("last_light", 285, -325, 34, 112, 20)
     );
+    static final double MILLBROOK_X = 40, MILLBROOK_Z = 560;
+    /** Town platforms. Millbrook's height follows the river, so it is set once the river is known. */
+    private volatile List<Pad> pads = FIXED_PADS;
+    private int millbrookFloor;
 
     static final double[][] GOLDWATER = {
         {-930, 240}, {-820, 300}, {-700, 330}, {-560, 400}, {-430, 455}, {-300, 470}, {-170, 505}, {-60, 540},
@@ -108,6 +111,13 @@ public final class ReachTerrain {
         goldwater.smooth(20);
         goldwater.values[0] = Math.min(goldwater.values[0], 116);
         goldwater.neverRise(0.01);
+        // Millbrook sits just above the Goldwater, like a river town should, not on a bluff above a cutting.
+        ReachPath.Hit ford = goldwater.nearest(MILLBROOK_X, MILLBROOK_Z + 15, 300);
+        int padTop = (int) Math.floor(ford == null ? 100 : ford.value()) + 3;
+        millbrookFloor = padTop + 1;
+        List<Pad> all = new java.util.ArrayList<>(FIXED_PADS);
+        all.add(new Pad("millbrook", MILLBROOK_X, MILLBROOK_Z, 52, padTop, 34));
+        pads = List.copyOf(all);
         longFall.sample((x, z) -> LAKE_LEVEL);
         falls = List.of(fall(goldwater), fall(longFall));
         for (ReachPath road : List.of(spine, emberRoad)) {
@@ -124,6 +134,32 @@ public final class ReachTerrain {
         }
     }
 
+    /** Where a road crosses water: dry bank to dry bank, and the height its deck should run at. */
+    public record Crossing(double x0, double z0, double x1, double z1, int deck) { }
+
+    /** Every place a road meets a river or the lake, found by walking the roads' samples. */
+    public List<Crossing> crossings() {
+        List<Crossing> out = new java.util.ArrayList<>();
+        for (ReachPath road : List.of(spine, emberRoad)) {
+            int start = -1;
+            for (int i = 0; i < road.size(); i++) {
+                boolean wet = column((int) Math.floor(road.xs[i]), (int) Math.floor(road.zs[i])).wet();
+                if (wet && start < 0) start = i;
+                if (!wet && start >= 0) {
+                    int a = Math.max(0, start - 2), b = Math.min(road.size() - 1, i + 1);
+                    int deck = Integer.MIN_VALUE;
+                    for (int k = a; k <= b; k++) {
+                        Column c = column((int) Math.floor(road.xs[k]), (int) Math.floor(road.zs[k]));
+                        deck = Math.max(deck, c.wet() ? c.water() + 3 : c.top());
+                    }
+                    out.add(new Crossing(road.xs[a], road.zs[a], road.xs[b], road.zs[b], deck));
+                    start = -1;
+                }
+            }
+        }
+        return out;
+    }
+
     /** The first sample past the lip is where the river pours off. */
     private Fall fall(ReachPath river) {
         for (int i = 1; i < river.size(); i++)
@@ -133,6 +169,9 @@ public final class ReachTerrain {
     }
 
     public List<Fall> falls() { return falls; }
+
+    /** Where Millbrook's people stand: one above its platform. */
+    public int millbrookFloor() { return millbrookFloor; }
 
     // ------------------------------------------------------------------ shape of the land
 
@@ -260,7 +299,7 @@ public final class ReachTerrain {
         }
 
         // Highcrown's promontory rises gently to the city plateau.
-        for (Pad pad : PADS) {
+        for (Pad pad : pads) {
             double dist = Math.hypot(x - pad.x, z - pad.z);
             if (dist < pad.radius + pad.falloff) h = lerp(h, pad.height, 1 - smoothstep(pad.radius, pad.radius + pad.falloff, dist));
         }
@@ -299,6 +338,23 @@ public final class ReachTerrain {
     /** 0..1: how strongly Goldenreach's slopes are cut into wheat terraces here. */
     double terraceMask(double x, double z) {
         return smoothstep(0.02, 0.22, misc.fbm(x * 0.006 - 200, z * 0.006, 2));
+    }
+
+    /**
+     * Goldenreach's fields: a grid of plots turned to follow the valley, each with its own crop. Returns -1 off the
+     * fields, 0 on a hedged border between plots, or 1..6 for the plot's crop (ripe wheat, green wheat, carrots,
+     * potatoes, beetroot, fallow). Fields only lie on the terraced slopes near Millbrook.
+     */
+    public int field(double x, double z) {
+        double fromTown = Math.hypot(x - MILLBROOK_X, z - MILLBROOK_Z);
+        if (terraceMask(x, z) < 0.3 || fromTown > 360 || fromTown < 85) return -1;
+        double a = 0.52, u = x * Math.cos(a) + z * Math.sin(a), v = -x * Math.sin(a) + z * Math.cos(a);
+        double cu = 23, cv = 15;
+        int iu = (int) Math.floor(u / cu), iv = (int) Math.floor(v / cv);
+        double fu = u - iu * cu, fv = v - iv * cv;
+        if (fu < 1 || fv < 1) return 0;
+        long h = ReachFlora.hash(iu * 977 + 3, iv * 131 - 9);
+        return 1 + (int) Math.floorMod(h, 6L);
     }
 
     /** Cuts a height into flat steps {@code step} high with short risers. */

@@ -30,8 +30,12 @@ final class ReachSurface {
         return switch (c.zone()) {
             case HIGHCROWN -> p > 0.5 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             case GOLDENREACH -> {
-                if (c.terrace() > 0.3) yield slope >= 2 ? (g > 0.2 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE) : Material.FARMLAND;
-                yield p > 0.55 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
+                // Terrace risers are dry-stone walls; plots are tilled, fallow plots are bare earth.
+                if (c.terrace() > 0.3 && slope >= 2) yield g > 0.2 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
+                int field = terrain.field(x, z);
+                if (field == 6) yield g > 0.3 ? Material.COARSE_DIRT : Material.ROOTED_DIRT;
+                if (field >= 1) yield Material.FARMLAND;
+                yield p > 0.72 && g > 0 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             }
             case BARROWDOWNS -> p > 0.45 ? Material.MOSS_BLOCK : p < -0.55 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             case THORNWOOD -> p > 0.25 ? Material.PODZOL : p < -0.45 ? Material.MOSS_BLOCK : g > 0.6 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;

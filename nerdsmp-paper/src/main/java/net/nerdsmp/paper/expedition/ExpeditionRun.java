@@ -1008,6 +1008,7 @@ final class ExpeditionRun {
             if (player == null || account.isEmpty()) continue;
             party.put(account.get().toString(), player.getName());
             if (!test && !assisted()) plugin.campaign().recordExpedition(player, expedition.id(), key != null ? "mythic" : tier.id());
+            if (!test && plugin.quests() != null) plugin.quests().expeditionCleared(player, expedition.id());
             // Titles, auras and finishers some clears earn; granted once, before any lockout can turn the rest away.
             if (!test && plugin.cosmetics() != null)
                 plugin.cosmetics().earn(player, net.nerdsmp.paper.cosmetic.CosmeticCatalog.clearKeys(expedition.id(), key != null ? "mythic" : tier.id()));

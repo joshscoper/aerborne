@@ -1,0 +1,359 @@
+package net.nerdsmp.paper.reach;
+
+import org.bukkit.Material;
+
+/**
+ * Building pieces shared by every town in the Reach: timber-framed houses on stone plinths, tall narrow towers,
+ * market stalls, lamps and street furniture. Rules from the vault's Build Style Guide are built in: stone footings
+ * down to the ground, posts one proud of the infill, jettied upper floors on corbels, windows with shutters and
+ * sills, steep roofs with an overhang and eaves, weathering in clusters that darken toward the ground.
+ */
+final class ReachKit {
+    /** Materials for one look of building. */
+    record Style(Material base, Material baseAccent, Material post, Material beam, Material plaster, Material plasterAccent,
+                 Material roofStair, Material roofSlab, Material roofBlock, Material plank, Material door, Material trapdoor,
+                 Material fence) {
+        static final Style HIGHCROWN = new Style(Material.STONE_BRICKS, Material.ANDESITE, Material.DARK_OAK_LOG,
+            Material.STRIPPED_DARK_OAK_LOG, Material.WHITE_TERRACOTTA, Material.CALCITE, Material.SPRUCE_STAIRS,
+            Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
+            Material.SPRUCE_TRAPDOOR, Material.DARK_OAK_FENCE);
+        static final Style SLATE = new Style(Material.STONE_BRICKS, Material.TUFF_BRICKS, Material.SPRUCE_LOG,
+            Material.STRIPPED_SPRUCE_LOG, Material.CALCITE, Material.WHITE_TERRACOTTA, Material.DEEPSLATE_TILE_STAIRS,
+            Material.DEEPSLATE_TILE_SLAB, Material.DEEPSLATE_TILES, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
+            Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
+        static final Style HARBOUR = new Style(Material.DEEPSLATE_BRICKS, Material.COBBLED_DEEPSLATE, Material.SPRUCE_LOG,
+            Material.STRIPPED_SPRUCE_LOG, Material.SPRUCE_PLANKS, Material.STRIPPED_SPRUCE_WOOD, Material.DARK_OAK_STAIRS,
+            Material.DARK_OAK_SLAB, Material.DARK_OAK_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
+            Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
+        static final Style VALE = new Style(Material.COBBLESTONE, Material.STONE_BRICKS, Material.OAK_LOG,
+            Material.STRIPPED_OAK_LOG, Material.WHITE_TERRACOTTA, Material.STRIPPED_BIRCH_WOOD, Material.OAK_STAIRS,
+            Material.OAK_SLAB, Material.OAK_PLANKS, Material.OAK_PLANKS, Material.OAK_DOOR,
+            Material.OAK_TRAPDOOR, Material.OAK_FENCE);
+        static final Style VALE_SPRUCE = new Style(Material.COBBLESTONE, Material.MOSSY_COBBLESTONE, Material.SPRUCE_LOG,
+            Material.STRIPPED_SPRUCE_LOG, Material.STRIPPED_BIRCH_WOOD, Material.WHITE_TERRACOTTA, Material.SPRUCE_STAIRS,
+            Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
+            Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
+    }
+
+    private final ReachTerrain terrain;
+
+    ReachKit(ReachTerrain terrain) { this.terrain = terrain; }
+
+    // ------------------------------------------------------------------ weathering
+
+    /** Stone with mossy and cracked patches that gather toward the ground, never single speckles. */
+    Material weathered(ReachBrush b, int lx, int ly, int lz, Material stone) {
+        double cluster = terrain.patch(b.wx(lx, lz) + ly * 0.7, b.wz(lx, lz) - ly * 0.5, 0.22);
+        double damp = cluster - ly * 0.12;
+        if (stone == Material.STONE_BRICKS) {
+            if (damp > 0.45) return Material.MOSSY_STONE_BRICKS;
+            if (cluster < -0.55) return Material.CRACKED_STONE_BRICKS;
+            return stone;
+        }
+        if (stone == Material.COBBLESTONE) return damp > 0.35 ? Material.MOSSY_COBBLESTONE : stone;
+        if (stone == Material.DEEPSLATE_BRICKS) return cluster < -0.5 ? Material.CRACKED_DEEPSLATE_BRICKS : stone;
+        return stone;
+    }
+
+    // ------------------------------------------------------------------ houses
+
+    /**
+     * A house with its front on local z = 0, {@code w} wide and {@code d} deep. The ground storey is stone; upper
+     * storeys are timber framed, the first one jettied over the street when {@code jetty} is set. {@code gableFront}
+     * puts the gable to the street (the narrow-lot look of ref 7); otherwise the eaves face the street.
+     */
+    void house(ReachBrush b, int w, int d, int floors, Style s, boolean jetty, boolean gableFront, long seed) {
+        int ground = 4, storey = 4;
+        // Footing: a stone lip one wider than the walls, carried down to the terrain.
+        for (int x = -1; x <= w; x++) for (int z = -1; z <= d; z++) {
+            b.footing(terrain, x, -2, z, s.base());
+            b.set(x, -1, z, (x == -1 || x == w || z == -1 || z == d) ? weathered(b, x, -1, z, s.base()) : s.plank());
+        }
+        // Ground storey in stone with proud corner piers.
+        for (int y = 0; y < ground; y++) for (int x = 0; x < w; x++) for (int z = 0; z < d; z++) {
+            boolean wall = x == 0 || x == w - 1 || z == 0 || z == d - 1;
+            if (!wall) { b.set(x, y, z, Material.AIR); continue; }
+            b.set(x, y, z, weathered(b, x, y, z, s.base()));
+        }
+        for (int[] c : new int[][] {{0, 0}, {w - 1, 0}, {0, d - 1}, {w - 1, d - 1}}) {
+            int px = c[0] == 0 ? -1 : w, pz = c[1] == 0 ? -1 : d;
+            for (int y = -1; y < ground; y++) b.set(px, y, c[1], s.baseAccent());
+            for (int y = -1; y < ground; y++) b.set(c[0], y, pz, s.baseAccent());
+        }
+        // Door in the middle of the front, under a little hood.
+        int door = w / 2;
+        b.set(door, 0, 0, s.door(), "facing=north,half=lower,hinge=left,open=false");
+        b.set(door, 1, 0, s.door(), "facing=north,half=upper,hinge=left,open=false");
+        b.set(door, 2, -1, s.roofStair(), "facing=south,half=top");
+        b.set(door - 1, 2, -1, s.roofStair(), "facing=east,half=top");
+        b.set(door + 1, 2, -1, s.roofStair(), "facing=west,half=top");
+        b.set(door - 1, 0, -1, Material.LANTERN);
+        // Ground-floor windows with sills.
+        for (int x = 2; x < w - 2; x += 3) if (Math.abs(x - door) > 1) groundWindow(b, x, 0, s);
+        for (int z = 2; z < d - 2; z += 3) { groundWindowSide(b, 0, z, -1, s); groundWindowSide(b, w - 1, z, 1, s); }
+
+        // Upper storeys.
+        int y0 = ground;
+        int front = jetty ? -1 : 0;
+        for (int f = 0; f < floors; f++) {
+            int fy = y0 + f * storey;
+            int fz = f == 0 ? front : front;
+            beamRing(b, w, d, fy, fz, s);
+            if (jetty && f == 0) for (int x = 0; x < w; x += 2) b.set(x, fy - 1, -1, s.roofStair(), "facing=south,half=top");
+            for (int y = fy + 1; y < fy + storey; y++) {
+                for (int x = 0; x < w; x++) frameCell(b, x, y, fz, x == 0 || x == w - 1 || x % 3 == 0, s, seed);
+                for (int z = fz + 1; z < d; z++) {
+                    frameCell(b, 0, y, z, z == d - 1 || z % 3 == 0, s, seed);
+                    frameCell(b, w - 1, y, z, z == d - 1 || z % 3 == 0, s, seed);
+                }
+                for (int x = 0; x < w; x++) frameCell(b, x, y, d - 1, x == 0 || x == w - 1 || x % 3 == 0, s, seed);
+                for (int x = 1; x < w - 1; x++) for (int z = fz + 1; z < d - 1; z++) b.set(x, y, z, Material.AIR);
+            }
+            for (int x = 1; x < w - 1; x++) for (int z = fz + 1; z < d - 1; z++) b.set(x, fy, z, s.plank());
+            // Windows between posts with open shutters and a flower box on the front.
+            for (int x = 1; x < w - 1; x++) if (x % 3 != 0) upperWindow(b, x, fy + 1, fz, s, (seed >> x & 3) == 0);
+            b.set(w / 2, fy + 2, fz + 1, Material.LANTERN, "hanging=true");
+        }
+        int top = y0 + floors * storey;
+        beamRing(b, w, d, top, front, s);
+        if (gableFront) roof(b, -1, w, front - 1, d, top + 1, s, true);
+        // Eaves to the street: the same roof in a frame turned a quarter, so its ridge runs along the front.
+        else roof(b.at(w - 1, 0, 0, 1), front - 1, d, -1, w, top + 1, s, true);
+        int span = gableFront ? w + 2 : d - front + 2;
+        chimney(b, gableFront ? ((seed & 1) == 0 ? 1 : w - 2) : 1, d - 2, top + span / 2 + 2, s);
+    }
+
+    private void groundWindow(ReachBrush b, int x, int z, Style s) {
+        b.set(x, 1, z, Material.GLASS_PANE, "east=true,west=true");
+        b.set(x, 2, z, Material.GLASS_PANE, "east=true,west=true");
+        b.set(x, 0, z - 1, s.roofStair(), "facing=south,half=top");
+        b.set(x - 1, 1, z - 1, s.trapdoor(), "facing=west,half=bottom,open=true");
+        b.set(x + 1, 1, z - 1, s.trapdoor(), "facing=east,half=bottom,open=true");
+    }
+
+    private void groundWindowSide(ReachBrush b, int x, int z, int out, Style s) {
+        b.set(x, 1, z, Material.GLASS_PANE, "north=true,south=true");
+        b.set(x, 2, z, Material.GLASS_PANE, "north=true,south=true");
+        b.set(x + out, 0, z, s.roofStair(), "facing=" + (out < 0 ? "east" : "west") + ",half=top");
+    }
+
+    private void frameCell(ReachBrush b, int x, int y, int z, boolean post, Style s, long seed) {
+        if (post) { b.set(x, y, z, s.post(), "axis=y"); return; }
+        b.set(x, y, z, (seed + x * 7 + y * 3) % 11 == 0 ? s.plasterAccent() : s.plaster());
+    }
+
+    private void upperWindow(ReachBrush b, int x, int y, int z, Style s, boolean flowers) {
+        b.set(x, y, z, Material.GLASS_PANE, "east=true,west=true");
+        b.set(x, y + 1, z, Material.GLASS_PANE, "east=true,west=true");
+        if (flowers) {
+            b.set(x, y - 1, z - 1, s.trapdoor(), "facing=south,half=top,open=false");
+            b.set(x, y, z - 1, Material.POTTED_RED_TULIP);
+        } else b.set(x, y + 2, z - 1, s.roofSlab(), "type=top");
+    }
+
+    /** Horizontal timber at a floor line, with beam ends poking out at the corners. */
+    private void beamRing(ReachBrush b, int w, int d, int y, int front, Style s) {
+        for (int x = 0; x < w; x++) { b.set(x, y, front, s.beam(), "axis=x"); b.set(x, y, d - 1, s.beam(), "axis=x"); }
+        for (int z = front; z < d; z++) { b.set(0, y, z, s.beam(), "axis=z"); b.set(w - 1, y, z, s.beam(), "axis=z"); }
+        b.set(-1, y, front, s.beam(), "axis=x");
+        b.set(w, y, front, s.beam(), "axis=x");
+        b.set(-1, y, d - 1, s.beam(), "axis=x");
+        b.set(w, y, d - 1, s.beam(), "axis=x");
+    }
+
+    /**
+     * A gable roof over local x {@code x0..x1} and z {@code z0..z1}, ridge running along z, eaves on both x sides
+     * starting at {@code y}. The gable ends are closed with plaster and timber.
+     */
+    void roof(ReachBrush b, int x0, int x1, int z0, int z1, int y, Style s, boolean closeGables) {
+        int span = x1 - x0 + 1, half = span / 2;
+        for (int i = 0; i < half; i++) {
+            int ly = y + i;
+            for (int z = z0; z <= z1; z++) {
+                b.set(x0 + i, ly, z, s.roofStair(), "facing=east,half=bottom");
+                b.set(x1 - i, ly, z, s.roofStair(), "facing=west,half=bottom");
+                if (i > 0) { b.set(x0 + i, ly - 1, z, s.roofBlock()); b.set(x1 - i, ly - 1, z, s.roofBlock()); }
+            }
+            // Eaves: upside-down stairs under the lowest course.
+            if (i == 0) for (int z = z0; z <= z1; z++) {
+                b.set(x0, ly - 1, z, s.roofStair(), "facing=west,half=top");
+                b.set(x1, ly - 1, z, s.roofStair(), "facing=east,half=top");
+            }
+            if (closeGables && i > 0) for (int x = x0 + i; x <= x1 - i; x++) {
+                Material fill = (x - x0) % 3 == 0 ? s.post() : s.plaster();
+                String axis = fill == s.post() ? "axis=y" : "";
+                if (axis.isEmpty()) { b.set(x, ly - 1, z0 + 1, fill); b.set(x, ly - 1, z1 - 1, fill); }
+                else { b.set(x, ly - 1, z0 + 1, fill, axis); b.set(x, ly - 1, z1 - 1, fill, axis); }
+            }
+        }
+        // An odd span gets a slab ridge; an even span's two top courses meet on their own.
+        if (span % 2 == 1) for (int z = z0; z <= z1; z++) b.set(x0 + half, y + half - 1, z, s.roofSlab(), "type=bottom");
+        // A small window high in each gable.
+        if (closeGables && half >= 4) for (int gz : new int[] {z0 + 1, z1 - 1}) {
+            int cx = x0 + span / 2;
+            b.set(cx, y + half - 3, gz, Material.GLASS_PANE, "east=true,west=true");
+            b.set(cx, y + half - 4, gz, Material.GLASS_PANE, "east=true,west=true");
+        }
+    }
+
+    private void chimney(ReachBrush b, int x, int z, int top, Style s) {
+        for (int y = 0; y <= top; y++) if (!b.has(x, y, z) || y > 3) b.set(x, y, z, y > top - 3 ? Material.BRICKS : s.base());
+        b.set(x, top + 1, z, Material.CAMPFIRE, "lit=true,signal_fire=false");
+        b.set(x, top + 2, z, Material.AIR);
+    }
+
+    // ------------------------------------------------------------------ towers (ref 5)
+
+    /**
+     * A tall narrow tower: a dark stone base, timber storeys with long windows, an overhanging top storey and a steep
+     * spire. {@code size} is odd (7 or 9).
+     */
+    void tower(ReachBrush b, int size, int height, Style s, long seed) {
+        int baseTop = height / 3;
+        int r = size / 2;
+        for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) b.footing(terrain, x, -1, z, s.base());
+        for (int y = -1; y < height; y++) for (int x = 0; x < size; x++) for (int z = 0; z < size; z++) {
+            boolean wall = x == 0 || x == size - 1 || z == 0 || z == size - 1;
+            if (!wall) { b.set(x, y, z, y % 6 == 5 ? s.plank() : Material.AIR); continue; }
+            boolean corner = (x == 0 || x == size - 1) && (z == 0 || z == size - 1);
+            if (y < baseTop) b.set(x, y, z, corner ? s.baseAccent() : weathered(b, x, y, z, s.base()));
+            else if (corner || x == r || z == r) b.set(x, y, z, s.post(), "axis=y");
+            else if (y % 6 == 0) b.set(x, y, z, s.beam(), x == 0 || x == size - 1 ? "axis=z" : "axis=x");
+            else b.set(x, y, z, s.plaster());
+        }
+        // Long windows on each face of the timber part.
+        for (int y = baseTop + 2; y < height - 3; y += 6) for (int k = 1; k < size - 1; k++) if (k != r && Math.abs(k - r) <= 2) {
+            b.set(k, y, 0, Material.GLASS_PANE, "east=true,west=true");
+            b.set(k, y + 1, 0, Material.GLASS_PANE, "east=true,west=true");
+            b.set(k, y + 2, 0, Material.GLASS_PANE, "east=true,west=true");
+            b.set(k, y, size - 1, Material.GLASS_PANE, "east=true,west=true");
+            b.set(k, y + 1, size - 1, Material.GLASS_PANE, "east=true,west=true");
+            b.set(0, y, k, Material.GLASS_PANE, "north=true,south=true");
+            b.set(0, y + 1, k, Material.GLASS_PANE, "north=true,south=true");
+            b.set(size - 1, y, k, Material.GLASS_PANE, "north=true,south=true");
+            b.set(size - 1, y + 1, k, Material.GLASS_PANE, "north=true,south=true");
+        }
+        // A door in the middle of the front, framed by the corner stone.
+        b.set(r, 0, 0, s.door(), "facing=north,half=lower,hinge=left,open=false");
+        b.set(r, 1, 0, s.door(), "facing=north,half=upper,hinge=left,open=false");
+        b.set(r, 2, -1, s.roofStair(), "facing=south,half=top");
+        b.set(r - 1, 2, -1, Material.LANTERN, "hanging=true");
+        // Jettied top storey on corbels, then a steep spire.
+        int top = height;
+        for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) {
+            boolean ring = x == -1 || x == size || z == -1 || z == size;
+            if (ring) b.set(x, top - 1, z, s.roofStair(), x == -1 ? "facing=east,half=top" : x == size ? "facing=west,half=top"
+                : z == -1 ? "facing=south,half=top" : "facing=north,half=top");
+        }
+        for (int y = top; y < top + 4; y++) for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) {
+            boolean edge = x == -1 || x == size || z == -1 || z == size;
+            if (!edge) { b.set(x, y, z, y == top ? s.plank() : Material.AIR); continue; }
+            boolean corner = (x == -1 || x == size) && (z == -1 || z == size);
+            b.set(x, y, z, corner ? s.post() : (y == top + 1 || y == top + 2) && (x + z) % 2 == 0 ? Material.GLASS : s.plaster(),
+                corner ? "axis=y" : "");
+        }
+        spire(b, -2, size + 1, top + 4, s);
+        b.set(r, top + 2, r, Material.LANTERN);
+    }
+
+    /**
+     * A defensive tower: stone to two-thirds of its height with arrow slits, a timber gallery on corbels, and a
+     * steep spire. Used for gatehouses and keeps, where the tall plaster towers would look too light.
+     */
+    void keepTower(ReachBrush b, int size, int height, Style s, long seed) {
+        int r = size / 2, stoneTop = height * 2 / 3;
+        for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) b.footing(terrain, x, -1, z, s.base());
+        for (int y = -1; y < height; y++) for (int x = 0; x < size; x++) for (int z = 0; z < size; z++) {
+            boolean wall = x == 0 || x == size - 1 || z == 0 || z == size - 1;
+            boolean corner = (x == 0 || x == size - 1) && (z == 0 || z == size - 1);
+            if (!wall) { b.set(x, y, z, y % 8 == 7 ? s.plank() : Material.AIR); continue; }
+            if (y < stoneTop) {
+                boolean slit = y % 8 == 3 && (x == r || z == r) && !corner;
+                b.set(x, y, z, slit ? Material.AIR : y < 2 || corner ? s.baseAccent() : weathered(b, x, y, z, Material.STONE_BRICKS));
+            } else if (corner || x == r || z == r) b.set(x, y, z, s.post(), "axis=y");
+            else if ((y - stoneTop) % 4 == 0) b.set(x, y, z, s.beam(), x == 0 || x == size - 1 ? "axis=z" : "axis=x");
+            else b.set(x, y, z, s.plaster());
+        }
+        // A string course where stone meets timber, on corbels.
+        for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) {
+            boolean ring = x == -1 || x == size || z == -1 || z == size;
+            if (!ring) continue;
+            b.set(x, stoneTop - 1, z, s.roofStair(), x == -1 ? "facing=east,half=top" : x == size ? "facing=west,half=top"
+                : z == -1 ? "facing=south,half=top" : "facing=north,half=top");
+            b.set(x, stoneTop, z, Material.STONE_BRICK_SLAB, "type=bottom");
+        }
+        for (int y = stoneTop + 1; y < height - 1; y += 4) for (int k = 2; k < size - 2; k++) if (k != r) {
+            b.set(k, y, 0, Material.GLASS_PANE, "east=true,west=true");
+            b.set(k, y + 1, 0, Material.GLASS_PANE, "east=true,west=true");
+            b.set(0, y, k, Material.GLASS_PANE, "north=true,south=true");
+            b.set(size - 1, y, k, Material.GLASS_PANE, "north=true,south=true");
+        }
+        spire(b, -2, size + 1, height, s);
+        b.set(r, 0, 0, s.door(), "facing=north,half=lower,hinge=left,open=false");
+        b.set(r, 1, 0, s.door(), "facing=north,half=upper,hinge=left,open=false");
+    }
+
+    /** A steep pyramid roof over a square from {@code lo} to {@code hi}, rising two blocks per step. */
+    void spire(ReachBrush b, int lo, int hi, int y, Style s) {
+        int level = y;
+        for (int a = lo, c = hi; a <= c; a++, c--) {
+            for (int k = 0; k < 2; k++, level++) {
+                for (int i = a; i <= c; i++) {
+                    b.set(i, level, a, s.roofStair(), "facing=south,half=bottom");
+                    b.set(i, level, c, s.roofStair(), "facing=north,half=bottom");
+                    b.set(a, level, i, s.roofStair(), "facing=east,half=bottom");
+                    b.set(c, level, i, s.roofStair(), "facing=west,half=bottom");
+                }
+                for (int i = a + 1; i < c; i++) for (int j = a + 1; j < c; j++) if (k == 1 || level > y) b.set(i, level - 1, j, s.roofBlock());
+            }
+            if (c - a <= 1) break;
+        }
+        int mid = (lo + hi) / 2;
+        b.set(mid, level, mid, s.fence());
+        b.set(mid, level + 1, mid, s.fence());
+        b.set(mid, level + 2, mid, Material.LIGHTNING_ROD);
+    }
+
+    // ------------------------------------------------------------------ street furniture
+
+    /** A market stall facing local -z: posts, a striped awning, a counter of barrels and goods. */
+    void stall(ReachBrush b, Material cloth, Material stripe, Material goods, Style s) {
+        for (int[] p : new int[][] {{0, 0}, {4, 0}, {0, 3}, {4, 3}}) for (int y = 0; y < 3; y++) b.set(p[0], y, p[1], s.fence());
+        for (int x = -1; x <= 5; x++) for (int z = -1; z <= 4; z++) {
+            int y = z < 1 ? 3 : z < 3 ? 4 : 3;
+            b.set(x, y, z, (x % 2 == 0) ? cloth : stripe);
+        }
+        b.set(1, 0, 0, Material.BARREL, "facing=up");
+        b.set(2, 0, 0, Material.SPRUCE_TRAPDOOR, "facing=north,half=top,open=false");
+        b.set(3, 0, 0, Material.BARREL, "facing=north");
+        b.set(2, 1, 0, goods);
+        b.set(1, 1, 0, Material.COMPOSTER, "level=7");
+        b.set(3, 0, 3, Material.CHEST, "facing=north");
+        b.set(1, 0, 3, Material.BARREL, "facing=up");
+    }
+
+    /** A street lamp: stone footing, a dark post, a lantern hung from a bracket. */
+    void lamp(ReachBrush b, Style s) {
+        b.set(0, 0, 0, Material.STONE_BRICK_WALL, "up=true");
+        for (int y = 1; y <= 3; y++) b.set(0, y, 0, s.fence());
+        b.set(0, 4, 0, s.post(), "axis=y");
+        b.set(1, 4, 0, s.trapdoor(), "facing=east,half=top,open=false");
+        b.set(1, 3, 0, Material.LANTERN, "hanging=true");
+    }
+
+    /** A signpost at a fork. */
+    void signpost(ReachBrush b, Style s) {
+        for (int y = 0; y < 3; y++) b.set(0, y, 0, s.fence());
+        b.set(1, 2, 0, Material.OAK_WALL_SIGN, "facing=east");
+        b.set(-1, 1, 0, Material.OAK_WALL_SIGN, "facing=west");
+        b.set(0, 3, 0, Material.LANTERN);
+    }
+
+    /** Crates and barrels piled where work happens. */
+    void clutter(ReachBrush b, long seed) {
+        b.set(0, 0, 0, Material.BARREL, "facing=up");
+        b.set(1, 0, 0, (seed & 1) == 0 ? Material.HAY_BLOCK : Material.BARREL, (seed & 1) == 0 ? "axis=y" : "facing=north");
+        b.set(0, 1, 0, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=false");
+        b.set(0, 0, 1, Material.COMPOSTER, "level=3");
+    }
+}

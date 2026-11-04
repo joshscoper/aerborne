@@ -35,10 +35,11 @@ public final class ReachService implements Listener {
     public static final String DEFAULT_WORLD = "aerborne_reach";
     private final NerdSmpPlugin plugin;
     private final ReachTerrain terrain = new ReachTerrain();
-    private final ReachFeatures features = new ReachFeatures(terrain, ReachBuilds.all());
+    private final ReachFeatures features = new ReachFeatures(terrain, ReachBuilds.all(terrain));
     private final Map<UUID, Location> lastFooting = new ConcurrentHashMap<>();
     private final Map<UUID, Long> rescued = new ConcurrentHashMap<>();
     private volatile Pregen pregen;
+    private ReachGameplay gameplay;
 
     public ReachService(NerdSmpPlugin plugin) { this.plugin = plugin; }
 
@@ -56,6 +57,10 @@ public final class ReachService implements Listener {
     public void start() {
         if (!plugin.getConfig().getBoolean("reach.enabled", true)) return;
         Bukkit.getPluginManager().registerEvents(this, plugin);
+        try { plugin.worldPacks().register(ReachPack.build(worldName(), terrain, features)); }
+        catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach world pack is invalid", failure); }
+        gameplay = new ReachGameplay(plugin, this);
+        gameplay.start();
         if (Files.isDirectory(directory())) {
             try { open(); }
             catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach could not be loaded", failure); }
@@ -195,15 +200,64 @@ public final class ReachService implements Listener {
                 String line = "Reach pre-generation finished: " + total + " chunks in " + (now - started) / 1000 + " s.";
                 plugin.getLogger().info(line);
                 if (reporter != null) Chat.success(reporter, Chat.escape(line));
+                // Populate it now: zones, NPCs, warps and the arrival spawn.
+                plugin.worldPacks().applyAll(false, reporter);
             }
         }
+    }
+
+    // ------------------------------------------------------------------ rebuilding a feature in place
+
+    /**
+     * Regenerates the columns inside each feature's footprint into the live world, a slice per tick: the same
+     * terrain and blocks a fresh chunk would get, so changes to a kit show up without regenerating the map.
+     */
+    private void rebuild(World world, List<ReachFeatures.Feature> chosen, CommandSender sender) {
+        ReachGenerator generator = (ReachGenerator) world.getGenerator();
+        if (generator == null) { Chat.error(sender, "The Reach world has no generator attached."); return; }
+        java.util.ArrayDeque<long[]> chunks = new java.util.ArrayDeque<>();
+        for (ReachFeatures.Feature feature : chosen) {
+            ReachFeatures.Footprint f = feature.footprint();
+            for (int cx = f.minX() >> 4; cx <= f.maxX() >> 4; cx++) for (int cz = f.minZ() >> 4; cz <= f.maxZ() >> 4; cz++)
+                chunks.add(new long[] {cx, cz});
+        }
+        int total = chunks.size();
+        Chat.notice(sender, "Rebuilding " + chosen.size() + " feature(s) across " + total + " chunks.");
+        int lowY = 40, highY = 240;
+        int[] done = {0};
+        org.bukkit.scheduler.BukkitTask[] task = new org.bukkit.scheduler.BukkitTask[1];
+        task[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            long start = System.nanoTime();
+            while (!chunks.isEmpty() && System.nanoTime() - start < 30_000_000L) {
+                long[] next = chunks.poll();
+                int cx = (int) next[0], cz = (int) next[1];
+                org.bukkit.Chunk chunk = world.getChunkAt(cx, cz);
+                org.bukkit.generator.ChunkGenerator.ChunkData data = Bukkit.createChunkData(world);
+                generator.generateNoise(world, new java.util.Random(0), cx, cz, data);
+                for (int lx = 0; lx < 16; lx++) for (int lz = 0; lz < 16; lz++) {
+                    int x = (cx << 4) + lx, z = (cz << 4) + lz;
+                    boolean inside = chosen.stream().anyMatch(f -> f.footprint().contains(x, z));
+                    if (!inside) continue;
+                    for (int y = lowY; y < highY; y++) {
+                        org.bukkit.block.data.BlockData want = data.getBlockData(lx, y, lz);
+                        org.bukkit.block.Block block = chunk.getBlock(lx, y, lz);
+                        if (!block.getBlockData().equals(want)) block.setBlockData(want, false);
+                    }
+                }
+                done[0]++;
+            }
+            if (chunks.isEmpty()) {
+                task[0].cancel();
+                Chat.success(sender, "Rebuilt " + done[0] + " chunks.");
+            }
+        }, 1L, 1L);
     }
 
     // ------------------------------------------------------------------ command
 
     public boolean command(CommandSender sender, String[] args) {
         String sub = args.length == 0 ? "go" : args[0].toLowerCase(java.util.Locale.ROOT);
-        if (!sub.equals("go") && !sender.hasPermission("nerdsmp.reach.admin")) { Chat.noPermission(sender); return true; }
+        if (!sub.equals("go") && !sub.equals("places") && !sender.hasPermission("nerdsmp.reach.admin")) { Chat.noPermission(sender); return true; }
         switch (sub) {
             case "go" -> {
                 if (!(sender instanceof Player player)) { Chat.error(sender, "Only players can travel."); return true; }
@@ -220,6 +274,14 @@ public final class ReachService implements Listener {
                 job.task = Bukkit.getScheduler().runTaskTimer(plugin, () -> job.tick(world), 1L, 1L);
                 Chat.success(sender, "Generating the Wardens' Reach: " + job.total + " chunks. Progress goes to the console every 15 s.");
             }
+            case "rebuild" -> {
+                if (args.length < 2) { Chat.error(sender, "Use /reach rebuild <feature|all>."); return true; }
+                World world = open();
+                List<ReachFeatures.Feature> chosen = args[1].equalsIgnoreCase("all") ? features.features()
+                    : features.feature(args[1].toLowerCase(java.util.Locale.ROOT)).map(List::of).orElse(List.of());
+                if (chosen.isEmpty()) { Chat.error(sender, "No feature called " + Chat.escape(args[1]) + "."); return true; }
+                rebuild(world, chosen, sender);
+            }
             case "stop" -> {
                 Pregen job = pregen;
                 if (job == null) { Chat.notice(sender, "Nothing is generating."); return true; }
@@ -234,6 +296,12 @@ public final class ReachService implements Listener {
                 ReachTerrain.Column column = terrain.column(x, z);
                 int y = column.land() ? Math.max(column.top(), column.wet() ? column.water() : column.top()) + 1 : 140;
                 player.teleportAsync(new Location(world, x + 0.5, y + 1, z + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()));
+            }
+            case "places" -> {
+                if (!(sender instanceof Player player) || gameplay == null) return true;
+                List<String> found = gameplay.placesFound(player);
+                Chat.info(sender, "<gold>Places discovered</gold> <gray>" + found.size() + " / " + ReachGameplay.PLACES.size() + "</gray>");
+                if (!found.isEmpty()) sender.sendRichMessage("<gray>" + Chat.escape(String.join(", ", found)) + "</gray>");
             }
             case "where" -> {
                 if (!(sender instanceof Player player)) return true;
@@ -254,7 +322,12 @@ public final class ReachService implements Listener {
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) return sender.hasPermission("nerdsmp.reach.admin")
-            ? List.of("go", "status", "generate", "stop", "tp", "where") : List.of("go");
+            ? List.of("go", "places", "status", "generate", "rebuild", "stop", "tp", "where") : List.of("go", "places");
+        if (args.length == 2 && args[0].equalsIgnoreCase("rebuild") && sender.hasPermission("nerdsmp.reach.admin")) {
+            List<String> ids = new java.util.ArrayList<>(features.features().stream().map(ReachFeatures.Feature::id).toList());
+            ids.add("all");
+            return ids;
+        }
         return List.of();
     }
 }

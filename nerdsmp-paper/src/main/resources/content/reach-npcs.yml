@@ -1,0 +1,513 @@
+# NPCs of the Wardens' Reach (docs/vault/40 NPCs/NPC Roster.md), placed by the Reach's world pack (built in code
+# from the generator's spots, see net.nerdsmp.paper.reach.ReachPack). Ships inside the plugin; a server's own
+# content/npcs.yml wins for any id it also defines. Same format as content/world-npcs.yml.
+# Quest givers get an automatic "[!] Quests" reply; their quests live in content/reach-quests.yml.
+
+# No shops of their own yet: skiff masters and the innkeeper use the existing services.
+shops: {}
+
+npcs:
+  # ------------------------------------------------------------------ Highcrown
+  captain_wren:
+    name: Captain Wren
+    title: Skyfarers' Guild
+    entity: VILLAGER
+    look: cartographer@taiga
+    faction: frontier_wardens
+    root-dialogue: wren_start
+    look-radius: 9
+  dockmaster_ebb:
+    name: Dockmaster Ebb Tallis
+    title: Sky Docks
+    entity: VILLAGER
+    look: fisherman@taiga
+    faction: free_delvers
+    root-dialogue: ebb_start
+    look-radius: 8
+  gull_innkeeper:
+    name: Marla Tethers
+    title: The Tethered Gull
+    entity: VILLAGER
+    look: butcher@plains
+    faction: free_delvers
+    root-dialogue: marla_start
+    look-radius: 8
+  reach_steward_aldric:
+    name: Steward Aldric
+    title: Steward of Highcrown
+    entity: VILLAGER
+    look: librarian@plains
+    faction: frontier_wardens
+    root-dialogue: reach_aldric_start
+    look-radius: 9
+  highcrown_watch:
+    name: Watch Guard
+    title: Highcrown Watch
+    entity: VILLAGER
+    look: weaponsmith
+    faction: frontier_wardens
+    root-dialogue: reach_watch_start
+    look-radius: 6
+  highcrown_folk_baker:
+    name: Hesper Crumb
+    title: Baker
+    entity: VILLAGER
+    look: butcher@plains
+    faction: free_delvers
+    root-dialogue: hesper_start
+    look-radius: 6
+  highcrown_folk_porter:
+    name: Dunn Halyard
+    title: Dock Porter
+    entity: VILLAGER
+    look: fisherman@plains
+    faction: free_delvers
+    root-dialogue: dunn_start
+    look-radius: 6
+  highcrown_folk_widow:
+    name: Old Maudie
+    title: Flower Seller
+    entity: VILLAGER
+    look: farmer@plains
+    faction: rift_scholars
+    root-dialogue: maudie_start
+    look-radius: 6
+  highcrown_folk_urchin:
+    name: Nettle
+    title: Errand Runner
+    entity: VILLAGER
+    look: nitwit@plains
+    faction: free_delvers
+    root-dialogue: nettle_start
+    look-radius: 6
+
+  # ------------------------------------------------------------------ Goldenreach Vale
+  reeve_hollis:
+    name: Reeve Hollis Marr
+    title: Reeve of Millbrook
+    entity: VILLAGER
+    look: farmer@plains
+    faction: frontier_wardens
+    root-dialogue: hollis_start
+    look-radius: 9
+  wenna_marr:
+    name: Wenna Marr
+    title: The Sheaf & Sickle
+    entity: VILLAGER
+    look: butcher@plains
+    faction: free_delvers
+    root-dialogue: wenna_start
+    look-radius: 8
+  garth_ploughwright:
+    name: Garth Ploughwright
+    title: Millbrook Smith
+    entity: VILLAGER
+    look: toolsmith@plains
+    faction: free_delvers
+    root-dialogue: garth_start
+    look-radius: 8
+  ada_miller:
+    name: Old Ada
+    title: Miller
+    entity: VILLAGER
+    look: farmer@plains
+    faction: free_delvers
+    root-dialogue: ada_start
+    look-radius: 8
+  brother_tobin:
+    name: Brother Tobin
+    title: Keeper of the Chapel
+    entity: VILLAGER
+    look: cleric@plains
+    faction: rift_scholars
+    root-dialogue: tobin_start
+    look-radius: 8
+  jory_fenn:
+    name: Jory Fenn
+    title: Skiff Master
+    entity: VILLAGER
+    look: cartographer@plains
+    faction: free_delvers
+    root-dialogue: jory_start
+    look-radius: 8
+  bess_thistle:
+    name: Bess Thistle
+    title: Thistle Farm
+    entity: VILLAGER
+    look: farmer@plains
+    faction: frontier_wardens
+    root-dialogue: bess_start
+    look-radius: 8
+  tam_thistle:
+    name: Tam Thistle
+    title: Farmhand
+    entity: VILLAGER
+    look: nitwit@plains
+    faction: frontier_wardens
+    root-dialogue: tam_start
+    look-radius: 6
+  pip_brindle:
+    name: Pip Brindle
+    title: Cider-Maker
+    entity: VILLAGER
+    look: farmer@plains
+    faction: free_delvers
+    root-dialogue: pip_start
+    look-radius: 8
+  warden_hale:
+    name: Warden Hale
+    title: Frontier Warden
+    entity: VILLAGER
+    look: armorer@plains
+    faction: frontier_wardens
+    root-dialogue: hale_start
+    look-radius: 9
+  maren_ashdown:
+    name: Maren Ashdown
+    title: Frontier Warden Scout
+    entity: VILLAGER
+    look: fletcher@taiga
+    faction: frontier_wardens
+    root-dialogue: maren_start
+    look-radius: 9
+  millbrook_watch:
+    name: Millbrook Watch
+    title: Village Watch
+    entity: VILLAGER
+    look: weaponsmith@plains
+    faction: frontier_wardens
+    root-dialogue: millbrook_watch_start
+    look-radius: 6
+  millbrook_folk_carter:
+    name: Will Carter
+    title: Carter
+    entity: VILLAGER
+    look: leatherworker@plains
+    faction: free_delvers
+    root-dialogue: carter_start
+    look-radius: 6
+  millbrook_folk_gleaner:
+    name: Agnes Gleave
+    title: Gleaner
+    entity: VILLAGER
+    look: farmer@plains
+    faction: free_delvers
+    root-dialogue: agnes_start
+    look-radius: 6
+  millbrook_folk_elder:
+    name: Grandfather Oake
+    title: Oldest in Millbrook
+    entity: VILLAGER
+    look: shepherd@plains
+    faction: rift_scholars
+    root-dialogue: oake_start
+    look-radius: 6
+
+dialogues:
+  # ------------------------------------------------------------------ Highcrown
+  wren_start:
+    text:
+      - "Mind the gap between the pier and the deck, {player}. The Reach doesn't give second chances, but your line does."
+      - "Captain Wren, Skyfarers' Guild. I fly new hands in from the islands and teach them the sky before it tests them."
+    choices:
+      reach:
+        text: "What is the Reach?"
+        next: wren_reach
+      flight:
+        text: "I want to fly the Wardens' Road."
+        effects:
+          - type: open_command
+            command: expedition
+      line:
+        text: "What happens if I fall?"
+        next: wren_line
+      done:
+        text: "Clear skies, Captain."
+        close: true
+  wren_reach:
+    text:
+      - "When the old world burned, the Wardens tore the lands free and lifted them above the smoke. Your island is a crumb of it. The Reach is the loaf."
+      - "Fields, downs, forest, lakes and mountains, all the way round the Scar. That smoke you see over the north? That's where the story ends. Start with the Steward."
+    choices:
+      back:
+        text: "And the Road?"
+        next: wren_start
+  wren_line:
+    text:
+      - "Every skyfarer wears a line. Step off the lip and it hauls you back to the last solid ground you stood on. Costs you nothing but your dignity."
+    choices:
+      back:
+        text: "Good to know."
+        next: wren_start
+  ebb_start:
+    text:
+      - "Another islander. Welcome to the Sky Docks. Mind the cranes, mind the cargo, mind me."
+      - "Skiffs leave from here for every hub you've found. Find a skiff master once and I can send you back there any time."
+    choices:
+      fly:
+        text: "Where can I fly?"
+        effects:
+          - type: open_command
+            command: warps
+      gull:
+        text: "Where can I get a drink?"
+        next: ebb_gull
+      done:
+        text: "Thanks, Dockmaster."
+        close: true
+  ebb_gull:
+    text:
+      - "The Tethered Gull, east side of the square. Marla keeps the beds clean and the gossip fresher."
+    choices:
+      back:
+        text: "Right."
+        next: ebb_start
+  marla_start:
+    text:
+      - "Sit, eat, tell me where you're from. Everyone who lands in Highcrown sleeps here at least once."
+      - "The farmers up the Vale stopped sending their grain carts two weeks ago. Nobody's said why. That's the kind of quiet I don't like."
+    choices:
+      rumour:
+        text: "Any other news?"
+        next: marla_rumour
+      done:
+        text: "Maybe later."
+        close: true
+  marla_rumour:
+    text:
+      - "A carter swore he saw a scarecrow cross the road at night. Walking. He'd had three ales, mind, but he hadn't had four."
+    choices:
+      back:
+        text: "Scarecrows don't walk."
+        next: marla_start
+  reach_aldric_start:
+    text:
+      - "Welcome to Highcrown, {player}. You came in on Wren's ship, I'm told. Good. I need people who can fly and fight."
+      - "For nine hundred years the smoke over the Scar has been thin. This month it is thick, and the Vale has gone quiet. Those two things are not unrelated."
+    choices:
+      crown:
+        text: "Why is the crown in the hall empty?"
+        next: reach_aldric_crown
+      journal:
+        text: "Show my quest journal."
+        effects:
+          - type: open_command
+            command: journal
+      done:
+        text: "Later, Steward."
+        close: true
+  reach_aldric_crown:
+    text:
+      - "Highcrown has a Steward, not a king. The last king hung his crown on that stand and said it waits until the Wardens return."
+      - "Nobody alive has seen a Warden. I'd settle for seeing the Vale's grain carts again."
+    choices:
+      back:
+        text: "I'll see what I can do."
+        next: reach_aldric_start
+  reach_watch_start:
+    text:
+      - "Move along the avenue, keep your purse inside your coat, and don't feed the gulls. They remember."
+    choices:
+      where:
+        text: "Where am I?"
+        next: reach_watch_where
+      done:
+        text: "Thanks."
+        close: true
+  reach_watch_where:
+    text:
+      - "Docks to the south, the Kingsgate to the north, the keep up the steps to the east. Through the gate and over the Kingsbridge is Goldenreach Vale."
+    choices:
+      back:
+        text: "Got it."
+        next: reach_watch_start
+  hesper_start:
+    text:
+      - "Flour's gone dear. No carts from Millbrook, so I'm baking half loaves at whole prices. Don't look at me like that."
+    choices:
+      done:
+        text: "I'll ask in Millbrook."
+        close: true
+  dunn_start:
+    text:
+      - "Forty crates a day off the islands, and every one of them heavier than it looks. You need something hauled, it's a Mark a crate."
+    choices:
+      done:
+        text: "Maybe another time."
+        close: true
+  maudie_start:
+    text:
+      - "Flowers for the memorial, love? People leave them for the ones who fell off the lip before skyfarers wore lines."
+    choices:
+      done:
+        text: "Not today, Maudie."
+        close: true
+  nettle_start:
+    text:
+      - "Want a message run? I'm faster than the post and cheaper than Dunn. Mostly I'm faster."
+      - "Saw a robed man at the Kingsgate last week. Asked the guards about the Vale road, then just stood there humming."
+    choices:
+      done:
+        text: "Humming what?"
+        close: true
+
+  # ------------------------------------------------------------------ Goldenreach Vale
+  hollis_start:
+    text:
+      - "You're from Highcrown? Good. Tell the Steward the fields have gone quiet, and quiet fields are wrong fields."
+      - "No birds in the wheat, gnawers in the granary yard, and the scarecrows... somebody keeps moving the scarecrows. Or they move themselves."
+    choices:
+      vale:
+        text: "Tell me about the Vale."
+        next: hollis_vale
+      done:
+        text: "I'll look into it."
+        close: true
+  hollis_vale:
+    text:
+      - "Goldenreach has fed Highcrown for nine hundred years. Millbrook in the middle, terraces east, orchards south-west, the windmills on the ridge north."
+      - "West is the Tollroad, and past it the old granary that burned in the Sundering. Nobody goes there. Somebody's been lighting fires in it."
+    choices:
+      back:
+        text: "I'll keep that in mind."
+        next: hollis_start
+  wenna_start:
+    text:
+      - "Welcome to the Sheaf & Sickle. Hollis is my brother, so if he's put you to work, the first ale's on the house."
+      - "Farmhands have been leaving in the night. Not running off. Walking off, slow, like they're listening for something."
+    choices:
+      done:
+        text: "I'll keep my ears open."
+        close: true
+  garth_start:
+    text:
+      - "Ploughshares, hinges, horseshoes. If it's iron and it's broken, bring it here."
+      - "Somebody brought me a lump of coal from the terraces yesterday. Warm to the touch, and it had been in the ground a week."
+    choices:
+      done:
+        text: "Warm coal?"
+        close: true
+  ada_start:
+    text:
+      - "My wheel turns, my stones grind, and the gnawers eat whatever's left. Forty years and I've never seen so many."
+    choices:
+      done:
+        text: "I'll help with the gnawers."
+        close: true
+  tobin_start:
+    text:
+      - "Peace on you. The chapel's small, but the bell is old. It rang the night the granary burned, the year the world fell."
+      - "Some nights I hear singing from the west. Not hymns I know."
+    choices:
+      granary:
+        text: "Tell me about the granary."
+        next: tobin_granary
+      done:
+        text: "Peace on you too."
+        close: true
+  tobin_granary:
+    text:
+      - "Millbrook's great granary. The cellars ran under the whole hill. When the Sundering came, people hid in them, and the fire came down the stair after them."
+      - "We never rebuilt it. Some places you leave to remember."
+    choices:
+      back:
+        text: "I see."
+        next: tobin_start
+  jory_start:
+    text:
+      - "Skiff master, at your service. Small ship, short hops. Once you've met a skiff master, you can fly back to them from any other."
+    choices:
+      fly:
+        text: "Where can I fly?"
+        effects:
+          - type: open_command
+            command: warps
+      done:
+        text: "Thanks, Jory."
+        close: true
+  bess_start:
+    text:
+      - "My boy Tam's gone. Walked out of his bed three nights ago, singing under his breath, and he can't carry a tune in a bucket."
+      - "The Watch says he's run off to Highcrown. Tam's never run anywhere in his life."
+    choices:
+      done:
+        text: "I'll find him."
+        close: true
+  tam_start:
+    text:
+      - "...the embers sleep beneath the field... the field will wake... oh. Oh, where am I? Who are you?"
+    choices:
+      done:
+        text: "Your mother sent me. Let's get you home."
+        close: true
+  pip_start:
+    text:
+      - "Mind the bees! They're touchy. Something's got the boars riled, and riled boars knock over hives."
+    choices:
+      done:
+        text: "I'll calm the boars down."
+        close: true
+  hale_start:
+    text:
+      - "Warden Hale, Frontier Wardens. This post watches the Kingsbridge and the road into the Vale."
+      - "Gnawers in the near fields, boars further out. Start close, work your way up the road. And look at that smoke over the hills now and then. Remember it."
+    choices:
+      wardens:
+        text: "Who are the Frontier Wardens?"
+        next: hale_wardens
+      done:
+        text: "Thanks, Warden."
+        close: true
+  hale_wardens:
+    text:
+      - "We keep the oath the Wardens left: hold the roads, hold the passes, hold the rim. Cato Flint in Highcrown takes new recruits, if you've the stomach."
+    choices:
+      back:
+        text: "I'll think about it."
+        next: hale_start
+  maren_start:
+    text:
+      - "Keep your voice down. Maren Ashdown, Frontier Wardens. I've followed a mark across the Reach for a year: a flame inside a closed eye."
+      - "If you've seen it in the Vale, then you've seen what I've seen in the downs. The dead are digging themselves out of the barrows, and someone's paying for the shovels."
+    choices:
+      mark:
+        text: "What does the mark mean?"
+        next: maren_mark
+      done:
+        text: "I'll be careful."
+        close: true
+  maren_mark:
+    text:
+      - "It's a choir. They sing to something under the Scar. That's all I know, and it's more than I'd like."
+    choices:
+      back:
+        text: "Then let's find out more."
+        next: maren_start
+  millbrook_watch_start:
+    text:
+      - "Quiet day. Quiet week. Too quiet, if you ask me, and nobody does."
+    choices:
+      done:
+        text: "Stay sharp."
+        close: true
+  carter_start:
+    text:
+      - "I'd drive the grain to Highcrown, but the Tollkeepers on the west road want three Marks a wheel now. Three! I've got four wheels!"
+    choices:
+      done:
+        text: "Tollkeepers?"
+        close: true
+  agnes_start:
+    text:
+      - "I glean the edges after the harvest. Lately the edges are full of burned straw, and none of us burned any."
+    choices:
+      done:
+        text: "Strange."
+        close: true
+  oake_start:
+    text:
+      - "Eh? Scarecrows walking? My grandmother said they did, the year before the world burned. Nobody believed her either."
+    choices:
+      done:
+        text: "Thank you, grandfather."
+        close: true

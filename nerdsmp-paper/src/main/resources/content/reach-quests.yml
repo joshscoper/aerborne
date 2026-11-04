@@ -1,0 +1,338 @@
+# Quests of the Wardens' Reach (docs/vault/50 Quests/Main Story.md). Ships inside the plugin alongside
+# content/world-quests.yml; ids here never replace one a server already defines.
+# Same format as world-quests.yml, plus one objective type:
+#   clear    targets: expedition ids; counts when you finish a run of that expedition on any tier
+schema-version: 1
+
+quests:
+  # ------------------------------------------------------------------ Prologue: Above the Clouds (Highcrown)
+  reach_report_to_steward:
+    chain: reach_prologue
+    title: Above the Clouds
+    giver: captain_wren
+    level: 1
+    offer:
+      - "Welcome to the Reach. Before anyone hands you a sword, the Steward wants a look at you."
+      - "Up the avenue, through the plaza, up the Citadel Steps. You can't miss the keep."
+    complete:
+      - "So you're the one Wren brought in. Good. I need people who can fly and fight."
+    turn-in: reach_steward_aldric
+    objectives:
+      - {type: talk, targets: [reach_steward_aldric], description: Climb to the keep and meet Steward Aldric}
+    rewards:
+      marks: 30
+      reputation: {frontier_wardens: 10}
+      items: ["material:bread 6"]
+
+  reach_the_guild_test:
+    chain: reach_prologue
+    title: The Guild's Test
+    giver: reach_steward_aldric
+    level: 1
+    requires: [reach_report_to_steward]
+    offer:
+      - "Before I send anyone into the Vale, the Skyfarers' Guild tests them on the Wardens' Road."
+      - "Fly First Flight with Captain Wren at the docks. Come back with the Old Sentinel's blessing."
+    complete:
+      - "Wren says you didn't fall off once. Well, not more than once. Here's your Charter."
+    objectives:
+      - {type: clear, targets: [first_flight], description: Fly First Flight with Captain Wren}
+    rewards:
+      marks: 80
+      xp: {hunting: 120}
+      reputation: {frontier_wardens: 20}
+
+  reach_through_the_kingsgate:
+    chain: reach_prologue
+    title: Through the Kingsgate
+    giver: reach_steward_aldric
+    level: 1
+    requires: [reach_the_guild_test]
+    offer:
+      - "Goldenreach Vale has fed this city for nine hundred years. Two weeks ago its grain carts stopped."
+      - "Go north through the Kingsgate and over the Kingsbridge. Warden Hale holds the post at the far end."
+    complete:
+      - "The Steward sent you? Good. I've been asking for hands since the carts stopped."
+    turn-in: warden_hale
+    objectives:
+      - {type: visit, zone: reach_kingsgate_fields, description: Cross the Kingsbridge into Goldenreach Vale}
+      - {type: talk, targets: [warden_hale], description: Report to Warden Hale at his post}
+    rewards:
+      marks: 40
+      reputation: {frontier_wardens: 10}
+
+  # ------------------------------------------------------------------ Act I: The Rot in the Fields
+  quiet_fields_close_to_the_gate:
+    chain: quiet_fields
+    title: Close to the Gate
+    giver: warden_hale
+    level: 1
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "Gnawers in the near fields, boars further out. Thin them, then carry word up the road to Reeve Hollis in Millbrook."
+    complete:
+      - "Hale sent you? Then you're the first good news I've had all week."
+    turn-in: reeve_hollis
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 6, description: Thin the Field Gnawers}
+      - {type: kill, targets: ["custom:bristle_boar"], zone: reach_kingsgate_fields, count: 2, description: Drive off Bristle Boars}
+    rewards:
+      marks: 50
+      xp: {hunting: 120}
+      items: ["material:bread 4"]
+
+  quiet_fields_wrong_scarecrows:
+    chain: quiet_fields
+    title: Wrong Scarecrows
+    giver: reeve_hollis
+    level: 2
+    requires: [quiet_fields_close_to_the_gate]
+    offer:
+      - "The terraces east of town. Somebody keeps moving the scarecrows, and at night they move themselves."
+      - "Knock a few down and bring whatever's stuffed inside them to Garth at the smithy."
+    complete:
+      - "Coal. Wrapped in cloth, and still warm after days in the straw. That isn't natural."
+    turn-in: garth_ploughwright
+    objectives:
+      - {type: kill, targets: ["custom:straw_scarecrow"], zone: reach_goldwater_terraces, count: 6, description: Topple walking scarecrows on the terraces}
+    rewards:
+      marks: 60
+      xp: {hunting: 160}
+
+  quiet_fields_warm_coal:
+    chain: quiet_fields
+    title: Warm Coal
+    giver: garth_ploughwright
+    level: 3
+    requires: [quiet_fields_wrong_scarecrows]
+    offer:
+      - "Every coal's wrapped in the same cloth: a flame inside a closed eye. One of the mills on the ridge burned last month."
+      - "Go and look at it. If someone's there who shouldn't be, deal with them."
+    complete:
+      - "Robed folk singing in a burned mill. Hollis needs to hear this."
+    turn-in: reeve_hollis
+    objectives:
+      - {type: visit, zone: reach_windmill_ridge, description: Climb to Windmill Ridge}
+      - {type: kill, targets: ["custom:choir_initiate"], zone: reach_windmill_ridge, count: 3, description: Stop the singers at the burned mill}
+    rewards:
+      marks: 70
+      xp: {hunting: 200}
+      reputation: {frontier_wardens: 15}
+
+  quiet_fields_three_marks_a_wheel:
+    chain: quiet_fields
+    title: Three Marks a Wheel
+    giver: reeve_hollis
+    level: 4
+    requires: [quiet_fields_warm_coal]
+    offer:
+      - "The Tollkeepers on the west road started charging three Marks a wheel the same week the coal turned up. I don't believe in coincidences."
+      - "Break their camp. Find out who's paying them."
+    complete:
+      - "That's a lot of bandits for a toll. Someone's paying them more than tolls ever would."
+    objectives:
+      - {type: kill, targets: ["custom:tollkeeper_cutthroat"], zone: reach_tollroad, count: 6, description: Defeat Tollkeeper Cutthroats}
+      - {type: kill, targets: ["custom:tollkeeper_bowman"], zone: reach_tollroad, count: 4, description: Defeat Tollkeeper Bowmen}
+    rewards:
+      marks: 90
+      xp: {hunting: 260}
+
+  quiet_fields_the_toll_captain:
+    chain: quiet_fields
+    title: The Toll-Captain
+    giver: reeve_hollis
+    level: 5
+    requires: [quiet_fields_three_marks_a_wheel]
+    offer:
+      - "Their captain, Brask, keeps the purse. Bring him down and bring me what's in it."
+    complete:
+      - "Old gold. Coins no mint in the Reach has struck in nine hundred years, every one stamped with that closed eye."
+      - "Whoever's paying the Tollkeepers is paying in money from before the Sundering."
+    objectives:
+      - {type: kill, targets: ["custom:toll_captain_brask"], count: 1, description: Defeat Toll-Captain Brask}
+    rewards:
+      marks: 120
+      xp: {hunting: 320}
+      reputation: {frontier_wardens: 25}
+
+  quiet_fields_the_black_granary:
+    chain: quiet_fields
+    title: The Black Granary
+    giver: reeve_hollis
+    level: 5
+    requires: [quiet_fields_the_toll_captain]
+    offer:
+      - "There are fires in the old granary every night now. That's where they've gone. Go and see who's lighting them."
+      - "Then talk to Brother Tobin. He knows what's under that hill."
+    complete:
+      - "You've seen them, then. Robed, singing, tending fires on top of the old cellars."
+      - "The cellars run under the whole hill. If they're hiding something, it's down there."
+    turn-in: brother_tobin
+    objectives:
+      - {type: visit, zone: reach_black_granary, description: Approach the Black Granary}
+      - {type: kill, targets: ["custom:choir_initiate"], zone: reach_black_granary, count: 6, description: Defeat Choir Initiates}
+      - {type: kill, targets: ["custom:choir_cantor"], zone: reach_black_granary, count: 2, description: Silence Choir Cantors}
+    rewards:
+      marks: 120
+      xp: {hunting: 340}
+
+  quiet_fields_down_the_grain_stair:
+    chain: quiet_fields
+    title: Down the Grain Stair
+    giver: brother_tobin
+    level: 6
+    requires: [quiet_fields_the_black_granary]
+    offer:
+      - "Go down the grain stair. Whatever they're hatching under that hill, end it."
+      - "And come back up, {player}. The fire came down that stair once. Don't let it take anyone else."
+    complete:
+      - "The Scarecrow King, hatched from coals and straw. And the Sower who made it walked away west."
+      - "Hollis will want to hear this, but there's a Warden scout on the Hollow Road who needs to hear it more."
+    turn-in: reeve_hollis
+    objectives:
+      - {type: visit, zone: reach_granary_cellars, description: Descend into the Old Granary Cellars}
+      - {type: kill, targets: ["custom:ember_scarecrow"], zone: reach_granary_cellars, count: 5, description: Destroy Ember-Hatched Scarecrows}
+      - {type: kill, targets: ["custom:scarecrow_king"], zone: reach_granary_cellars, count: 1, description: Defeat the Scarecrow King}
+    rewards:
+      marks: 200
+      xp: {hunting: 600}
+      reputation: {frontier_wardens: 40}
+      items: ["material:golden_apple 1"]
+
+  quiet_fields_the_sower_went_west:
+    chain: quiet_fields
+    title: The Sower Went West
+    giver: reeve_hollis
+    level: 6
+    requires: [quiet_fields_down_the_grain_stair]
+    offer:
+      - "There's a Warden camped where the Hollow Road drops toward the downs. Maren, she said her name was. She's been asking about that mark."
+    complete:
+      - "A flame inside a closed eye. I've seen it on the barrow stones. Whatever you found under that granary, it's one piece of something much bigger."
+    turn-in: maren_ashdown
+    objectives:
+      - {type: talk, targets: [maren_ashdown], description: Find Maren Ashdown on the Hollow Road}
+    rewards:
+      marks: 80
+      reputation: {frontier_wardens: 20}
+
+  # ------------------------------------------------------------------ Side chains
+  tams_gone_walking:
+    chain: thistle_farm
+    title: Tam's Gone Walking
+    giver: bess_thistle
+    level: 2
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "My Tam walked out singing three nights ago. Someone saw a lad up on Windmill Ridge. Please, bring him home."
+    complete:
+      - "Oh, Tam. You're freezing. Thank you, thank you."
+    objectives:
+      - {type: visit, zone: reach_windmill_ridge, description: Search Windmill Ridge for Tam}
+      - {type: talk, targets: [tam_thistle], description: Find Tam at the burned mill}
+    rewards:
+      marks: 50
+      reputation: {frontier_wardens: 10}
+      items: ["material:pumpkin_pie 4"]
+
+  what_tam_heard:
+    chain: thistle_farm
+    title: What Tam Heard
+    giver: bess_thistle
+    level: 3
+    requires: [tams_gone_walking]
+    offer:
+      - "Tam keeps humming the same tune. 'The embers sleep beneath the field.' Brother Tobin knows old hymns. Ask him."
+    complete:
+      - "That isn't a hymn I know. It's older than the chapel, and it isn't sung to anything kind."
+    turn-in: brother_tobin
+    objectives:
+      - {type: talk, targets: [brother_tobin], description: Ask Brother Tobin about Tam's song}
+    rewards:
+      marks: 40
+      reputation: {rift_scholars: 15}
+
+  sweet_trouble:
+    chain: brindle_orchards
+    title: Sweet Trouble
+    giver: pip_brindle
+    level: 2
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "Boars in the orchard, knocking over my hives. The bees blame me. Can you thin the boars?"
+    complete:
+      - "Hear that? Happy bees. Take a bottle; it's last year's best."
+    objectives:
+      - {type: kill, targets: ["custom:bristle_boar"], zone: reach_brindle_orchards, count: 6, description: Drive the boars out of the orchard}
+    rewards:
+      marks: 60
+      xp: {hunting: 140}
+      items: ["material:honey_bottle 3"]
+
+  old_grizzlehide:
+    chain: brindle_orchards
+    title: Old Grizzlehide
+    giver: pip_brindle
+    level: 4
+    requires: [sweet_trouble]
+    offer:
+      - "There's one boar older and meaner than the rest. Old Grizzlehide. Tusks like ploughshares. He comes back every few seasons."
+    complete:
+      - "You got him! Keep the tusk. Every farmer in the Vale will buy you a drink when they see it."
+    objectives:
+      - {type: kill, targets: ["custom:old_grizzlehide"], zone: reach_brindle_orchards, count: 1, description: Hunt down Old Grizzlehide}
+    rewards:
+      marks: 100
+      xp: {hunting: 260}
+
+  grist_for_the_mill:
+    chain: millbrook_mill
+    title: Grist for the Mill
+    giver: ada_miller
+    level: 1
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "Gnawers in my grain, gnawers in my stones, gnawers in my hat once. Clear the fields between here and the bridge, would you?"
+    complete:
+      - "Bless you. Bread's on me for a week."
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 8, description: Clear gnawers from the fields}
+    rewards:
+      marks: 45
+      xp: {hunting: 100}
+      items: ["material:bread 8"]
+
+  # ------------------------------------------------------------------ Dailies
+  vale_daily_gnawers:
+    chain: vale_dailies
+    title: "Daily: Gnawer Patrol"
+    giver: warden_hale
+    level: 1
+    repeat: daily
+    requires: [quiet_fields_close_to_the_gate]
+    offer:
+      - "They breed faster than we cull. Ten more today, if you've the time."
+    complete:
+      - "Good work. Same again tomorrow, I'm afraid."
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 10, description: Cull Field Gnawers}
+    rewards:
+      marks: 40
+      xp: {hunting: 90}
+
+  vale_daily_scarecrows:
+    chain: vale_dailies
+    title: "Daily: Scarecrow Burning"
+    giver: reeve_hollis
+    level: 3
+    repeat: daily
+    requires: [quiet_fields_wrong_scarecrows]
+    offer:
+      - "More of them stood up on the terraces overnight. Knock them down before the wheat's trampled."
+    complete:
+      - "Burn the straw well away from the fields."
+    objectives:
+      - {type: kill, targets: ["custom:straw_scarecrow"], zone: reach_goldwater_terraces, count: 8, description: Topple walking scarecrows}
+    rewards:
+      marks: 55
+      xp: {hunting: 130}

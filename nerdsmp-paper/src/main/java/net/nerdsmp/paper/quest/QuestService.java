@@ -62,6 +62,8 @@ import java.util.logging.Level;
  */
 public final class QuestService implements Listener, AutoCloseable {
     public static final String BUNDLED = "content/world-quests.yml";
+    /** The Wardens' Reach's quests ship alongside; a server's own world-quests.yml never hides them. */
+    public static final String REACH = "content/reach-quests.yml";
     private final NerdSmpPlugin plugin;
     private final File progressFile;
     private final Map<AccountId, QuestProgress> progress = new HashMap<>();
@@ -95,7 +97,12 @@ public final class QuestService implements Listener, AutoCloseable {
                 if (resource == null) { catalog = QuestCatalog.empty(); return; }
                 try (var in = resource) { text = new String(in.readAllBytes(), StandardCharsets.UTF_8); }
             }
-            catalog = QuestCatalog.parse(text);
+            QuestCatalog loaded = QuestCatalog.parse(text);
+            var reach = plugin.getResource(REACH);
+            if (reach != null) try (var in = reach) {
+                loaded = loaded.merge(QuestCatalog.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8)));
+            }
+            catalog = loaded;
         } catch (Exception failure) {
             plugin.getLogger().log(Level.SEVERE, "Story quests could not load; the previous quests stay active", failure);
         }
@@ -127,6 +134,11 @@ public final class QuestService implements Listener, AutoCloseable {
     }
 
     // ---------------------------------------------------------------- objectives
+
+    /** A finished expedition run counts toward CLEAR objectives naming that expedition. */
+    public void expeditionCleared(Player player, String expedition) {
+        record(player, QuestDefinition.Type.CLEAR, expedition, null, 1);
+    }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDeath(EntityDeathEvent event) {

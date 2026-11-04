@@ -28,6 +28,7 @@ import java.util.Set;
 public final class NpcContentLoader {
     private static final int SCHEMA_VERSION = 11;
     static final String WORLD_CONTENT = "content/world-npcs.yml";
+    static final String REACH_CONTENT = "content/reach-npcs.yml";
     private static final Set<String> NPC_SERVICE_COMMANDS = Set.of(
         "menu", "quickstart", "settings", "profile", "adventurer", "skills", "mastery",
         "jobs", "daily", "playtime", "campaign", "warps", "party", "social", "duel",
@@ -65,8 +66,9 @@ public final class NpcContentLoader {
         Map<String, NpcContent.NpcDefinition> npcs = npcs(yaml);
         // World-map NPCs ship inside the jar so every update brings their newest lines; an id that the
         // server's own npcs.yml also defines keeps the server's version.
-        YamlConfiguration world = bundled(WORLD_CONTENT);
-        if (world != null) {
+        for (String path : List.of(WORLD_CONTENT, REACH_CONTENT)) {
+            YamlConfiguration world = bundled(path);
+            if (world == null) continue;
             shops(world).forEach(shops::putIfAbsent);
             dialogues(world).forEach(dialogues::putIfAbsent);
             npcs(world).forEach(npcs::putIfAbsent);

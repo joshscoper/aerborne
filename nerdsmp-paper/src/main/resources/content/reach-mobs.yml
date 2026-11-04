@@ -1,0 +1,129 @@
+# Creatures of the Wardens' Reach (docs/vault/60 Bestiary/Bestiary.md). Ships inside the plugin, so updates
+# bring new ones automatically; an entry with the same id in content/mobs.yml overrides it.
+# Same keys as content/world-mobs.yml. Zone spawners take the normal ones; elites (rares and the Scarecrow King)
+# are placed by the Reach's encounter spots with their own respawn timers.
+mobs:
+  # ------------------------------------------------------------------ Goldenreach Vale (levels 1-7)
+  # Wildlife and the walking scarecrows reuse field_gnawer, bristle_boar and straw_scarecrow from world-mobs.yml.
+  tollkeeper_cutthroat:
+    rank: normal
+    name: "<#c0392b>Tollkeeper Cutthroat</#c0392b>"
+    type: vindicator
+    health: 24
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+    hunting-experience: 18
+    equipment: {head: leather_helmet, chest: leather_chestplate, hand: stone_axe}
+  tollkeeper_bowman:
+    rank: normal
+    name: "<#c0392b>Tollkeeper Bowman</#c0392b>"
+    type: pillager
+    health: 20
+    attack-damage: 3
+    ability: none
+    mark-reward: 2
+    hunting-experience: 18
+    equipment: {head: leather_helmet, hand: crossbow}
+  toll_captain_brask:
+    rank: elite
+    name: "<gradient:#e74c3c:#c0392b>Toll-Captain Brask</gradient>"
+    type: vindicator
+    health: 70
+    attack-damage: 6
+    scale: 1.2
+    ability: pulse
+    ability-radius: 3.5
+    ability-damage: 4
+    ability-cooldown-seconds: 12
+    mark-reward: 14
+    hunting-experience: 60
+    equipment: {head: iron_helmet, chest: leather_chestplate, legs: leather_leggings, hand: iron_axe}
+  choir_initiate:
+    rank: normal
+    name: "<#95a5a6>Choir Initiate</#95a5a6>"
+    type: zombie_villager
+    health: 28
+    attack-damage: 4
+    speed: 0.22
+    ability: none
+    mark-reward: 2
+    hunting-experience: 22
+    equipment: {chest: leather_chestplate, legs: leather_leggings, hand: iron_shovel}
+  choir_cantor:
+    rank: normal
+    name: "<#e67e22>Choir Cantor</#e67e22>"
+    type: evoker
+    health: 26
+    attack-damage: 3
+    ability: heal_self
+    ability-cooldown-seconds: 14
+    mark-reward: 3
+    hunting-experience: 26
+  ember_scarecrow:
+    rank: normal
+    name: "<#e67e22>Ember-Hatched Scarecrow</#e67e22>"
+    type: husk
+    health: 30
+    attack-damage: 4
+    speed: 0.23
+    ability: pulse
+    ability-radius: 2.5
+    ability-damage: 2
+    ability-cooldown-seconds: 10
+    mark-reward: 3
+    hunting-experience: 28
+    equipment: {head: jack_o_lantern, chest: leather_chestplate, hand: wooden_hoe}
+  scarecrow_king:
+    rank: elite
+    name: "<gradient:#f39c12:#d35400>The Scarecrow King</gradient>"
+    type: husk
+    health: 160
+    attack-damage: 7
+    scale: 1.6
+    speed: 0.21
+    ability: pulse
+    ability-radius: 5
+    ability-damage: 6
+    ability-cooldown-seconds: 9
+    mark-reward: 40
+    hunting-experience: 220
+    equipment: {head: jack_o_lantern, chest: golden_chestplate, legs: leather_leggings, hand: golden_hoe}
+  # Rares: long respawns, unique trophies (loot in content/reach-loot.yml).
+  old_grizzlehide:
+    rank: elite
+    name: "<gradient:#a0522d:#8b4513>Old Grizzlehide</gradient>"
+    type: hoglin
+    health: 80
+    attack-damage: 6
+    scale: 1.1
+    ability: pulse
+    ability-radius: 3
+    ability-damage: 4
+    ability-cooldown-seconds: 14
+    mark-reward: 20
+    hunting-experience: 120
+  hollow_jack:
+    rank: elite
+    name: "<gradient:#f1c40f:#e67e22>Hollow Jack</gradient>"
+    type: skeleton
+    health: 90
+    attack-damage: 6
+    scale: 1.3
+    ability: pulse
+    ability-radius: 3
+    ability-damage: 5
+    ability-cooldown-seconds: 12
+    mark-reward: 24
+    hunting-experience: 140
+    equipment: {head: jack_o_lantern, chest: leather_chestplate, hand: stone_hoe}
+  gilt_tooth:
+    rank: elite
+    name: "<gradient:#f9ca24:#f0932b>Gilt-Tooth</gradient>"
+    type: silverfish
+    health: 40
+    attack-damage: 3
+    scale: 2.2
+    ability: none
+    mark-reward: 16
+    hunting-experience: 80

@@ -82,7 +82,17 @@ public final class ReachCanvas {
         private final Spec[] palette;
         private final Map<Long, int[]> positions = new HashMap<>();
         private final Map<Long, short[]> states = new HashMap<>();
+        /** Per chunk, which of its 256 columns hold any block of this plan (air included), as four longs. */
+        private final Map<Long, long[]> columns = new HashMap<>();
         final int minX, minZ, maxX, maxZ;
+
+        /** True when this plan writes anything in the column at (x, z). */
+        public boolean occupies(int x, int z) {
+            long[] bits = columns.get(key(x >> 4, z >> 4));
+            if (bits == null) return false;
+            int i = ((z & 15) << 4) | (x & 15);
+            return (bits[i >> 6] & (1L << (i & 63))) != 0;
+        }
 
         private Frozen(ReachCanvas canvas) {
             palette = canvas.palette.toArray(new Spec[0]);
@@ -90,9 +100,15 @@ public final class ReachCanvas {
                 int[] p = new int[cells.size()];
                 short[] s = new short[cells.size()];
                 int i = 0;
-                for (Map.Entry<Integer, Short> e : cells.entrySet()) { p[i] = e.getKey(); s[i] = e.getValue(); i++; }
+                long[] bits = new long[4];
+                for (Map.Entry<Integer, Short> e : cells.entrySet()) {
+                    p[i] = e.getKey(); s[i] = e.getValue(); i++;
+                    int col = ((e.getKey() >> 10 & 15) << 4) | (e.getKey() >> 14 & 15);
+                    bits[col >> 6] |= 1L << (col & 63);
+                }
                 positions.put(key, p);
                 states.put(key, s);
+                columns.put(key, bits);
             });
             minX = canvas.minX; minZ = canvas.minZ; maxX = canvas.maxX; maxZ = canvas.maxZ;
         }

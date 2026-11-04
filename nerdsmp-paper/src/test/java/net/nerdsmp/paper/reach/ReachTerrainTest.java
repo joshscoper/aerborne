@@ -84,6 +84,25 @@ class ReachTerrainTest {
         assertTrue(range.get(ReachTerrain.Zone.SCAR)[1] > 150, "the Brimwall must stand high");
     }
 
+    /** Set REACH_PROBE to "x,z;x,z;..." to print those columns (a design aid). */
+    @Test
+    void probeWhenAsked() {
+        String probe = System.getenv("REACH_PROBE");
+        if (probe == null || probe.isBlank()) return;
+        StringBuilder out = new StringBuilder();
+        for (String pair : probe.split(";")) {
+            String[] xz = pair.split(",");
+            int x = Integer.parseInt(xz[0].strip()), z = Integer.parseInt(xz[1].strip());
+            ReachTerrain.Column c = TERRAIN.column(x, z);
+            out.append(x).append(',').append(z).append(" zone=").append(c.zone()).append(" land=").append(c.land())
+                .append(" top=").append(c.top()).append(" bottom=").append(c.bottom()).append(" water=")
+                .append(c.wet() ? c.water() : "-").append(" edge=").append((int) c.edge()).append(" river=")
+                .append(c.river() > 1e9 ? "-" : String.valueOf((int) c.river())).append(" road=").append(String.format("%.2f", c.road())).append('\n');
+        }
+        try { java.nio.file.Files.writeString(java.nio.file.Path.of(System.getenv().getOrDefault("REACH_PROBE_OUT", "build/reach-probe.txt")), out); }
+        catch (java.io.IOException e) { throw new java.io.UncheckedIOException(e); }
+    }
+
     /** Set REACH_ATLAS to a file path to draw the Reach from above. */
     @Test
     void drawAtlasWhenAsked() throws Exception {

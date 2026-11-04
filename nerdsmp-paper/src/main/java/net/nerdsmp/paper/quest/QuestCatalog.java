@@ -24,6 +24,13 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
 
     public static QuestCatalog empty() { return new QuestCatalog(SCHEMA_VERSION, Map.of()); }
 
+    /** This catalog plus the other's quests; an id already here keeps this catalog's version. */
+    public QuestCatalog merge(QuestCatalog other) {
+        Map<String, QuestDefinition> all = new LinkedHashMap<>(quests);
+        other.quests.forEach(all::putIfAbsent);
+        return new QuestCatalog(schemaVersion, all);
+    }
+
     public List<QuestDefinition> offeredBy(String npc) {
         return quests.values().stream().filter(quest -> quest.giver().equals(npc) || quest.turnIn().equals(npc)).toList();
     }
@@ -93,7 +100,8 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
         catch (IllegalArgumentException invalid) { throw new IllegalArgumentException("Unknown objective type " + node.get("type")); }
         Set<String> targets = new LinkedHashSet<>();
         if (node.containsKey("targets")) for (String target : strings(node.get("targets"), "targets"))
-            targets.add(type == QuestDefinition.Type.KILL || type == QuestDefinition.Type.TALK ? target : target.toUpperCase(Locale.ROOT));
+            targets.add(type == QuestDefinition.Type.KILL || type == QuestDefinition.Type.TALK || type == QuestDefinition.Type.CLEAR
+                ? target : target.toUpperCase(Locale.ROOT));
         return new QuestDefinition.Objective(type, targets, node.containsKey("zone") ? string(node.get("zone"), "zone") : null,
             node.containsKey("count") ? integer(node.get("count"), "count") : 1, string(node.get("description"), "description"));
     }
