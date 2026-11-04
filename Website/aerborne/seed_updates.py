@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 30
+LATEST = 31
 C = "static:img/companions/"
 
 
@@ -82,6 +82,8 @@ def apply(conn):
         _rev29(conn)
     if current < 30:
         _rev30(conn)
+    if current < 31:
+        _rev31(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -327,6 +329,69 @@ def _rev30(conn):
     if row and row['updated_by'] == 'starter content' and '## Use Forge & Sockets\n' in (row['body'] or '') and '## Item abilities' not in row['body']:
         conn.execute('UPDATE guides SET body = ?, updated_at = ? WHERE id = ?',
                      (row['body'].replace('## Use Forge & Sockets\n', REV30_ABILITIES + '## Use Forge & Sockets\n'), now_str(), row['id']))
+
+
+def _product(name, slug, category, summary, includes, image, alt, game_product, order, entitlement="permanent"):
+    return dict(name=name, slug=slug, category=category, summary=summary, includes=includes, image=image, image_alt=alt,
+                entitlement=entitlement, platforms="Java Edition", concept_art=0, availability="upcoming",
+                game_product=game_product, sort_order=order)
+
+
+# The cosmetics suite and XP boosters. The art is rendered from the game by Website/tools/store_art.py.
+REV31_PRODUCTS = [
+    _product("XP Booster", "xp-booster", "xp-boosters",
+             "+50% XP for everyone online for an hour, with your name on the thanks.",
+             "One server-wide XP booster\n+50% skill and adventurer XP for everyone online for an hour\n"
+             "Use it with /booster use whenever you like\nAnother booster used while one runs adds an hour",
+             "static:img/store/xp-booster-320.webp", "A golden lightning bolt in a glowing ring, marked +50% XP",
+             "booster.xp", 40, entitlement="one-time"),
+] + [
+    _product(name + " companion", slug + "-companion", "companions", summary,
+             name + ", who follows you around\nSummon it from /cosmetics or /companion",
+             C + slug + "-360.webp", alt, "cosmetic.companion." + slug, order)
+    for order, (name, slug, summary, alt) in enumerate([
+        ("Glimmerbee", "glimmerbee", "A lantern bee with a glowing tail that hovers at your shoulder.", "Glimmerbee, a block-built bee with a glowing tail"),
+        ("Bramblehog", "bramblehog", "A hedgehog wearing a bramble, berries and all.", "Bramblehog, a block-built hedgehog with berries on its back"),
+        ("Driftfin", "driftfin", "A sky koi that swims through the air beside you.", "Driftfin, a white and orange block-built koi"),
+    ], start=41)
+] + [
+    _product(name + " trail", slug + "-trail", "trails", summary, name + " trail effect",
+             "static:img/kit/trails/" + slug + "-320.webp", "Preview of the " + name + " trail", "cosmetic.trail." + slug, order)
+    for order, (name, slug, summary) in enumerate([
+        ("Snowdrift", "snowdrift", "A soft fall of snow wherever you go."),
+        ("Ember Wake", "ember-wake", "A wake of embers off your heels."),
+        ("Glowspore", "glowspore", "Glowing spores that drift up behind you."),
+    ], start=44)
+] + [
+    _product(name + " title", slug + "-title", "titles", "[" + name + "] before your name in chat and the tab list.",
+             "The " + name + " title\nWear it with /cosmetics title " + slug,
+             "static:img/store/titles/" + slug + "-320.webp", "The title " + name + " on a nameplate", "cosmetic.title." + slug, order)
+    for order, (name, slug) in enumerate([("Skyborne", "skyborne"), ("Stormchaser", "stormchaser"), ("Starlit", "starlit"), ("Windrider", "windrider")], start=47)
+] + [
+    _product(name + " aura", slug + "-aura", "auras", summary,
+             "The " + name + " aura\nShows while you stand still; your trail takes over when you move\nWear it with /cosmetics aura " + slug,
+             "static:img/store/auras/" + slug + "-320.webp", "Preview of the " + name + " aura round a player", "cosmetic.aura." + slug, order)
+    for order, (name, slug, summary) in enumerate([
+        ("Glimmer Halo", "glimmer-halo", "A faint halo of light over your head."),
+        ("Petal Orbit", "petal-orbit", "Petals that circle you slowly."),
+        ("Snow Globe", "snow-globe", "Your own little flurry."),
+    ], start=51)
+] + [
+    _product(name + " finisher", slug + "-finisher", "finishers", summary,
+             "The " + name + " finisher\nGoes off where your kills fall\nWear it with /cosmetics finisher " + slug,
+             "static:img/store/finishers/" + slug + "-320.webp", "Preview of the " + name + " finisher", "cosmetic.finisher." + slug, order)
+    for order, (name, slug, summary) in enumerate([
+        ("Starburst", "starburst", "A burst of sparks where your foe falls."),
+        ("Confetti Pop", "confetti-pop", "A celebration, whether they wanted one or not."),
+        ("Soul Release", "soul-release", "The fallen rise as a column of soul fire."),
+    ], start=54)
+]
+
+
+def _rev31(conn):
+    # New items go in only where their slug is free, as upcoming until Tebex sync links each to its package.
+    for product in REV31_PRODUCTS:
+        _insert(conn, "products", product)
 
 
 def _rev18(conn):

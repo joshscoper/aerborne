@@ -225,7 +225,8 @@ def sync_products(conn):
     if not state['ready']:
         raise TebexError(state['error'])
     categories = {'supporter-ranks': 'supporterranks', 'companions': 'companions',
-                  'trails': 'trails', 'cosmetic-bundles': 'bundles', 'island-decor': 'islanddecor'}
+                  'trails': 'trails', 'cosmetic-bundles': 'bundles', 'island-decor': 'islanddecor',
+                  'titles': 'titles', 'auras': 'auras', 'finishers': 'finishers', 'xp-boosters': 'xpboosters'}
     norm = lambda value: re.sub(r'[^a-z0-9]', '', value.lower())
     packages = {p['id']: p for p in state['packages'].values()}.values()
     linked, skipped = [], []
@@ -236,6 +237,9 @@ def sync_products(conn):
             candidates.add(norm(name[:-10]))
         if row['category'] == 'trails' and name.lower().endswith(' trail'):
             candidates.add(norm(name[:-6]))
+        for suffix in (' title', ' aura', ' finisher'):
+            if name.lower().endswith(suffix):
+                candidates.add(norm(name[:-len(suffix)]))
         if row['category'] == 'cosmetic-bundles':
             candidates.add(norm(name + ' Bundle'))
         if row['slug'] == 'comet-tail-trail':

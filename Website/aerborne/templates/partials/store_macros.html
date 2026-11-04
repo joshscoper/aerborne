@@ -14,6 +14,11 @@
 <nav class="store-browse" aria-label="Store collections"><a href="{{ url_for('public.store') }}"{% if not active %} aria-current="page"{% endif %}>All collections</a>{% for entry in categories %}<a href="{{ url_for('public.store_category', category=entry.key) }}"{% if active == entry.key %} aria-current="page"{% endif %}>{{ entry.title }}</a>{% endfor %}{% if store_connection.configured %}<a class="store-cart-link" href="{{ url_for('shop.cart') }}">Cart ({{ store_cart_count }})</a>{% endif %}</nav>
 {%- endmacro %}
 
+{% macro add_button(item, label='Add to cart', class_name='btn btn-primary') -%}
+{% if item.purchasable and item.tebex_package %}<form method="post" action="{{ url_for('shop.add', slug=item.slug) }}" class="store-quick-add"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="{{ class_name }}">{{ label }}</button></form>
+{%- else %}<a class="store-quick-view" href="{{ url_for('public.store_item', slug=item.slug) }}">View details</a>{% endif %}
+{%- endmacro %}
+
 {% macro connection_notice() -%}
 {% if store_connection.configured and not store_connection.ready %}<p class="notice notice-info" role="status">We can’t load live prices from Tebex right now. Your cart is saved. Please try again shortly.</p>{% endif %}
 {%- endmacro %}

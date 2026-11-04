@@ -22,7 +22,7 @@
       <dl class="product-meta">
         {% if item.entitlement %}<div><dt>Duration</dt><dd>{{ option_label('products', 'entitlement', item.entitlement) }}{% if item.entitlement_note %}: {{ item.entitlement_note }}{% endif %}</dd></div>{% endif %}
         <div><dt>Edition</dt><dd>{{ item.platforms or 'Java Edition' }}</dd></div>
-        <div><dt>Benefits</dt><dd>Cosmetic only</dd></div>
+        <div><dt>Benefits</dt><dd>{% if item.category == 'xp-boosters' %}Bonus XP for everyone online, not just you{% else %}Cosmetic only{% endif %}</dd></div>
       </dl>
       <section class="product-includes" aria-labelledby="product-includes-title">
       <h2 id="product-includes-title">What you receive</h2>

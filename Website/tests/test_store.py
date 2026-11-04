@@ -69,3 +69,32 @@ class StoreArtTest(SiteTest):
         self.assertIn(b'1 on sale', self.client.get('/store').data)
         self.assertIn(b'Buy on Tebex for $9.99', self.client.get('/store/item/skyfarer').data)
         conn.close()
+
+
+class StoreSuiteTest(SiteTest):
+    def test_new_collections_are_seeded_with_their_game_products_and_art(self):
+        from aerborne import seed_updates
+        conn = self.db()
+        for product in seed_updates.REV31_PRODUCTS:
+            row = conn.execute("SELECT * FROM products WHERE slug = ?", (product['slug'],)).fetchone()
+            self.assertIsNotNone(row, product['slug'])
+            self.assertEqual(row['game_product'], product['game_product'])
+            asset = '/static/' + product['image'][len('static:'):]
+            self.assertEqual(self.client.get(asset).status_code, 200, asset)
+        booster = conn.execute("SELECT * FROM products WHERE slug = 'xp-booster'").fetchone()
+        self.assertEqual((booster['category'], booster['entitlement']), ('xp-boosters', 'one-time'))
+        conn.close()
+        front = self.client.get('/store').get_data(as_text=True)
+        for title in ('XP boosters', 'Titles', 'Auras', 'Finishers'):
+            self.assertIn(title, front)
+        self.assertIn('Find it in game', front)
+        for category in ('titles', 'auras', 'finishers', 'xp-boosters'):
+            self.assertEqual(self.client.get('/store/' + category).status_code, 200, category)
+        self.assertIn('Bonus XP for everyone online', self.client.get('/store/item/xp-booster').get_data(as_text=True))
+
+    def test_rank_comparison_reads_at_a_glance(self):
+        page = self.client.get('/store/supporter-ranks').get_data(as_text=True)
+        self.assertIn('Best value', page)
+        self.assertIn('rank-tick', page)
+        self.assertIn('Not included', page, 'screen readers still hear what a dash means')
+        self.assertIn('Shown in chat, the tab list and above your head', page)

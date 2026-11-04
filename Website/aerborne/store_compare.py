@@ -4,6 +4,10 @@ import re
 NUMBERS = {'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7'}
 FEATURES = [('badge', 'Rank badge'), ('colours', 'Name colours'), ('emotes', 'Emotes'),
             ('presets', 'Wardrobe presets'), ('keepsake', 'Decorative keepsake')]
+# One plain line under each feature, so nobody has to guess what it means.
+HINTS = {'badge': 'Shown in chat, the tab list and above your head', 'colours': 'Pick the colour of your name',
+         'emotes': '/emote wave, cheer, dance and more', 'presets': 'Save whole looks and swap in one click',
+         'keepsake': 'A glowing lantern for your island'}
 
 
 def comparison(products):
@@ -38,5 +42,5 @@ def comparison(products):
     rows = []
     for key, label in FEATURES + [(extra, extra) for extra in extras]:
         if any(key in value for value in values):
-            rows.append({'label': label, 'values': [value.get(key, 'Not included') for value in values]})
+            rows.append({'label': label, 'hint': HINTS.get(key, ''), 'values': [value.get(key, 'Not included') for value in values]})
     return rows

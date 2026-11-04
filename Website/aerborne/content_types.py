@@ -126,8 +126,12 @@ GUIDE_CATEGORIES = [
 
 STORE_CATEGORIES = [
     ("supporter-ranks", "Supporter ranks"),
+    ("xp-boosters", "XP boosters"),
     ("companions", "Companions"),
     ("trails", "Trails"),
+    ("titles", "Titles"),
+    ("auras", "Auras"),
+    ("finishers", "Finishers"),
     ("cosmetic-bundles", "Cosmetic bundles"),
     ("island-decor", "Island decor"),
 ]
@@ -255,7 +259,7 @@ TYPES = [
         Field("concept_art", "Image is concept art", "bool", default=1),
         Field("availability", "Availability", "select", options=AVAILABILITY, default="upcoming"),
     ], title_field="name", roles=("admin", "editor"), endpoint="public.store_item",
-        description="The store catalog. Only cosmetics; payment stays on Tebex."),
+        description="The store catalog: cosmetics, plus server-wide XP boosters. Payment stays on Tebex."),
 
     ContentType("streamers", "streamers", "Featured streamers", "streamer", [
         Field("name", "Display name", required=True),
