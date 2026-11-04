@@ -15,7 +15,7 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 4;
+    public static final int VERSION = 5;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */

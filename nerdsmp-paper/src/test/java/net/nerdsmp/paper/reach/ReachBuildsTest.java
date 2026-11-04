@@ -31,8 +31,9 @@ class ReachBuildsTest {
             && !state.contains("carpet") && !state.contains("_sign") && !state.contains("banner");
     }
 
+    /** Where an NPC's body may stand: the server's placement check refuses anything with collision, carpet included. */
     static boolean passable(String state) {
-        return state.equals("minecraft:air") || state.contains("carpet") || state.contains("_sign") || state.contains("banner")
+        return state.equals("minecraft:air") || state.contains("_sign") || state.contains("banner")
             || state.contains("lantern") && state.contains("hanging=true");
     }
 

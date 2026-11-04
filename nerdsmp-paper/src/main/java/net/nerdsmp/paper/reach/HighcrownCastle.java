@@ -304,8 +304,9 @@ final class HighcrownCastle {
             if (y == K + 9 || y == K + 16 || y == K + 23 || y == K + 30) canvas.set(x1 - 1, y, z0 + 1, Material.AIR);
             canvas.set(x1 - 1, y, z0 + 1, Material.LADDER, "facing=south");
         }
-        site.mark("keep_hall", door, K, z0 + 6, 0F);
-        site.mark("npc_reach_steward_aldric", door, K, z0 + 6, 0F);
+        site.mark("keep_hall", door + 3, K, z0 + 7, 0F);
+        // The Steward stands on the dais beside the empty throne, not on it: he rules in the king's absence.
+        site.mark("npc_reach_steward_aldric", door + 2, K + 1, z0 + 3, 0F);
     }
 
     /** The Hall of Accord: a tall stone hall with buttresses and long windows, where envoys sit at the long tables. */
