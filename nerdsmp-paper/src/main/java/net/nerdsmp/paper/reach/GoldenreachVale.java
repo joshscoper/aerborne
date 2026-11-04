@@ -20,6 +20,8 @@ final class GoldenreachVale {
     private final ReachCanvas canvas = new ReachCanvas();
     private final List<ReachFeatures.Spot> spots = new ArrayList<>();
     private final int MILLBROOK_FLOOR;
+    /** Footprints already built, so no two houses overlap. */
+    private final List<int[]> lots = new ArrayList<>();
 
     private GoldenreachVale(ReachTerrain terrain) {
         this.terrain = terrain;
@@ -73,6 +75,8 @@ final class GoldenreachVale {
         int minX = Math.min(cx - w / 2, cx - d / 2) - 1, minZ = Math.min(cz - w / 2, cz - d / 2) - 1;
         int size = Math.max(w, d) + 2;
         if (!buildable(minX, minZ, size, size)) return null;
+        for (int[] l : lots) if (minX <= l[2] && minX + size >= l[0] && minZ <= l[3] && minZ + size >= l[1]) return null;
+        lots.add(new int[] {minX, minZ, minX + size, minZ + size});
         int y = floor > 0 ? floor : floorOver(minX, minZ, minX + size, minZ + size);
         ReachBrush b = new ReachBrush(canvas, o[0], y, o[1], turn);
         kit.house(b, w, d, floors, s, floors > 1, gable, ReachFlora.hash(cx, cz));
@@ -84,6 +88,7 @@ final class GoldenreachVale {
             int px = b.wx(w / 2 + side, k), pz = b.wz(w / 2 + side, k);
             // Coarse dirt, not path blocks: NPCs won't stand on a block shorter than a full one.
             canvas.set(px, y - 1, pz, side == 0 ? Material.PACKED_MUD : Material.COARSE_DIRT);
+            for (int yy = y; yy < y + 3; yy++) if (!canvas.has(px, yy, pz)) canvas.set(px, yy, pz, Material.AIR);
             ReachTerrain.Column c = terrain.column(px, pz);
             for (int yy = c.top() + 1; yy < y - 1; yy++) canvas.set(px, yy, pz, Material.DIRT);
         }
@@ -126,27 +131,70 @@ final class GoldenreachVale {
         spot("green", cx, MILLBROOK_FLOOR, cz + 3, 180F);
         spot("skiff", cx + 3, MILLBROOK_FLOOR, cz + 5, 180F);
 
-        // Houses in a ring round the green, fronts to the middle, skipping the river and the road.
+        // Houses line the road through the village on both sides, fronts to the road, the closest to the green first.
         String[] named = {"inn", "reeve_hall", "chapel", "smithy", "ada_cottage", "house_a", "house_b", "house_c", "house_d", "house_e",
-            "house_f", "house_g", "house_h", "house_i"};
+            "house_f", "house_g", "house_h", "house_i", "house_j", "house_k"};
+        List<double[]> road = terrain.roadSamples(cx, cz, 90);
+        List<int[]> candidates = new ArrayList<>();
+        for (int i = 1; i < road.size() - 1; i += 2) {
+            double dx = road.get(i + 1)[0] - road.get(i - 1)[0], dz = road.get(i + 1)[1] - road.get(i - 1)[1], len = Math.hypot(dx, dz);
+            if (len == 0) continue;
+            double px = -dz / len, pz = dx / len;
+            for (int side : new int[] {-1, 1}) for (int depth : new int[] {10, 21, 32}) {
+                int hx = (int) Math.round(road.get(i)[0] + px * side * depth), hz = (int) Math.round(road.get(i)[1] + pz * side * depth);
+                int target = depth == 11 ? 0 : 1;
+                // Front rows face the road; the second row faces a back lane toward the road too.
+                int turn = facing(hx, hz, (int) Math.round(road.get(i)[0]), (int) Math.round(road.get(i)[1]));
+                candidates.add(new int[] {hx, hz, turn, (int) Math.hypot(hx - cx, hz - cz) + target * 30});
+            }
+        }
+        candidates.sort(java.util.Comparator.comparingInt(c -> c[3]));
         int n = 0;
-        for (int ring = 0; ring < 2; ring++) for (int a = 0; a < 360; a += ring == 0 ? 30 : 22) {
-            double rad = Math.toRadians(a + ring * 11);
-            int r = ring == 0 ? 26 : 44;
-            int hx = cx + (int) Math.round(Math.cos(rad) * r), hz = cz + (int) Math.round(Math.sin(rad) * r * 0.85);
-            int turn = facing(hx, hz, cx, cz);
-            long h = ReachFlora.hash(hx, hz);
+        // Gardens go in after every house and door path exists, so none lands on a doorstep.
+        List<long[]> yards = new ArrayList<>();
+        for (int[] c : candidates) {
+            if (Math.hypot(c[0] - cx, c[1] - cz) < 15) continue;
+            long h = ReachFlora.hash(c[0], c[1]);
             String id = n < named.length ? named[n] : "house_" + n;
             boolean inn = id.equals("inn");
             int w = inn ? 13 : 7 + (int) (h & 3), d = inn ? 11 : 8 + (int) ((h >> 2) & 1);
             int floors = inn ? 2 : 1 + (int) ((h >> 5) & 1);
             ReachKit.Style s = (h & 16) == 0 ? ReachKit.Style.VALE : ReachKit.Style.VALE_SPRUCE;
-            ReachFeatures.Spot door = house(id, hx, hz, w, d, floors, s, !inn, turn, MILLBROOK_FLOOR);
+            // On the village platform the floor is the platform's; on the slopes round it, the ground's.
+            int ground = terrain.column(c[0], c[1]).top();
+            int floor = Math.abs(ground + 1 - MILLBROOK_FLOOR) <= 1 ? MILLBROOK_FLOOR : 0;
+            ReachFeatures.Spot door = house(id, c[0], c[1], w, d, floors, s, !inn && (h & 64) == 0, c[2], floor);
             if (door == null) continue;
             spots.add(door);
+            yards.add(new long[] {c[0], c[1], c[2], w, d, h});
             n++;
+            if (n >= 30) break;
         }
+        for (long[] y : yards) yard((int) y[0], (int) y[1], (int) y[2], (int) y[3], (int) y[4], y[5]);
         watermill();
+    }
+
+    /** A cottage garden behind the house: a fenced plot of crops or flowers, sometimes a fruit tree. */
+    private void yard(int cx, int cz, int turn, int w, int d, long h) {
+        // "Behind" is the way the front doesn't face.
+        int bx = switch (turn) { case 1 -> -1; case 3 -> 1; default -> 0; }, bz = switch (turn) { case 0 -> 1; case 2 -> -1; default -> 0; };
+        int gx = cx + bx * (d / 2 + 5), gz = cz + bz * (d / 2 + 5);
+        int hw = w / 2 + 1;
+        for (int u = -hw; u <= hw; u++) for (int v = -3; v <= 3; v++) {
+            int x = bx != 0 ? gx + v : gx + u, z = bx != 0 ? gz + u : gz + v;
+            ReachTerrain.Column c = terrain.column(x, z);
+            if (!c.land() || c.wet() || c.road() > 0.2 || c.river() < 3 || canvas.has(x, c.top() + 1, z)) continue;
+            boolean edge = Math.abs(u) == hw || Math.abs(v) == 3;
+            if (edge) { if (ReachFlora.hash(x, z) % 7 != 0) canvas.set(x, c.top() + 1, z, Material.OAK_FENCE, bx != 0 ? (Math.abs(v) == 3 ? "north=true,south=true" : "east=true,west=true") : (Math.abs(u) == hw ? "north=true,south=true" : "east=true,west=true")); }
+            else if ((h & 1) == 0) {
+                canvas.set(x, c.top(), z, Material.FARMLAND, "moisture=7");
+                canvas.set(x, c.top() + 1, z, (u + v) % 3 == 0 ? Material.CARROTS : Material.POTATOES, "age=7");
+            } else if (ReachFlora.hash(z, x) % 3 == 0) canvas.set(x, c.top() + 1, z, (h & 2) == 0 ? Material.PEONY : Material.ROSE_BUSH, "half=lower");
+        }
+        if ((h & 4) == 0) {
+            ReachTerrain.Column c = terrain.column(gx, gz);
+            if (c.land() && !c.wet() && !canvas.has(gx, c.top() + 1, gz)) ReachTrees.fruit(canvas, gx, c.top() + 1, gz, h);
+        }
     }
 
     private void well(int x, int z) {

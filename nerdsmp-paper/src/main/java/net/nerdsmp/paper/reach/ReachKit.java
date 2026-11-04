@@ -14,11 +14,11 @@ final class ReachKit {
                  Material roofStair, Material roofSlab, Material roofBlock, Material plank, Material door, Material trapdoor,
                  Material fence) {
         static final Style HIGHCROWN = new Style(Material.STONE_BRICKS, Material.ANDESITE, Material.DARK_OAK_LOG,
-            Material.STRIPPED_DARK_OAK_LOG, Material.WHITE_TERRACOTTA, Material.CALCITE, Material.SPRUCE_STAIRS,
+            Material.STRIPPED_DARK_OAK_LOG, Material.CALCITE, Material.WHITE_CONCRETE_POWDER, Material.SPRUCE_STAIRS,
             Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
             Material.SPRUCE_TRAPDOOR, Material.DARK_OAK_FENCE);
         static final Style SLATE = new Style(Material.STONE_BRICKS, Material.TUFF_BRICKS, Material.SPRUCE_LOG,
-            Material.STRIPPED_SPRUCE_LOG, Material.CALCITE, Material.WHITE_TERRACOTTA, Material.DEEPSLATE_TILE_STAIRS,
+            Material.STRIPPED_SPRUCE_LOG, Material.CALCITE, Material.DIORITE, Material.DEEPSLATE_TILE_STAIRS,
             Material.DEEPSLATE_TILE_SLAB, Material.DEEPSLATE_TILES, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
             Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
         static final Style HARBOUR = new Style(Material.DEEPSLATE_BRICKS, Material.COBBLED_DEEPSLATE, Material.SPRUCE_LOG,
@@ -26,12 +26,12 @@ final class ReachKit {
             Material.DARK_OAK_SLAB, Material.DARK_OAK_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
             Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
         static final Style VALE = new Style(Material.COBBLESTONE, Material.STONE_BRICKS, Material.OAK_LOG,
-            Material.STRIPPED_OAK_LOG, Material.WHITE_TERRACOTTA, Material.STRIPPED_BIRCH_WOOD, Material.OAK_STAIRS,
-            Material.OAK_SLAB, Material.OAK_PLANKS, Material.OAK_PLANKS, Material.OAK_DOOR,
+            Material.STRIPPED_OAK_LOG, Material.SMOOTH_SANDSTONE, Material.STRIPPED_BIRCH_WOOD, Material.SPRUCE_STAIRS,
+            Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.OAK_PLANKS, Material.OAK_DOOR,
             Material.OAK_TRAPDOOR, Material.OAK_FENCE);
         static final Style VALE_SPRUCE = new Style(Material.COBBLESTONE, Material.MOSSY_COBBLESTONE, Material.SPRUCE_LOG,
-            Material.STRIPPED_SPRUCE_LOG, Material.STRIPPED_BIRCH_WOOD, Material.WHITE_TERRACOTTA, Material.SPRUCE_STAIRS,
-            Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
+            Material.STRIPPED_SPRUCE_LOG, Material.SMOOTH_SANDSTONE, Material.STRIPPED_BIRCH_WOOD, Material.DARK_OAK_STAIRS,
+            Material.DARK_OAK_SLAB, Material.DARK_OAK_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
             Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE);
     }
 
@@ -121,6 +121,29 @@ final class ReachKit {
         else roof(b.at(w - 1, 0, 0, 1), front - 1, d, -1, w, top + 1, s, true);
         int span = gableFront ? w + 2 : d - front + 2;
         chimney(b, gableFront ? ((seed & 1) == 0 ? 1 : w - 2) : 1, d - 2, top + span / 2 + 2, s);
+        // A dormer breaks a long roof facing the street.
+        if (!gableFront && w >= 9) dormer(b, w / 2 + ((seed & 2) == 0 ? -2 : 2), top + 1, front - 1, s);
+        // Life at the door: a barrel, a crate or a bench, and a pot of flowers.
+        b.set(door + 2, 0, -1, (seed & 4) == 0 ? Material.BARREL : Material.COMPOSTER, (seed & 4) == 0 ? "facing=up" : "level=4");
+        if ((seed & 8) == 0) b.set(door - 2, 0, -1, s.roofStair(), "facing=north,half=bottom");
+        if ((seed & 16) == 0) b.set(door + 3, 0, -1, Material.POTTED_AZURE_BLUET);
+    }
+
+    /** A small gabled dormer with a window, sitting on the roof's front slope. */
+    private void dormer(ReachBrush b, int cx, int y, int z, Style s) {
+        for (int dy = 0; dy < 3; dy++) for (int dx = -1; dx <= 1; dx++) for (int dz = 0; dz <= 2; dz++) {
+            boolean face = dz == 0;
+            if (dy == 2 && dx != 0) continue;
+            b.set(cx + dx, y + dy, z + dz, face && dx == 0 && dy < 2 ? Material.GLASS_PANE : face ? s.post() : s.plaster(),
+                face && dx == 0 && dy < 2 ? "east=true,west=true" : face && dx != 0 ? "axis=y" : "");
+        }
+        for (int dz = -1; dz <= 3; dz++) {
+            b.set(cx - 2, y + 1, z + dz, s.roofStair(), "facing=east,half=bottom");
+            b.set(cx + 2, y + 1, z + dz, s.roofStair(), "facing=west,half=bottom");
+            b.set(cx - 1, y + 2, z + dz, s.roofStair(), "facing=east,half=bottom");
+            b.set(cx + 1, y + 2, z + dz, s.roofStair(), "facing=west,half=bottom");
+            b.set(cx, y + 3, z + dz, s.roofSlab(), "type=bottom");
+        }
     }
 
     private void groundWindow(ReachBrush b, int x, int z, Style s) {
@@ -188,6 +211,14 @@ final class ReachKit {
         }
         // An odd span gets a slab ridge; an even span's two top courses meet on their own.
         if (span % 2 == 1) for (int z = z0; z <= z1; z++) b.set(x0 + half, y + half - 1, z, s.roofSlab(), "type=bottom");
+        // Barge boards: the gable's edge stands a step proud of the wall, in the frame's dark timber.
+        for (int i = 0; i < half; i++) for (int gz : new int[] {z0 - 1, z1 + 1}) {
+            b.set(x0 + i, y + i, gz, s.roofStair(), "facing=east,half=bottom");
+            b.set(x1 - i, y + i, gz, s.roofStair(), "facing=west,half=bottom");
+            b.set(x0 + i, y + i - 1, gz, s.roofStair(), "facing=west,half=top");
+            b.set(x1 - i, y + i - 1, gz, s.roofStair(), "facing=east,half=top");
+        }
+        if (span % 2 == 1) for (int gz : new int[] {z0 - 1, z1 + 1}) b.set(x0 + half, y + half - 1, gz, s.roofSlab(), "type=bottom");
         // A small window high in each gable.
         if (closeGables && half >= 4) for (int gz : new int[] {z0 + 1, z1 - 1}) {
             int cx = x0 + span / 2;

@@ -134,6 +134,14 @@ public final class ReachTerrain {
         }
     }
 
+    /** The main road's samples within {@code radius} of a point, in order, as {x, z}: for laying out a street. */
+    public List<double[]> roadSamples(double x, double z, double radius) {
+        List<double[]> out = new java.util.ArrayList<>();
+        for (ReachPath road : List.of(spine, emberRoad))
+            for (int i = 0; i < road.size(); i++) if (Math.hypot(road.xs[i] - x, road.zs[i] - z) < radius) out.add(new double[] {road.xs[i], road.zs[i]});
+        return out;
+    }
+
     /** Where a road crosses water: dry bank to dry bank, and the height its deck should run at. */
     public record Crossing(double x0, double z0, double x1, double z1, int deck) { }
 
@@ -354,7 +362,8 @@ public final class ReachTerrain {
         double fu = u - iu * cu, fv = v - iv * cv;
         if (fu < 1 || fv < 1) return 0;
         long h = ReachFlora.hash(iu * 977 + 3, iv * 131 - 9);
-        return 1 + (int) Math.floorMod(h, 6L);
+        int roll = (int) Math.floorMod(h, 10L);
+        return roll < 5 ? 1 : roll == 5 ? 2 : roll == 6 ? 3 : roll == 7 ? 4 : roll == 8 ? 5 : 6;
     }
 
     /** Cuts a height into flat steps {@code step} high with short risers. */

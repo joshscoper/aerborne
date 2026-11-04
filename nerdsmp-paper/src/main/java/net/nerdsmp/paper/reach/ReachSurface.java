@@ -28,17 +28,18 @@ final class ReachSurface {
         if (c.road() > 0.55) return road(c.zone(), c.road(), g);
         if (slope >= 3) return cliff(c.zone(), x, c.top(), z, p);
         return switch (c.zone()) {
-            case HIGHCROWN -> p > 0.5 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
+            case HIGHCROWN -> p > 0.78 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             case GOLDENREACH -> {
                 // Terrace risers are dry-stone walls; plots are tilled, fallow plots are bare earth.
                 if (c.terrace() > 0.3 && slope >= 2) yield g > 0.2 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
                 int field = terrain.field(x, z);
-                if (field == 6) yield g > 0.3 ? Material.COARSE_DIRT : Material.ROOTED_DIRT;
+                // A plot resting this year is pasture: grass, with hay stacked on it.
+                if (field == 6) yield Material.GRASS_BLOCK;
                 if (field >= 1) yield Material.FARMLAND;
                 yield p > 0.72 && g > 0 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             }
             case BARROWDOWNS -> p > 0.45 ? Material.MOSS_BLOCK : p < -0.55 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
-            case THORNWOOD -> p > 0.25 ? Material.PODZOL : p < -0.45 ? Material.MOSS_BLOCK : g > 0.6 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
+            case THORNWOOD -> p > 0.5 ? Material.PODZOL : p < -0.4 ? Material.MOSS_BLOCK : g > 0.7 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             case MISTMERE -> {
                 if (c.lake() < 1.3 && p > 0.35) yield Material.MUD;
                 yield p < -0.6 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
@@ -60,6 +61,9 @@ final class ReachSurface {
     Material sub(Column c, int depth, int slope) {
         if (c.wet() || (c.river() >= 0 && c.river() < 2.5)) return depth < 2 ? Material.DIRT : Material.STONE;
         if (slope >= 3) return Material.STONE;
+        // A two-block step shows its face: earth just under the turf, then rock, as a real bank does.
+        if (slope == 2 && c.zone() != Zone.SUNSCAR && c.zone() != Zone.SCAR)
+            return depth == 1 ? Material.COARSE_DIRT : (c.top() + depth) % 3 == 0 ? Material.ANDESITE : Material.STONE;
         return switch (c.zone()) {
             case SUNSCAR -> depth < 2 ? Material.RED_SANDSTONE : BADLANDS[Math.floorMod(c.top() - depth, BADLANDS.length)];
             case SCAR -> depth < 2 ? Material.TUFF : Material.BASALT;
