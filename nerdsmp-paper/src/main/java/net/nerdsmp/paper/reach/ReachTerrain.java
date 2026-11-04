@@ -41,10 +41,17 @@ public final class ReachTerrain {
         public String levels() { return levels; }
     }
 
-    /** One column of the world. {@code water} and {@code fall} are {@link Integer#MIN_VALUE} when absent. */
+    /**
+     * One column of the world. {@code water} and {@code fall} are {@link Integer#MIN_VALUE} when absent.
+     * {@code across} is the distance from the nearest road's centre line (large away from roads); {@code cut} is how far the ground
+     * stands above a road beside it (a cutting's wall), {@code fill} how far a road stands above the natural ground
+     * (an embankment); {@code roadLevel} is the road surface those are measured from.
+     */
     public record Column(Zone zone, boolean land, int top, int bottom, int water, int fall,
-                         double edge, double road, double river, double lake, double terrace) {
+                         double edge, double road, double river, double lake, double terrace,
+                         double across, double cut, double fill, int roadLevel) {
         public boolean wet() { return water > top; }
+        public boolean carriageway() { return across < 3.2; }
     }
 
     private record Site(Zone zone, double x, double z) { }
@@ -72,10 +79,25 @@ public final class ReachTerrain {
 
     private static final List<Pad> FIXED_PADS = List.of(
         new Pad("highcrown", 0, 905, 165, 107, 45),
-        new Pad("highcrown_keep", 112, 868, 40, 124, 22),
+        new Pad("highcrown_keep", 112, 868, 40, ReachTerrain.CROWN_TOP + 12, 22),
         new Pad("last_light", 285, -325, 34, 112, 20)
     );
     static final double MILLBROOK_X = 40, MILLBROOK_Z = 560;
+
+    /**
+     * Highcrown climbs in three terraces from the docks to the keep, each six blocks above the last, their edges
+     * arcs round a point by the keep so the city wraps its hill (see the vault's Shovel Study). These are top-block
+     * heights; people stand one above.
+     */
+    static final int CROWN_TOP = 119, MARKET_TOP = 113, DOCK_TOP = 107;
+    static final double CROWN_RING_X = 40, CROWN_RING_Z = 840, CROWN_RADIUS = 85, MARKET_RADIUS = 150;
+
+    /** The terrace height Highcrown's ground is cut to at a point: the Crown Ward, the Market Ward or the Dock Quarter. */
+    static int highcrownTop(double x, double z) {
+        if (z < 834) return CROWN_TOP;
+        double r = Math.hypot(x - CROWN_RING_X, z - CROWN_RING_Z);
+        return r < CROWN_RADIUS ? CROWN_TOP : r < MARKET_RADIUS ? MARKET_TOP : DOCK_TOP;
+    }
     /** Town platforms. Millbrook's height follows the river, so it is set once the river is known. */
     private volatile List<Pad> pads = FIXED_PADS;
     private int millbrookFloor;
@@ -133,6 +155,9 @@ public final class ReachTerrain {
             road.limitSlope(0.3);
         }
     }
+
+    /** The roads themselves (the Spine, then Ember Road), for what's built along them. */
+    List<ReachPath> roads() { return List.of(spine, emberRoad); }
 
     /** The main road's samples within {@code radius} of a point, in order, as {x, z}: for laying out a street. */
     public List<double[]> roadSamples(double x, double z, double radius) {
@@ -306,10 +331,11 @@ public final class ReachTerrain {
             if (toRift < 95) h = lerp(h, 70 + 6 * mid.noise(x * 0.05, z * 0.05), smoothstep(95, 0, toRift) * 0.75);
         }
 
-        // Highcrown's promontory rises gently to the city plateau.
+        // Town platforms: Highcrown's terraces, the keep's crag, Millbrook's riverside shelf.
         for (Pad pad : pads) {
             double dist = Math.hypot(x - pad.x, z - pad.z);
-            if (dist < pad.radius + pad.falloff) h = lerp(h, pad.height, 1 - smoothstep(pad.radius, pad.radius + pad.falloff, dist));
+            double height = pad.id.equals("highcrown") ? highcrownTop(x, z) : pad.height;
+            if (dist < pad.radius + pad.falloff) h = lerp(h, height, 1 - smoothstep(pad.radius, pad.radius + pad.falloff, dist));
         }
         double lake = lakeRadius(x, z);
         if (lake < 1.45) h = Math.max(h, LAKE_LEVEL + 1 + Math.max(0, lake - 1) * 22);
@@ -394,6 +420,8 @@ public final class ReachTerrain {
         if (edge < 10) h -= (10 - edge) * 0.3;
         int water = Integer.MIN_VALUE;
         double riverDistance = Double.MAX_VALUE, lakeValue = Double.MAX_VALUE, roadValue = 0, terrace = 0;
+        double across = Double.MAX_VALUE, cut = 0, fill = 0;
+        int roadLevel = Integer.MIN_VALUE;
 
         if (!isle) {
             if (zone == Zone.GOLDENREACH) terrace = terraceMask(x, z);
@@ -424,10 +452,22 @@ public final class ReachTerrain {
             for (ReachPath road : List.of(spine, emberRoad)) {
                 ReachPath.Hit hit = road.nearest(x, z, 12);
                 if (hit == null) continue;
-                double f = 1 - smoothstep(hit.halfWidth(), hit.halfWidth() + 7, hit.distance());
-                if (riverDistance < 2) f = 0;
-                if (f > 0) h = lerp(h, hit.value(), f);
                 roadValue = Math.max(roadValue, 1 - smoothstep(hit.halfWidth() - 0.5, hit.halfWidth() + 1.5, hit.distance()));
+                across = Math.min(across, hit.distance());
+                if (riverDistance < 2) continue;
+                // An engineered road: a level carriageway with sharp edges. A cutting keeps the ground's full height
+                // right beside it (a wall is built there); an embankment stands proud of the ground below it; only
+                // small differences are eased into a verge.
+                double hw = hit.halfWidth() + 0.6, d = hit.distance(), level = hit.value(), natural = h;
+                if (d <= hw) {
+                    h = level;
+                    roadLevel = (int) Math.floor(level);
+                    if (natural < level - 1) fill = Math.max(fill, level - natural);
+                } else if (d <= hw + 4) {
+                    double diff = natural - level;
+                    if (Math.abs(diff) <= 2.5) h = lerp(level, natural, smoothstep(hw, hw + 4, d));
+                    else if (diff > 0 && d <= hw + 1.2) { cut = Math.max(cut, diff); roadLevel = (int) Math.floor(level); }
+                }
             }
         }
         int top = (int) Math.floor(h);
@@ -442,7 +482,8 @@ public final class ReachTerrain {
         double drip = spires(x, z) * smoothstep(4, 40, edge) * clamp(room / 70.0, 0, 1);
         int bottom = (int) Math.max(FLOOR_Y, Math.floor(top - thickness - drip));
         bottom = Math.min(bottom, top - 3);
-        return new Column(zone, true, top, bottom, water, Integer.MIN_VALUE, edge, roadValue, riverDistance, lakeValue, terrace);
+        return new Column(zone, true, top, bottom, water, Integer.MIN_VALUE, edge, roadValue, riverDistance, lakeValue, terrace,
+            across, cut, fill, roadLevel);
     }
 
     /**
@@ -473,7 +514,7 @@ public final class ReachTerrain {
         for (Fall f : falls)
             if (Math.hypot(x - f.x, z - f.z) < f.halfWidth + 3) fall = f.top;
         return new Column(zone, false, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE, fall,
-            landEdge(x, z), 0, Double.MAX_VALUE, Double.MAX_VALUE, 0);
+            landEdge(x, z), 0, Double.MAX_VALUE, Double.MAX_VALUE, 0, Double.MAX_VALUE, 0, 0, Integer.MIN_VALUE);
     }
 
     /** Thickness of cloud at this column (0 for none). Blocky, like the reference art. */
@@ -484,6 +525,11 @@ public final class ReachTerrain {
         if (n < 0.28) return 0;
         for (Fall f : falls) if (Math.hypot(bx - f.x, bz - f.z) < 28) return 0;
         return n > 0.42 ? 4 : n > 0.34 ? 3 : 2;
+    }
+
+    /** True near a town, where roads are paved rather than rutted earth. */
+    public boolean townRoad(double x, double z) {
+        return Math.hypot(x, z - 905) < 240 || Math.hypot(x - MILLBROOK_X, z - MILLBROOK_Z) < 95;
     }
 
     /** Small noise used by the surface painter so texture breaks up in clusters, not speckles. */

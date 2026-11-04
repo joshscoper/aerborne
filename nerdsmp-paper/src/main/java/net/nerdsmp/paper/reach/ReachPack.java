@@ -15,7 +15,7 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */
@@ -134,9 +134,9 @@ public final class ReachPack {
             String key = choices.split(java.util.regex.Pattern.quote(OR))[0].replace('.', '_');
             npcs.put(key, new WorldPack.Anchor(key, npc, point(spots.get(spotId)), List.of()));
         });
-        // Watch guards walking the avenue and the green.
-        patrol(npcs, "highcrown_watch_avenue_w", "highcrown_watch", -3, HighcrownCity.STREET, HighcrownCity.GATE_Z + 20, 0, 150);
-        patrol(npcs, "highcrown_watch_avenue_e", "highcrown_watch", 3, HighcrownCity.STREET, HighcrownCity.DOCK_SQUARE_Z - 10, 0, -150);
+        // Watch guards walking the avenue: one from the plaza down through the market, one from the market to the docks.
+        route(npcs, spots, "highcrown_watch_avenue_w", "highcrown_watch", 0, 3);
+        route(npcs, spots, "highcrown_watch_avenue_e", "highcrown_watch", 2, 5);
         ReachFeatures.Spot green = spots.get("goldenreach.green");
         if (green != null) {
             List<WorldPack.Point> route = new ArrayList<>();
@@ -155,10 +155,15 @@ public final class ReachPack {
             List.of(), point(arrival), null, warps, zones, npcs, Map.of());
     }
 
-    private static void patrol(Map<String, WorldPack.Anchor> npcs, String key, String npc, int x, int y, int z, int dx, int dz) {
+    /** A patrol along the Watch marks of Highcrown from {@code from} to {@code to}, which follow the avenue's terraces and stairs. */
+    private static void route(Map<String, WorldPack.Anchor> npcs, Map<String, ReachFeatures.Spot> spots, String key, String npc, int from, int to) {
         List<WorldPack.Point> route = new ArrayList<>();
-        for (int k = 1; k <= 4; k++) route.add(new WorldPack.Point(x + dx * k / 4.0, y, z + dz * k / 4.0, 0F));
-        npcs.put(key, new WorldPack.Anchor(key, npc, new WorldPack.Point(x + 0.5, y, z + 0.5, 0F), route));
+        for (int k = from; k <= to; k++) {
+            ReachFeatures.Spot s = spots.get("highcrown.watch_" + k);
+            if (s != null) route.add(point(s));
+        }
+        if (route.isEmpty()) return;
+        npcs.put(key, new WorldPack.Anchor(key, npc, route.get(0), route.subList(1, route.size())));
     }
 
     private static WorldPack.Point point(ReachFeatures.Spot s) { return new WorldPack.Point(s.x(), s.y(), s.z(), s.yaw()); }

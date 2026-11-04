@@ -56,6 +56,8 @@ public final class ReachGameplay implements Listener {
         new Place("highcrown.arrival_1", "The Sky Docks", 22),
         new Place("highcrown.plaza", "Kingsgate Plaza", 24),
         new Place("highcrown.keep_hall", "Highcrown Keep", 20),
+        new Place("highcrown.fane", "The Lantern Fane", 14),
+        new Place("highcrown.market", "The Market Ward", 22),
         new Place("highcrown.tethered_gull", "The Tethered Gull", 10),
         new Place("highcrown.crafter_0", "Crafters' Row", 18),
         new Place("highcrown.kingsbridge", "The Kingsbridge", 18),

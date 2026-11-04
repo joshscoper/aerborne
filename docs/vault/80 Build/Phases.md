@@ -23,8 +23,10 @@ encounters), `1ab6ce4` (rebuild keeps plants). Checked on a scratch server with 
 the quest board, chests and their refill, zone spawns, the Toll-Captain, the fall rescue.
 
 Not done yet in phase 1:
-- **Art pass to the reference bar.** Seen in previews and not yet fixed:
-  - The avenue is long and even (about 170 blocks) and needs a mid-way arch, more height variety and banners.
+- **Art pass to the reference bar.** On 2026-11-04 the user judged the builds "meh, not wow". The second art pass
+  (see [[Build Audit 2026-11-04]]) gives every building a graded site, engineers the roads and dresses their sides,
+  rebuilds Highcrown on three terraces with a purpose for each ward, and upgrades the house kit and props.
+  The avenue's length is now broken by two grand stairs. Still seen and not yet fixed:
   - Millbrook's houses crowd each other, and white terracotta reads pink: use calcite or birch.
   - The Scar's ash pattern is too blotchy.
   - Natural slopes show one-block contour steps.

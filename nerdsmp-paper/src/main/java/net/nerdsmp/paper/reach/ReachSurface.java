@@ -25,7 +25,7 @@ final class ReachSurface {
         if (c.wet()) return bed(c, p, g);
         if (c.river() >= 0 && c.river() < 2.5) return bank(c.zone(), p, g);
         if (c.lake() >= 1.0 && c.lake() < 1.04) return p > 0.2 ? Material.GRAVEL : Material.SAND;
-        if (c.road() > 0.55) return road(c.zone(), c.road(), g);
+        if (c.carriageway()) return road(c, x, z, p, g);
         if (slope >= 3) return cliff(c.zone(), x, c.top(), z, p);
         return switch (c.zone()) {
             case HIGHCROWN -> p > 0.78 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
@@ -33,8 +33,8 @@ final class ReachSurface {
                 // Terrace risers are dry-stone walls; plots are tilled, fallow plots are bare earth.
                 if (c.terrace() > 0.3 && slope >= 2) yield g > 0.2 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
                 int field = terrain.field(x, z);
-                // A plot resting this year is pasture: grass, with hay stacked on it.
-                if (field == 6) yield Material.GRASS_BLOCK;
+                // A plot resting this year is pasture: grass, with hay stacked on it. A grass headland runs along the road.
+                if (field == 6 || c.across() < 7) yield Material.GRASS_BLOCK;
                 if (field >= 1) yield Material.FARMLAND;
                 yield p > 0.72 && g > 0 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
             }
@@ -107,11 +107,34 @@ final class ReachSurface {
         return p > 0.35 ? Material.GRAVEL : g > 0.2 ? Material.ROOTED_DIRT : Material.COARSE_DIRT;
     }
 
-    private Material road(Zone zone, double road, double g) {
-        if (zone == Zone.SCAR) return g > 0 ? Material.GRAVEL : Material.TUFF;
-        if (zone == Zone.SUNSCAR) return g > 0.3 ? Material.COARSE_DIRT : Material.SMOOTH_RED_SANDSTONE;
-        if (road > 0.85) return g > 0.55 ? Material.COARSE_DIRT : Material.DIRT_PATH;
-        return g > 0.1 ? Material.GRAVEL : Material.COARSE_DIRT;
+    /**
+     * A road's surface across its width. In the country: a grassy crown down the middle, two wheel ruts worn into
+     * path, packed earth either side and a gravel edge. Near towns: setts and cobbles with a kerb of stone bricks.
+     */
+    private Material road(Column c, int x, int z, double p, double g) {
+        double d = c.across();
+        if (c.zone() == Zone.SCAR) return d > 2.6 ? Material.POLISHED_BASALT : g > 0 ? Material.GRAVEL : Material.TUFF;
+        if (c.zone() == Zone.SUNSCAR) return d > 2.6 ? Material.SMOOTH_RED_SANDSTONE : g > 0.3 ? Material.COARSE_DIRT : Material.RED_SAND;
+        if (terrain.townRoad(x, z)) {
+            if (d > 2.7) return Material.STONE_BRICKS;
+            return g > 0.45 ? Material.GRAVEL : p > 0.35 ? Material.ANDESITE : p < -0.4 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
+        }
+        // The bands are dithered with noise so a diagonal road doesn't alias into zigzags: worn path in the middle
+        // with a tuft of grass now and then where the hooves don't fall, packed earth to the sides, a gravel edge.
+        double band = d + 0.9 * terrain.grain(x + 311, z - 173, 0.45);
+        if (band < 0.5 && g > 0.55) return Material.GRASS_BLOCK;
+        if (band < 1.9) return g > 0.62 ? Material.COARSE_DIRT : p > 0.55 ? Material.PACKED_MUD : Material.DIRT_PATH;
+        if (band < 2.9) return g > 0.3 ? Material.COARSE_DIRT : g < -0.5 ? Material.PACKED_MUD : Material.DIRT_PATH;
+        return g > 0.1 ? Material.GRAVEL : g < -0.55 ? Material.COBBLESTONE : Material.COARSE_DIRT;
+    }
+
+    /** The face of a cutting or an embankment: dry-stone, darker and mossier toward the foot. */
+    Material retaining(int x, int y, int z, int fromFoot) {
+        double c = terrain.patch(x + y * 0.7, z - y * 0.4, 0.25);
+        if (fromFoot == 0 && c > -0.2) return Material.MOSSY_COBBLESTONE;
+        if (c > 0.45) return Material.MOSSY_STONE_BRICKS;
+        if (c < -0.45) return Material.ANDESITE;
+        return fromFoot % 4 == 3 ? Material.STONE_BRICKS : Material.COBBLESTONE;
     }
 
     private Material cliff(Zone zone, int x, int y, int z, double p) {

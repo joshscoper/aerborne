@@ -49,6 +49,20 @@ final class GoldenreachVale {
 
     private void spot(String id, int x, int y, int z, float yaw) { spots.add(new ReachFeatures.Spot(id, x + 0.5, y, z + 0.5, yaw)); }
 
+    /** A spot on open ground nearest (x, z): natural terrain the builds left alone, with room to stand. */
+    private void openSpot(String id, int x, int z, float yaw) {
+        for (int r = 0; r <= 8; r++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+            if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
+            ReachTerrain.Column c = terrain.column(x + dx, z + dz);
+            if (!c.land() || c.wet()) continue;
+            int y = c.top() + 1;
+            if (canvas.has(x + dx, y - 1, z + dz) || canvas.has(x + dx, y, z + dz) || canvas.has(x + dx, y + 1, z + dz)) continue;
+            spot(id, x + dx, y, z + dz, yaw);
+            return;
+        }
+        spot(id, x, terrain.column(x, z).top() + 1, z, yaw);
+    }
+
     /** Ground height under a footprint's highest corner, plus one: the floor a building on it should have. */
     private int floorOver(int x0, int z0, int x1, int z1) {
         int top = Integer.MIN_VALUE;
@@ -352,7 +366,7 @@ final class GoldenreachVale {
             if (edge && !(z == fz + 10 && x == fx - 4)) canvas.set(x, top + 1, z, Material.OAK_FENCE, (x == fx - 12 || x == fx + 4) ? "north=true,south=true" : "east=true,west=true");
             else if (!edge && ReachFlora.hash(x, z) % 37 == 0) canvas.set(x, top + 1, z, Material.HAY_BLOCK, "axis=y");
         }
-        spot("thistle_yard", fx, terrain.column(fx, fz + 8).top() + 1, fz + 8, 0F);
+        openSpot("thistle_yard", fx + 4, fz + 9, 0F);
         spot("thistle_paddock", fx - 4, py, fz + 17, 0F);
     }
 
@@ -632,6 +646,8 @@ final class GoldenreachVale {
     private void wardenPost() {
         int x = 9, z = 752;
         int y = terrain.column(x, z).top() + 1;
+        // Grade the post's yard first, so the Warden on watch stands on level ground beside the road.
+        kit.site(new ReachBrush(canvas, x, y, z, 0), -2, 0, 4, 6, 1, Material.STONE_BRICKS);
         for (int dx = 0; dx < 5; dx++) for (int dz = 0; dz < 5; dz++) {
             boolean edge = dx == 0 || dx == 4 || dz == 0 || dz == 4;
             for (int h = 0; h < 4; h++) if (edge && !(dz == 4 && dx == 2 && h < 2)) canvas.set(x + dx, y + h, z + dz, h == 3 ? Material.SPRUCE_PLANKS : (dx + dz) % 4 == 0 ? Material.SPRUCE_LOG : Material.STONE_BRICKS,

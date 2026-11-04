@@ -79,6 +79,25 @@ class ReachBuildsTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of(target), json);
     }
 
+    /** No building may stand in the ground: inside every footprint, the three blocks above the floor are the build's own. */
+    @Test
+    void noBuildingIsSunkIntoTheTerrain() {
+        List<String> bad = new ArrayList<>();
+        for (ReachFeatures.Feature feature : FEATURES.features()) {
+            ReachCanvas.Frozen plan = FEATURES.plan(feature);
+            for (ReachCanvas.Lot lot : plan.lots) {
+                int intruding = 0;
+                for (int x = lot.minX(); x <= lot.maxX(); x++) for (int z = lot.minZ(); z <= lot.maxZ(); z++) {
+                    ReachTerrain.Column c = TERRAIN.column(x, z);
+                    if (!c.land()) continue;
+                    for (int y = lot.floor(); y < lot.floor() + 3; y++) if (plan.get(x, y, z) == null && y <= c.top()) intruding++;
+                }
+                if (intruding > 0) bad.add(feature.id() + " lot " + lot + ": " + intruding + " blocks of terrain inside");
+            }
+        }
+        assertEquals(List.of(), bad);
+    }
+
     @Test
     void theArrivalIsOnThePier() {
         ReachFeatures.Spot arrival = FEATURES.arrival();

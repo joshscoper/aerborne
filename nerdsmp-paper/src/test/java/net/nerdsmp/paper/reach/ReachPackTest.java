@@ -39,6 +39,20 @@ class ReachPackTest {
         return node instanceof Map<?, ?> map ? new HashSet<>((Set<String>) map.keySet()) : new HashSet<>();
     }
 
+    /** A rebuilt town must still give every anchored NPC somewhere to stand; a missing spot drops the NPC silently. */
+    @Test
+    void everyAnchorFindsItsSpot() {
+        Map<String, ReachFeatures.Spot> spots = FEATURES.spots();
+        List<String> missing = new java.util.ArrayList<>();
+        ReachPack.ANCHORS.forEach((choices, npc) -> {
+            boolean found = false;
+            for (String choice : choices.split("\\|")) found |= spots.containsKey(choice);
+            if (!found) missing.add(npc + " at " + choices);
+        });
+        for (int k = 0; k <= 5; k++) if (!spots.containsKey("highcrown.watch_" + k)) missing.add("watch route point " + k);
+        assertEquals(List.of(), missing);
+    }
+
     @Test
     void thePackHasTheVale() {
         assertEquals("aerborne_reach", PACK.world());

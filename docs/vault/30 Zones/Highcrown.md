@@ -32,6 +32,22 @@ Kingsgate**, with the keep on its crag to the east, always in view.
 | **Memorial Terrace** | the cliff by Highfall | Graves, a lookout over the clouds | Tamsin Wake |
 | **Kingsgate Plaza** | the north end | The **Kingsgate**: a huge twin-towered gatehouse with the Highcrown emblem over it (ref 4); the herald; signposts to the Vale | Herald, Cassia Dawn (guide), Aeron Vale, Elian Quill, Gilda Penn, Hessa Clay, Ivo Reed, Garrick Mott |
 
+## Terraces (as built, 2026-11-04)
+After the "meh, not wow" review, the city was rebuilt to climb its hill the way Shovel's cities do (see
+[[Shovel Study]] and [[Build Audit 2026-11-04]]). The ground is cut into three terraces, each six blocks above the
+last. Their edges are arcs round a point by the keep, so the city wraps its crag.
+
+| Terrace | Street y | What's on it | Roofs |
+| --- | --- | --- | --- |
+| **Crown Ward** | 120 | Kingsbridge, Kingsgate, plaza, Hall of Callings, the **Lantern Fane** (the temple, with the tallest spire in the city), steward's houses, the Fane garden overlooking the market, the citadel steps up to the keep (132) | slate |
+| **Market Ward** | 114 | **Market square** with stall rows, the **Market Hall** (an open arcade with a guild room and bell cupola) and the market cross. Guild Street to the east and Crafters' Row (smithies, weavers, alchemists, carpenters, tanners) to the west. Two ring streets with radial alleys and a terrace walk along the edge | brown, some red |
+| **Dock Quarter** | 108 | Dock square, warehouses with hoists backing onto the Market Ward's wall, a dock street, cranes, the Tethered Gull, the piers and airships | red and dark |
+
+- **Grand stairs** carry the avenue down each step. Narrower side stairs drop from the terrace walk to the docks
+  east and west.
+- **Terrace walls** are faced in weathered stone, with buttresses below and parapets and lamps along the top.
+- **A ring wall** with towers closes the east from the north wall to the lip.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].

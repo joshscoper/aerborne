@@ -37,21 +37,44 @@ public final class ReachFeatures {
     private final Map<String, ReachCanvas.Frozen> built = new ConcurrentHashMap<>();
     private final Map<String, List<Spot>> spots = new ConcurrentHashMap<>();
     private final Map<String, BlockData> states = new ConcurrentHashMap<>();
+    private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
     public ReachFeatures(ReachTerrain terrain, List<Feature> features) {
         this.terrain = terrain;
-        this.features = List.copyOf(features);
+        // What lines the roads is laid out around everything else, so it's added last and asks the rest for room.
+        List<Feature> all = new ArrayList<>(features);
+        all.addAll(ReachRoadside.features(terrain, this::builtOn));
+        this.features = List.copyOf(all);
+    }
+
+    /** True where a feature other than the roadside builds at or beside a column. */
+    private boolean builtOn(int x, int z) {
+        for (Feature feature : features) {
+            if (feature.id().startsWith("road_") || !feature.footprint().contains(x, z)) continue;
+            ReachCanvas.Frozen plan = plan(feature);
+            if (plan.occupies(x, z) || plan.occupies(x + 1, z) || plan.occupies(x - 1, z) || plan.occupies(x, z + 1) || plan.occupies(x, z - 1)) return true;
+        }
+        return false;
     }
 
     public List<Feature> features() { return features; }
 
-    /** Builds (once) and returns a feature's plan. */
+    /**
+     * Builds (once) and returns a feature's plan. Building one plan may need another's (the roadside asks the towns
+     * where they stand), so each is built under its own lock rather than inside the map's compute.
+     */
     public ReachCanvas.Frozen plan(Feature feature) {
-        return built.computeIfAbsent(feature.id(), id -> {
+        ReachCanvas.Frozen done = built.get(feature.id());
+        if (done != null) return done;
+        synchronized (locks.computeIfAbsent(feature.id(), id -> new Object())) {
+            done = built.get(feature.id());
+            if (done != null) return done;
             Built result = feature.build().apply(terrain);
-            spots.put(id, List.copyOf(result.spots()));
-            return result.canvas().freeze();
-        });
+            spots.put(feature.id(), List.copyOf(result.spots()));
+            ReachCanvas.Frozen frozen = result.canvas().freeze();
+            built.put(feature.id(), frozen);
+            return frozen;
+        }
     }
 
     /** Every named spot of every feature, prefixed with the feature's id ({@code highcrown.plaza}). */

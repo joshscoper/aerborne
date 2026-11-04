@@ -1,0 +1,59 @@
+---
+tags: [build, audit]
+---
+# Build audit, 2026-11-04
+
+The user's verdict on the second pass was "meh, not wow": too little detail, too little attention to where things
+go and how they flow, buildings built into the terrain, a spawn city that doesn't feel like a city, roads that don't
+feel like roads. Measured against [[Shovel Study]] and [[Build Style Guide]].
+
+## Faults, worst first
+1. **Buildings sunk into terrain.** Houses take a floor height and then build only their walls, so where the ground
+   is higher than the floor the hillside runs straight into the walls and doors. Unacceptable anywhere.
+   **Fix:** grade every building's site before it's built: cut the ground to the floor in a ring round the
+   footprint, with a stone retaining wall where the cut is deep; fill and build a plinth where the ground is low. A
+   test fails if terrain stands inside any building's footprint above its floor.
+2. **Roads are painted stripes.** A road is a dirt-path band blended into the slope. It has no edges, no cuttings or
+   embankments, no bridges' approaches, no milestones, signposts or lamps.
+   **Fix:** level the carriageway to sharp edges; add retaining walls in cuttings and stone faces on embankments;
+   give it ruts and verges in the country and paving near towns; add milestones, signposts at junctions, lamps
+   near towns and wayside shrines.
+3. **The city has no purpose.**
+   - Most of Highcrown is the same generic house.
+   - There are no landmarks besides the gate and the keep, and no districts you could tell apart.
+   - There is no industry, no temple, and no walls round the city.
+
+   **Fix:** a temple whose spire marks the skyline, warehouses and cranes in the dock quarter, real workshops on
+   Crafters' Row, walls and towers round the lip, and a landmark at the end of every street.
+4. **The houses are thin.** Shallow eaves, single timbers and no balconies. Roof colour doesn't change by district.
+   **Fix:** deep eaves on diagonal struts, timbers doubled at corners and floor lines with beam ends, balconies,
+   and roof colour chosen per district.
+5. **No street life.** Streets are empty between buildings.
+   **Fix:** a props library (carts, sacks, crates, signs, laundry lines, flower boxes, benches, troughs, wells) set
+   along streets in groups.
+6. **Flat city.** Shovel's cities climb in tiers. Later: terrace Highcrown from the docks up to the keep. That
+   change touches every street height, so it waits until the faults above are fixed.
+
+## Status (end of 2026-11-04)
+1. **Fixed.** `ReachKit.site` grades every building: it cuts and walls the ground above the floor and fills a
+   faced plinth below it. The test `noBuildingIsSunkIntoTheTerrain` fails if terrain stands inside any lot.
+2. **Fixed.** Roads are engineered:
+   - a level carriageway with sharp edges, and stone walls in cuttings and on embankments;
+   - ruts, a crown and gravel edges in the country, and setts near towns;
+   - `ReachRoadside` lines them with field fences and gates, hedgerows, dry-stone walls, milestones, lamps into the
+     towns, shrines, benches, cairns, marsh lights and embankment parapets.
+3. **Fixed.** Highcrown is rebuilt on three terraces with a purpose for each ward (see [[Highcrown#Terraces (as built, 2026-11-04)]]).
+   It has the Lantern Fane, the Market Hall, the Hall of Callings, Crafters' Row workshops with trade props,
+   warehouses with hoists, a ring wall with towers, and grand stairs.
+4. **Improved.** The house kit has:
+   - a second eave course on struts;
+   - doubled corner posts;
+   - top-floor balconies with doors and planters;
+   - hanging trade signs;
+   - a red-roofed style, so the wards read by roof colour.
+5. **Improved.** `ReachProps` adds carts, crates, troughs, planters, benches, woodpiles, notice boards, smith's yards,
+   market crates and lamps. The city sets them along street edges, never within two blocks of a door.
+6. **Done.** The city is terraced (this was the "later" item).
+
+Still open: laundry lines and hanging greenery, bigger clumped canopies and roots on hero trees, and the west bank
+across the gorge (planned as the Memorial Terrace by Highfall).

@@ -22,6 +22,13 @@ public final class ReachCanvas {
         }
     }
 
+    /** A building's footprint and floor, recorded so tests can prove no terrain stands inside it. */
+    public record Lot(int minX, int minZ, int maxX, int maxZ, int floor) { }
+
+    private final List<Lot> lots = new ArrayList<>();
+
+    public void lot(int minX, int minZ, int maxX, int maxZ, int floor) { lots.add(new Lot(minX, minZ, maxX, maxZ, floor)); }
+
     private final List<Spec> palette = new ArrayList<>();
     private final Map<Spec, Short> paletteIndex = new HashMap<>();
     private final Map<Long, Map<Integer, Short>> chunks = new HashMap<>();
@@ -85,6 +92,7 @@ public final class ReachCanvas {
         /** Per chunk, which of its 256 columns hold any block of this plan (air included), as four longs. */
         private final Map<Long, long[]> columns = new HashMap<>();
         final int minX, minZ, maxX, maxZ;
+        final List<Lot> lots;
 
         /** True when this plan writes anything in the column at (x, z). */
         public boolean occupies(int x, int z) {
@@ -111,6 +119,7 @@ public final class ReachCanvas {
                 columns.put(key, bits);
             });
             minX = canvas.minX; minZ = canvas.minZ; maxX = canvas.maxX; maxZ = canvas.maxZ;
+            lots = List.copyOf(canvas.lots);
         }
 
         public boolean touches(int chunkX, int chunkZ) { return positions.containsKey(key(chunkX, chunkZ)); }

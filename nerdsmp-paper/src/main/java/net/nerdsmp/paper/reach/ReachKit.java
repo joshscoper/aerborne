@@ -29,6 +29,16 @@ final class ReachKit {
             Material.STRIPPED_OAK_LOG, Material.SMOOTH_SANDSTONE, Material.STRIPPED_BIRCH_WOOD, Material.SPRUCE_STAIRS,
             Material.SPRUCE_SLAB, Material.SPRUCE_PLANKS, Material.OAK_PLANKS, Material.OAK_DOOR,
             Material.OAK_TRAPDOOR, Material.OAK_FENCE);
+        /** The Lantern Fane: all stone, deep slate roofs, deepslate pillars where a frame would be. */
+        static final Style FANE = new Style(Material.STONE_BRICKS, Material.CHISELED_STONE_BRICKS, Material.DEEPSLATE,
+            Material.DEEPSLATE, Material.STONE_BRICKS, Material.CRACKED_STONE_BRICKS, Material.DEEPSLATE_TILE_STAIRS,
+            Material.DEEPSLATE_TILE_SLAB, Material.DEEPSLATE_TILES, Material.POLISHED_ANDESITE, Material.DARK_OAK_DOOR,
+            Material.DARK_OAK_TRAPDOOR, Material.DARK_OAK_FENCE);
+        /** Warm red roofs for the Dock Quarter and the odd house elsewhere, so districts read by colour from above. */
+        static final Style EMBER = new Style(Material.STONE_BRICKS, Material.ANDESITE, Material.DARK_OAK_LOG,
+            Material.STRIPPED_DARK_OAK_LOG, Material.CALCITE, Material.WHITE_CONCRETE_POWDER, Material.MANGROVE_STAIRS,
+            Material.MANGROVE_SLAB, Material.MANGROVE_PLANKS, Material.SPRUCE_PLANKS, Material.DARK_OAK_DOOR,
+            Material.DARK_OAK_TRAPDOOR, Material.DARK_OAK_FENCE);
         static final Style VALE_SPRUCE = new Style(Material.COBBLESTONE, Material.MOSSY_COBBLESTONE, Material.SPRUCE_LOG,
             Material.STRIPPED_SPRUCE_LOG, Material.SMOOTH_SANDSTONE, Material.STRIPPED_BIRCH_WOOD, Material.DARK_OAK_STAIRS,
             Material.DARK_OAK_SLAB, Material.DARK_OAK_PLANKS, Material.SPRUCE_PLANKS, Material.SPRUCE_DOOR,
@@ -55,6 +65,81 @@ final class ReachKit {
         return stone;
     }
 
+    // ------------------------------------------------------------------ sites
+
+    /**
+     * Grades a building's site before it's built, in the brush's frame: local x {@code lx0..lx1}, z {@code lz0..lz1}
+     * is the footprint, the brush's y is the floor. Ground above the floor is cut back in a ring {@code margin} wide,
+     * with a stone retaining wall at the ring's edge where the cut is deeper than a step; ground below the floor is
+     * filled to a plinth and terrace faced in stone. Nothing already placed is touched, so neighbours survive.
+     */
+    void site(ReachBrush b, int lx0, int lz0, int lx1, int lz1, int margin, Material face) {
+        int ax = b.wx(lx0, lz0), az = b.wz(lx0, lz0), bx = b.wx(lx1, lz1), bz = b.wz(lx1, lz1);
+        int x0 = Math.min(ax, bx), x1 = Math.max(ax, bx), z0 = Math.min(az, bz), z1 = Math.max(az, bz);
+        int floor = b.oy;
+        ReachCanvas c = b.canvas;
+        c.lot(x0, z0, x1, z1, floor);
+        for (int x = x0 - margin; x <= x1 + margin; x++) for (int z = z0 - margin; z <= z1 + margin; z++) {
+            ReachTerrain.Column col = terrain.column(x, z);
+            int ground = col.land() ? col.top() : floor - 12;
+            int ring = Math.max(Math.max(x0 - x, x - x1), Math.max(z0 - z, z - z1));
+            boolean inside = ring <= 0, edge = ring == margin;
+            if (ground >= floor) {
+                // Cut: clear to the floor; the outer ring holds the bank back with a wall.
+                if (edge && ground >= floor + 1) {
+                    for (int y = floor; y <= ground; y++) if (!c.has(x, y, z)) c.set(x, y, z, weathered(b, 0, y - floor, 0, face));
+                    if (!c.has(x, ground + 1, z)) c.set(x, ground + 1, z, face == Material.COBBLESTONE ? Material.MOSSY_COBBLESTONE_WALL : Material.STONE_BRICK_WALL, "up=true");
+                } else {
+                    for (int y = floor; y <= ground + 1; y++) if (!c.has(x, y, z)) c.set(x, y, z, Material.AIR);
+                    if (!inside && !c.has(x, floor - 1, z)) c.set(x, floor - 1, z, terrain.grain(x, z, 0.3) > 0.4 ? Material.COARSE_DIRT : Material.GRASS_BLOCK);
+                }
+            } else if (ground < floor - 1) {
+                // Fill: a plinth under the building and a terrace round it, faced in stone at its edge.
+                for (int y = ground + 1; y < floor; y++) if (!c.has(x, y, z)) {
+                    boolean visible = edge || inside && ring == 0;
+                    c.set(x, y, z, visible ? weathered(b, 0, y - ground, 0, face) : Material.DIRT);
+                }
+                if (!inside && !edge && !c.has(x, floor - 1, z)) c.set(x, floor - 1, z, Material.GRASS_BLOCK);
+                if (edge && !c.has(x, floor, z) && (x + z) % 3 != 0) c.set(x, floor, z, face == Material.COBBLESTONE ? Material.COBBLESTONE_WALL : Material.STONE_BRICK_WALL, "up=true");
+            }
+        }
+    }
+
+    /**
+     * The way to a door on local z = 0: a three-wide notch cut through whatever the site left in front of it, and
+     * steps up or down to the ground beyond, so no door ever faces a bank or a wall.
+     */
+    void approach(ReachBrush b, int door, int reach, Style s) {
+        int floor = b.oy;
+        for (int k = 1; k <= reach; k++) for (int side = -1; side <= 1; side++) {
+            int x = b.wx(door + side, -k), z = b.wz(door + side, -k);
+            for (int y = floor; y < floor + 3; y++) b.canvas.set(x, y, z, Material.AIR);
+            b.canvas.set(x, floor - 1, z, side == 0 ? Material.PACKED_MUD : Material.COARSE_DIRT);
+        }
+        // Beyond the notch, follow the ground with steps for up to four blocks.
+        int level = floor - 1;
+        for (int k = reach + 1; k <= reach + 6; k++) {
+            int x = b.wx(door, -k), z = b.wz(door, -k);
+            ReachTerrain.Column col = terrain.column(x, z);
+            if (!col.land()) break;
+            int ground = col.top();
+            if (ground == level) break;
+            int next = ground > level ? level + 1 : level - 1;
+            for (int side = -1; side <= 1; side++) {
+                int sx = b.wx(door + side, -k), sz = b.wz(door + side, -k);
+                for (int y = next + 1; y < next + 4; y++) b.canvas.set(sx, y, sz, Material.AIR);
+                if (ground > level) b.canvas.set(sx, next, sz, s.base() == Material.COBBLESTONE ? Material.COBBLESTONE_STAIRS : Material.STONE_BRICK_STAIRS,
+                    "facing=" + ReachBrush.turnFace("south", b.turn) + ",half=bottom");
+                else {
+                    b.canvas.set(sx, next + 1, sz, s.base() == Material.COBBLESTONE ? Material.COBBLESTONE_STAIRS : Material.STONE_BRICK_STAIRS,
+                        "facing=" + ReachBrush.turnFace("north", b.turn) + ",half=bottom");
+                    for (int y = ground + 1; y <= next; y++) b.canvas.set(sx, y, sz, Material.STONE_BRICKS);
+                }
+            }
+            level = next;
+        }
+    }
+
     // ------------------------------------------------------------------ houses
 
     /**
@@ -64,6 +149,8 @@ final class ReachKit {
      */
     void house(ReachBrush b, int w, int d, int floors, Style s, boolean jetty, boolean gableFront, long seed) {
         int ground = 4, storey = 4;
+        site(b, -1, jetty ? -2 : -1, w, d, 2, s.base());
+        approach(b, w / 2, 3, s);
         // Footing: a stone lip one wider than the walls, carried down to the terrain.
         for (int x = -1; x <= w; x++) for (int z = -1; z <= d; z++) {
             b.footing(terrain, x, -2, z, s.base());
@@ -113,12 +200,18 @@ final class ReachKit {
             // Windows between posts with open shutters and a flower box on the front.
             for (int x = 1; x < w - 1; x++) if (x % 3 != 0) upperWindow(b, x, fy + 1, fz, s, (seed >> x & 3) == 0);
             b.set(w / 2, fy + 2, fz + 1, Material.LANTERN, "hanging=true");
+            // Corner posts doubled on the street face, so the frame reads as heavy timber, not a drawn line.
+            for (int y = fy + 1; y < fy + storey; y++) {
+                setIfEmpty(b, -1, y, fz, s.post(), "axis=y");
+                setIfEmpty(b, w, y, fz, s.post(), "axis=y");
+            }
+            if (f == floors - 1 && floors >= 1 && (seed >> 13 & 3) != 0 && w >= 7) balcony(b, door, fy, fz, s);
         }
         int top = y0 + floors * storey;
         beamRing(b, w, d, top, front, s);
-        if (gableFront) roof(b, -1, w, front - 1, d, top + 1, s, true);
+        if (gableFront) roof(b, -1, w, front - 1, d, top + 1, s, true, true);
         // Eaves to the street: the same roof in a frame turned a quarter, so its ridge runs along the front.
-        else roof(b.at(w - 1, 0, 0, 1), front - 1, d, -1, w, top + 1, s, true);
+        else roof(b.at(w - 1, 0, 0, 1), front - 1, d, -1, w, top + 1, s, true, true);
         int span = gableFront ? w + 2 : d - front + 2;
         chimney(b, gableFront ? ((seed & 1) == 0 ? 1 : w - 2) : 1, d - 2, top + span / 2 + 2, s);
         // A dormer breaks a long roof facing the street.
@@ -127,6 +220,40 @@ final class ReachKit {
         b.set(door + 2, 0, -1, (seed & 4) == 0 ? Material.BARREL : Material.COMPOSTER, (seed & 4) == 0 ? "facing=up" : "level=4");
         if ((seed & 8) == 0) b.set(door - 2, 0, -1, s.roofStair(), "facing=north,half=bottom");
         if ((seed & 16) == 0) b.set(door + 3, 0, -1, Material.POTTED_AZURE_BLUET);
+    }
+
+    /** Sets a block only where nothing is built yet, so additions never cut into a neighbour. */
+    static void setIfEmpty(ReachBrush b, int x, int y, int z, Material m, String props) {
+        if (!b.has(x, y, z)) b.set(x, y, z, m, props);
+    }
+
+    /**
+     * A balcony on the top storey: a plank floor two deep on brackets, a railing with planters at its corners, and
+     * a door out to it in place of the middle window.
+     */
+    private void balcony(ReachBrush b, int door, int fy, int fz, Style s) {
+        for (int x = door - 1; x <= door + 1; x++) for (int z = fz - 2; z <= fz - 1; z++) {
+            b.set(x, fy, z, s.plank());
+            for (int y = fy + 1; y <= fy + 2; y++) b.set(x, y, z, Material.AIR);
+        }
+        for (int x = door - 1; x <= door + 1; x++) b.set(x, fy + 1, fz - 3, s.fence(), "east=true,west=true");
+        b.set(door - 2, fy + 1, fz - 3, s.fence(), "east=true,south=true");
+        b.set(door + 2, fy + 1, fz - 3, s.fence(), "west=true,south=true");
+        for (int z = fz - 2; z <= fz - 1; z++) {
+            b.set(door - 2, fy + 1, z, s.fence(), "north=true,south=" + (z < fz - 1));
+            b.set(door + 2, fy + 1, z, s.fence(), "north=true,south=" + (z < fz - 1));
+        }
+        for (int x : new int[] {door - 2, door + 2}) b.set(x, fy + 2, fz - 3, Material.POTTED_RED_TULIP);
+        for (int x : new int[] {door - 1, door + 1}) b.set(x, fy - 1, fz - 1, s.roofStair(), "facing=south,half=top");
+        b.set(door, fy - 1, fz - 2, s.roofStair(), "facing=south,half=top");
+        b.set(door, fy + 1, fz, s.door(), "facing=north,half=lower,hinge=left,open=false");
+        b.set(door, fy + 2, fz, s.door(), "facing=north,half=upper,hinge=left,open=false");
+        b.set(door - 1, fy + 3, fz - 1, Material.LANTERN, "hanging=true");
+    }
+
+    /** A hanging trade sign on its iron bracket beside a door on local z = 0, at height {@code y}. */
+    static void shopSign(ReachBrush b, int x, int y, Material sign) {
+        b.set(x, y, -1, sign, "facing=east");
     }
 
     /** A small gabled dormer with a window, sitting on the roof's front slope. */
@@ -189,6 +316,24 @@ final class ReachKit {
      * starting at {@code y}. The gable ends are closed with plaster and timber.
      */
     void roof(ReachBrush b, int x0, int x1, int z0, int z1, int y, Style s, boolean closeGables) {
+        roof(b, x0, x1, z0, z1, y, s, closeGables, false);
+    }
+
+    /**
+     * As above; {@code deep} adds one more course below the eaves on both sides, carried on struts every other block,
+     * so the roof throws a real shadow down the wall (the Shovel look). The extra course never cuts into a neighbour.
+     */
+    void roof(ReachBrush b, int x0, int x1, int z0, int z1, int y, Style s, boolean closeGables, boolean deep) {
+        if (deep) {
+            for (int z = z0 - 1; z <= z1 + 1; z++) {
+                setIfEmpty(b, x0 - 1, y - 1, z, s.roofStair(), "facing=east,half=bottom");
+                setIfEmpty(b, x1 + 1, y - 1, z, s.roofStair(), "facing=west,half=bottom");
+                if (Math.floorMod(z - z0, 2) == 0 && z >= z0 && z <= z1) {
+                    setIfEmpty(b, x0, y - 2, z, s.roofStair(), "facing=east,half=top");
+                    setIfEmpty(b, x1, y - 2, z, s.roofStair(), "facing=west,half=top");
+                }
+            }
+        }
         int span = x1 - x0 + 1, half = span / 2;
         for (int i = 0; i < half; i++) {
             int ly = y + i;
@@ -240,6 +385,8 @@ final class ReachKit {
      * spire. {@code size} is odd (7 or 9).
      */
     void tower(ReachBrush b, int size, int height, Style s, long seed) {
+        site(b, -1, -1, size, size, 2, s.base());
+        approach(b, size / 2, 3, s);
         int baseTop = height / 3;
         int r = size / 2;
         for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) b.footing(terrain, x, -1, z, s.base());
@@ -292,6 +439,7 @@ final class ReachKit {
      * steep spire. Used for gatehouses and keeps, where the tall plaster towers would look too light.
      */
     void keepTower(ReachBrush b, int size, int height, Style s, long seed) {
+        site(b, -1, -1, size, size, 1, s.base());
         int r = size / 2, stoneTop = height * 2 / 3;
         for (int x = -1; x <= size; x++) for (int z = -1; z <= size; z++) b.footing(terrain, x, -1, z, s.base());
         for (int y = -1; y < height; y++) for (int x = 0; x < size; x++) for (int z = 0; z < size; z++) {

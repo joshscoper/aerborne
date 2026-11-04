@@ -72,6 +72,11 @@ public final class ReachGenerator extends ChunkGenerator {
             if (top == Material.FARMLAND) data.setBlock(lx, c.top(), lz, farmland);
             else data.setBlock(lx, c.top(), lz, top);
             if (c.wet()) for (int y = c.top() + 1; y <= c.water(); y++) data.setBlock(lx, y, lz, Material.WATER);
+            // A cutting's wall stands on the road's level; an embankment shows a stone face down to the ground.
+            if (c.cut() > 1.5 && c.roadLevel() != Integer.MIN_VALUE)
+                for (int y = c.roadLevel() + 1; y < c.top(); y++) data.setBlock(lx, y, lz, surface.retaining(x, y, z, y - c.roadLevel() - 1));
+            if (c.fill() > 1.5)
+                for (int y = c.top() - (int) Math.ceil(c.fill()); y < c.top(); y++) data.setBlock(lx, y, lz, surface.retaining(x, y, z, y - (c.top() - (int) Math.ceil(c.fill()))));
         }
         features.place(chunkX, chunkZ, data);
     }
