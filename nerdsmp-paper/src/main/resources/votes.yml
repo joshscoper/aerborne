@@ -24,6 +24,20 @@ rewards:
   repeat-hours: 6
   # At most this many paid votes per player in a day, whatever the sites send.
   max-paid-per-day: 8
+  # Each different site voted on in the same day pays this much more than the one before:
+  # with the defaults the first site pays 100, the second 125, the third 150.
+  site-bonus-marks: 25
+  # Voting on every site in the menu in one day pays this once that day (needs at least two sites).
+  all-sites-bonus-marks: 250
+
+# A vote goal for the whole server each day. Every paid vote from anyone counts; it starts again at midnight.
+community:
+  # Votes needed in a day. 0 turns the goal off.
+  daily-goal: 25
+  # When it's reached: everyone who voted that day gets these Marks, and so does anyone who votes later that day.
+  voter-marks: 150
+  # And everyone online gets an hour of +50% XP, like an XP booster.
+  booster: true
 
 # The /vote menu. The title can use colours, like <gold> or <gradient:#C59AFA:#8CE8ED>.
 menu:

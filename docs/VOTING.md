@@ -56,10 +56,28 @@ All in `votes.yml` under `rewards`:
 
 - `marks-per-vote` (100), plus `streak-bonus-marks` (10) for each day in a row after the first, up to
   `streak-cap-days` (7). A week's streak pays 160 a vote.
+- Each different site voted on the same day pays `site-bonus-marks` (25) more than the one before: 100, 125, 150
+  and so on. A site voted on again later that day keeps its first place.
+- Voting on every site in the menu in one day adds `all-sites-bonus-marks` (250) to the vote that completes it,
+  once a day. It needs at least two sites, and each site's `service` has to be right, or it can't tell.
 - Every `booster-every` (20) votes earns an XP booster, a once-only grant like the raid's.
 - `repeat-hours` (6): the same site sending the same player again inside this window pays nothing. Sites allow
   one vote a day, so this only catches retries and replays.
 - `max-paid-per-day` (8): a ceiling per player, whatever the sites send.
+
+## Daily community goal
+
+Every paid vote from anyone counts toward `community.daily-goal` (25), which starts again at midnight (server
+time). Everyone hears when it's a quarter, half and three quarters there, and each vote's announcement shows the
+count. When it's reached:
+
+- everyone who voted that day gets `community.voter-marks` (150), offline or not;
+- anyone who votes later that day gets the same, once;
+- if `community.booster` is on, everyone online gets an hour of +50% XP, just like an XP booster (it adds an hour
+  if one is already running).
+
+The menu's top tile shows the day's progress. `daily-goal: 0` turns the goal off. Progress is kept in
+`vote-tally.yml`, so a restart doesn't lose it.
 
 A vote for a name that has never played on the server pays nothing and is logged. Offline players are paid
 straight away and told on their next join. Votes are never sold: see [MONETIZATION_COMPLIANCE.md](MONETIZATION_COMPLIANCE.md).

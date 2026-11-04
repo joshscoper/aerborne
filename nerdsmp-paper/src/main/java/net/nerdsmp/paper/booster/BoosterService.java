@@ -122,7 +122,19 @@ public final class BoosterService implements Listener, AutoCloseable {
             .map(EntitlementService.Entitlement::transactionId).toList());
     }
 
+    /**
+     * Starts an hour of boosted XP that nobody spent a booster on, such as the vote goal's reward, or adds an hour to
+     * the one running. {@code thanksTo} is shown on the boss bar; {@code announcement} opens the chat line.
+     */
+    public void gift(String thanksTo, String announcement) {
+        activate(thanksTo, announcement);
+    }
+
     private void activate(String name) {
+        activate(name, "<gold><bold>✦</bold> " + Chat.escape(name) + " used an XP booster!</gold>");
+    }
+
+    private void activate(String name, String announcement) {
         long now = System.currentTimeMillis();
         boolean running = until > now;
         until = Math.max(until, now) + LENGTH.toMillis();
@@ -130,7 +142,7 @@ public final class BoosterService implements Listener, AutoCloseable {
         if (!thanks.contains(name)) thanks.add(name);
         while (thanks.size() > 4) thanks.removeFirst();
         save();
-        String line = "<gold><bold>✦</bold> " + Chat.escape(name) + " used an XP booster!</gold> <gray>Everyone online gets <white>+50% XP</white> "
+        String line = announcement + " <gray>Everyone online gets <white>+50% XP</white> "
             + (running ? "for another hour: <white>" + Chat.duration(Duration.ofMillis(until - now)) + "</white> left." : "for the next hour.") + "</gray>";
         for (Player player : Bukkit.getOnlinePlayers()) Chat.send(player, line);
         tick();

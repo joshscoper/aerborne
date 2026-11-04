@@ -33,7 +33,8 @@ final class VoteMenu implements Listener {
     /** Where sites can go: the three middle rows, inside the frame. */
     static final int[] SITE_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
     private static final int SIZE = 45;
-    private static final int REWARDS = 4;
+    private static final int GOAL = 4;
+    private static final int REWARDS = 38;
     private static final int RECORD = 39;
     private static final int LEADERS = 41;
 
@@ -76,11 +77,16 @@ final class VoteMenu implements Listener {
 
         List<String> rewards = new ArrayList<>(List.of("<gray>Every vote pays</gray> " + Chat.marksTag(rules.marksPerVote())));
         if (rules.streakBonus() > 0) rewards.add("<gray>+" + Chat.marks(rules.streakBonus()) + " for each day in a row, up to " + rules.streakCap() + " days</gray>");
+        if (rules.siteBonus() > 0) rewards.add("<gray>+" + Chat.marks(rules.siteBonus()) + " more for each extra site the same day</gray>");
+        if (rules.allSitesBonus() > 0 && settings.sites().size() >= 2) {
+            rewards.add("<gray>Vote on all " + settings.sites().size() + " sites in a day:</gray> " + Chat.marksTag(rules.allSitesBonus()) + " <gray>bonus</gray>");
+        }
         if (rules.boosterEvery() > 0) rewards.add("<gray>Every " + rules.boosterEvery() + " votes earn an</gray> <gold>XP booster</gold>");
         rewards.add("");
         rewards.add("<gray>Each site takes one vote a day.</gray>");
         rewards.add("<gray>Vote on all of them, every day!</gray>");
         board.set(REWARDS, MenuKit.item(Material.EMERALD, "<green><bold>Vote rewards</bold></green>", rewards), who -> { });
+        if (settings.goal().daily() > 0) board.set(GOAL, goalTile(settings.goal(), votes.goalToday()), who -> { });
 
         if (settings.sites().isEmpty()) {
             board.set(22, MenuKit.item(Material.BARRIER, "<gray>No vote sites yet</gray>",
@@ -126,6 +132,32 @@ final class VoteMenu implements Listener {
             who -> { who.closeInventory(); votes.top(who); });
         board.set(MenuKit.closeSlot(SIZE), MenuKit.close(), Player::closeInventory);
         player.openInventory(board.inventory);
+    }
+
+    /** Today's community goal, with a bar that fills as the server votes. */
+    static ItemStack goalTile(VoteService.Goal goal, int[] today) {
+        int filled = Math.min(20, today[0] * 20 / Math.max(1, today[1]));
+        boolean reached = today[2] == 1;
+        List<String> lore = new ArrayList<>();
+        lore.add("<green>" + "|".repeat(filled) + "</green><dark_gray>" + "|".repeat(20 - filled) + "</dark_gray> <white>" + today[0] + "/" + today[1] + "</white>");
+        lore.add("");
+        if (reached) {
+            lore.add("<green>Reached! Everyone who voted today gets</green>");
+            lore.add(Chat.marksTag(goal.voterMarks()) + "<green>, and so does anyone who votes</green>");
+            lore.add("<green>before midnight.</green>");
+        } else {
+            lore.add("<gray>Votes from everyone today count.</gray>");
+            lore.add("<gray>Reach it and everyone who voted gets</gray> " + Chat.marksTag(goal.voterMarks()));
+            if (goal.booster()) lore.add("<gray>and everyone online an hour of</gray> <white>+50% XP</white><gray>.</gray>");
+            lore.add("<dark_gray>Starts again at midnight.</dark_gray>");
+        }
+        ItemStack tile = MenuKit.item(Material.NETHER_STAR, reached ? "<green><bold>Today's vote goal: reached!</bold></green>" : "<aqua><bold>Today's vote goal</bold></aqua>", lore);
+        if (reached) {
+            ItemMeta meta = tile.getItemMeta();
+            meta.setEnchantmentGlintOverride(true);
+            tile.setItemMeta(meta);
+        }
+        return tile;
     }
 
     private static Material icon(String key) {

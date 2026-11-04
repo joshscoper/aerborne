@@ -46,7 +46,15 @@ public final class VoteService implements Listener, AutoCloseable {
     /** A vote site: its menu tile, vote page and the name it sends with each vote. {@code slot} is -1 to place it automatically. */
     record Site(String name, String url, String service, String icon, int slot, String description) {}
 
-    record Settings(boolean enabled, String host, int port, VoteLedger.Rules rules, String title, List<Site> sites) {
+    /** The server's daily vote goal. {@code daily} 0 turns it off. */
+    record Goal(int daily, boolean booster, long voterMarks) {}
+
+    record Settings(boolean enabled, String host, int port, VoteLedger.Rules rules, String title, List<Site> sites, Goal goal) {
+        /** The sites in the menu, by the key their votes are recorded under. */
+        java.util.Set<String> siteKeys() {
+            return sites.stream().map(site -> VoteLedger.key(site.service())).collect(java.util.stream.Collectors.toUnmodifiableSet());
+        }
+
         static Settings read(ConfigurationSection yaml) {
             int port = yaml.getInt("listener.port", 9027);
             if (port < 1 || port > 65535) throw new IllegalArgumentException("votes.yml listener.port must be 1-65535");
@@ -56,7 +64,15 @@ public final class VoteService implements Listener, AutoCloseable {
             int every = yaml.getInt("rewards.booster-every", 20);
             int repeat = yaml.getInt("rewards.repeat-hours", 6);
             int perDay = yaml.getInt("rewards.max-paid-per-day", 8);
-            if (marks < 0 || marks > 10_000 || bonus < 0 || bonus > 1_000) throw new IllegalArgumentException("votes.yml Marks rewards must be 0-10000 (bonus 0-1000)");
+            long siteBonus = yaml.getLong("rewards.site-bonus-marks", 25);
+            long allSites = yaml.getLong("rewards.all-sites-bonus-marks", 250);
+            int daily = yaml.getInt("community.daily-goal", 25);
+            long voterMarks = yaml.getLong("community.voter-marks", 150);
+            if (marks < 0 || marks > 10_000 || bonus < 0 || bonus > 1_000 || siteBonus < 0 || siteBonus > 1_000 || allSites < 0 || allSites > 10_000
+                || voterMarks < 0 || voterMarks > 10_000) {
+                throw new IllegalArgumentException("votes.yml Marks rewards must be 0-10000 (bonuses per day or site 0-1000)");
+            }
+            if (daily < 0 || daily > 100_000) throw new IllegalArgumentException("votes.yml community.daily-goal must be 0-100000");
             if (cap < 1 || cap > 365 || every < 0 || repeat < 1 || repeat > 48 || perDay < 1 || perDay > 50) {
                 throw new IllegalArgumentException("votes.yml has a reward setting out of range");
             }
@@ -81,8 +97,9 @@ public final class VoteService implements Listener, AutoCloseable {
                 throw new IllegalArgumentException("votes.yml lists more sites than the menu has room for (" + VoteMenu.SITE_SLOTS.length + ")");
             }
             return new Settings(yaml.getBoolean("listener.enabled", true), yaml.getString("listener.host", "0.0.0.0"), port,
-                new VoteLedger.Rules(marks, bonus, cap, every, Duration.ofHours(repeat), perDay),
-                yaml.getString("menu.title", "<gold><bold>Vote for Aerborne</bold></gold>"), List.copyOf(sites));
+                new VoteLedger.Rules(marks, bonus, cap, every, Duration.ofHours(repeat), perDay, siteBonus, allSites),
+                yaml.getString("menu.title", "<gold><bold>Vote for Aerborne</bold></gold>"), List.copyOf(sites),
+                new Goal(daily, yaml.getBoolean("community.booster", true), voterMarks));
         }
 
         private static String text(Map<?, ?> raw, String key, String fallback) {
@@ -102,6 +119,7 @@ public final class VoteService implements Listener, AutoCloseable {
     private final Deque<Received> recent = new ArrayDeque<>();
     private String month;
     private final Map<String, Integer> tally = new LinkedHashMap<>();
+    private final VoteGoal goal = new VoteGoal();
     private VotifierListener listener;
     private String problem;
 
@@ -116,6 +134,7 @@ public final class VoteService implements Listener, AutoCloseable {
         month = saved.getString("month", YearMonth.now(zone).toString());
         ConfigurationSection counts = saved.getConfigurationSection("counts");
         if (counts != null) for (String name : counts.getKeys(false)) tally.put(name, counts.getInt(name));
+        goal.load(saved.getConfigurationSection("community"));
     }
 
     /** Opens the Votifier port. A problem here is logged and shown in {@code /nerdadmin vote}; the rest of the server carries on. */
@@ -163,7 +182,8 @@ public final class VoteService implements Listener, AutoCloseable {
     private void pay(AccountId account, String name, String site, String service) {
         long now = System.currentTimeMillis();
         VoteLedger.Result[] result = new VoteLedger.Result[1];
-        plugin.playerData().update(account, data -> result[0] = VoteLedger.record(data, service, now, zone, settings.rules()));
+        java.util.Set<String> menuSites = settings.siteKeys();
+        plugin.playerData().update(account, data -> result[0] = VoteLedger.record(data, service, now, zone, settings.rules(), menuSites));
         VoteLedger.Result vote = result[0];
         if (vote.status() == VoteLedger.Status.REPEAT) {
             note(site, name, "repeat within " + settings.rules().repeat().toHours() + "h; nothing paid");
@@ -176,7 +196,12 @@ public final class VoteService implements Listener, AutoCloseable {
             return;
         }
         count(name);
+        java.time.LocalDate today = java.time.LocalDate.now(zone);
+        VoteGoal.Step step = goal.add(account.value().toString(), today, settings.goal().daily());
+        saveTally();
         note(site, name, "paid " + Chat.marks(vote.marks()) + (vote.booster() ? " and an XP booster" : ""));
+        List<String> votedToday = plugin.playerData().read(account, data -> VoteLedger.sitesToday(data, now, zone));
+        long left = menuSites.stream().filter(key -> !votedToday.contains(key)).count();
         var reason = new EconomyService.TransactionReason("vote", "Vote on " + site);
         plugin.economy().credit(account, vote.marks(), reason, "vote:" + account.value() + ":" + VoteLedger.key(service) + ":" + now)
             .thenAccept(paid -> Bukkit.getScheduler().runTask(plugin, () -> {
@@ -186,8 +211,18 @@ public final class VoteService implements Listener, AutoCloseable {
                 }
                 Player player = Bukkit.getPlayerExact(name);
                 if (player != null) {
+                    List<String> why = new ArrayList<>();
+                    if (vote.site() > 1) why.add(ordinal(vote.site()) + " site today");
+                    if (vote.streak() > 1) why.add(vote.streak() + "-day streak");
                     Chat.success(player, "Thanks for voting on <white>" + Chat.escape(site) + "</white>! " + Chat.marksTag(vote.marks())
-                        + (vote.streak() > 1 ? " <gray>(" + vote.streak() + "-day streak)</gray>" : ""));
+                        + (why.isEmpty() ? "" : " <gray>(" + String.join(", ", why) + ")</gray>"));
+                    if (vote.allSites()) {
+                        Chat.success(player, "That's every site today, so it includes a bonus of " + Chat.marksTag(settings.rules().allSitesBonus()) + ".");
+                    } else if (left > 0 && settings.rules().siteBonus() > 0) {
+                        Chat.info(player, "Your next site today pays " + Chat.marks(settings.rules().siteBonus()) + " more"
+                            + (settings.rules().allSitesBonus() > 0 ? ", and all " + menuSites.size() + " pay a bonus of " + Chat.marks(settings.rules().allSitesBonus()) : "")
+                            + ": " + Chat.command("/vote"));
+                    }
                 } else {
                     plugin.playerData().update(account, data -> {
                         data.set("votes.unseen-votes", data.getInt("votes.unseen-votes") + 1);
@@ -202,9 +237,57 @@ public final class VoteService implements Listener, AutoCloseable {
                     + Chat.command("/booster use") + ".");
             }));
         }
+        String progress = step.goal() > 0 && !step.reached() ? " <gray>(" + step.votes() + "/" + step.goal() + " toward today's goal)</gray>" : "";
         String line = "<gold>✦</gold> <white>" + Chat.escape(name) + "</white> <gray>voted for the server on</gray> <white>" + Chat.escape(site)
-            + "</white><gray>. Vote too and get Marks:</gray> " + Chat.command("/vote");
+            + "</white>" + progress + "<gray>. Vote too:</gray> " + Chat.command("/vote");
         for (Player player : Bukkit.getOnlinePlayers()) if (!player.getName().equalsIgnoreCase(name)) Chat.send(player, line);
+        if (step.reachedNow()) reachGoal(today);
+        else if (step.reached()) payGoal(account, today, true);
+        else if (step.quarter() > 0) {
+            String quarter = "<aqua><bold>✦</bold> Today's vote goal is " + step.quarter() + "% there:</aqua> <white>" + step.votes() + "/" + step.goal()
+                + "</white> <gray>votes. Reach it and everyone who voted gets</gray> " + Chat.marksTag(settings.goal().voterMarks())
+                + (settings.goal().booster() ? "<gray>, and everyone online an hour of +50% XP</gray>" : "") + "<gray>.</gray> " + Chat.command("/vote");
+            for (Player player : Bukkit.getOnlinePlayers()) Chat.send(player, quarter);
+        }
+    }
+
+    /** The server just reached today's goal: pay everyone who voted today and, if set, boost everyone online. */
+    private void reachGoal(java.time.LocalDate today) {
+        Goal rules = settings.goal();
+        String line = "<gold><bold>✦ Today's vote goal is reached!</bold></gold> <gray>" + rules.daily() + " votes. Everyone who voted gets</gray> "
+            + Chat.marksTag(rules.voterMarks()) + "<gray>, and so does anyone else who votes before midnight:</gray> " + Chat.command("/vote");
+        for (Player player : Bukkit.getOnlinePlayers()) Chat.send(player, line);
+        plugin.getLogger().info("Today's vote goal of " + rules.daily() + " was reached.");
+        if (rules.booster()) plugin.boosters().gift("today's voters", "<gold><bold>✦</bold> Today's voters filled the vote goal!</gold>");
+        for (String voter : goal.voters(today)) payGoal(new AccountId(java.util.UUID.fromString(voter)), today, false);
+    }
+
+    /** Pays one voter the goal's reward, once a day: the transaction key makes a second payment a no-op. */
+    private void payGoal(AccountId account, java.time.LocalDate today, boolean late) {
+        long marks = settings.goal().voterMarks();
+        if (marks <= 0) return;
+        var reason = new EconomyService.TransactionReason("vote.goal", "Daily vote goal " + today);
+        plugin.economy().credit(account, marks, reason, "vote-goal:" + today + ":" + account.value())
+            .thenAccept(paid -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (paid.status() != EconomyService.TransactionResult.Status.APPLIED) return;
+                Player player = online(account);
+                if (player != null) Chat.success(player, (late ? "Today's vote goal is already reached, so your vote also pays " : "Your share of today's vote goal: ")
+                    + Chat.marksTag(marks) + ".");
+                else plugin.playerData().update(account, data -> data.set("votes.unseen-goal-marks", data.getLong("votes.unseen-goal-marks") + marks));
+            }));
+    }
+
+    private Player online(AccountId account) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent()) return player;
+        }
+        return null;
+    }
+
+    private static String ordinal(int number) {
+        int tens = number % 100;
+        String suffix = tens >= 11 && tens <= 13 ? "th" : switch (number % 10) { case 1 -> "st"; case 2 -> "nd"; case 3 -> "rd"; default -> "th"; };
+        return number + suffix;
     }
 
     private void count(String name) {
@@ -214,9 +297,13 @@ public final class VoteService implements Listener, AutoCloseable {
             tally.clear();
         }
         tally.merge(name, 1, Integer::sum);
+    }
+
+    private void saveTally() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("month", month);
         tally.forEach((player, votes) -> yaml.set("counts." + player, votes));
+        goal.save(yaml.createSection("community"));
         try { AtomicYamlFiles.save(yaml, tallyFile); }
         catch (IOException failure) { plugin.getLogger().log(Level.WARNING, "Could not save vote-tally.yml", failure); }
     }
@@ -246,6 +333,17 @@ public final class VoteService implements Listener, AutoCloseable {
         VoteLedger.Rules rules = settings.rules();
         Chat.send(sender, "<gold><bold>Vote for Aerborne</bold></gold> <gray>· each vote pays</gray> " + Chat.marksTag(rules.marksPerVote())
             + (rules.streakBonus() > 0 ? "<gray>, and " + Chat.marks(rules.streakBonus()) + " more for each day in a row</gray>" : ""));
+        if (rules.siteBonus() > 0 || rules.allSitesBonus() > 0 && settings.sites().size() >= 2) {
+            Chat.send(sender, "<gray>Each more site the same day pays " + Chat.marks(rules.siteBonus()) + " more"
+                + (rules.allSitesBonus() > 0 && settings.sites().size() >= 2 ? ", and voting on all " + settings.sites().size() + " pays a bonus of "
+                + Chat.marks(rules.allSitesBonus()) : "") + ".</gray>");
+        }
+        if (settings.goal().daily() > 0) {
+            int[] today = goalToday();
+            Chat.send(sender, "<aqua>Today's vote goal:</aqua> <white>" + today[0] + "/" + today[1] + "</white> "
+                + (today[2] == 1 ? "<green>reached! Everyone who votes today gets</green> " : "<gray>· reach it and everyone who voted gets</gray> ")
+                + Chat.marksTag(settings.goal().voterMarks()));
+        }
         Player player = sender instanceof Player p ? p : null;
         AccountId account = player == null ? null : plugin.sessions().account(player.getUniqueId()).orElse(null);
         long now = System.currentTimeMillis();
@@ -296,11 +394,18 @@ public final class VoteService implements Listener, AutoCloseable {
             return true;
         }
         if (args.length == 2 && args[1].equalsIgnoreCase("reload")) {
+            // Read strictly: loadConfiguration would log a YAML mistake and carry on with an empty file, losing every site.
             try {
-                settings = Settings.read(YamlConfiguration.loadConfiguration(file));
+                YamlConfiguration yaml = new YamlConfiguration();
+                yaml.load(file);
+                settings = Settings.read(yaml);
                 Chat.success(sender, "Reloaded votes.yml: " + settings.sites().size() + " site" + (settings.sites().size() == 1 ? "" : "s")
                     + ". Changes to the listener take a restart.");
-            } catch (RuntimeException invalid) {
+            } catch (org.bukkit.configuration.InvalidConfigurationException invalid) {
+                java.util.regex.Matcher where = java.util.regex.Pattern.compile("line (\\d+), column (\\d+)").matcher(String.valueOf(invalid.getMessage()));
+                Chat.error(sender, "votes.yml isn't valid YAML" + (where.find() ? " near line " + where.group(1) + ", column " + where.group(2) : "")
+                    + ". Check the indentation there. The old settings are still in use.");
+            } catch (IOException | RuntimeException invalid) {
                 Chat.error(sender, Chat.escape(String.valueOf(invalid.getMessage())) + ". The old settings are still in use.");
             }
             return true;
@@ -312,6 +417,10 @@ public final class VoteService implements Listener, AutoCloseable {
         if (listener != null) Chat.info(sender, "Votifier is listening on <white>" + settings.host() + ":" + listener.port() + "</white> (v1 and v2).");
         else if (!settings.enabled()) Chat.info(sender, "Votifier is off (<white>listener.enabled</white> in votes.yml).");
         else Chat.error(sender, "Votifier isn't running: " + Chat.escape(String.valueOf(problem)) + ". Check the startup log.");
+        if (settings.goal().daily() > 0) {
+            int[] today = goalToday();
+            Chat.info(sender, "Today's vote goal: <white>" + today[0] + "/" + today[1] + "</white>" + (today[2] == 1 ? " (reached)" : "") + ".");
+        }
         Chat.info(sender, "Sites need the token in <white>security/votifier-token.txt</white>, or for v1 the key in <white>security/votifier/public.key</white>.");
         if (recent.isEmpty()) Chat.info(sender, "No votes since the server started.");
         else Chat.info(sender, "Latest votes (the site name is what goes in votes.yml's <white>service</white>):");
@@ -323,6 +432,12 @@ public final class VoteService implements Listener, AutoCloseable {
     }
 
     Settings settings() { return settings; }
+
+    /** Today's goal as {votes, goal, 1 if reached}. */
+    int[] goalToday() {
+        java.time.LocalDate today = java.time.LocalDate.now(zone);
+        return new int[]{goal.votes(today), settings.goal().daily(), goal.reached(today) ? 1 : 0};
+    }
 
     ZoneId zone() { return zone; }
 
@@ -342,6 +457,11 @@ public final class VoteService implements Listener, AutoCloseable {
             if (!player.isOnline()) return;
             AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
             if (account == null) return;
+            long goalMarks = plugin.playerData().read(account, data -> data.getLong("votes.unseen-goal-marks"));
+            if (goalMarks > 0) {
+                plugin.playerData().update(account, data -> data.set("votes.unseen-goal-marks", null));
+                Chat.success(player, "The server reached a daily vote goal while you were away. Your share: " + Chat.marksTag(goalMarks) + ".");
+            }
             int votes = plugin.playerData().read(account, data -> data.getInt("votes.unseen-votes"));
             if (votes > 0) {
                 long marks = plugin.playerData().read(account, data -> data.getLong("votes.unseen-marks"));
