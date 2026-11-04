@@ -36,7 +36,7 @@ import java.util.concurrent.CompletionStage;
 public final class CommandRouter implements CommandExecutor, TabCompleter, Listener {
     private final NerdSmpPlugin plugin;
     static final List<String> ADMIN_SUBCOMMANDS = List.of("releasecheck", "stacks", "api", "marks", "xp", "damage",
-        "relic", "set", "starter", "mob", "geode", "gem", "tome", "entitlement");
+        "relic", "set", "starter", "mob", "geode", "gem", "tome", "entitlement", "vote");
     static final String NERDADMIN_USAGE = "/nerdadmin <" + String.join("|", ADMIN_SUBCOMMANDS) + "> [arguments]";
     private final ClaimExpansionPurchase claimExpansions = new ClaimExpansionPurchase();
     private final DevCommands dev;
@@ -102,6 +102,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 }
                 yield true;
             }
+            case "vote" -> plugin.votes().command(sender, args);
             case "companion" -> companion(sender, args);
             case "trail" -> trail(sender, args);
             case "emote" -> emote(sender, args);
@@ -717,6 +718,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             Chat.usage(sender, NERDADMIN_USAGE);
             return true;
         }
+        if (args[0].equalsIgnoreCase("vote")) return plugin.votes().admin(sender, args);
         if (args[0].equalsIgnoreCase("releasecheck") && args.length == 1) {
             net.nerdsmp.paper.release.ReleaseReadiness.show(plugin, sender); return true;
         }
@@ -1068,6 +1070,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 java.util.stream.Stream.of("list", "off"), plugin.cosmetics().ownership(player).trails().stream()).toList() : List.of();
             case "emote" -> args.length == 1 ? plugin.cosmetics().catalog().emoteIds() : List.of();
             case "booster" -> args.length == 1 ? List.of("use") : List.of();
+            case "vote" -> args.length == 1 ? List.of("top") : List.of();
             case "cosmetics" -> args.length == 1 ? List.of("title", "aura", "finisher")
                 : args.length == 2 && sender instanceof Player player ? java.util.stream.Stream.concat(java.util.stream.Stream.of("off"),
                     switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
@@ -1096,6 +1099,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 ? ADMIN_SUBCOMMANDS
                 : args.length == 3 && args[0].equalsIgnoreCase("xp")
                     ? Arrays.stream(Skill.values()).map(skill -> skill.name().toLowerCase(Locale.ROOT)).toList()
+                : args.length == 2 && args[0].equalsIgnoreCase("vote") ? List.of("status", "test")
                 : args.length == 3 && args[0].equalsIgnoreCase("mob") ? plugin.mobs().ids()
                 : args.length == 3 && args[0].equalsIgnoreCase("geode")
                     ? Arrays.stream(net.nerdsmp.paper.forge.GeodeGrade.values())

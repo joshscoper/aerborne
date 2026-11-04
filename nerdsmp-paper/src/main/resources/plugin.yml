@@ -151,6 +151,10 @@ commands:
     description: See the server's XP booster, or use one of yours to give everyone +50% XP for an hour.
     usage: /booster [use]
     aliases: [boosters]
+  vote:
+    description: Vote for the server on server list sites for Marks, and see the month's top voters.
+    usage: /vote [top]
+    aliases: [votes]
   companion:
     description: Summon or send home one of your companions.
     usage: /companion [list|dismiss|<name>]
@@ -349,7 +353,7 @@ commands:
   nerdadmin:
     description: Restricted Aerborne administration and store fulfillment.
     aliases: [aerborneadmin]
-    usage: /nerdadmin <releasecheck|stacks|api|marks|xp|damage|relic|set|starter|mob|geode|gem|tome|entitlement> [arguments]
+    usage: /nerdadmin <releasecheck|stacks|api|marks|xp|damage|relic|set|starter|mob|geode|gem|tome|entitlement|vote> [arguments]
     permission: nerdsmp.admin
 
 permissions:

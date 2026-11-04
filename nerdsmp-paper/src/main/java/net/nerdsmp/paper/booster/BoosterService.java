@@ -101,10 +101,16 @@ public final class BoosterService implements Listener, AutoCloseable {
     public void earn(Player player, String key) {
         AccountId account = account(player);
         if (account == null) return;
-        plugin.entitlements().grant(account, PRODUCT, "earned:" + key + ":" + account.value(), null).thenAccept(result -> Bukkit.getScheduler().runTask(plugin, () -> {
-            if (result == EntitlementService.GrantResult.APPLIED && player.isOnline())
+        earn(account, key).thenAccept(applied -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (applied && player.isOnline())
                 Chat.success(player, "You earned an XP booster! Use it with <white>/booster use</white> to give everyone online +50% XP for an hour.");
         }));
+    }
+
+    /** {@link #earn(Player, String)} for a player who may be offline. Completes with whether this grant was new. */
+    public CompletableFuture<Boolean> earn(AccountId account, String key) {
+        return plugin.entitlements().grant(account, PRODUCT, "earned:" + key + ":" + account.value(), null).toCompletableFuture()
+            .thenApply(result -> result == EntitlementService.GrantResult.APPLIED);
     }
 
     /** The player's boosters not yet used: purchases still active, less the ones they've spent. */

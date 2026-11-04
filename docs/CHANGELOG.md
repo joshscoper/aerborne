@@ -5,6 +5,14 @@ date are placed where the README had them. Each linked doc has the detail.
 
 ## October 2026
 
+### Voting (November 3)
+- **Server list votes.** The plugin speaks Votifier itself (v1 and v2, like NuVotifier) on port 9027, so sites such as
+  Planet Minecraft can tell the server when someone votes. No separate Votifier plugin is needed.
+- **Rewards.** Each vote pays 100 Marks, 10 more for each day in a row up to a week, and every 20th vote earns an
+  XP booster. Players who are offline are paid anyway and told when they next join.
+- **`/vote`** lists the sites with when each can be voted on again; `/vote top` ranks the month's voters.
+  Staff have `/nerdadmin vote` (status and latest votes) and `/nerdadmin vote test <player> [site]`. See [VOTING.md](VOTING.md).
+
 ### Cosmetics suite and XP boosters (November 3)
 - **Titles.** A title shows before your name in chat and the tab list. Four are sold, and one is earned for clearing
   each expedition, plus Keystone Master for any Mythic clear.

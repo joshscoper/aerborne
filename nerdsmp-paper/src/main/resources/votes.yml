@@ -1,0 +1,33 @@
+# Voting on server list sites. Restart the server after changing this file.
+#
+# Sites tell the server about each vote through Votifier, the protocol NuVotifier speaks (v1 and v2).
+# On a site's page for the server, fill in:
+#   Address  the server's public address (its IP or domain, without a port)
+#   Port     listener.port below. It has to be reachable from the internet; on a host like
+#            BisectHosting, use an extra port they give you and put that number here.
+#   Token    the text in security/votifier-token.txt (Votifier v2; use this where a site takes it)
+#   or Public key: the text in security/votifier/public.key (Votifier v1, for sites without tokens)
+# Then use the site's "test" button and check /nerdadmin vote.
+listener:
+  enabled: true
+  host: 0.0.0.0
+  port: 9027
+
+rewards:
+  marks-per-vote: 100
+  # A vote on the day after your last one adds this, for up to streak-cap-days days in a row.
+  streak-bonus-marks: 10
+  streak-cap-days: 7
+  # Every this many votes earns an XP booster. 0 turns it off.
+  booster-every: 20
+  # The same site sending the same player again within this many hours is a repeat and pays nothing.
+  repeat-hours: 6
+  # At most this many paid votes per player in a day, whatever the sites send.
+  max-paid-per-day: 8
+
+# The sites /vote lists, with each one's vote page. 'service' is the name the site sends with its votes.
+# /nerdadmin vote shows the names of the latest votes, so after a test vote copy it from there.
+sites: []
+#  - name: Planet Minecraft
+#    url: https://www.planetminecraft.com/server/your-server/vote/
+#    service: PlanetMinecraft.com

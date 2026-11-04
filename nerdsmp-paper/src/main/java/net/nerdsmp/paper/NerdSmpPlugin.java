@@ -138,6 +138,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private SocialManager social;
     private net.nerdsmp.paper.cosmetic.CosmeticService cosmetics;
     private net.nerdsmp.paper.booster.BoosterService boosters;
+    private net.nerdsmp.paper.vote.VoteService votes;
     private ChannelChatManager chat;
     private TradeManager trade;
     private TravelManager travel;
@@ -322,6 +323,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             cosmetics.close();
         }
         if (boosters != null) boosters.close();
+        if (votes != null) votes.close();
         if (social != null) {
             social.close();
         }
@@ -505,6 +507,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         social = new SocialManager(this, settings);
         cosmetics = new net.nerdsmp.paper.cosmetic.CosmeticService(this);
         boosters = new net.nerdsmp.paper.booster.BoosterService(this);
+        votes = new net.nerdsmp.paper.vote.VoteService(this);
         chat = new ChannelChatManager(this, settings, social, presentation, sessions);
         trade = new TradeManager(this, settings, social);
         if (skyblockEnabled) skyblock = new net.nerdsmp.paper.skyblock.SkyblockController(this);
@@ -622,6 +625,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         cosmetics.start();
         plugins.registerEvents(boosters, this);
         boosters.start();
+        plugins.registerEvents(votes, this);
+        votes.start();
         plugins.registerEvents(chat, this);
         plugins.registerEvents(trade, this);
         plugins.registerEvents(travel, this);
@@ -733,7 +738,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             "forge", "enchants", "recipes", "daily", "playtime", "npc", "reputation", "nerdadmin", "staff", "report",
             "settings", "social", "friends", "ignore", "unignore", "msg", "reply", "channel", "globalchat",
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
-            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint", "booster"
+            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint", "booster", "vote"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
             "companion", "trail", "emote", "journal", "worldpack", "dev"
         );
@@ -948,6 +953,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     public net.nerdsmp.paper.booster.BoosterService boosters() {
         return boosters;
+    }
+
+    public net.nerdsmp.paper.vote.VoteService votes() {
+        return votes;
     }
 
     public ChannelChatManager chat() {
