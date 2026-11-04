@@ -17,6 +17,25 @@ the user's playtest.
 | 5 | Ironspine Highlands and Sunscar Breaks, Cragholm, the Old Dig, Brimstone Warrens, the Gloomforge door, the Brimfather | Playtest |
 | 6 | The Archive Isle, the Ashen Scar, the Choir's Undercroft, the Ember Gate, the epilogue; cutover from MMORPG | Production release |
 
+## Where phase 1 stands (2026-11-03)
+Committed: `ae324f9` (vault, generator), `8a555ff` (Highcrown, the Vale, pack, NPCs, quests, mobs, places, chests,
+encounters), `1ab6ce4` (rebuild keeps plants). Checked on a scratch server with a bot: arrival, NPC dialogue and
+the quest board, chests and their refill, zone spawns, the Toll-Captain, the fall rescue.
+
+Not done yet in phase 1:
+- **Art pass to the reference bar.** Seen in previews and not yet fixed:
+  - The avenue is long and even (about 170 blocks) and needs a mid-way arch, more height variety and banners.
+  - Millbrook's houses crowd each other, and white terracotta reads pink: use calcite or birch.
+  - The Scar's ash pattern is too blotchy.
+  - Natural slopes show one-block contour steps.
+  - The underside's spires are better but unproven in real lighting.
+  - Memorial Terrace and the Highfall chest aren't built.
+- **Systems still to build:** paid skiffs (skiff masters open `/warps` for now), the `loot` and `interact` quest
+  objectives, the expedition door object (First Flight starts from Wren's dialogue), and night-only Choir camps.
+- **Service NPC lines:** some of the 31 service NPCs still talk about the old Highcrown Isles (Cassia's Gullwater
+  lighthouse).
+- **The user's playtest** on the test server (needs their OK to deploy and restart).
+
 ## Inside phase 1 (order)
 1. `ReachTerrain` and `ReachGenerator`: the continent blockout, all zones' shapes, rivers and roads. **Look at it**
    (previews from the air and from the road) before going further.
