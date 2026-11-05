@@ -91,7 +91,7 @@ final class ReachKit {
                     if (!c.has(x, ground + 1, z)) c.set(x, ground + 1, z, face == Material.COBBLESTONE ? Material.MOSSY_COBBLESTONE_WALL : Material.STONE_BRICK_WALL, "up=true");
                 } else {
                     for (int y = floor; y <= ground + 1; y++) if (!c.has(x, y, z)) c.set(x, y, z, Material.AIR);
-                    if (!inside && !c.has(x, floor - 1, z)) c.set(x, floor - 1, z, terrain.grain(x, z, 0.3) > 0.4 ? Material.COARSE_DIRT : Material.GRASS_BLOCK);
+                    if (!inside && !c.has(x, floor - 1, z)) c.set(x, floor - 1, z, Material.GRASS_BLOCK);
                 }
             } else if (ground < floor - 1) {
                 // Fill: a plinth under the building and a terrace round it, faced in stone at its edge.
@@ -114,7 +114,10 @@ final class ReachKit {
         for (int k = 1; k <= reach; k++) for (int side = -1; side <= 1; side++) {
             int x = b.wx(door + side, -k), z = b.wz(door + side, -k);
             for (int y = floor; y < floor + 3; y++) b.canvas.set(x, y, z, Material.AIR);
-            b.canvas.set(x, floor - 1, z, side == 0 ? Material.PACKED_MUD : Material.COARSE_DIRT);
+            // A laid doorstep in the house's own stone, not a patch of mud on the lawn.
+            boolean rustic = s.base() == Material.COBBLESTONE;
+            b.canvas.set(x, floor - 1, z, side == 0 ? (rustic ? Material.COBBLESTONE : Material.POLISHED_ANDESITE)
+                : (rustic ? Material.GRAVEL : Material.STONE_BRICKS));
         }
         // Beyond the notch, follow the ground with steps for up to four blocks.
         int level = floor - 1;
@@ -301,8 +304,9 @@ final class ReachKit {
     }
 
     /** A hanging trade sign on its iron bracket beside a door on local z = 0, at height {@code y}. */
-    static void shopSign(ReachBrush b, int x, int y, Material sign) {
+    static void shopSign(ReachBrush b, int x, int y, Material sign, String... lines) {
         b.set(x, y, -1, sign, "facing=east");
+        if (lines.length > 0) b.canvas.text(b.wx(x, -1), b.oy + y, b.wz(x, -1), lines);
     }
 
     /** A small gabled dormer with a window, sitting on the roof's front slope. */
@@ -625,8 +629,9 @@ final class ReachKit {
         b.set(0, 0, 0, Material.STONE_BRICK_WALL, "up=true");
         for (int y = 1; y <= 3; y++) b.set(0, y, 0, s.fence());
         b.set(0, 4, 0, s.post(), "axis=y");
-        b.set(1, 4, 0, s.trapdoor(), "facing=east,half=top,open=false");
+        b.set(1, 4, 0, s.fence(), "west=true");
         b.set(1, 3, 0, Material.LANTERN, "hanging=true");
+        b.set(0, 5, 0, s.trapdoor(), "facing=north,half=bottom,open=false");
     }
 
     /** A signpost at a fork. */

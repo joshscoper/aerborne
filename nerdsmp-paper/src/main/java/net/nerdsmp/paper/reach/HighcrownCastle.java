@@ -58,9 +58,11 @@ final class HighcrownCastle {
         gatehouse();
         crownKeep();
         hallOfAccord();
-        // Barracks and stables along the west and east walls, an armory and a chapel in the north corners.
-        ReachBrush barracks = new ReachBrush(canvas, CX - 21, K, CZ - 12, 1);
-        int[] q = kit.house(barracks, 26, 12, 1, ReachKit.Style.SLATE, false, false, 51, ReachInteriors.Use.BARRACKS, ReachInteriors.Trade.QUARTERMASTER);
+        // The gate opens on a processional way to the Crown Keep; the barracks stand north of it by the west wall and
+        // the training yard south of it, so the way itself is never blocked.
+        processional();
+        ReachBrush barracks = new ReachBrush(canvas, CX - 22, K, CZ - 17, 1);
+        kit.house(barracks, 13, 12, 2, ReachKit.Style.SLATE, false, false, 51, ReachInteriors.Use.BARRACKS, ReachInteriors.Trade.QUARTERMASTER);
         ReachBrush stables = new ReachBrush(canvas, CX + 21, K, CZ + 13, 3);
         kit.house(stables, 26, 12, 1, ReachKit.Style.HIGHCROWN, false, false, 52, ReachInteriors.Use.STABLES, ReachInteriors.Trade.GENERAL);
         ReachBrush armory = new ReachBrush(canvas, CX - 22, K, CZ - 27, 0);
@@ -111,10 +113,12 @@ final class HighcrownCastle {
             // A plinth stepping out at the foot, and a string course halfway up.
             if (outer) canvas.set(x, K + 6, z, Material.POLISHED_ANDESITE);
         }
-        // Machicolations: corbels under a projecting parapet on the outer face.
+        // Machicolations: corbels under a projecting parapet, on the four straight faces only (on the diagonals the
+        // stepped outline would turn them into rubble).
         for (int x = CX - 41; x <= CX + 41; x++) for (int z = CZ - 41; z <= CZ + 41; z++) {
             int dx = x - CX, dz = z - CZ;
             if (!inOctagon(dx, dz, OUTER + 1) || inOctagon(dx, dz, OUTER)) continue;
+            if (Math.abs(dx) < OUTER && Math.abs(dz) < OUTER) continue;
             int[] in = inward(dx, dz);
             String face = in == null ? "north" : faceOf(in[0], in[1]);
             canvas.set(x, WALK - 2, z, Material.STONE_BRICK_STAIRS, "facing=" + face + ",half=top");
@@ -132,6 +136,25 @@ final class HighcrownCastle {
                 canvas.set(x, K + i + 1, z + st[2], Material.STONE_BRICK_WALL, "up=true");
             }
         }
+    }
+
+    /**
+     * The processional way from the gatehouse to the Crown Keep's door: a broad paved road with a polished centre,
+     * banners on tall poles down both sides and lamps at the turn.
+     */
+    private void processional() {
+        for (int x = CX - 36; x <= CX + 2; x++) for (int dz = -2; dz <= 2; dz++)
+            canvas.set(x, K - 1, CZ + dz, Math.abs(dz) <= 1 ? Material.POLISHED_ANDESITE : Material.CHISELED_STONE_BRICKS);
+        for (int z = CZ - 7; z <= CZ - 3; z++) for (int dx = -2; dx <= 2; dx++)
+            canvas.set(CX + dx, K - 1, z, Math.abs(dx) <= 1 ? Material.POLISHED_ANDESITE : Material.CHISELED_STONE_BRICKS);
+        for (int x = CX - 32; x <= CX - 8; x += 6) for (int side : new int[] {-1, 1}) {
+            int z = CZ + side * 4;
+            canvas.set(x, K, z, Material.STONE_BRICK_WALL, "up=true");
+            for (int y = K + 1; y <= K + 5; y++) canvas.set(x, y, z, Material.DARK_OAK_FENCE);
+            canvas.set(x, K + 6, z, Material.GREEN_BANNER, "rotation=" + (side < 0 ? 0 : 8));
+            site.reserve(x, z);
+        }
+        for (int dx : new int[] {-4, 4}) ReachProps.lamp(new ReachBrush(canvas, CX + dx, K, CZ - 4, dx < 0 ? 0 : 2), Material.DARK_OAK_LOG, Material.DARK_OAK_TRAPDOOR);
     }
 
     /** The direction from a point outside the curtain back toward the centre, as a unit step. */
@@ -401,7 +424,7 @@ final class HighcrownCastle {
 
     /** The training yard: sand and gravel, archery butts, straw dummies with pumpkin heads, a weapon rack. */
     private void trainingYard() {
-        int x0 = CX - 19, x1 = CX - 2, z0 = CZ - 6, z1 = CZ + 5;
+        int x0 = CX - 33, x1 = CX - 20, z0 = CZ + 5, z1 = CZ + 17;
         for (int x = x0; x <= x1; x++) for (int z = z0; z <= z1; z++) {
             canvas.set(x, K - 1, z, terrain.grain(x, z, 0.4) > 0.2 ? Material.COARSE_DIRT : Material.GRAVEL);
             boolean edge = x == x0 || x == x1 || z == z0 || z == z1;

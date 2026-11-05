@@ -101,6 +101,13 @@ public final class ReachFeatures {
         }
     }
 
+    /** Every lettered sign the features stand in this chunk. */
+    List<ReachCanvas.Text> texts(int chunkX, int chunkZ) {
+        List<ReachCanvas.Text> out = new ArrayList<>();
+        for (Feature feature : features) if (feature.footprint().touches(chunkX, chunkZ)) out.addAll(plan(feature).texts(chunkX, chunkZ));
+        return out;
+    }
+
     /** True where a feature builds something in this column, or right beside it, so plants keep clear. */
     public boolean occupied(int x, int z) {
         for (Feature feature : features) {

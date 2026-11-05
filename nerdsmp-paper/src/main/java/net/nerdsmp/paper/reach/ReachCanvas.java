@@ -27,6 +27,16 @@ public final class ReachCanvas {
 
     private final List<Lot> lots = new ArrayList<>();
 
+    /** Words on a sign: a block state can't carry them, so they ride beside the plan and are written as chunks populate. */
+    public record Text(int x, int y, int z, List<String> lines) { }
+
+    private final Map<Long, Text> texts = new HashMap<>();
+
+    /** Letters the sign at a position (up to four lines; both faces of a hanging sign). */
+    public void text(int x, int y, int z, String... lines) {
+        texts.put(((long) x & 0x3FFFFF) << 42 | ((long) z & 0x3FFFFF) << 20 | (y & 0xFFFFF), new Text(x, y, z, List.of(lines)));
+    }
+
     public void lot(int minX, int minZ, int maxX, int maxZ, int floor) { lots.add(new Lot(minX, minZ, maxX, maxZ, floor)); }
 
     private final List<Spec> palette = new ArrayList<>();
@@ -104,6 +114,10 @@ public final class ReachCanvas {
         private final Map<Long, long[]> columns = new HashMap<>();
         final int minX, minZ, maxX, maxZ;
         final List<Lot> lots;
+        private final Map<Long, List<Text>> texts = new HashMap<>();
+
+        /** The lettered signs standing in one chunk. */
+        public List<Text> texts(int chunkX, int chunkZ) { return texts.getOrDefault(key(chunkX, chunkZ), List.of()); }
 
         /** True when this plan writes anything in the column at (x, z). */
         public boolean occupies(int x, int z) {
@@ -131,6 +145,7 @@ public final class ReachCanvas {
             });
             minX = canvas.minX; minZ = canvas.minZ; maxX = canvas.maxX; maxZ = canvas.maxZ;
             lots = List.copyOf(canvas.lots);
+            for (Text t : canvas.texts.values()) texts.computeIfAbsent(key(t.x() >> 4, t.z() >> 4), k -> new ArrayList<>()).add(t);
         }
 
         public boolean touches(int chunkX, int chunkZ) { return positions.containsKey(key(chunkX, chunkZ)); }

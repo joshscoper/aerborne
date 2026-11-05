@@ -84,8 +84,27 @@ final class ReachFlora extends BlockPopulator {
 
     private BlockData data(String state) { return states.computeIfAbsent(state, Bukkit::createBlockData); }
 
+    /**
+     * Writes the words on this chunk's signs: shop names, hall names and wayfinding. Both faces of a sign are lettered
+     * so it reads from either side, the text glows so it reads at night, and the sign is waxed so nobody can scrawl on it.
+     */
+    private void letter(int chunkX, int chunkZ, LimitedRegion region) {
+        for (ReachCanvas.Text t : features.texts(chunkX, chunkZ)) {
+            if (!region.isInRegion(t.x(), t.y(), t.z())) continue;
+            if (!(region.getBlockState(t.x(), t.y(), t.z()) instanceof org.bukkit.block.Sign sign)) continue;
+            for (org.bukkit.block.sign.Side side : org.bukkit.block.sign.Side.values()) {
+                org.bukkit.block.sign.SignSide face = sign.getSide(side);
+                for (int i = 0; i < Math.min(4, t.lines().size()); i++) face.line(i, net.kyori.adventure.text.Component.text(t.lines().get(i)));
+                face.setGlowingText(true);
+            }
+            sign.setWaxed(true);
+            region.setBlockState(t.x(), t.y(), t.z(), sign);
+        }
+    }
+
     @Override
     public void populate(WorldInfo info, Random ignored, int chunkX, int chunkZ, LimitedRegion region) {
+        letter(chunkX, chunkZ, region);
         trees(chunkX, chunkZ, region);
         int baseX = chunkX << 4, baseZ = chunkZ << 4;
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {

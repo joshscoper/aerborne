@@ -646,17 +646,13 @@ final class GoldenreachVale {
     private void wardenPost() {
         int x = 9, z = 752;
         int y = terrain.column(x, z).top() + 1;
-        // Grade the post's yard first, so the Warden on watch stands on level ground beside the road.
-        kit.site(new ReachBrush(canvas, x, y, z, 0), -2, 0, 4, 6, 1, Material.STONE_BRICKS);
-        for (int dx = 0; dx < 5; dx++) for (int dz = 0; dz < 5; dz++) {
-            boolean edge = dx == 0 || dx == 4 || dz == 0 || dz == 4;
-            for (int h = 0; h < 4; h++) if (edge && !(dz == 4 && dx == 2 && h < 2)) canvas.set(x + dx, y + h, z + dz, h == 3 ? Material.SPRUCE_PLANKS : (dx + dz) % 4 == 0 ? Material.SPRUCE_LOG : Material.STONE_BRICKS,
-                (h != 3 && (dx + dz) % 4 == 0) ? "axis=y" : "");
-            canvas.set(x + dx, y + 4, z + dz, edge ? Material.SPRUCE_SLAB : Material.SPRUCE_PLANKS, edge ? "type=bottom" : "");
-        }
-        canvas.set(x + 2, y + 5, z + 2, Material.GREEN_BANNER, "rotation=0");
-        kit.signpost(new ReachBrush(canvas, x - 3, y, z + 6, 0), ReachKit.Style.VALE);
-        spot("warden_post", x - 1, y, z + 2, 90F);
+        // The Warden Post: a stone lodge with a timber loft beside the road at the bridge's north end, its door on
+        // the road, a flag over it and a signpost, where the frontier wardens keep watch on the Kingsroad.
+        ReachBrush lodge = new ReachBrush(canvas, x + 1, y, z, 3);
+        kit.house(lodge, 7, 8, 1, ReachKit.Style.VALE, false, true, 4711, ReachInteriors.Use.OFFICE, ReachInteriors.Trade.MAPS);
+        ReachKit.shopSign(lodge, 5, 2, Material.SPRUCE_WALL_HANGING_SIGN, "Warden", "Post");
+        for (int k = 0; k <= 7; k++) canvas.set(x, y + k, z - 8, k == 7 ? Material.GREEN_BANNER : Material.SPRUCE_FENCE, k == 7 ? "rotation=12" : "");
+        spot("warden_post", x - 1, y, z - 3, 90F);
         spot("kingsgate_fields", x - 30, terrain.column(x - 30, z - 40).top() + 1, z - 40, 0F);
     }
 

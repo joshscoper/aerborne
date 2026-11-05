@@ -70,6 +70,16 @@ and culturally. This pass answers it:
 - **Craft:** every plan is settled like hand-placed blocks (corner stairs, joined fences, walls and panes). Every
   house is furnished, chimneys hide their fires, and street corners are rounded.
 
+## The approach and wayfinding (third review)
+- **The Walk of Wardens** on the Kingsbridge: six founding Wardens on bastions, and the Wardens' Arch at the
+  north end (see [[Stormwind Study]]).
+- **Lettered signs** on every shop, hall and inn; signposts at the junctions.
+- **Skyships** carry a roped gas envelope over the galleon hull, with tail fins and wing propellers.
+- **The piers** stand on clean constant-depth trusses on a stone corbel.
+- **The castle's gate** opens on a processional way to the Crown Keep; the barracks and training yard sit either
+  side of it.
+- **Walls** step in level runs, tower doors face the city, and no house stands outside the ring wall.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].

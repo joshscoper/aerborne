@@ -14,15 +14,22 @@ final class ReachProps {
         Material.BARREL, Material.HONEYCOMB_BLOCK, Material.BROWN_MUSHROOM_BLOCK};
 
     /** A hand cart: a raised plank bed on two wheels, shafts to the front, loaded with something. */
+    /**
+     * A two-wheeled cart: a plank bed two wide and three long raised on its axle, a wheel against each side, two
+     * shafts lying forward on the ground, and a load piled in the bed.
+     */
     static void cart(ReachBrush b, long seed) {
-        for (int z = 0; z <= 1; z++) b.set(0, 0, z, Material.SPRUCE_SLAB, "type=top");
+        for (int x = 0; x <= 1; x++) for (int z = 0; z <= 2; z++) b.set(x, 0, z, Material.SPRUCE_SLAB, "type=top");
         // Wheels: open trapdoors lie on the side opposite their facing, so these sit flat against the bed.
         b.set(-1, 0, 1, Material.DARK_OAK_TRAPDOOR, "facing=west,half=bottom,open=true");
-        b.set(1, 0, 1, Material.DARK_OAK_TRAPDOOR, "facing=east,half=bottom,open=true");
-        b.set(0, 0, -1, Material.SPRUCE_TRAPDOOR, "facing=south,half=bottom,open=false");
+        b.set(2, 0, 1, Material.DARK_OAK_TRAPDOOR, "facing=east,half=bottom,open=true");
+        for (int x = 0; x <= 1; x++) for (int z = -2; z <= -1; z++) b.set(x, 0, z, Material.SPRUCE_TRAPDOOR, "facing=south,half=bottom,open=false");
         Material load = GOODS[(int) Math.floorMod(seed, (long) GOODS.length)];
-        b.set(0, 1, 1, load, load == Material.BARREL ? "facing=up" : load == Material.HAY_BLOCK ? "axis=z" : "");
-        if ((seed & 8) == 0) b.set(0, 1, 0, Material.COMPOSTER, "level=6");
+        String props = load == Material.BARREL ? "facing=up" : load == Material.HAY_BLOCK ? "axis=z" : "";
+        b.set(0, 1, 1, load, props);
+        b.set(1, 1, 2, (seed & 2) == 0 ? Material.BARREL : Material.HAY_BLOCK, (seed & 2) == 0 ? "facing=up" : "axis=x");
+        if ((seed & 4) == 0) b.set(1, 1, 0, Material.BROWN_WOOL);
+        if ((seed & 8) == 0) b.set(0, 2, 1, Material.WHITE_CARPET);
     }
 
     /** A pile of barrels and crates with a sack or two, the clutter of a working doorway. */
@@ -46,19 +53,23 @@ final class ReachProps {
     }
 
     /** A raised stone planter of flowers or a little tree, {@code w} by 2. */
+    /**
+     * A raised planter {@code w} long: a kerb of stone with a capping of stairs round a bed of grass level with the
+     * kerb's top, planted with flowers and a little shrub, never bare soil above the stone.
+     */
     static void planter(ReachBrush b, int w, long seed) {
-        Material[] flowers = {Material.ROSE_BUSH, Material.PEONY, Material.LILAC, Material.AZALEA, Material.FLOWERING_AZALEA};
-        for (int x = 0; x < w; x++) for (int z = 0; z < 2; z++) {
-            b.set(x, 0, z, Material.STONE_BRICKS);
-            b.set(x, 1, z, Material.STONE_BRICK_SLAB, "type=bottom");
+        Material[] flowers = {Material.ROSE_BUSH, Material.PEONY, Material.LILAC, Material.FLOWERING_AZALEA, Material.AZALEA};
+        for (int x = -1; x <= w; x++) for (int z = -1; z <= 1; z++) {
+            boolean rim = x == -1 || x == w || z != 0;
+            if (rim) b.set(x, 0, z, Material.STONE_BRICK_STAIRS, "facing=" + (x == -1 ? "east" : x == w ? "west" : z < 0 ? "south" : "north") + ",half=bottom");
+            else b.set(x, 0, z, Material.MOSS_BLOCK);
         }
         for (int x = 0; x < w; x++) {
-            b.set(x, 1, 0, Material.ROOTED_DIRT);
             Material f = flowers[(int) Math.floorMod(seed + x * 7L, (long) flowers.length)];
             if (f == Material.ROSE_BUSH || f == Material.PEONY || f == Material.LILAC) {
-                b.set(x, 2, 0, f, "half=lower");
-                b.set(x, 3, 0, f, "half=upper");
-            } else b.set(x, 2, 0, f);
+                b.set(x, 1, 0, f, "half=lower");
+                b.set(x, 2, 0, f, "half=upper");
+            } else b.set(x, 1, 0, f);
         }
     }
 
@@ -173,12 +184,33 @@ final class ReachProps {
         for (int x = -1; x <= 1; x++) b.set(x, 6, 3, slab, "type=top");
     }
 
+    /**
+     * A signpost: a dark post on a stone foot with a lantern on top and an arm for each direction that has a name
+     * (north, east, south, west, as world directions), lettered with what lies that way.
+     */
+    static void waymark(ReachCanvas canvas, int x, int y, int z, String[] north, String[] east, String[] south, String[] west) {
+        canvas.set(x, y, z, Material.STONE_BRICK_WALL, "up=true");
+        for (int k = 1; k <= 3; k++) canvas.set(x, y + k, z, Material.DARK_OAK_FENCE);
+        canvas.set(x, y + 4, z, Material.LANTERN);
+        String[][] names = {north, east, south, west};
+        int[][] step = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+        String[] faces = {"north", "east", "south", "west"};
+        for (int d = 0; d < 4; d++) {
+            if (names[d] == null) continue;
+            int sy = y + 3 - (d & 1);
+            canvas.set(x + step[d][0], sy, z + step[d][1], Material.DARK_OAK_WALL_SIGN, "facing=" + faces[d]);
+            canvas.text(x + step[d][0], sy, z + step[d][1], names[d]);
+        }
+    }
+
     /** A street lamp on a stone foot; the bracket points along local +x. */
     static void lamp(ReachBrush b, Material post, Material trapdoor) {
         b.set(0, 0, 0, Material.STONE_BRICK_WALL, "up=true");
         for (int y = 1; y <= 3; y++) b.set(0, y, 0, Material.DARK_OAK_FENCE);
         b.set(0, 4, 0, post, "axis=y");
-        b.set(1, 4, 0, trapdoor, "facing=east,half=top,open=false");
+        // The arm is a fence joined to the post's head; the lantern hangs straight from it, nothing floating.
+        b.set(1, 4, 0, Material.DARK_OAK_FENCE, "west=true");
         b.set(1, 3, 0, Material.LANTERN, "hanging=true");
+        b.set(0, 5, 0, trapdoor, "facing=north,half=bottom,open=false");
     }
 }

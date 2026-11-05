@@ -99,6 +99,27 @@ class ReachBuildsTest {
         assertEquals(List.of(), bad);
     }
 
+    /** A blank shop sign tells a player nothing: every hanging sign a build places must carry words. */
+    @Test
+    void everyHangingSignIsLettered() {
+        List<String> blank = new ArrayList<>();
+        for (ReachFeatures.Feature feature : FEATURES.features()) {
+            ReachCanvas.Frozen plan = FEATURES.plan(feature);
+            for (int cx = plan.minX >> 4; cx <= plan.maxX >> 4; cx++) for (int cz = plan.minZ >> 4; cz <= plan.maxZ >> 4; cz++) {
+                if (!plan.touches(cx, cz)) continue;
+                java.util.Set<String> lettered = new java.util.HashSet<>();
+                for (ReachCanvas.Text t : plan.texts(cx, cz)) lettered.add(t.x() + "," + t.y() + "," + t.z());
+                int baseX = cx << 4, baseZ = cz << 4;
+                plan.forEach(cx, cz, cell -> {
+                    if (!cell.spec().state().contains("hanging_sign")) return;
+                    String at = (baseX + cell.lx()) + "," + cell.y() + "," + (baseZ + cell.lz());
+                    if (!lettered.contains(at)) blank.add(feature.id() + " " + at);
+                });
+            }
+        }
+        assertEquals(List.of(), blank);
+    }
+
     @Test
     void theArrivalIsOnThePier() {
         ReachFeatures.Spot arrival = FEATURES.arrival();

@@ -5,9 +5,10 @@ import org.bukkit.Material;
 /**
  * A sky-galleon moored at Highcrown's piers. The hull is shaped from smooth width and depth profiles: a rounded
  * stern, full midships and a sharp raked bow, round in section with a keel. It has planked strakes over a painted
- * band, a deck with bulwarks, a raised quarterdeck over the captain's cabin and a forecastle. Three masts carry
- * square sails that belly in the wind, with a bowsprit and jib. Skyfaring wings of timber and canvas stand out from
- * either side and a propeller turns at the stern. It is built in a brush's frame: local x across (port negative),
+ * band, a deck with bulwarks, a raised quarterdeck over the captain's cabin and a forecastle with a jib on a short
+ * foremast. Over it all rides a long roped gas envelope in the ship's colours with fins at its tail, as the skyships
+ * of the Reach are built. Skyfaring wings of timber and canvas stand out from either side with propellers at their
+ * tips, and another turns at the stern. It is built in a brush's frame: local x across (port negative),
  * z from the stern (0) to the bow, y up from the main deck's planking (0).
  */
 final class ReachAirship {
@@ -93,26 +94,64 @@ final class ReachAirship {
         for (int k = 0; k <= 8; k++) b.set(0, 2 + k / 3, length + k, Material.STRIPPED_SPRUCE_LOG, "axis=z");
         b.set(0, 1, length + 1, Material.GOLD_BLOCK);
         for (int k = 1; k <= 7; k++) b.set(0, 2 + k / 3 - 1, length + k, Material.IRON_CHAIN, "axis=z");
-        // Masts with square sails bellying forward, yards, tops and pennants.
-        int[][] masts = {{(int) (length * 0.36), 22, 11}, {(int) (length * 0.6), 19, 9}, {(int) (length * 0.8), 15, 7}};
-        for (int[] m : masts) {
-            int mz = m[0], top = m[1], span = m[2];
-            for (int y = 1; y <= top; y++) b.set(0, y, mz, Material.STRIPPED_SPRUCE_LOG, "axis=y");
-            for (int[] yard : new int[][] {{top - 2, span}, {top - 8, span + 2}}) {
-                int half = yard[1] / 2;
-                for (int x = -half; x <= half; x++) b.set(x, yard[0], mz, Material.STRIPPED_SPRUCE_LOG, "axis=x");
-                for (int y = yard[0] - 1; y >= yard[0] - 5; y--) for (int x = -half + 1; x <= half - 1; x++) {
-                    double belly = 1 - Math.pow(x / (double) half, 2);
-                    int dz = belly > 0.35 && y < yard[0] - 1 && y > yard[0] - 5 ? 1 : 0;
-                    if (x == 0 && dz == 0) continue;
-                    b.set(x, y, mz + dz, (y == yard[0] - 3 && Math.abs(x) <= 1) ? Material.GREEN_WOOL : Material.WHITE_WOOL);
-                }
-                // Lines from the yard's ends down to the bulwarks.
-                for (int y = yard[0] - 1; y >= 2; y--) for (int x : new int[] {-half, half}) if (Math.abs(x) <= beam / 2) b.set(x, y, mz - 1, Material.IRON_CHAIN, "axis=y");
+        // The envelope: a long gas balloon over the deck, round in section and pointed at both ends, in canvas panels
+        // of white and the ship's colour, bound by rope bands, with fins at its tail.
+        Material colour = switch (paint) {
+            case GREEN_TERRACOTTA -> Material.GREEN_WOOL;
+            case RED_TERRACOTTA -> Material.RED_WOOL;
+            case BLUE_TERRACOTTA -> Material.BLUE_WOOL;
+            default -> Material.LIGHT_BLUE_WOOL;
+        };
+        double radius = beam / 2.0 + 1.6, yc = 9 + radius;
+        int z0 = -2, z1 = length + 1;
+        double zc = (z0 + z1) / 2.0, halfLen = (z1 - z0) / 2.0;
+        java.util.function.IntToDoubleFunction r = z -> {
+            double t = (z - zc) / halfLen;
+            return Math.abs(t) >= 1 ? 0 : radius * Math.pow(1 - t * t, 0.45);
+        };
+        for (int z = z0; z <= z1; z++) {
+            double rz = r.applyAsDouble(z), inner = Math.min(r.applyAsDouble(z - 1), r.applyAsDouble(z + 1)) - 0.6;
+            int span = (int) Math.ceil(rz);
+            for (int x = -span; x <= span; x++) for (int y = (int) Math.floor(yc - span); y <= (int) Math.ceil(yc + span); y++) {
+                double d = Math.hypot(x, y - yc);
+                if (d > rz) continue;
+                boolean shell = d > rz - 1.15 || d > inner;
+                if (!shell) { b.set(x, y, z, Material.AIR); continue; }
+                double angle = Math.toDegrees(Math.atan2(y - yc, x)) + 180;
+                boolean rope = Math.floorMod(z - z0, 6) == 0 || Math.abs(x) <= 0 && y > yc;
+                boolean panel = ((int) (angle / 30)) % 2 == 0;
+                b.set(x, y, z, rope ? Material.BROWN_WOOL : panel ? colour : Material.WHITE_WOOL);
             }
-            for (int x = -1; x <= 1; x++) for (int dz = -1; dz <= 1; dz++) if (x != 0 || dz != 0) b.set(x, top - 5, mz + dz, Material.SPRUCE_SLAB, "type=top");
-            b.set(0, top + 1, mz, Material.DARK_OAK_FENCE);
-            b.set(0, top + 2, mz, Material.GREEN_BANNER, "rotation=8");
+        }
+        // Tail fins: one above, two to the sides, each a framed canvas blade.
+        for (int k = 0; k <= 6; k++) {
+            int z = z0 + 1 + k, len = 5 - k * 5 / 7;
+            for (int h = 1; h <= len; h++) {
+                b.set(0, (int) Math.round(yc + r.applyAsDouble(z)) + h, z, h == len ? Material.STRIPPED_SPRUCE_LOG : colour, h == len ? "axis=z" : "");
+                for (int side : new int[] {-1, 1})
+                    b.set(side * ((int) Math.round(r.applyAsDouble(z)) + h), (int) Math.round(yc), z, h == len ? Material.STRIPPED_SPRUCE_LOG : colour, h == len ? "axis=z" : "");
+            }
+        }
+        // Rigging: lines from the envelope's belly down to the bulwarks, and a keel spar under the balloon.
+        for (double f : new double[] {0.18, 0.38, 0.58, 0.78}) {
+            int z = (int) Math.round(length * f);
+            int hx = Math.max(1, (int) Math.floor(halfWidth(z / (double) length, beam)) - 1);
+            for (int side : new int[] {-1, 1}) {
+                double rz = r.applyAsDouble(z);
+                int belly = (int) Math.floor(yc - Math.sqrt(Math.max(0, rz * rz - hx * hx)));
+                for (int y = 2; y < belly; y++) b.set(side * hx, y, z, Material.IRON_CHAIN, "axis=y");
+            }
+        }
+        for (int z = (int) (length * 0.15); z <= (int) (length * 0.85); z++) {
+            double rz = r.applyAsDouble(z);
+            b.set(0, (int) Math.floor(yc - rz) - 1, z, Material.STRIPPED_DARK_OAK_LOG, "axis=z");
+        }
+        // A short foremast with a jib sail run out to the bowsprit.
+        int fm = (int) (length * 0.88);
+        for (int y = 3; y <= 8; y++) b.set(0, y, fm, Material.STRIPPED_SPRUCE_LOG, "axis=y");
+        for (int z = fm + 1; z <= length + 6; z++) {
+            int low = 3 + (z - length > 0 ? (z - length) / 3 : 0), high = 8 - (z - fm) * 5 / (length + 6 - fm);
+            for (int y = low; y <= high; y++) b.set(0, y, z, Material.WHITE_WOOL);
         }
         // Skyfaring wings: a timber spar out from each side under the deck, with canvas stretched behind it.
         int wz0 = (int) (length * 0.32), wz1 = (int) (length * 0.58), reach = beam / 2 + 4;
@@ -122,6 +161,17 @@ final class ReachAirship {
                 int len = (int) Math.round((wz1 - wz0) * (1 - (k - beam / 2.0) / (reach - beam / 2.0) * 0.6));
                 for (int z = wz1 - len; z < wz1; z++) b.set(side * k, -2, z, Material.WHITE_WOOL);
                 if (k == reach) b.set(side * k, -1, wz1, Material.LANTERN);
+            }
+        }
+        // Propellers on the wing tips.
+        for (int side : new int[] {-1, 1}) {
+            int px = side * reach, pz = wz0 - 1;
+            b.set(px, -2, pz, Material.COPPER_BLOCK);
+            for (int k = 1; k <= 2; k++) {
+                b.set(px + k, -2, pz - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
+                b.set(px - k, -2, pz - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
+                b.set(px, -2 + k, pz - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
+                b.set(px, -2 - k, pz - 1, Material.SPRUCE_TRAPDOOR, "facing=north,half=bottom,open=true");
             }
         }
         // The stern propeller on its shaft.
