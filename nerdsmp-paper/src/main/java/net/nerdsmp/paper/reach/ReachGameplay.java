@@ -58,6 +58,7 @@ public final class ReachGameplay implements Listener {
         new Place("highcrown.keep_hall", "Highcrown Keep", 20),
         new Place("highcrown.fane", "The Lantern Fane", 14),
         new Place("highcrown.market", "The Market Ward", 22),
+        new Place("highcrown.exchequer", "The Highcrown Exchequer", 12),
         new Place("highcrown.tethered_gull", "The Tethered Gull", 10),
         new Place("highcrown.crafter_0", "Crafters' Row", 18),
         new Place("highcrown.kingsbridge", "The Kingsbridge", 18),
@@ -70,7 +71,16 @@ public final class ReachGameplay implements Listener {
         new Place("goldenreach.tollkeeper_camp", "The Tollroad", 25),
         new Place("goldenreach.granary", "The Black Granary", 25),
         new Place("goldenreach.cellars_entrance", "The Old Granary Cellars", 6),
-        new Place("goldenreach.hollow_road", "The Hollow Road", 25)
+        new Place("goldenreach.hollow_road", "The Hollow Road", 25),
+        new Place("huntsmans_barrow.place", "The Huntsman's Barrow", 26),
+        new Place("stone_rings.place", "The Stone Rings", 16),
+        new Place("stonewatch.place", "Stonewatch", 14),
+        new Place("heart_tree.place", "The Heart Tree", 26),
+        new Place("great_aqueduct.place", "The Great Aqueduct", 30),
+        new Place("headframe.place", "The Deep Foreman's Headframe", 22),
+        new Place("sunscar_arch.place", "The Sunscar Arch", 30),
+        new Place("ember_gate.place", "The Ember Gate", 20),
+        new Place("seal_spire.place", "The Seal Spire", 22)
     );
 
     static final List<Encounter> ENCOUNTERS = List.of(

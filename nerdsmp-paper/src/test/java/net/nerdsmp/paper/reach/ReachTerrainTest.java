@@ -84,6 +84,30 @@ class ReachTerrainTest {
         assertTrue(range.get(ReachTerrain.Zone.SCAR)[1] > 150, "the Brimwall must stand high");
     }
 
+    /**
+     * A road never runs in a slot between sheer walls: wherever it cuts through high ground, the wall at its verge is
+     * at most the cutting's retaining wall, and the hillside above is battered back, so the ground a few blocks out
+     * stands no higher than one block per block of distance above that wall.
+     */
+    @Test
+    void roadsRunInGradedCuttingsNotSlots() {
+        java.util.List<String> bad = new java.util.ArrayList<>();
+        double deepest = 0;
+        String where = "";
+        for (ReachPath road : TERRAIN.roads()) for (int i = 0; i < road.size(); i++) {
+            double x = road.xs[i], z = road.zs[i];
+            for (double off = 3.5; off <= 12; off += 0.5) for (int side : new int[] {-1, 1}) {
+                int dx = (int) Math.floor(x + side * off), dz = (int) Math.floor(z);
+                ReachTerrain.Column c = TERRAIN.column(dx, dz);
+                if (!c.land() || c.roadLevel() == Integer.MIN_VALUE) continue;
+                if (c.cut() > deepest) { deepest = c.cut(); where = dx + "," + dz; }
+                if (c.cut() > ReachTerrain.CUT_WALL + 0.6) bad.add(dx + "," + dz + " wall " + String.format("%.1f", c.cut()));
+            }
+        }
+        System.out.println("Deepest road cutting wall: " + String.format("%.1f", deepest) + " at " + where);
+        assertTrue(bad.isEmpty(), "sheer cuttings: " + bad.subList(0, Math.min(10, bad.size())));
+    }
+
     /** Set REACH_PROBE to "x,z;x,z;..." to print those columns (a design aid). */
     @Test
     void probeWhenAsked() {

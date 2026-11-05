@@ -15,7 +15,7 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 6;
+    public static final int VERSION = 7;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */
@@ -36,7 +36,8 @@ public final class ReachPack {
             "pell_wren", "fen_calder", "nima_hart", "torren_pike", "sella_mire", "veyra_loom", "nyra_vell", "rook_salen",
             "orris_bell", "mara_venn", "vera_lune", "alba_meadow", "rowan_ashwood", "dain_slate", "petra_mason", "hob_copper",
             "highcrown_folk_baker", "highcrown_folk_porter", "highcrown_folk_widow", "highcrown_folk_urchin",
-            "reach_steward_aldric", "orin_ledger", "arlen_voss", "dorian_ash", "lyra_senn"};
+            "reach_steward_aldric", "orin_ledger", "arlen_voss", "dorian_ash", "lyra_senn", "highcrown_folk_clerk_a",
+            "highcrown_folk_clerk_b"};
         for (String npc : highcrown) a.put("highcrown.npc_" + npc, npc);
         a.put("highcrown.kingsgate", "highcrown_watch");
         a.put("highcrown.castle_gate", "highcrown_watch");

@@ -177,7 +177,7 @@ final class ReachFlora extends BlockPopulator {
                 Species species = pick(layer, h);
                 if (species.radius > buffer) continue;
                 Column c = terrain.column(x, z);
-                if (!c.land() || c.wet() || c.zone() != zone || c.road() > 0.02 || c.river() < 5 || c.edge() < species.radius + 2) continue;
+                if (!c.land() || c.wet() || terrain.groundZone(x, z, c.zone()) != zone || c.road() > 0.02 || c.river() < 5 || c.edge() < species.radius + 2) continue;
                 if (terrain.field(x, z) >= 0 || terrain.terraceMask(x, z) > 0.3) continue;
                 if (!clearOfBuilds(x, z, Math.max(2, species.radius / 2))) continue;
                 Material ground = region.getType(x, c.top(), z);
@@ -214,7 +214,7 @@ final class ReachFlora extends BlockPopulator {
         // Drift noise: grass and flowers gather in patches, each patch mostly one kind.
         double meadow = terrain.patch(x, z, 0.035), drift = terrain.grain(x, z, 0.06);
         int kind = (int) Math.floorMod((long) Math.floor(terrain.patch(x + 3000, z, 0.02) * 4), 4L);
-        switch (c.zone()) {
+        switch (terrain.groundZone(x, z, c.zone())) {
             case GOLDENREACH, HIGHCROWN -> {
                 if (drift > 0.45 && roll < 0.55) region.setType(x, y, z, flower(kind, Material.DANDELION, Material.POPPY, Material.CORNFLOWER, Material.OXEYE_DAISY));
                 else if (meadow > 0.25 && roll < 0.35 && canTall) tall(region, x, y, z, grassLower, grassUpper);

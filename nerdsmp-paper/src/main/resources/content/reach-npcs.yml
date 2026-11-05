@@ -80,6 +80,22 @@ npcs:
     faction: free_delvers
     root-dialogue: nettle_start
     look-radius: 6
+  highcrown_folk_clerk_a:
+    name: Tallis Penwright
+    title: Counting Clerk
+    entity: VILLAGER
+    look: librarian@taiga
+    faction: frontier_wardens
+    root-dialogue: tallis_start
+    look-radius: 6
+  highcrown_folk_clerk_b:
+    name: Mirabel Quoin
+    title: Vault Clerk
+    entity: VILLAGER
+    look: cartographer@plains
+    faction: frontier_wardens
+    root-dialogue: mirabel_start
+    look-radius: 6
 
   # ------------------------------------------------------------------ Goldenreach Vale
   reeve_hollis:
@@ -349,6 +365,22 @@ dialogues:
     choices:
       done:
         text: "Humming what?"
+        close: true
+  tallis_start:
+    text:
+      - "Deposits and draws are Master Ledger's business, at the desk before the vault. I only count what comes through the door."
+      - "Every Mark struck in Highcrown passes this counter twice. Once coming in, and once more when someone swears it never did."
+    choices:
+      done:
+        text: "I'll see Master Ledger."
+        close: true
+  mirabel_start:
+    text:
+      - "The vault door weighs more than the Kingsgate's portcullis. Took forty dockhands and a crane off an airship to hang it."
+      - "Nobody's ever broken in. A few have broken their fingers on the wheel trying."
+    choices:
+      done:
+        text: "Good to know."
         close: true
 
   # ------------------------------------------------------------------ Goldenreach Vale

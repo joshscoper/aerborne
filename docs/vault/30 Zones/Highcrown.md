@@ -80,6 +80,41 @@ and culturally. This pass answers it:
   side of it.
 - **Walls** step in level runs, tower doors face the city, and no house stands outside the ring wall.
 
+## The fourth review (2026-11-05)
+- **The Lantern Fane is a cathedral.** It's built by `HighcrownCathedral`. The walls are white limestone over a grey
+  skeleton, under slate roofs, as Stormwind's Cathedral of Light is (see [[Stormwind Study]]). It has:
+  - twin west towers with angle buttresses, small roses, open belfries with bells, and slate spires;
+  - a recessed portal of three orders with a gilded tympanum, the great rose and a galleried gable;
+  - a nave of five bays: pointed arcade, triforium band, clerestory and ribbed vault;
+  - aisles with tall windows, and flying buttresses with pinnacles;
+  - a transept with a rose and a door at each end;
+  - a crossing tower whose spire is the tallest in the city, with the great lantern hanging under it;
+  - a choir with stalls and a round apse round the altar and the ever-burning lantern.
+
+  The churchyard lies along the south aisle, a garden with oaks round the apse.
+- **The Highcrown Exchequer.** The bank, built by `HighcrownExchequer`, holds the east side of the market square
+  facing the avenue:
+  - a white-marble temple front on a podium, steps the full width;
+  - six fluted columns, an entablature lettered with its name, and a pediment with a gilded coin;
+  - a green copper roof and copper doors;
+  - a counting hall under a coffered ceiling and chandeliers, with tellers' high desks down both sides;
+  - Orin Ledger's desk on the axis of the door, and the vault's great round door behind it.
+
+  Two clerks (Tallis Penwright, Mirabel Quoin) work the desks. The east stall row stops short of its steps so the
+  bank has a forecourt; the market cross moved to the square's south end.
+- **Houses:**
+  - each picks its own lime: white, cream, pinkish or stone-white;
+  - roofs show weathered patches of an older course and a capped ridge;
+  - a chamfered plinth runs round the foot;
+  - some front panels carry braces instead of windows;
+  - upper windows have open shutters;
+  - chimneys run down into the roof.
+- **Fixes:**
+  - doorstep stairs face the right way, with stone cheeks where they cut a slope;
+  - the bridge's pier lamps no longer stand in front of the Wardens' plaques;
+  - the Crown Keep has a carved, closed portal;
+  - the ring wall ends in a tower at the lip.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].

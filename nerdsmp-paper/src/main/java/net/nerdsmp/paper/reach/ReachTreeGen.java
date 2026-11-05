@@ -49,6 +49,21 @@ public final class ReachTreeGen {
         if (w.air(x, y, z)) w.set(x, y, z, log, "axis=" + axis);
     }
 
+    /** The all-bark block for a log, so limbs and roots show bark on every face instead of cut rings. */
+    static Material wood(Material log) {
+        return switch (log) {
+            case OAK_LOG -> Material.OAK_WOOD;
+            case SPRUCE_LOG -> Material.SPRUCE_WOOD;
+            case BIRCH_LOG -> Material.BIRCH_WOOD;
+            case DARK_OAK_LOG -> Material.DARK_OAK_WOOD;
+            case ACACIA_LOG -> Material.ACACIA_WOOD;
+            case CHERRY_LOG -> Material.CHERRY_WOOD;
+            case MANGROVE_LOG -> Material.MANGROVE_WOOD;
+            case STRIPPED_DARK_OAK_LOG -> Material.STRIPPED_DARK_OAK_WOOD;
+            default -> log;
+        };
+    }
+
     /**
      * A straight limb from (x, y, z) along (dx, dy, dz), {@code length} blocks, logs turned to the limb's main axis.
      * Returns the end point.
@@ -57,31 +72,40 @@ public final class ReachTreeGen {
         double n = Math.sqrt(dx * dx + dy * dy + dz * dz);
         dx /= n; dy /= n; dz /= n;
         String axis = Math.abs(dy) >= Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 ? "y" : Math.abs(dx) > Math.abs(dz) ? "x" : "z";
+        Material bark = wood(log);
         int ex = (int) Math.floor(x), ey = (int) Math.floor(y), ez = (int) Math.floor(z);
-        for (int i = 0; i <= length; i++) {
-            ex = (int) Math.floor(x + dx * i); ey = (int) Math.floor(y + dy * i); ez = (int) Math.floor(z + dz * i);
-            log(w, ex, ey, ez, log, axis);
-            if (thick && i < length * 0.6) {
-                log(w, ex + 1, ey, ez, log, axis);
-                log(w, ex, ey, ez + 1, log, axis);
+        int px = ex, py = ey, pz = ez;
+        // Half-block steps, and wherever a step moves on more than one axis the gap is filled through the faces,
+        // so a limb is one continuous piece of timber rather than blocks touching at their corners.
+        for (int i = 0; i <= length * 2; i++) {
+            ex = (int) Math.floor(x + dx * i * 0.5); ey = (int) Math.floor(y + dy * i * 0.5); ez = (int) Math.floor(z + dz * i * 0.5);
+            if (i > 0) {
+                if (ex != px && (ey != py || ez != pz)) log(w, ex, py, pz, bark, axis);
+                if (ez != pz && ey != py) log(w, ex, py, ez, bark, axis);
             }
+            log(w, ex, ey, ez, bark, axis);
+            if (thick && i < length * 1.2) {
+                log(w, ex + 1, ey, ez, bark, axis);
+                log(w, ex, ey, ez + 1, bark, axis);
+            }
+            px = ex; py = ey; pz = ez;
         }
         return new int[] {ex, ey, ez};
     }
 
     /**
-     * A leaf cluster: an ellipsoid with a ragged edge, thinner underneath, in two tones that change in patches rather
-     * than block by block.
+     * A leaf cluster: an ellipsoid, flatter underneath, whose edge swells and dips in a few broad lumps (never
+     * block-by-block speckle or holes), in two tones that change in patches rather than block by block.
      */
     private static void cluster(Writer w, int cx, int cy, int cz, double rx, double ry, double rz, Material leaf, Material second, SplittableRandom r) {
         int ix = (int) Math.ceil(rx), iy = (int) Math.ceil(ry), iz = (int) Math.ceil(rz);
-        long salt = r.nextLong();
+        double p1 = r.nextDouble() * Math.PI * 2, p2 = r.nextDouble() * Math.PI * 2, p3 = r.nextDouble() * Math.PI * 2;
         for (int dx = -ix; dx <= ix; dx++) for (int dy = -iy; dy <= iy; dy++) for (int dz = -iz; dz <= iz; dz++) {
             double d = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) + (dz * dz) / (rz * rz);
-            long h = ReachFlora.hash(cx + dx * 7 + (int) salt, cz + dz * 13 + dy * 31);
-            double rough = ((h & 0xFF) / 255.0) * 0.35;
-            double edge = dy < 0 ? 0.75 : 1.0;
-            if (d > edge - rough) continue;
+            double ax = dx / rx, az = dz / rz, ay = dy / ry;
+            double lumps = 0.11 * Math.sin(ax * 2.6 + p1) * Math.cos(az * 2.3 + p2) + 0.07 * Math.sin(ay * 3.1 + ax * 1.7 + p3);
+            double edge = (dy < 0 ? 0.78 : 1.0) - 0.08 + lumps;
+            if (d > edge) continue;
             int x = cx + dx, y = cy + dy, z = cz + dz;
             if (!w.air(x, y, z)) continue;
             boolean tone = second != leaf && ((ReachFlora.hash((cx + dx) >> 1, (cz + dz) >> 1) ^ ((cy + dy) >> 1)) & 7) < 3;
@@ -97,7 +121,7 @@ public final class ReachTreeGen {
             int len = 1 + r.nextInt(Math.max(1, reach));
             for (int k = 1; k <= len; k++) {
                 int yy = y + (k == 1 ? (r.nextBoolean() ? 1 : 0) : 0) - (k > 2 ? 1 : 0);
-                log(w, x + d[0] * k, yy, z + d[1] * k, log, d[0] != 0 && d[1] == 0 ? "x" : d[1] != 0 && d[0] == 0 ? "z" : "y");
+                log(w, x + d[0] * k, yy, z + d[1] * k, wood(log), d[0] != 0 && d[1] == 0 ? "x" : d[1] != 0 && d[0] == 0 ? "z" : "y");
             }
         }
     }

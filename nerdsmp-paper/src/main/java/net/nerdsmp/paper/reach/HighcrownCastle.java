@@ -8,7 +8,7 @@ import org.bukkit.Material;
  * - the Crown Keep, whose throne hall holds the empty crown and the Steward;
  * - the Hall of Accord, where envoys of the Reach meet under their banners;
  * - barracks and stables for the Watch, an armory with the quartermaster, a chapel;
- * - the treasury where the city's banker keeps its gold;
+ * - the crown's treasury, a strongroom with its gold behind bars;
  * - a training yard with targets, where the duel marshal drills recruits.
  */
 final class HighcrownCastle {
@@ -265,7 +265,8 @@ final class HighcrownCastle {
                 boolean floor = y == K - 1 || y == K + 9 || y == K + 16 || y == K + 23 || y == K + 30;
                 if (!wall) { canvas.set(x, y, z, floor ? (y == K - 1 ? Material.DEEPSLATE_TILES : Material.DARK_OAK_PLANKS) : Material.AIR); continue; }
                 boolean pier = (x - x0) % 5 == 0 && (z == z0 || z == z1) || (z - z0) % 5 == 0 && (x == x0 || x == x1);
-                boolean window = !pier && ((y >= K + 2 && y <= K + 7) || (y - K) % 7 == 3 && y > K + 9 && y < K + h - 2);
+                boolean portal = z == z1 && Math.abs(x - CX) <= 4;
+                boolean window = !pier && !portal && ((y >= K + 2 && y <= K + 7) || (y - K) % 7 == 3 && y > K + 9 && y < K + h - 2);
                 boolean lancet = window && ((x - x0) % 5 == 2 || (z - z0) % 5 == 2 || (x - x0) % 5 == 3 || (z - z0) % 5 == 3);
                 canvas.set(x, y, z, lancet ? Material.GLASS_PANE : pier ? Material.POLISHED_ANDESITE : stone(x, y, z));
             }
@@ -289,11 +290,24 @@ final class HighcrownCastle {
         kit.spire(new ReachBrush(canvas, CX - 3, K + h + 10, CZ - 22, 0), -1, 7, 0, ReachKit.Style.SLATE);
         // The throne hall: a red runner from the door to the dais, pillars, banners, chandeliers, the empty crown.
         int door = CX;
-        for (int x = door - 2; x <= door + 2; x++) for (int y = K; y <= K + 4; y++) canvas.set(x, y, z1, Material.AIR);
-        canvas.set(door - 1, K, z1, Material.DARK_OAK_DOOR, "facing=south,half=lower,hinge=left,open=true");
-        canvas.set(door - 1, K + 1, z1, Material.DARK_OAK_DOOR, "facing=south,half=upper,hinge=left,open=true");
-        canvas.set(door + 1, K, z1, Material.DARK_OAK_DOOR, "facing=south,half=lower,hinge=right,open=true");
-        canvas.set(door + 1, K + 1, z1, Material.DARK_OAK_DOOR, "facing=south,half=upper,hinge=right,open=true");
+        // The portal: a pointed arch in a carved surround, filled with a timber screen and a pair of great doors.
+        for (int dx = -3; dx <= 3; dx++) for (int y = K; y <= K + 7; y++) {
+            int ax = Math.abs(dx);
+            boolean opening = ax <= 2 && y <= K + 4 + (ax <= 1 ? 1 : 0) + (ax == 0 ? 1 : 0);
+            if (ax == 3 || !opening && y <= K + 7) canvas.set(door + dx, y, z1 + 1, ax == 3 || y == K + 7 ? Material.CHISELED_STONE_BRICKS : Material.STONE_BRICKS);
+            if (opening) {
+                canvas.set(door + dx, y, z1 + 1, Material.AIR);
+                canvas.set(door + dx, y, z1, ax <= 1 && y <= K + 1 ? Material.AIR : Material.DARK_OAK_PLANKS);
+            }
+        }
+        canvas.set(door - 1, K, z1, Material.DARK_OAK_DOOR, "facing=south,half=lower,hinge=left,open=false");
+        canvas.set(door - 1, K + 1, z1, Material.DARK_OAK_DOOR, "facing=south,half=upper,hinge=left,open=false");
+        canvas.set(door, K, z1, Material.DARK_OAK_DOOR, "facing=south,half=lower,hinge=right,open=false");
+        canvas.set(door, K + 1, z1, Material.DARK_OAK_DOOR, "facing=south,half=upper,hinge=right,open=false");
+        canvas.set(door + 1, K, z1, Material.DARK_OAK_PLANKS);
+        canvas.set(door + 1, K + 1, z1, Material.DARK_OAK_PLANKS);
+        for (int dx : new int[] {-3, 3}) canvas.set(door + dx, K + 3, z1 + 2, Material.LANTERN, "hanging=false");
+        for (int dx : new int[] {-2, 2}) canvas.set(door + dx, K + 8, z1 + 1, Material.GREEN_WALL_BANNER, "facing=south");
         for (int z = z0 + 5; z < z1; z++) for (int x = door - 1; x <= door + 1; x++) canvas.set(x, K, z, Material.RED_CARPET);
         for (int x = x0 + 4; x <= x1 - 4; x++) for (int z = z0 + 1; z <= z0 + 4; z++) {
             canvas.set(x, K, z, z == z0 + 4 ? Material.POLISHED_BLACKSTONE_STAIRS : Material.POLISHED_BLACKSTONE_BRICKS, z == z0 + 4 ? "facing=north,half=bottom" : "");
@@ -419,7 +433,6 @@ final class HighcrownCastle {
         canvas.set(x0 + 2, K, z0 + 1, Material.LECTERN, "facing=south");
         canvas.set(CX, K + 4, z0 + 2, Material.LANTERN, "hanging=true");
         canvas.set(CX, K + 4, z1 - 2, Material.LANTERN, "hanging=true");
-        site.mark("npc_orin_ledger", CX, K, z0 + 4, 180F);
     }
 
     /** The training yard: sand and gravel, archery butts, straw dummies with pumpkin heads, a weapon rack. */

@@ -66,6 +66,17 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
 - **Encounters.** Rares and the dungeon boss appear at their spots on their own timers when someone is near:
   Toll-Captain Brask (5 min), the Scarecrow King (12 min), Old Grizzlehide (30 min), Gilt-Tooth (25 min) and
   Hollow Jack (40 min, at night only).
+- **Landmarks.** Each outer zone's hero landmark stands as a named place with a world chest (vault: Landmarks):
+  - the Huntsman's Barrow, the Stone Rings and Stonewatch (the Barrowdowns);
+  - the Heart Tree (Thornwood);
+  - the Great Aqueduct (Mistmere);
+  - the Deep Foreman's Headframe (the Ironspine);
+  - the Sunscar Arch (the Sunscar Breaks);
+  - the Ember Gate (the Ashen Scar);
+  - the Seal Spire (the Archive Isle).
+
+  A waypoint (camp, ruined waystation or cairn) with a chest stands about every 350 blocks of road through those
+  zones.
 - **The skyfarer's line.** Anyone who falls off the edge is hauled back to the last solid ground they stood on,
   with no fall damage.
 
@@ -96,14 +107,19 @@ pot flowers, trampling and crop picking, and it can still open doors.
 | The chunk generator, surface painter, plants and biomes | `ReachGenerator`, `ReachSurface`, `ReachFlora` |
 | Built features and their named spots | `ReachFeatures`, `ReachCanvas`, `ReachBuilds` |
 | Building kit (houses, towers, stalls, lamps), trees | `ReachKit`, `ReachBrush`, `ReachTrees` |
-| Highcrown, the Vale, bridges | `HighcrownCity`, `GoldenreachVale`, `ReachBridges` |
+| Highcrown, its castle, cathedral and bank; the Vale; bridges | `HighcrownCity`, `HighcrownCastle`, `HighcrownCathedral`, `HighcrownExchequer`, `GoldenreachVale`, `ReachBridges` |
+| Zone landmarks, roadside waypoints | `ReachLandmarks`, `ReachRoadside` |
 | The world pack, built in code | `ReachPack` (registered with `WorldPackService`, which now also matches a world by name) |
 | Places, world chests, encounters | `ReachGameplay` (progress in `plugins/NerdSMP/reach-progress.yml`) |
 | World, pre-generation, rebuild, rescue, `/reach` | `ReachService` |
 
 Tests: `ReachTerrainTest` (shape, water never leaks, rivers pour off the lip; `REACH_ATLAS=<file.png>` draws the
 map from above), `ReachBuildsTest` (every spot has a floor and headroom; `REACH_SPOTS=<file.json>` dumps the spots),
-`ReachPackTest` (zones validate, every NPC, mob and quest reference resolves).
+`ReachPackTest` (zones validate, every NPC, mob and quest reference resolves). For checking a build's layout and
+elevations without generating a world:
+- `REACH_PLAN=<file.png>` draws a feature from above;
+- `REACH_PLAN_VIEW=west|east|north|south` draws a side view instead;
+- `REACH_PLAN_BOX`, `REACH_PLAN_SCALE` and `REACH_PLAN_Y` set the area, scale and height range.
 
 ## Cutover from the MMORPG map
 

@@ -61,6 +61,8 @@ public final class ReachGenerator extends ChunkGenerator {
                 continue;
             }
             int slope = slope(grid, lx + 1, lz + 1, c.top());
+            // Near a zone border the ground follows the frayed line, not the zone's own.
+            c = c.withZone(terrain.groundZone(x, z, c.zone()));
             double p = terrain.patch(x, z, 0.05);
             data.setBlock(lx, c.bottom(), lz, surface.underside(c, p));
             for (int y = c.bottom() + 1; y < c.top() - 3; y++) data.setBlock(lx, y, lz, surface.rock(x, y, z, c.zone()));

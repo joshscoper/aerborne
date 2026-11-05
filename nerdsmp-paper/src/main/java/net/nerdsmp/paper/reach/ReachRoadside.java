@@ -35,8 +35,9 @@ final class ReachRoadside {
                     minX = Math.min(minX, road.xs[i]); maxX = Math.max(maxX, road.xs[i]);
                     minZ = Math.min(minZ, road.zs[i]); maxZ = Math.max(maxZ, road.zs[i]);
                 }
-                ReachFeatures.Footprint footprint = new ReachFeatures.Footprint((int) Math.floor(minX) - 14, (int) Math.floor(minZ) - 14,
-                    (int) Math.ceil(maxX) + 14, (int) Math.ceil(maxZ) + 14);
+                // Wide enough for a waypoint thirteen blocks off the road and its five-deep plot.
+                ReachFeatures.Footprint footprint = new ReachFeatures.Footprint((int) Math.floor(minX) - 19, (int) Math.floor(minZ) - 19,
+                    (int) Math.ceil(maxX) + 19, (int) Math.ceil(maxZ) + 19);
                 int index = r;
                 out.add(new ReachFeatures.Feature("road_" + r + "_" + part, footprint,
                     t -> new ReachRoadside(t, clearance, road, index).build(from, to)));
@@ -70,6 +71,7 @@ final class ReachRoadside {
             int side = (h & 1) == 0 ? 1 : -1;
             if (i % 25 == 12) milestone(i, 1);
             if (i % 110 == 70) shrine(i, side);
+            if (i % 70 == 35) wayside(i, -side);
             if (lampy(i) && i % 6 == 0) lamp(i, (i / 6) % 2 == 0 ? 1 : -1);
             if (lampy(i) && i % 18 == 9) bench(i, -side);
             marker(i, side);
@@ -260,6 +262,107 @@ final class ReachRoadside {
         b.set(1, 2, -1, Material.LANTERN, "hanging=true");
         b.set(-1, 0, 0, Material.POTTED_CORNFLOWER);
         b.set(3, 0, 0, Material.POTTED_POPPY);
+    }
+
+    /**
+     * A waypoint every three hundred blocks or so along the roads through the zones beyond the Vale, so a long road
+     * always has the next thing in sight: a traveller's camp (tent, fire, packs), a ruined waystation (broken walls
+     * round a hearth) or a cairn with an offering stone, each with a chest of the zone's tier. The Vale and the
+     * capital have their own builds and are left alone.
+     */
+    private void wayside(int i, int side) {
+        Zone zone = terrain.zoneAt(road.xs[i], road.zs[i]);
+        if (zone == Zone.GOLDENREACH || zone == Zone.HIGHCROWN || zone == Zone.SKY) return;
+        int[] p = beside(i, side * 13.0);
+        Column c = ground(p[0], p[1], i, 3);
+        if (c == null) return;
+        ReachBrush b = new ReachBrush(canvas, p[0], c.top() + 1, p[1], facingRoad(i, side));
+        for (int x = -4; x <= 4; x++) for (int z = -3; z <= 5; z++) {
+            int wx = b.wx(x, z), wz = b.wz(x, z);
+            Column g = terrain.column(wx, wz);
+            if (clearance.blocked(wx, wz) || !g.land() || g.wet() || Math.abs(g.top() - c.top()) > 2 || g.carriageway()) return;
+        }
+        int tier = switch (zone) { case BARROWDOWNS, THORNWOOD -> 1; case MISTMERE, IRONSPINE -> 2; default -> 3; };
+        long h = ReachFlora.hash(i * 13 + roadIndex, 991);
+        int kind = (int) Math.floorMod(h, 3L);
+        kit.site(b, -3, -2, 3, 4, 1, Material.COBBLESTONE);
+        if (kind == 0) camp(b, zone);
+        else if (kind == 1) waystation(b);
+        else cairnStone(b, zone);
+        b.set(0, 0, 3, Material.CHEST, "facing=north,type=single");
+        spots.add(new ReachFeatures.Spot("chest_tier" + tier + "_way_" + roadIndex + "_" + i, b.wx(0, 3) + 0.5, b.oy, b.wz(0, 3) + 0.5, 0F));
+    }
+
+    /** A traveller's camp: a ridge tent of the zone's cloth, a ringed fire with a spit, bedrolls, packs and a lamp. */
+    private void camp(ReachBrush b, Zone zone) {
+        Material cloth = switch (zone) {
+            case SUNSCAR -> Material.ORANGE_WOOL;
+            case SCAR -> Material.GRAY_WOOL;
+            case THORNWOOD -> Material.GREEN_WOOL;
+            case MISTMERE -> Material.LIGHT_BLUE_WOOL;
+            default -> Material.WHITE_WOOL;
+        };
+        Material stripe = zone == Zone.SUNSCAR ? Material.BROWN_WOOL : Material.LIGHT_GRAY_WOOL;
+        // The tent: an A-frame of cloth on a spruce ridge pole, open at the front.
+        for (int z = 1; z <= 4; z++) {
+            b.set(-2, 0, z, cloth);
+            b.set(2, 0, z, cloth);
+            b.set(-1, 1, z, z % 2 == 0 ? stripe : cloth);
+            b.set(1, 1, z, z % 2 == 0 ? stripe : cloth);
+            b.set(0, 2, z, Material.SPRUCE_FENCE);
+            for (int x = -1; x <= 1; x++) b.set(x, 0, z, x == 0 ? Material.AIR : Material.AIR);
+        }
+        for (int x = -1; x <= 1; x++) b.set(x, 0, 4, cloth);
+        b.set(0, 1, 4, cloth);
+        for (int z : new int[] {0, 5}) b.set(0, 2, z, Material.SPRUCE_FENCE);
+        for (int z : new int[] {0, 5}) for (int y = 0; y <= 1; y++) b.set(0, y, z, Material.SPRUCE_FENCE);
+        b.set(-1, 0, 2, Material.BROWN_CARPET);
+        b.set(1, 0, 2, Material.RED_CARPET);
+        // The fire in front: a ring of stones round a campfire, a spit over it, a log to sit on.
+        b.set(0, 0, -2, Material.CAMPFIRE, "lit=true,signal_fire=false");
+        for (int[] d : new int[][] {{1, -2}, {-1, -2}, {0, -3}}) b.set(d[0], 0, d[1], Material.COBBLESTONE_SLAB, "type=bottom");
+        b.set(2, 0, -2, Material.SPRUCE_LOG, "axis=z");
+        b.set(-2, 0, -1, Material.BARREL, "facing=up");
+        b.set(-3, 0, -1, Material.HAY_BLOCK, "axis=y");
+        b.set(3, 0, 1, Material.LANTERN);
+    }
+
+    /** A ruined waystation: broken walls of an old road-house round a cold hearth, a fallen beam, nettles. */
+    private void waystation(ReachBrush b) {
+        for (int x = -3; x <= 3; x++) for (int z = 0; z <= 5; z++) {
+            boolean wall = x == -3 || x == 3 || z == 0 || z == 5;
+            if (!wall) continue;
+            if (z == 0 && Math.abs(x) <= 1) continue;
+            int h = 1 + (int) Math.floorMod(ReachFlora.hash(b.wx(x, z), b.wz(x, z)), 3L) + (x == 3 ? 1 : 0);
+            for (int y = 0; y < h; y++) b.set(x, y, z, kit.weathered(b, x, y, z, Material.COBBLESTONE));
+            if (h >= 3 && (x + z) % 2 == 0) b.set(x, h, z, Material.MOSSY_COBBLESTONE_SLAB, "type=bottom");
+        }
+        // The hearth against the back wall, a fallen roof beam, rubble.
+        b.set(0, 0, 4, Material.CAMPFIRE, "lit=false,signal_fire=false");
+        b.set(-1, 0, 4, Material.COBBLESTONE);
+        b.set(1, 0, 4, Material.COBBLESTONE);
+        for (int y = 1; y <= 3; y++) b.set(0, y, 5, Material.COBBLESTONE);
+        for (int x = -2; x <= 1; x++) b.set(x, 0, 2, Material.STRIPPED_SPRUCE_LOG, "axis=x");
+        b.set(2, 0, 1, Material.MOSSY_COBBLESTONE);
+        b.set(-2, 0, 4, Material.COBWEB);
+    }
+
+    /** A cairn by the road with an offering stone, the zone's own stone, a lantern for those who pass at night. */
+    private void cairnStone(ReachBrush b, Zone zone) {
+        Material stone = switch (zone) {
+            case SUNSCAR -> Material.RED_SANDSTONE;
+            case SCAR -> Material.BLACKSTONE;
+            case IRONSPINE -> Material.ANDESITE;
+            default -> Material.MOSSY_COBBLESTONE;
+        };
+        for (int dx = -2; dx <= 2; dx++) for (int dz = 0; dz <= 4; dz++) {
+            double d = Math.hypot(dx, dz - 2);
+            int h = d < 0.9 ? 4 : d < 1.8 ? 2 : d < 2.5 ? 1 : 0;
+            for (int y = 0; y < h; y++) b.set(dx, y, dz, (dx + dz + y) % 3 == 0 ? Material.COBBLESTONE : stone);
+        }
+        b.set(0, 4, 2, Material.LANTERN);
+        b.set(0, 0, 0, Material.POLISHED_ANDESITE_SLAB, "type=bottom");
+        b.set(1, 0, -1, Material.CANDLE, "candles=2,lit=true");
     }
 
     /** Zone markers that aren't continuous edges: cairns over the passes, marsh lights, ash-road pillars, log piles. */

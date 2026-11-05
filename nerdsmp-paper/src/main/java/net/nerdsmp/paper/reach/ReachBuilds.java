@@ -12,6 +12,7 @@ final class ReachBuilds {
             new ReachFeatures.Feature("goldenreach", new ReachFeatures.Footprint(-445, 240, 235, 775), GoldenreachVale::build)
         ));
         all.addAll(ReachBridges.features(terrain));
+        all.addAll(ReachLandmarks.features(terrain));
         return all;
     }
 }

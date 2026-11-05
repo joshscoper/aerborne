@@ -167,7 +167,7 @@ final class HighcrownCity {
         }
         // The city's banners on tall poles down both sides of the avenue in the Crown Ward.
         for (int z = GATE_Z + 50; z < STAIR_A - 4; z += 10) for (int x : new int[] {-AVENUE_HALF - 2, AVENUE_HALF + 2}) {
-            if (!onPlatform(x, z)) continue;
+            if (!onPlatform(x, z) || x > 0 && z == HighcrownCathedral.AX) continue;
             canvas.set(x, CROWN, z, Material.STONE_BRICK_WALL, "up=true");
             for (int y = CROWN + 1; y <= CROWN + 5; y++) canvas.set(x, y, z, Material.DARK_OAK_FENCE);
             canvas.set(x, CROWN + 6, z, Material.GREEN_BANNER, "rotation=" + (x < 0 ? 4 : 12));
@@ -283,7 +283,8 @@ final class HighcrownCity {
                     for (int y = floor; y < y0 - 1; y++) canvas.set(x, y, z + dz, y < y0 - 18 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
                     if (c.wet()) for (int y = floor; y <= c.water() + 1; y++) for (int ex : new int[] {-half - 4, half + 4}) canvas.set(ex, y, z + dz, Material.MOSSY_STONE_BRICKS);
                 }
-                for (int x : new int[] {-half - 1, half + 1}) {
+                // Lamps on the parapet over each pier, except where a bastion opens: there the statue's plaque must show.
+                if (z != 776 && z != 788 && z != 800) for (int x : new int[] {-half - 1, half + 1}) {
                     canvas.set(x, y0 + 1, z, Material.STONE_BRICKS);
                     canvas.set(x, y0 + 2, z, Material.CHISELED_STONE_BRICKS);
                     canvas.set(x, y0 + 3, z, Material.LANTERN);
@@ -588,7 +589,7 @@ final class HighcrownCity {
                 wallColumn(x, z, walk, r > 161, r < 159, way && c.top() == level - 1 ? level : -1);
             }
         }
-        for (double a : new double[] {-12, 22, 52}) {
+        for (double a : new double[] {-12, 22, 52, 72}) {
             double rad = Math.toRadians(a);
             int x = (int) Math.round(160 * Math.cos(rad)), z = (int) Math.round(905 + 160 * Math.sin(rad));
             ReachTerrain.Column c = terrain.column(x, z);
@@ -697,179 +698,52 @@ final class HighcrownCity {
     }
 
     /**
-     * The Lantern Fane: the city's temple, where the lantern for the Wardens who left is never let go out. A nave with
-     * buttresses and tall coloured windows, transepts with round windows, an apse, and a west tower with an open
-     * belfry and the tallest spire in Highcrown, its door on the avenue.
+     * The Lantern Fane, the city's cathedral ({@link HighcrownCathedral}), and its close: the churchyard along the
+     * south aisle, a garden round the apse with oaks and benches over the Market Ward, a lawn on the north side and a
+     * path from the citadel street to the north door.
      */
     private void fane() {
-        int f = CROWN;
-        ReachKit.Style s = ReachKit.Style.FANE;
-        kit.site(new ReachBrush(canvas, 13, f, 876, 0), 0, 0, 40, 26, 2, Material.STONE_BRICKS);
-        for (int x = 11; x <= 55; x++) for (int z = 874; z <= 904; z++) reserve(x, z);
-        Material[] glass = {Material.BLUE_STAINED_GLASS_PANE, Material.YELLOW_STAINED_GLASS_PANE, Material.LIGHT_BLUE_STAINED_GLASS_PANE, Material.WHITE_STAINED_GLASS_PANE};
-        // Floor through the whole church.
-        for (int x = 14; x <= 52; x++) for (int z = 877; z <= 901; z++) {
-            boolean inside = x <= 46 && z >= 883 && z <= 895 || x >= 32 && x <= 38 || x > 46 && Math.hypot(x - 46, z - 889) < 6.5 || x <= 22 && z >= 885 && z <= 893;
-            if (inside) canvas.set(x, f - 1, z, z == 889 || x >= 33 && x <= 37 && z == 889 ? Material.POLISHED_ANDESITE : (x + z) % 2 == 0 ? Material.STONE_BRICKS : Material.POLISHED_ANDESITE);
-        }
-        // Nave: walls, buttresses, windows.
-        for (int x = 22; x <= 46; x++) for (int z : new int[] {883, 895}) for (int y = f - 1; y <= f + 12; y++) {
-            if (x >= 32 && x <= 38) continue;
-            canvas.set(x, y, z, y == f + 12 ? Material.STONE_BRICK_SLAB : kit.weathered(new ReachBrush(canvas, 0, 0, 0, 0), x, y - f, z, Material.STONE_BRICKS),
-                y == f + 12 ? "type=bottom" : "");
-        }
-        for (int x = 23; x <= 45; x++) for (int z = 884; z <= 894; z++) for (int y = f; y <= f + 12; y++) canvas.set(x, y, z, Material.AIR);
-        for (int[] bay : new int[][] {{25, 26}, {29, 30}, {41, 42}, {44, 45}}) for (int x = bay[0]; x <= bay[1]; x++) for (int z : new int[] {883, 895}) {
-            for (int y = f + 3; y <= f + 9; y++) canvas.set(x, y, z, glass[(x + y) % glass.length], "east=true,west=true");
-            canvas.set(x, f + 2, z, Material.STONE_BRICK_SLAB, "type=top");
-        }
-        for (int bx : new int[] {24, 28, 31, 39, 43}) for (int z : new int[] {882, 896}) {
-            int out = z < 889 ? -1 : 1;
-            for (int y = f - 1; y <= f + 9; y++) canvas.set(bx, y, z, Material.STONE_BRICKS);
-            canvas.set(bx, f + 10, z, Material.STONE_BRICK_STAIRS, out < 0 ? "facing=north,half=bottom" : "facing=south,half=bottom");
-            for (int y = f - 1; y <= f + 4; y++) canvas.set(bx, y, z + out, Material.STONE_BRICKS);
-            canvas.set(bx, f + 5, z + out, Material.STONE_BRICK_STAIRS, out < 0 ? "facing=north,half=bottom" : "facing=south,half=bottom");
-        }
-        // Pews either side of the aisle, the altar and the ever-burning lantern in the apse.
-        for (int x = 25; x <= 43; x += 2) {
-            if (x >= 31 && x <= 39) continue;
-            for (int z = 885; z <= 894; z++) if (z != 889 && z != 888 && z != 890) canvas.set(x, f, z, Material.SPRUCE_STAIRS, "facing=west,half=bottom");
-        }
-        // Transepts.
-        for (int z = 877; z <= 901; z++) for (int x = 32; x <= 38; x++) for (int y = f - 1; y <= f + 12; y++) {
-            boolean wall = x == 32 || x == 38 || z == 877 || z == 901;
-            boolean crossing = z > 883 && z < 895;
-            if (crossing && (x == 32 || x == 38)) { canvas.set(x, y, z, y >= f + 11 ? Material.STONE_BRICKS : Material.AIR); continue; }
-            if (wall) canvas.set(x, y, z, y == f + 12 ? Material.STONE_BRICK_SLAB : kit.weathered(new ReachBrush(canvas, 0, 0, 0, 0), x, y - f, z, Material.STONE_BRICKS), y == f + 12 ? "type=bottom" : "");
-            else if (y >= f) canvas.set(x, y, z, Material.AIR);
-        }
-        for (int z : new int[] {877, 901}) for (int dx = -2; dx <= 2; dx++) for (int dy = -2; dy <= 2; dy++) {
-            double r = Math.hypot(dx, dy);
-            if (r < 2.6) canvas.set(35 + dx, f + 7 + dy, z, r < 1 ? Material.YELLOW_STAINED_GLASS_PANE : glass[(dx + dy + 8) % 2 == 0 ? 0 : 3], "east=true,west=true");
-        }
-        // Apse: a half-round east end with tall windows under a stepped dome.
-        for (int x = 46; x <= 53; x++) for (int z = 882; z <= 896; z++) {
-            double r = Math.hypot(x - 46, z - 889);
-            if (x == 46 && z > 883 && z < 895) continue;
-            if (r >= 5.6 && r < 6.6) for (int y = f - 1; y <= f + 10; y++) {
-                boolean window = y >= f + 3 && y <= f + 8 && (z == 886 || z == 892 || z == 889);
-                canvas.set(x, y, z, window ? glass[(z + y) % glass.length] : kit.weathered(new ReachBrush(canvas, 0, 0, 0, 0), x, y - f, z, Material.STONE_BRICKS),
-                    window ? "north=true,south=true" : "");
-            } else if (r < 5.6) for (int y = f; y <= f + 10; y++) canvas.set(x, y, z, Material.AIR);
-            for (int k = 0; k <= 6; k++) if (r < 6.6 - k && r >= 5.6 - k) canvas.set(x, f + 11 + k, z, Material.DEEPSLATE_TILES);
-        }
-        canvas.set(50, f, 889, Material.CHISELED_STONE_BRICKS);
-        canvas.set(50, f + 1, 889, Material.CANDLE, "candles=4,lit=true");
-        canvas.set(49, f, 887, Material.CANDLE, "candles=3,lit=true");
-        canvas.set(49, f, 891, Material.CANDLE, "candles=3,lit=true");
-        for (int y = f + 6; y <= f + 10; y++) canvas.set(47, y, 889, Material.IRON_CHAIN, "axis=y");
-        canvas.set(47, f + 5, 889, Material.LANTERN, "hanging=true");
-        for (int z : new int[] {885, 893}) canvas.set(45, f + 6, z, Material.GREEN_WALL_BANNER, "facing=west");
-        // Roofs: the nave's ridge along x, the transepts' along z, both deep slate.
-        kit.roof(new ReachBrush(canvas, 46, f + 13, 883, 1), -1, 13, 0, 24, 0, s, true, true);
-        kit.roof(new ReachBrush(canvas, 32, f + 13, 877, 0), -1, 7, 0, 5, 0, s, true, true);
-        kit.roof(new ReachBrush(canvas, 32, f + 13, 896, 0), -1, 7, 0, 5, 0, s, true, true);
-        // The west tower, its door on the avenue, a round window, an open belfry and the spire.
-        int tx0 = 14, tx1 = 22, tz0 = 885, tz1 = 893, tc = 889;
-        for (int x = tx0; x <= tx1; x++) for (int z = tz0; z <= tz1; z++) for (int y = f - 1; y <= f + 30; y++) {
-            boolean wall = x == tx0 || x == tx1 || z == tz0 || z == tz1;
-            if (!wall) { canvas.set(x, y, z, y > f && y % 9 == 0 ? Material.SPRUCE_PLANKS : Material.AIR); continue; }
-            boolean corner = (x == tx0 || x == tx1) && (z == tz0 || z == tz1);
-            canvas.set(x, y, z, corner ? Material.POLISHED_ANDESITE : kit.weathered(new ReachBrush(canvas, 0, 0, 0, 0), x, y - f, z, Material.STONE_BRICKS));
-        }
-        for (int[] c : new int[][] {{tx0 - 1, tz0 - 1}, {tx0 - 1, tz1 + 1}, {tx1 + 1, tz0 - 1}, {tx1 + 1, tz1 + 1}}) {
-            for (int y = f - 1; y <= f + 24; y++) canvas.set(c[0], y, c[1], Material.STONE_BRICKS);
-            canvas.set(c[0], f + 25, c[1], Material.STONE_BRICK_WALL, "up=true");
-        }
-        for (int z = tc - 2; z <= tc + 2; z++) for (int y = f; y <= f + 6; y++) {
-            int dz = Math.abs(z - tc);
-            if (y <= f + 4 || y == f + 5 && dz <= 1 || y == f + 6 && dz == 0) {
-                canvas.set(tx0, y, z, Material.AIR);
-                canvas.set(tx1, y, z, Material.AIR);
-            }
-        }
-        // The great door: a timber screen filling the arch, with a pair of doors in it, closed until someone comes.
-        for (int z = tc - 2; z <= tc + 2; z++) for (int y = f; y <= f + 6; y++)
-            if (canvas.get(tx0, y, z) != null && canvas.get(tx0, y, z).state().equals("minecraft:air"))
-                canvas.set(tx0, y, z, (z + y) % 3 == 0 ? Material.STRIPPED_DARK_OAK_WOOD : Material.DARK_OAK_PLANKS);
-        canvas.set(tx0, f, tc, Material.DARK_OAK_DOOR, "facing=west,half=lower,hinge=left,open=false");
-        canvas.set(tx0, f + 1, tc, Material.DARK_OAK_DOOR, "facing=west,half=upper,hinge=left,open=false");
-        canvas.set(tx0, f, tc + 1, Material.DARK_OAK_DOOR, "facing=west,half=lower,hinge=right,open=false");
-        canvas.set(tx0, f + 1, tc + 1, Material.DARK_OAK_DOOR, "facing=west,half=upper,hinge=right,open=false");
-        canvas.set(tx0 - 1, f + 3, tc, Material.LANTERN, "hanging=false");
-        // A stone porch and step before the door, where the lawn met the threshold.
-        for (int x = tx0 - 3; x < tx0; x++) for (int z = tc - 3; z <= tc + 3; z++) {
-            canvas.set(x, f - 1, z, Math.abs(z - tc) <= 1 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
-            for (int y = f; y <= f + 3; y++) if (canvas.get(x, y, z) == null || canvas.get(x, y, z).state().contains("grass")) canvas.set(x, y, z, Material.AIR);
-        }
-        for (int dz = -3; dz <= 3; dz++) for (int dy = -3; dy <= 3; dy++) {
-            double r = Math.hypot(dz, dy);
-            if (r > 3.3) continue;
-            Material m = r > 2.6 ? Material.CHISELED_STONE_BRICKS : r < 0.9 ? Material.YELLOW_STAINED_GLASS_PANE
-                : Math.abs(dz) == Math.abs(dy) || dz == 0 || dy == 0 ? Material.WHITE_STAINED_GLASS_PANE : Material.BLUE_STAINED_GLASS_PANE;
-            canvas.set(tx0, f + 14 + dy, tc + dz, m, m == Material.CHISELED_STONE_BRICKS ? "" : "north=true,south=true");
-        }
-        for (int x = tx0 - 1; x <= tx1 + 1; x++) for (int z = tz0 - 1; z <= tz1 + 1; z++) {
-            boolean edge = x == tx0 - 1 || x == tx1 + 1 || z == tz0 - 1 || z == tz1 + 1;
-            if (edge) canvas.set(x, f + 30, z, Material.STONE_BRICK_STAIRS, x == tx0 - 1 ? "facing=east,half=top" : x == tx1 + 1 ? "facing=west,half=top"
-                : z == tz0 - 1 ? "facing=south,half=top" : "facing=north,half=top");
-        }
-        // The belfry: piers at the corners and the middle of each face, open arches between, a bell inside.
-        for (int y = f + 31; y <= f + 36; y++) for (int x = tx0; x <= tx1; x++) for (int z = tz0; z <= tz1; z++) {
-            boolean wall = x == tx0 || x == tx1 || z == tz0 || z == tz1;
-            if (!wall) { canvas.set(x, y, z, y == f + 31 ? Material.SPRUCE_PLANKS : Material.AIR); continue; }
-            boolean pier = (x == tx0 || x == tx1 || x == 18) && (z == tz0 || z == tz1 || z == tc);
-            boolean open = !pier && y >= f + 32 && y <= f + 35;
-            canvas.set(x, y, z, open ? Material.AIR : pier ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
-        }
-        canvas.set(18, f + 32, tc, Material.BELL, "attachment=floor,facing=west");
-        // The spire: courses of slate shingles, three to each step in, so it rises steep and smooth to a gilded finial.
-        int y = f + 37;
-        for (int lo = tx0 - 1, hi = tx1 + 1, zlo = tz0 - 1, zhi = tz1 + 1; lo <= hi; lo++, hi--, zlo++, zhi--) {
-            for (int k = 0; k < 3; k++, y++) for (int x = lo; x <= hi; x++) for (int z = zlo; z <= zhi; z++) {
-                boolean edge = x == lo || x == hi || z == zlo || z == zhi;
-                if (!edge) { canvas.set(x, y, z, Material.DEEPSLATE_TILES); continue; }
-                canvas.set(x, y, z, Material.DEEPSLATE_TILE_STAIRS, x == lo ? "facing=east,half=bottom" : x == hi ? "facing=west,half=bottom"
-                    : z == zlo ? "facing=south,half=bottom" : "facing=north,half=bottom");
-            }
-            if (hi - lo <= 0) break;
-        }
-        canvas.set(18, y, tc, Material.GOLD_BLOCK);
-        canvas.set(18, y + 1, tc, Material.LIGHTNING_ROD);
-        // The porch: lamps and planters either side of the door on the avenue walk.
-        for (int z : new int[] {tc - 4, tc + 4}) {
-            canvas.set(tx0 - 2, f, z, Material.STONE_BRICKS);
-            canvas.set(tx0 - 2, f + 1, z, Material.CHISELED_STONE_BRICKS);
-            canvas.set(tx0 - 2, f + 2, z, Material.LANTERN);
-        }
-        marks.add(new Mark("fane", tx0 - 3, f, tc, 270F));
-        // The Fane garden: lawns, gravel walks, two great oaks and benches looking out over the Market Ward.
-        for (int x = 12; x <= 56; x++) for (int z = 902; z <= 926; z++) {
-            if (reserved.contains(key(x, z)) && z <= 904) continue;
+        new HighcrownCathedral(terrain, canvas, new HighcrownCathedral.Site() {
+            @Override public void mark(String id, int x, int y, int z, float yaw) { marks.add(new Mark(id, x, y, z, yaw)); }
+            @Override public void reserve(int x, int z) { HighcrownCity.this.reserve(x, z); }
+        }).build();
+        for (int x = 8; x <= 78; x++) for (int z = 904; z <= 926; z++) {
             if (!onPlatform(x, z) || street(x, z) != CROWN || ring(x, z) > ReachTerrain.CROWN_RADIUS - 1.5) continue;
+            ReachCanvas.Spec there = canvas.get(x, CROWN - 1, z);
+            if (there != null && !there.state().contains("grass") && !there.state().contains("moss")) continue;
             double walk = Math.abs(ring(x, z) - (ReachTerrain.CROWN_RADIUS - 5));
             if (walk < 1.6) street(x, z, CROWN, 0.5);
-            else if (!canvas.has(x, CROWN - 1, z)) canvas.set(x, CROWN - 1, z, terrain.grain(x, z, 0.3) > 0.6 ? Material.MOSS_BLOCK : Material.GRASS_BLOCK);
+            else {
+                canvas.set(x, CROWN - 1, z, terrain.grain(x, z, 0.3) > 0.6 ? Material.MOSS_BLOCK : Material.GRASS_BLOCK);
+                reserve(x, z);
+            }
         }
-        ReachTrees.oak(canvas, 26, CROWN, 908, 9001);
+        // Paths: from the south aisle's door and the south transept's door down to the terrace walk.
+        for (int[] p : new int[][] {{32, 906}, {49, 911}}) for (int z = p[1]; z <= 926; z++) {
+            if (streets.containsKey(key(p[0], z)) || !onPlatform(p[0], z) || street(p[0], z) != CROWN) break;
+            for (int x = p[0] - 1; x <= p[0] + 1; x++) canvas.set(x, CROWN - 1, z, x == p[0] ? Material.GRAVEL : Material.COARSE_DIRT);
+        }
+        for (int z = 873; z <= 874; z++) for (int x = 47; x <= 51; x++) canvas.set(x, CROWN - 1, z, Material.STONE_BRICKS);
         churchyard();
-        ReachTrees.oak(canvas, 46, CROWN, 909, 9002);
-        for (int x : new int[] {30, 38}) ReachProps.bench(new ReachBrush(canvas, x, CROWN, 916, 2), Material.SPRUCE_STAIRS, Material.SPRUCE_TRAPDOOR);
+        ReachTrees.oak(canvas, 64, CROWN, 909, 9001);
+        ReachTrees.oak(canvas, 74, CROWN, 893, 9002);
+        for (int x : new int[] {56, 62}) ReachProps.bench(new ReachBrush(canvas, x, CROWN, 915, 2), Material.SPRUCE_STAIRS, Material.SPRUCE_TRAPDOOR);
     }
 
-    /** The Fane's churchyard: rows of weathered headstones over grassy mounds, candles and flowers, and its keeper. */
+    /** The churchyard along the south aisle: rows of weathered headstones over grassy mounds, candles, flowers, a yew. */
     private void churchyard() {
         Material[] stones = {Material.MOSSY_STONE_BRICK_WALL, Material.STONE_BRICK_WALL, Material.COBBLESTONE_WALL, Material.ANDESITE_WALL};
         int n = 0;
-        for (int x = 14; x <= 20; x += 3) for (int z = 905; z <= 914; z += 4) {
-            if (!onPlatform(x, z) || street(x, z) != CROWN || reserved.contains(key(x, z)) && !streets.containsKey(key(x, z))) continue;
+        for (int x = 23; x <= 41; x += 3) for (int z = 908; z <= 914; z += 3) {
+            if (Math.abs(x - 32) <= 1 || !onPlatform(x, z) || street(x, z) != CROWN || streets.containsKey(key(x, z))) continue;
             Material stone = stones[n++ % stones.length];
             canvas.set(x, CROWN, z, stone, "up=true");
             if (n % 3 == 0) canvas.set(x, CROWN + 1, z, Material.CANDLE, "candles=1,lit=true");
-            for (int k = 1; k <= 2; k++) canvas.set(x, CROWN - 1, z + k, k == 1 ? Material.PODZOL : Material.COARSE_DIRT);
-            if (n % 2 == 0) canvas.set(x, CROWN, z + 2, Material.POPPY);
+            canvas.set(x, CROWN - 1, z + 1, Material.PODZOL);
+            if (n % 2 == 0) canvas.set(x, CROWN, z + 1, Material.POPPY);
         }
-        marks.add(new Mark("npc_tamsin_wake", 18, CROWN, 918, 0F));
+        ReachTrees.tallSpruce(canvas, 70, CROWN, 902, 8, 9003);
+        marks.add(new Mark("npc_tamsin_wake", 29, CROWN, 909, 180F));
     }
 
     /** The Hall of Callings on the avenue below the plaza: skills, mastery, jobs and parties. */
@@ -954,30 +828,37 @@ final class HighcrownCity {
             int z = 922 + i * 5;
             Material[] a = awnings[i % awnings.length], b2 = awnings[(i + 2) % awnings.length];
             kit.stall(new ReachBrush(canvas, -AVENUE_HALF - 1, MARKET, z, 1), a[0], a[1], goods[i % goods.length], ReachKit.Style.HIGHCROWN);
-            kit.stall(new ReachBrush(canvas, AVENUE_HALF + 1, MARKET, z + 4, 3), b2[0], b2[1], goods[(i + 3) % goods.length], ReachKit.Style.HIGHCROWN);
             marks.add(new Mark("stall_w_" + i, -AVENUE_HALF + 1, MARKET, z + 2, 90F));
+            // The east row stops short of the Exchequer's front, leaving its steps a forecourt on the avenue.
+            if (i >= 2 && i <= 6) continue;
+            kit.stall(new ReachBrush(canvas, AVENUE_HALF + 1, MARKET, z + 4, 3), b2[0], b2[1], goods[(i + 3) % goods.length], ReachKit.Style.HIGHCROWN);
             marks.add(new Mark("stall_e_" + i, AVENUE_HALF - 1, MARKET, z + 2, 270F));
         }
         // Garlands of lanterns across the avenue: a straight chain between two poles that rise from the stalls' posts.
         for (int i = 1; i <= 7; i += 2) {
             int z = 922 + i * 5 + 4;
-            for (int x : new int[] {-AVENUE_HALF - 1, AVENUE_HALF + 1}) for (int y = MARKET + 5; y <= MARKET + 7; y++)
-                canvas.set(x, y, z, y == MARKET + 7 ? Material.DARK_OAK_LOG : Material.DARK_OAK_FENCE, y == MARKET + 7 ? "axis=y" : "");
+            boolean standing = i >= 2 && i <= 6;
+            for (int x : new int[] {-AVENUE_HALF - 1, AVENUE_HALF + 1}) for (int y = x > 0 && standing ? MARKET : MARKET + 5; y <= MARKET + 7; y++)
+                canvas.set(x, y, z, y == MARKET + 7 ? Material.DARK_OAK_LOG : y == MARKET ? Material.STONE_BRICK_WALL : Material.DARK_OAK_FENCE,
+                    y == MARKET + 7 ? "axis=y" : y == MARKET ? "up=true" : "");
             for (int x = -AVENUE_HALF; x <= AVENUE_HALF; x++) {
                 canvas.set(x, MARKET + 7, z, Material.IRON_CHAIN, "axis=x");
                 if (x % 3 == 0) canvas.set(x, MARKET + 6, z, Material.LANTERN, "hanging=true");
             }
         }
         marketHall(-31, 928, -15, 958);
-        marketCross(21, 941);
-        for (int k = 0; k < 4; k++) {
-            ReachProps.marketCrates(new ReachBrush(canvas, 14 + k * 4, MARKET, 926, 0), 31 + k);
-            ReachProps.cart(new ReachBrush(canvas, 16 + k * 4, MARKET, 962, 2), 77 + k);
+        new HighcrownExchequer(canvas, new HighcrownExchequer.Site() {
+            @Override public void mark(String id, int x, int y, int z, float yaw) { marks.add(new Mark(id, x, y, z, yaw)); }
+            @Override public void reserve(int x, int z) { HighcrownCity.this.reserve(x, z); }
+        }).build();
+        marketCross(22, 971);
+        for (int k = 0; k < 2; k++) {
+            ReachProps.marketCrates(new ReachBrush(canvas, 11 + k * 4, MARKET, 974, 0), 31 + k);
+            ReachProps.cart(new ReachBrush(canvas, 29 + k * 3, MARKET, 968, 2), 77 + k);
         }
-        ReachProps.trough(new ReachBrush(canvas, 27, MARKET, 952, 0));
-        for (int x : new int[] {15, 27}) ReachProps.planter(new ReachBrush(canvas, x, MARKET, 970, 0), 3, x);
+        ReachProps.trough(new ReachBrush(canvas, 11, MARKET, 968, 0));
         for (int x = -33; x <= 33; x++) for (int z = z0 - 1; z <= z1 + 1; z++) reserve(x, z);
-        marks.add(new Mark("market", 20, MARKET, 948, 180F));
+        marks.add(new Mark("market", 0, MARKET, 948, 180F));
         marks.add(new Mark("npc_orris_bell", -23, MARKET, 943, 90F));
         marks.add(new Mark("npc_highcrown_folk_widow", AVENUE_HALF - 1, MARKET, 963, 270F));
         marks.add(new Mark("npc_highcrown_folk_urchin", 3, MARKET, 950, 180F));

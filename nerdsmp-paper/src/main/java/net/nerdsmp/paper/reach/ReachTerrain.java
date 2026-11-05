@@ -51,6 +51,11 @@ public final class ReachTerrain {
                          double edge, double road, double river, double lake, double terrace,
                          double across, double cut, double fill, int roadLevel) {
         public boolean wet() { return water > top; }
+
+        /** The same column showing another zone's ground (see {@link ReachTerrain#groundZone}). */
+        public Column withZone(Zone ground) {
+            return ground == zone ? this : new Column(ground, land, top, bottom, water, fall, edge, road, river, lake, terrace, across, cut, fill, roadLevel);
+        }
         public boolean carriageway() { return across < 3.2; }
     }
 
@@ -123,6 +128,8 @@ public final class ReachTerrain {
         misc = new ReachNoise(SEED + 6), cloud = new ReachNoise(SEED + 7);
     private final ReachPath goldwater = new ReachPath(GOLDWATER, 3.5, 7.5);
     private final ReachPath longFall = new ReachPath(LONG_FALL, 5, 6);
+    /** How far a road's grading reaches into the hillside, and the tallest retaining wall at a cutting's verge. */
+    static final double GRADE_REACH = 34, CUT_WALL = 3;
     private final ReachPath spine = new ReachPath(SPINE, 2.6, 2.6);
     private final ReachPath emberRoad = new ReachPath(EMBER_ROAD, 2.6, 2.6);
 
@@ -270,6 +277,35 @@ public final class ReachTerrain {
         if (scarRadius(x, z) < 1.0) return Zone.SCAR;
         if (z > 765 + 12 * misc.noise(x * 0.02, 0) && Math.hypot(x / 210.0, (z - 905) / 200.0) < 1.0) return Zone.HIGHCROWN;
         return ring(x, z).zone;
+    }
+
+    /**
+     * The zone whose ground and plants show at a column. Heights already blend across a border; this makes the
+     * ground do the same. Between two zones the line is pushed back and forth by noise, up to about twenty blocks
+     * either way, so heather runs out into the fields in tongues and the badlands' red eats into the grass in bays,
+     * never along a ruled line. The Scar's ash frays out over its rim the same way.
+     */
+    public Zone groundZone(int bx, int bz, Zone zone) {
+        if (zone == Zone.SKY || zone == Zone.HIGHCROWN || zone == Zone.ARCHIVE) return zone;
+        double x = bx + 0.5, z = bz + 0.5;
+        double n = 0.62 * misc.noise(x * 0.028 + 210, z * 0.028 - 75) + 0.38 * mid.noise(x * 0.085 - 31, z * 0.085 + 44);
+        double sr = scarRadius(x, z);
+        if (Math.abs(sr - 1) < 0.08) {
+            boolean ash = sr < 1 + 0.055 * n;
+            if (ash) return Zone.SCAR;
+            if (zone == Zone.SCAR) return ring(x, z).zone;
+        }
+        if (zone == Zone.SCAR) return zone;
+        double px = wx(x, z), pz = wz(x, z), d1 = Double.MAX_VALUE, d2 = Double.MAX_VALUE;
+        Site a = RING[0], b = RING[0];
+        for (Site site : RING) {
+            double d = Math.hypot(px - site.x, pz - site.z);
+            if (d < d1) { d2 = d1; b = a; d1 = d; a = site; } else if (d < d2) { d2 = d; b = site; }
+        }
+        if (d2 - d1 > 24) return zone;
+        // The border's displacement has a sign fixed by the pair, so both sides agree where it lies.
+        double shift = 21 * n * (a.zone.ordinal() < b.zone.ordinal() ? 1 : -1);
+        return d2 - d1 > shift ? a.zone : b.zone;
     }
 
     private double wx(double x, double z) { return x + 70 * warp.fbm(x * 0.005 + 11, z * 0.005, 2); }
@@ -450,23 +486,34 @@ public final class ReachTerrain {
                 }
             }
             for (ReachPath road : List.of(spine, emberRoad)) {
-                ReachPath.Hit hit = road.nearest(x, z, 12);
+                ReachPath.Hit hit = road.nearest(x, z, GRADE_REACH);
                 if (hit == null) continue;
-                roadValue = Math.max(roadValue, 1 - smoothstep(hit.halfWidth() - 0.5, hit.halfWidth() + 1.5, hit.distance()));
-                across = Math.min(across, hit.distance());
+                if (hit.distance() <= 12) {
+                    roadValue = Math.max(roadValue, 1 - smoothstep(hit.halfWidth() - 0.5, hit.halfWidth() + 1.5, hit.distance()));
+                    across = Math.min(across, hit.distance());
+                }
                 if (riverDistance < 2) continue;
-                // An engineered road: a level carriageway with sharp edges. A cutting keeps the ground's full height
-                // right beside it (a wall is built there); an embankment stands proud of the ground below it; only
-                // small differences are eased into a verge.
+                // An engineered road: a level carriageway with sharp edges, graded the way a real road is. Through
+                // high ground it runs in a cutting: a retaining wall at most CUT_WALL high at the verge, then the
+                // hillside battered back one up for one across until it meets the natural slope. Over low ground it
+                // runs on an embankment whose sides fall away one for one. Small differences ease into a verge.
                 double hw = hit.halfWidth() + 0.6, d = hit.distance(), level = hit.value(), natural = h;
                 if (d <= hw) {
                     h = level;
                     roadLevel = (int) Math.floor(level);
                     if (natural < level - 1) fill = Math.max(fill, level - natural);
-                } else if (d <= hw + 4) {
-                    double diff = natural - level;
-                    if (Math.abs(diff) <= 2.5) h = lerp(level, natural, smoothstep(hw, hw + 4, d));
-                    else if (diff > 0 && d <= hw + 1.2) { cut = Math.max(cut, diff); roadLevel = (int) Math.floor(level); }
+                    continue;
+                }
+                double diff = natural - level;
+                if (Math.abs(diff) <= 2.5) {
+                    if (d <= hw + 4) h = lerp(level, natural, smoothstep(hw, hw + 4, d));
+                } else if (diff > 0) {
+                    double batter = d <= hw + 1.2 ? CUT_WALL : CUT_WALL + (d - hw - 1.2) * 1.05;
+                    h = Math.min(h, level + batter);
+                    if (d <= hw + 1.2) { cut = Math.max(cut, h - level); roadLevel = (int) Math.floor(level); }
+                } else if (riverDistance > 12 && lakeValue > 1.3 && -diff <= 8) {
+                    // Never over a valley a bridge spans, or past a modest fill: there the ground keeps its own shape.
+                    h = Math.max(h, level - (d - hw) * 1.0);
                 }
             }
         }

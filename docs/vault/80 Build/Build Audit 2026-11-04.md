@@ -57,3 +57,24 @@ feel like roads. Measured against [[Shovel Study]] and [[Build Style Guide]].
 
 Still open: laundry lines and hanging greenery, bigger clumped canopies and roots on hero trees, and the west bank
 across the gorge (planned as the Memorial Terrace by Highfall).
+
+## Fourth review (2026-11-05)
+The user asked for more detail and for professional standard. Answered as follows:
+- **The church.** It's now a real cathedral (see [[Highcrown#The fourth review (2026-11-05)]]).
+- **The bank.** It's a marble temple front with a counting hall and a vault door.
+- **Plain houses.** Houses now vary their plaster and weather their roofs, and add plinths, braces and shutters.
+- **Roads into hills.** A road's cutting has a retaining wall of at most three blocks, then the hillside battered
+  back one-for-one to the natural ground. Before, the ground kept its full height beside the road behind a sheer
+  wall up to twenty blocks tall. Embankments over dry ground get one-for-one side slopes.
+- **Terrain that stops.** Zone borders were ruled lines where one ground palette and forest ended and the next
+  began. `ReachTerrain.groundZone` now pushes each border back and forth by noise, up to twenty blocks either way,
+  so grounds and woods interfinger. The Ashen Scar's ash frays over its rim the same way.
+- **Rough trees.**
+  - Leaf clusters used to roughen their edges with per-block random noise (speckle and holes). They now swell and
+    dip in a few broad lumps.
+  - Limbs used to step diagonally (blocks touching at corners). They're now face-joined.
+  - Limbs and roots use all-bark wood.
+- **Empty zones.** Each zone's hero landmark now stands where the zone notes put it, as a named place with a chest
+  (see [[Landmarks]]). A waypoint stands about every 350 blocks of road through the outer zones: a traveller's
+  camp, a ruined waystation or a cairn, each with a chest of the zone's tier.
+
