@@ -19,26 +19,26 @@ final class ReachLandmarks {
     private ReachLandmarks() { }
 
     /** A landmark: its id, the planned point it is sited near, how far it reaches from its site, and its builder. */
-    private record Plan(String id, int x, int z, int reach, int reachZ, int search, Builder builder) { }
+    private record Plan(String id, int x, int z, int reach, int reachZ, int search, int roadClear, Builder builder) { }
 
     private interface Builder { void build(ReachLandmarks.Site s); }
 
     static List<ReachFeatures.Feature> features(ReachTerrain terrain) {
         List<Plan> plans = List.of(
-            new Plan("huntsmans_barrow", -520, 395, 30, 30, 40, ReachLandmarks::barrow),
-            new Plan("stone_rings", -700, 540, 16, 16, 50, ReachLandmarks::stoneRing),
-            new Plan("stonewatch", -850, 175, 14, 14, 40, ReachLandmarks::watchtower),
-            new Plan("heart_tree", -720, -330, 30, 30, 50, ReachLandmarks::heartTree),
-            new Plan("great_aqueduct", 150, -745, 100, 18, 30, ReachLandmarks::aqueduct),
-            new Plan("headframe", 600, -700, 22, 22, 70, ReachLandmarks::headframe),
-            new Plan("sunscar_arch", 830, 300, 34, 14, 50, ReachLandmarks::sunArch),
-            new Plan("ember_gate", -10, -70, 26, 26, 30, ReachLandmarks::emberGate),
-            new Plan("seal_spire", 1520, -80, 22, 22, 30, ReachLandmarks::sealSpire));
+            new Plan("huntsmans_barrow", -520, 395, 30, 30, 50, 28, ReachLandmarks::barrow),
+            new Plan("stone_rings", -700, 540, 16, 16, 50, 16, ReachLandmarks::stoneRing),
+            new Plan("stonewatch", -850, 175, 14, 14, 40, 14, ReachLandmarks::watchtower),
+            new Plan("heart_tree", -720, -330, 30, 30, 60, 24, ReachLandmarks::heartTree),
+            new Plan("great_aqueduct", 150, -745, 100, 18, 30, 0, ReachLandmarks::aqueduct),
+            new Plan("headframe", 600, -700, 22, 22, 70, 26, ReachLandmarks::headframe),
+            new Plan("sunscar_arch", 830, 300, 34, 14, 60, 38, ReachLandmarks::sunArch),
+            new Plan("ember_gate", -10, -70, 26, 26, 30, 0, ReachLandmarks::emberGate),
+            new Plan("seal_spire", 1520, -80, 22, 22, 30, 16, ReachLandmarks::sealSpire));
         List<ReachFeatures.Feature> out = new ArrayList<>();
         for (Plan plan : plans) {
             int[] at = plan.id().equals("ember_gate") ? riftLip(terrain, plan.x(), plan.z(), plan.search())
                 : plan.id().equals("great_aqueduct") ? new int[] {plan.x(), plan.z()}
-                : site(terrain, plan.x(), plan.z(), plan.search(), plan.reach() / 2);
+                : site(terrain, plan.x(), plan.z(), plan.search(), plan.reach() / 2, plan.roadClear());
             int r = plan.reach() + 4, rz = plan.reachZ() + 4;
             out.add(new ReachFeatures.Feature(plan.id(), new ReachFeatures.Footprint(at[0] - r, at[1] - rz, at[0] + r, at[1] + rz), t -> {
                 Site s = new Site(t, plan.id(), at[0], at[1]);
@@ -52,13 +52,14 @@ final class ReachLandmarks {
     // ------------------------------------------------------------------ siting
 
     /** The flattest dry land within {@code search} of a point, clear of roads, rivers, lakes and the lip. */
-    static int[] site(ReachTerrain terrain, int x0, int z0, int search, int half) {
+    static int[] site(ReachTerrain terrain, int x0, int z0, int search, int half, int roadClear) {
         int[] best = {x0, z0};
         double bestScore = Double.MAX_VALUE;
         for (int dx = -search; dx <= search; dx += 4) for (int dz = -search; dz <= search; dz += 4) {
             int x = x0 + dx, z = z0 + dz;
             Column c = terrain.column(x, z);
             if (!c.land() || c.wet() || c.edge() < half + 14 || c.river() < half + 8 || c.lake() < 1.3 || c.across() < half + 10) continue;
+            if (roadClear > 0 && terrain.roadDistance(x, z, roadClear + 2) < roadClear) continue;
             int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
             boolean ok = true;
             for (int sx = -half; sx <= half && ok; sx += Math.max(2, half / 3)) for (int sz = -half; sz <= half; sz += Math.max(2, half / 3)) {
@@ -142,6 +143,73 @@ final class ReachLandmarks {
         }
     }
 
+    /** How an expedition's door is dressed: its frame and trim, the sill and approach, the braziers' fire, banners and signs. */
+    record DoorStyle(Material frame, Material accent, Material floor, Material fire, Material banner, Material sign) { }
+
+    static final DoorStyle BARROW_DOOR = new DoorStyle(Material.MOSSY_STONE_BRICKS, Material.CHISELED_STONE_BRICKS, Material.STONE_BRICKS,
+        Material.SOUL_CAMPFIRE, Material.BLACK_WALL_BANNER, Material.SPRUCE_WALL_SIGN);
+    static final DoorStyle THORN_DOOR = new DoorStyle(Material.DARK_OAK_WOOD, Material.STRIPPED_DARK_OAK_WOOD, Material.ROOTED_DIRT,
+        Material.SOUL_CAMPFIRE, Material.GREEN_WALL_BANNER, Material.DARK_OAK_WALL_SIGN);
+    static final DoorStyle CISTERN_DOOR = new DoorStyle(Material.CALCITE, Material.CHISELED_QUARTZ_BLOCK, Material.POLISHED_DIORITE,
+        Material.CAMPFIRE, Material.CYAN_WALL_BANNER, Material.BIRCH_WALL_SIGN);
+    static final DoorStyle MINE_DOOR = new DoorStyle(Material.DEEPSLATE_TILES, Material.STRIPPED_DARK_OAK_WOOD, Material.DARK_OAK_PLANKS,
+        Material.CAMPFIRE, Material.ORANGE_WALL_BANNER, Material.DARK_OAK_WALL_SIGN);
+    static final DoorStyle EMBER_DOOR = new DoorStyle(Material.POLISHED_BLACKSTONE_BRICKS, Material.GILDED_BLACKSTONE, Material.POLISHED_BLACKSTONE,
+        Material.CAMPFIRE, Material.RED_WALL_BANNER, Material.CRIMSON_WALL_SIGN);
+    static final DoorStyle SEAL_DOOR = new DoorStyle(Material.CHISELED_QUARTZ_BLOCK, Material.GOLD_BLOCK, Material.QUARTZ_BRICKS,
+        Material.SOUL_CAMPFIRE, Material.YELLOW_WALL_BANNER, Material.BIRCH_WALL_SIGN);
+
+    /**
+     * An expedition's door: an arched opening three wide and four tall, filled with the starlit dark of a way between
+     * places, in a frame two blocks deep with a keystone and a cornice, banners hung either side, and braziers burning
+     * on pedestals before it, each pedestal lettered with the expedition's name and level. It opens toward
+     * {@code (fx, fz)}; stepping into it opens the expedition's board.
+     */
+    static void expeditionDoor(Site s, int cx, int y, int cz, int fx, int fz, DoorStyle st, String expedition, String[] name, String[] level) {
+        int px = -fz, pz = fx, halfW = 1, height = 4;
+        for (int k = -halfW - 1; k <= halfW + 1; k++) for (int dy = -1; dy <= height + 1; dy++) {
+            int x = cx + px * k, z = cz + pz * k;
+            boolean inside = Math.abs(k) <= halfW && dy >= 0 && dy < height - (Math.abs(k) == halfW ? 1 : 0);
+            boolean sill = dy == -1 && Math.abs(k) <= halfW;
+            s.set(x, y + dy, z, inside ? Material.END_GATEWAY : sill ? st.floor() : dy == height + 1 && k == 0 ? st.accent() : st.frame());
+            // The frame stands one proud, its pillars and cornice in the trim, so the door reads from the side too.
+            s.set(x + fx, y + dy, z + fz, inside ? Material.AIR : sill ? st.floor()
+                : Math.abs(k) == halfW + 1 || dy == height + 1 ? st.accent() : st.frame());
+        }
+        for (int k = -halfW; k <= halfW; k++) s.set(cx + px * k + fx * 2, y - 1, cz + pz * k + fz * 2, st.floor());
+        String facing = facing(fx, fz);
+        if (st.banner() != null) for (int side : new int[] {-1, 1})
+            s.set(cx + px * (halfW + 1) * side + fx * 2, y + height - 1, cz + pz * (halfW + 1) * side + fz * 2, st.banner(), "facing=" + facing);
+        doorBraziers(s, cx, y, cz, fx, fz, halfW + 2, 3, st, name, level);
+        s.spot("door_" + expedition, cx + fx * 3, y, cz + fz * 3, yawToward(-fx, -fz));
+    }
+
+    /**
+     * Two braziers on pedestals before a door, {@code lateral} either side of its centre and {@code forward} out from
+     * it, each pedestal standing on whatever is below and carrying a glowing sign on its face: the name on the left as
+     * you walk up, the level on the right.
+     */
+    static void doorBraziers(Site s, int cx, int y, int cz, int fx, int fz, int lateral, int forward, DoorStyle st, String[] name, String[] level) {
+        int px = -fz, pz = fx;
+        String facing = facing(fx, fz);
+        for (int side : new int[] {-1, 1}) {
+            int bx = cx + px * lateral * side + fx * forward, bz = cz + pz * lateral * side + fz * forward;
+            int base = y;
+            while (base > y - 8 && s.air(bx, base - 1, bz)) base--;
+            for (int yy = base; yy <= y; yy++) s.set(bx, yy, bz, st.frame());
+            s.set(bx, y + 1, bz, st.accent());
+            s.set(bx, y + 2, bz, st.fire(), "facing=" + facing + ",lit=true,signal_fire=false");
+            s.set(bx + fx, y + 1, bz + fz, st.sign(), "facing=" + facing);
+            // Facing the door, the side at minus the perpendicular is on the right hand.
+            s.canvas.text(bx + fx, y + 1, bz + fz, side > 0 ? name : level);
+        }
+    }
+
+    static String facing(int fx, int fz) { return fx > 0 ? "east" : fx < 0 ? "west" : fz > 0 ? "south" : "north"; }
+
+    /** The yaw that looks along {@code (dx, dz)}: south is 0, west 90, north 180, east -90. */
+    static float yawToward(int dx, int dz) { return dz > 0 ? 0F : dz < 0 ? 180F : dx < 0 ? 90F : -90F; }
+
     private static Material weathered(Site s, int x, int y, int z, Material stone, Material mossy, Material cracked) {
         double c = s.terrain.patch(x + y * 0.7, z - y * 0.5, 0.25);
         return c > 0.4 ? mossy : c < -0.5 ? cracked : stone;
@@ -151,8 +219,8 @@ final class ReachLandmarks {
 
     /**
      * The Huntsman's Barrow: a long grassy mound crowned with a ring of standing stones, its kerb of grey boulders
-     * showing at the foot, and the Hollow Barrow's door in its side: a stone passage with a lintel, sealed by a
-     * rusted grate, lanterns left by the Sexton either side.
+     * showing at the foot, and the Hollow Barrow's door in its side: a stone passage with a lintel, the expedition's
+     * starlit door just inside it, the Sexton's braziers burning before it.
      */
     private static void barrow(Site s) {
         int cx = s.x, cz = s.z, g = s.ground;
@@ -195,13 +263,9 @@ final class ReachLandmarks {
             }
         }
         for (int x = cx - 3; x <= cx + 3; x++) s.set(x, g + 4, dz0 + 1, Material.STONE_BRICK_SLAB, "type=bottom");
-        for (int x = cx - 1; x <= cx + 1; x++) for (int y = g; y <= g + 2; y++) s.set(x, y, dz0 - 4, Material.IRON_BARS);
-        s.set(cx, g + 3, dz0 - 4, Material.CHISELED_STONE_BRICKS);
-        for (int x : new int[] {cx - 3, cx + 3}) {
-            s.set(x, g, dz0 + 1, Material.MOSSY_COBBLESTONE_WALL, "up=true");
-            s.set(x, g + 1, dz0 + 1, Material.LANTERN);
-        }
-        s.chest(2, "barrow", cx + 1, g, dz0 - 2, "west");
+        expeditionDoor(s, cx, g, dz0 - 1, 0, 1, BARROW_DOOR, "hollow_barrow",
+            new String[] {"EXPEDITION", "The Hollow", "Barrow", ""}, new String[] {"Level 8", "", "Step through", "to set out"});
+        s.chest(2, "barrow", cx + 2, crown, cz + 1, "south");
         s.spot("barrow_door", cx, g, dz0 + 2, 0F);
         s.groundSpot("place", cx, dz0 + 3, 0F);
     }
@@ -302,9 +366,9 @@ final class ReachLandmarks {
             if (y == 4 && dx != 0) continue;
             s.set(cx + dx, g + y, cz + 4 - dz, Material.AIR);
         }
-        s.set(cx, g - 1, cz + 2, Material.ROOTED_DIRT);
-        for (int dx = -1; dx <= 1; dx++) s.set(cx + dx, g - 1, cz + 3, Material.PODZOL);
-        s.set(cx, g, cz + 1, Material.SOUL_LANTERN, "hanging=false");
+        for (int dx = -1; dx <= 1; dx++) s.set(cx + dx, g - 1, cz + 4, Material.PODZOL);
+        expeditionDoor(s, cx, g, cz + 1, 0, 1, THORN_DOOR, "thornwood_canopy",
+            new String[] {"EXPEDITION", "Thornwood", "Canopy", ""}, new String[] {"Level 12", "", "Step through", "to set out"});
         // Great limbs, each ending in a canopy; vines and glow berries hanging under them.
         SplittableRandom r = s.random;
         for (int k = 0; k < 7; k++) {
@@ -360,6 +424,7 @@ final class ReachLandmarks {
      * The Great Aqueduct: a line of tall round arches in pale stone carrying the water channel east from the lake
      * toward the Ironspine. The channel runs level; where the ground falls away, a second tier of arches stands
      * under the first. Copper sluice gates sit over every fifth pier, and a stair climbs a pier to the channel walk.
+     * South of the arches a sunken court holds the door to the Sunken Aqueduct.
      */
     private static void aqueduct(Site s) {
         int x0 = s.x - 96, x1 = s.x + 96;
@@ -420,8 +485,69 @@ final class ReachLandmarks {
         int sx = s.x - Math.floorMod(s.x - x0, 9), lz = s.z + (int) Math.round((sx - s.x) * slope), sz = lz + 3;
         for (int y = s.top(sx, sz) + 1; y <= channel + 1; y++) s.set(sx, y, sz, Material.LADDER, "facing=south");
         s.chest(3, "aqueduct", sx + 1, channel + 1, lz + 2, "south");
-        int pz = s.z + 8;
-        s.groundSpot("place", s.x, pz, 180F);
+        int[] court = cisternSite(s, slope);
+        cistern(s, court[0], court[1]);
+        s.groundSpot("place", court[0], court[1] + 7, 180F);
+    }
+
+    /**
+     * Where the cistern court goes: on dry, even ground just south of the arches, as near the middle of the line as
+     * that can be found, and clear of any road.
+     */
+    private static int[] cisternSite(Site s, double slope) {
+        for (int d = 0; d <= 36; d += 3) for (int sign : new int[] {1, -1}) {
+            int x = s.x + d * sign, z = s.z + (int) Math.round((x - s.x) * slope) + 10;
+            if (s.terrain.roadDistance(x, z, 14) < 12) continue;
+            boolean ok = true;
+            int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+            for (int dx = -6; dx <= 6 && ok; dx++) for (int dz = -6; dz <= 8; dz++) {
+                Column c = s.terrain.column(x + dx, z + dz);
+                if (!c.land() || c.wet()) { ok = false; break; }
+                lo = Math.min(lo, c.top());
+                hi = Math.max(hi, c.top());
+            }
+            if (ok && hi - lo <= 3) return new int[] {x, z};
+        }
+        return new int[] {s.x, s.z + 10};
+    }
+
+    /**
+     * The Cistern Stair: a sunken court walled in pale stone, a stair the court's full width going down into it from
+     * the south, and in its north wall the door to the Sunken Aqueduct, its crest showing over the coping. Lamp posts
+     * stand at the four corners so the court reads from across the marsh.
+     */
+    private static void cistern(Site s, int gx, int gz) {
+        int gy = s.top(gx, gz) + 1, fl = gy - 4;
+        for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {
+            int x = gx + dx, z = gz + dz, t = s.top(x, z);
+            boolean wall = Math.abs(dx) == 4 || dz == -4;
+            if (wall) {
+                for (int y = fl - 1; y < gy; y++) s.set(x, y, z, (y - fl) % 3 == 2 ? Material.POLISHED_DIORITE : Material.CALCITE);
+                s.set(x, gy, z, Material.POLISHED_DIORITE_SLAB, "type=bottom");
+                for (int y = gy + 1; y <= t; y++) s.set(x, y, z, Material.AIR);
+                continue;
+            }
+            // The stair: four steps up to the ground, the court's full width, from the floor's south edge.
+            int step = dz - 1;
+            int solidTo = step >= 0 ? fl + step - 1 : fl - 1;
+            for (int y = fl - 1; y <= solidTo; y++) s.set(x, y, z, y == fl - 1 && step < 0 ? Material.POLISHED_DIORITE : Material.CALCITE);
+            if (step >= 0) s.set(x, fl + step, z, Material.POLISHED_DIORITE_STAIRS, "facing=south,half=bottom");
+            for (int y = step >= 0 ? fl + step + 1 : fl; y <= Math.max(t, gy + 1); y++) s.set(x, y, z, Material.AIR);
+        }
+        // The stair's landing at the top, so it meets the ground cleanly.
+        for (int dx = -4; dx <= 4; dx++) {
+            int x = gx + dx, z = gz + 5;
+            for (int y = s.top(x, z) + 1; y < gy - 1; y++) s.set(x, y, z, Material.CALCITE);
+            s.set(x, gy - 1, z, Material.POLISHED_DIORITE);
+            for (int y = gy; y <= s.top(x, z); y++) s.set(x, y, z, Material.AIR);
+        }
+        for (int dx : new int[] {-4, 4}) for (int dz : new int[] {-4, 4}) {
+            s.set(gx + dx, gy, gz + dz, Material.DIORITE_WALL, "up=true");
+            s.set(gx + dx, gy + 1, gz + dz, Material.DIORITE_WALL, "up=true");
+            s.set(gx + dx, gy + 2, gz + dz, Material.LANTERN, "hanging=false");
+        }
+        expeditionDoor(s, gx, fl, gz - 4, 0, 1, CISTERN_DOOR, "sunken_aqueduct",
+            new String[] {"EXPEDITION", "The Sunken", "Aqueduct", ""}, new String[] {"Level 16", "", "Step through", "to set out"});
     }
 
     // ------------------------------------------------------------------ the Ironspine
@@ -473,6 +599,9 @@ final class ReachLandmarks {
         }
         for (int y = g + 1; y < g + h; y++) for (int dx : new int[] {-1, 1}) s.set(cx + dx, y, cz, Material.IRON_CHAIN, "axis=y");
         for (int y = g - 17; y <= g; y++) for (int dx : new int[] {-1, 1}) s.set(cx + dx, y, cz, Material.IRON_CHAIN, "axis=y");
+        // The cage gate on the shaft's south rim: the way down to the Gloomforge.
+        expeditionDoor(s, cx, g, cz + 3, 0, 1, MINE_DOOR, "gloomforge_mines",
+            new String[] {"EXPEDITION", "Gloomforge", "Mines", ""}, new String[] {"Level 20", "", "Step through", "to set out"});
         // The winding house beside the frame: a stone shed under a green roof, the drum showing through its door.
         int wx = cx + 12, wz = cz - 3;
         for (int dx = 0; dx <= 8; dx++) for (int dz = 0; dz <= 6; dz++) {
@@ -540,7 +669,7 @@ final class ReachLandmarks {
 
     /**
      * The Ember Gate on the Rift's lip: two blackstone towers with a pointed arch between them, magma glowing in
-     * their slits, the gate itself barred and chained, chains hanging down into the Rift from beams over the drop.
+     * their slits, the arch filled with the starlit way to Cinder Keep, chains hanging into the Rift from beams.
      */
     private static void emberGate(Site s) {
         int cx = s.x, cz = s.z, g = s.ground;
@@ -567,7 +696,7 @@ final class ReachLandmarks {
             int x = cx + px * k, z = cz + pz * k;
             int up = y - (g + 8);
             boolean open = Math.abs(k) <= 2 && (up <= 0 || Math.pow(Math.abs(k) + 2.5, 2) + up * up <= 25);
-            s.set(x, y, z, open ? (y <= g + 6 ? Material.IRON_BARS : Material.AIR) : Material.POLISHED_BLACKSTONE_BRICKS);
+            s.set(x, y, z, open ? Material.END_GATEWAY : Material.POLISHED_BLACKSTONE_BRICKS);
             s.set(x - fx, y, z - fz, open ? Material.AIR : Material.CHISELED_POLISHED_BLACKSTONE);
         }
         for (int k = -2; k <= 2; k++) s.set(cx + px * k, g + 15, cz + pz * k, Material.CRYING_OBSIDIAN);
@@ -582,7 +711,10 @@ final class ReachLandmarks {
             if (!s.terrain.column(ex, ez).land()) for (int y = g + 15; y >= g - 30; y--) s.set(ex, y, ez, Material.IRON_CHAIN, "axis=y");
             s.set(bx + fx * 9, g + 15, bz + fz * 9, Material.SOUL_LANTERN, "hanging=true");
         }
-        for (int k = -1; k <= 1; k++) s.set(cx - fx * 2 + px * k, g - 1, cz - fz * 2 + pz * k, Material.POLISHED_BLACKSTONE_BRICKS);
+        for (int k = -2; k <= 2; k++) for (int d = 1; d <= 6; d++) s.set(cx - fx * d + px * k, g - 1, cz - fz * d + pz * k, Material.POLISHED_BLACKSTONE_BRICKS);
+        for (int side : new int[] {-1, 1}) s.set(cx - fx * 4 + px * 4 * side, g + 7, cz - fz * 4 + pz * 4 * side, EMBER_DOOR.banner(), "facing=" + facing(-fx, -fz));
+        doorBraziers(s, cx, g, cz, -fx, -fz, 4, 6, EMBER_DOOR, new String[] {"RAID", "Cinder Keep", "", ""}, new String[] {"Level 26", "", "Step through", "to set out"});
+        s.spot("door_cinder_keep", cx - fx * 3, g, cz - fz * 3, yawToward(fx, fz));
         s.chest(4, "ember_gate", cx - fx * 3 + px * 4, g, cz - fz * 3 + pz * 4, fx > 0 ? "west" : fx < 0 ? "east" : fz > 0 ? "north" : "south");
         s.groundSpot("place", cx - fx * 6, cz - fz * 6, 0F);
     }
@@ -591,7 +723,8 @@ final class ReachLandmarks {
 
     /**
      * The Seal Spire: a tall pale tower on the isle, its shaft fluted with gold bands, and three rings of stone
-     * floating round it at three heights, one for each Warden, never touching it. The Hall's door is at its foot.
+     * floating round it at three heights, one for each Warden, never touching it. The Hall's door is at its foot,
+     * its gilded portal open now on the starlit way in.
      */
     private static void sealSpire(Site s) {
         int cx = s.x, cz = s.z, g = s.ground;
@@ -627,10 +760,30 @@ final class ReachLandmarks {
         for (int y = g; y <= g + 7; y++) for (int dx = -2; dx <= 2; dx++) {
             int up = y - (g + 5);
             boolean open = Math.abs(dx) <= 1 && (up <= 0 || Math.abs(dx) + up <= 1);
-            s.set(cx + dx, y, cz + 6, open ? Material.GOLD_BLOCK : Material.CHISELED_QUARTZ_BLOCK);
+            s.set(cx + dx, y, cz + 6, open ? Material.END_GATEWAY : Material.CHISELED_QUARTZ_BLOCK);
         }
-        for (int dx = -3; dx <= 3; dx++) s.set(cx + dx, g - 1, cz + 7, Material.QUARTZ_BRICKS);
-        s.chest(4, "seal_spire", cx + 3, g, cz + 8, "north");
-        s.groundSpot("place", cx, cz + 10, 180F);
+        // The approach: a paved walk cut level into the ground before the door.
+        for (int dx = -3; dx <= 3; dx++) for (int dz = 7; dz <= 12; dz++) {
+            int x = cx + dx, z = cz + dz;
+            s.footing(x, g - 1, z, Material.QUARTZ_BRICKS);
+            s.set(x, g - 1, z, dz % 2 == 0 ? Material.QUARTZ_BRICKS : Material.SMOOTH_QUARTZ);
+            for (int y = g; y <= s.top(x, z) + 1; y++) s.set(x, y, z, Material.AIR);
+        }
+        for (int side : new int[] {-1, 1}) s.set(cx + 2 * side, g + 4, cz + 7, SEAL_DOOR.banner(), "facing=south");
+        doorBraziers(s, cx, g, cz + 6, 0, 1, 4, 5, SEAL_DOOR, new String[] {"EXPEDITION", "The Hall of", "the Three", "Wardens"},
+            new String[] {"Level 24", "", "Step through", "to set out"});
+        s.spot("door_hall_of_wardens", cx, g, cz + 9, 180F);
+        // The three keys echo the rings above, set proud of the door's head. One socket is dark and empty where the
+        // archive was opened.
+        for (int i = 0; i < 3; i++) {
+            int dx = (i - 1) * 2;
+            s.set(cx + dx, g + 7, cz + 7, switch (i) {
+                case 0 -> Material.WAXED_CHISELED_COPPER;
+                case 1 -> Material.SEA_LANTERN;
+                default -> Material.POLISHED_BLACKSTONE;
+            });
+        }
+        s.chest(4, "seal_spire", cx + 5, g, cz + 7, "west");
+        s.groundSpot("place", cx, cz + 13, 180F);
     }
 }

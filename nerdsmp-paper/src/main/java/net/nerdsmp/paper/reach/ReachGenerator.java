@@ -73,6 +73,16 @@ public final class ReachGenerator extends ChunkGenerator {
             Material top = surface.top(x, z, c, slope);
             if (top == Material.FARMLAND) data.setBlock(lx, c.top(), lz, farmland);
             else data.setBlock(lx, c.top(), lz, top);
+            // Where the road climbs a block to the next column of road, a half step of stone eases the way up.
+            if (c.carriageway() && !c.wet()) {
+                for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    Column n = grid[(lz + 1 + d[1]) * 18 + lx + 1 + d[0]];
+                    if (n.land() && n.carriageway() && !n.wet() && n.top() == c.top() + 1) {
+                        data.setBlock(lx, c.top() + 1, lz, stepSlab(c));
+                        break;
+                    }
+                }
+            }
             if (c.wet()) for (int y = c.top() + 1; y <= c.water(); y++) data.setBlock(lx, y, lz, Material.WATER);
             // A cutting's wall stands on the road's level; an embankment shows a stone face down to the ground.
             if (c.cut() > 1.5 && c.roadLevel() != Integer.MIN_VALUE)
@@ -81,6 +91,18 @@ public final class ReachGenerator extends ChunkGenerator {
                 for (int y = c.top() - (int) Math.ceil(c.fill()); y < c.top(); y++) data.setBlock(lx, y, lz, surface.retaining(x, y, z, y - (c.top() - (int) Math.ceil(c.fill()))));
         }
         features.place(chunkX, chunkZ, data);
+    }
+
+    /** The half step on a climbing road, in the zone's own stone. */
+    private org.bukkit.block.data.BlockData stepSlab(Column c) {
+        Material m = switch (c.zone()) {
+            case SUNSCAR -> Material.SMOOTH_RED_SANDSTONE_SLAB;
+            case SCAR -> Material.POLISHED_BLACKSTONE_SLAB;
+            case IRONSPINE -> Material.ANDESITE_SLAB;
+            case HIGHCROWN -> Material.STONE_BRICK_SLAB;
+            default -> Material.COBBLESTONE_SLAB;
+        };
+        return m.createBlockData();
     }
 
     private static int slope(Column[] grid, int gx, int gz, int top) {

@@ -94,6 +94,9 @@ public final class ReachService implements Listener {
     }
 
     private void rules(World world, boolean fresh) {
+        // No vanilla creatures at all: the Reach's people, beasts and foes are all placed by its own encounters.
+        world.setGameRule(GameRules.SPAWN_MOBS, false);
+        world.setGameRule(GameRules.SPAWNER_BLOCKS_WORK, false);
         world.setGameRule(GameRules.SPAWN_MONSTERS, false);
         world.setGameRule(GameRules.SPAWN_PHANTOMS, false);
         world.setGameRule(GameRules.SPAWN_PATROLS, false);

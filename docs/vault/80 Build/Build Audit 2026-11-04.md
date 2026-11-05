@@ -104,3 +104,24 @@ The user cleared work on the whole world. The faults, and the fixes:
 - **A living world.** Herds and wildlife suited to each zone, plus each zone's ambience.
 - **Terrain clipping.** The aqueduct runs into its hill through a tunnel instead of a cut trench.
 
+## Seventh review (2026-11-05)
+The faults, and the fixes:
+- **The Kingsbridge looked unreal.** It's one great arch now, with solid spandrels, buttresses and corbelled
+  refuges for the Wardens (see [[Highcrown#The seventh review (2026-11-05)]]).
+- **Paths that missed their bridges.** Road bridges follow the road's own line from bank to bank, and their walk
+  meets the road at each end (`ReachBridges`).
+- **Millbrook's wheels sat in the ground and did nothing.** The city's wheel is gone. The mill stands on the
+  riverbank, clear of the road, its wheel turning in a stone race of real water on an axle into the mill wall.
+- **A bandit camp on the road out of Millbrook.** The Tollkeepers' camp now sits at least 21 blocks from any road,
+  and each landmark keeps its own clearance. A test fails if any build stands on a road (`noBuildBlocksARoad`).
+- **The Black Granary looked rough.** The soot climbs in broad bands instead of speckle. A long barn joins the
+  tower, its near half burned to the rafters and its far half still roofed.
+- **Rough roads that stopped for no reason.** The country road is a dirt path core with coarse dirt and gravel at
+  its edges, in broad patches. Where it climbs a block, a slab makes the step. Lots are kept off the carriageway.
+- **Buildings you couldn't enter.** Doors with nowhere to stand are walled. A test checks every remaining door
+  has standing room on both sides (`everyDoorCanBeWalkedThrough`).
+- **Trees and foliage.** Spruces are whorled cones with drooping tips, oaks carry a cluster at mid-limb, and
+  flowers grow in fewer, broader drifts.
+- **Expedition entrances were easy to miss.** Each is now a starlit gateway with braziers, banners and lettered
+  pedestals (see [[Landmarks#Expedition doors]]).
+- **Vanilla mobs spawned.** None do now, and the herds are gone. Only the Reach's own creatures and NPCs appear.

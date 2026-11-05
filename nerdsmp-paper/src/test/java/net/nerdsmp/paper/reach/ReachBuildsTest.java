@@ -174,6 +174,9 @@ class ReachBuildsTest {
     private static java.awt.Color planColour(String state, ReachTerrain.Column c) {
         String n = state.substring(state.indexOf(':') + 1).replaceAll("\\[.*", "");
         if (n.contains("water")) return new java.awt.Color(60, 110, 200);
+        if (n.equals("end_gateway")) return new java.awt.Color(40, 20, 80);
+        if (n.contains("campfire")) return new java.awt.Color(255, 140, 40);
+        if (n.contains("banner")) return new java.awt.Color(200, 40, 160);
         if (n.contains("glass")) return new java.awt.Color(150, 200, 230);
         if (n.contains("leaves") || n.contains("azalea")) return new java.awt.Color(50, 120, 45);
         if (n.contains("grass") || n.contains("moss") || n.contains("fern")) return new java.awt.Color(95, 150, 60);
@@ -210,6 +213,84 @@ class ReachBuildsTest {
             }
         }
         assertEquals(List.of(), bad);
+    }
+
+    /**
+     * Nothing a build places may block a road: on the carriageway, from the road's surface up two blocks, only air,
+     * paving or the build's own bridge deck. (Highcrown paves its own streets over the road's end; bridges carry it.)
+     */
+    @Test
+    void noBuildBlocksARoad() {
+        List<String> bad = new ArrayList<>();
+        for (ReachFeatures.Feature feature : FEATURES.features()) {
+            String id = feature.id();
+            if (id.equals("highcrown") || id.startsWith("bridge_") || id.startsWith("road_")) continue;
+            ReachCanvas.Frozen plan = FEATURES.plan(feature);
+            java.util.Map<String, Integer> hits = new java.util.TreeMap<>();
+            for (int cx = plan.minX >> 4; cx <= plan.maxX >> 4; cx++) for (int cz = plan.minZ >> 4; cz <= plan.maxZ >> 4; cz++) {
+                if (!plan.touches(cx, cz)) continue;
+                int baseX = cx << 4, baseZ = cz << 4;
+                plan.forEach(cx, cz, cell -> {
+                    int x = baseX + cell.lx(), z = baseZ + cell.lz();
+                    ReachTerrain.Column c = TERRAIN.column(x, z);
+                    if (!c.land() || !c.carriageway()) return;
+                    if (cell.y() <= c.top() || cell.y() > c.top() + 2) return;
+                    String s = cell.spec().state();
+                    if (s.equals("minecraft:air") || s.contains("_slab") || s.contains("carpet")) return;
+                    hits.merge((x >> 3 << 3) + "," + (z >> 3 << 3), 1, Integer::sum);
+                });
+            }
+            if (!hits.isEmpty()) bad.add(id + " blocks the road near " + hits.keySet());
+        }
+        assertEquals(List.of(), bad);
+    }
+
+    /** Where a player can stand: a floor under, and room for feet and head. */
+    static boolean standable(ReachCanvas.Frozen plan, int x, int y, int z) {
+        String floor = blockAt(plan, x, y - 1, z), feet = blockAt(plan, x, y, z), head = blockAt(plan, x, y + 1, z);
+        boolean solidFloor = !floor.startsWith("minecraft:air") && !floor.contains("water") && !floor.contains("_door") && !floor.contains("lantern")
+            && !floor.contains("_fence") && !floor.contains("_wall[") && !floor.contains("pane") && !floor.contains("bars");
+        return solidFloor && open(feet) && open(head);
+    }
+
+    static boolean open(String state) {
+        return state.equals("minecraft:air") || state.contains("_sign") || state.contains("banner") || state.contains("carpet")
+            || state.contains("short_grass") || state.contains("fern") || state.contains("lantern") && state.contains("hanging=true")
+            || state.contains("pressure_plate") || state.contains("snow[layers=1");
+    }
+
+    /** Every door opens onto somewhere to stand on both sides: no door into a wall, a drop, a pit or a solid floor. */
+    @Test
+    void everyDoorCanBeWalkedThrough() {
+        List<String> bad = new ArrayList<>();
+        for (ReachFeatures.Feature feature : FEATURES.features()) {
+            ReachCanvas.Frozen plan = FEATURES.plan(feature);
+            for (int cx = plan.minX >> 4; cx <= plan.maxX >> 4; cx++) for (int cz = plan.minZ >> 4; cz <= plan.maxZ >> 4; cz++) {
+                if (!plan.touches(cx, cz)) continue;
+                int baseX = cx << 4, baseZ = cz << 4;
+                plan.forEach(cx, cz, cell -> {
+                    String s = cell.spec().state();
+                    if (!s.contains("_door[") || !s.contains("half=lower")) return;
+                    int x = baseX + cell.lx(), y = cell.y(), z = baseZ + cell.lz();
+                    String facing = s.replaceAll(".*facing=([a-z]+).*", "$1");
+                    int dx = facing.equals("east") ? 1 : facing.equals("west") ? -1 : 0, dz = facing.equals("south") ? 1 : facing.equals("north") ? -1 : 0;
+                    // Either side may be a step up or down from the door's own floor.
+                    boolean front = false, back = false;
+                    for (int dy = -1; dy <= 1; dy++) {
+                        front |= standable(plan, x + dx, y + dy, z + dz);
+                        back |= standable(plan, x - dx, y + dy, z - dz);
+                    }
+                    if (!front || !back) {
+                        int sx = front ? -dx : dx, sz = front ? -dz : dz;
+                        bad.add(feature.id() + " door at " + x + "," + y + "," + z + (front ? "" : " blocked " + facing) + (back ? "" : " blocked behind")
+                            + " [floor " + blockAt(plan, x + sx, y - 1, z + sz) + ", feet " + blockAt(plan, x + sx, y, z + sz) + ", head " + blockAt(plan, x + sx, y + 1, z + sz) + "]");
+                    }
+                });
+            }
+        }
+        System.out.println("Blocked doors: " + bad.size());
+        bad.stream().limit(60).forEach(System.out::println);
+        assertEquals(List.of(), bad.subList(0, Math.min(25, bad.size())));
     }
 
     /** A blank shop sign tells a player nothing: every hanging sign a build places must carry words. */

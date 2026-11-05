@@ -77,6 +77,15 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
 
   A waypoint (camp, ruined waystation or cairn) with a chest stands about every 350 blocks of road through those
   zones.
+- **Expedition doors.** Six landmarks hold an expedition's door: a starlit gateway in a carved frame, braziers
+  burning before it and the expedition's name and level lettered on their pedestals. Stepping in opens that
+  expedition's board (`/expedition info`); the player is set back on the threshold, facing the door.
+  - the Huntsman's Barrow: the Hollow Barrow (level 8);
+  - the Heart Tree: Thornwood Canopy (level 12);
+  - the Great Aqueduct's sunken cistern court: the Sunken Aqueduct (level 16);
+  - the Headframe's shaft: Gloomforge Mines (level 20);
+  - the Seal Spire: the Hall of the Three Wardens (level 24);
+  - the Ember Gate, its whole arch alight: the Cinder Keep raid (level 26).
 - **The skyfarer's line.** Anyone who falls off the edge is hauled back to the last solid ground they stood on,
   with no fall damage.
 
@@ -101,16 +110,10 @@ there. Night-only encounters read the hour of their own place. Leaving the Reach
 weather.
 
 ## Life
-The country has animals, set down with the land and kept:
-- sheep and cattle in the Vale's pastures;
-- grey-woolled flocks on the Barrowdowns;
-- foxes and rabbits in Thornwood;
-- frogs on Mistmere's shore;
-- goats on the Ironspine heights;
-- camels and rabbits in the Sunscar.
-
-There's at most one small herd to a chunk, and most chunks have none. The city, the Scar and the roads are left
-to people. Mob griefing is off, so sheep never crop the turf.
+No vanilla creatures live in the Reach. The game rules stop natural spawning and spawners, and `ReachGameplay`
+cancels the other ways the game brings creatures in (patrols, raids, lightning, traps, jockeys). Everything that
+moves is the Reach's own: its NPCs, the zones' creatures and the encounters, all spawned by the plugin. The
+country's life is in each zone's air and sound (see Climate).
 
 ## Protection (anti-grief)
 The Reach is public land, held by the plugin's own claim protection.

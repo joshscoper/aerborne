@@ -199,6 +199,16 @@ public final class ReachTerrain {
         }
     }
 
+    /** How far a point is from the nearest road's centre line, looking no further than {@code reach} (beyond: MAX_VALUE). */
+    public double roadDistance(double x, double z, double reach) {
+        double best = Double.MAX_VALUE;
+        for (ReachPath road : List.of(spine, emberRoad)) {
+            ReachPath.Hit hit = road.nearest(x, z, reach);
+            if (hit != null) best = Math.min(best, hit.distance());
+        }
+        return best;
+    }
+
     /** The roads themselves (the Spine, then Ember Road), for what's built along them. */
     List<ReachPath> roads() { return List.of(spine, emberRoad); }
 
@@ -211,12 +221,14 @@ public final class ReachTerrain {
     }
 
     /** Where a road crosses water: dry bank to dry bank, and the height its deck should run at. */
-    public record Crossing(double x0, double z0, double x1, double z1, int deck) { }
+    public record Crossing(double x0, double z0, double x1, double z1, int deck, int road, int from, int to) { }
 
     /** Every place a road meets a river or the lake, found by walking the roads' samples. */
     public List<Crossing> crossings() {
         List<Crossing> out = new java.util.ArrayList<>();
-        for (ReachPath road : List.of(spine, emberRoad)) {
+        List<ReachPath> all = List.of(spine, emberRoad);
+        for (int r = 0; r < all.size(); r++) {
+            ReachPath road = all.get(r);
             int start = -1;
             for (int i = 0; i < road.size(); i++) {
                 boolean wet = column((int) Math.floor(road.xs[i]), (int) Math.floor(road.zs[i])).wet();
@@ -228,7 +240,7 @@ public final class ReachTerrain {
                         Column c = column((int) Math.floor(road.xs[k]), (int) Math.floor(road.zs[k]));
                         deck = Math.max(deck, c.wet() ? c.water() + 3 : c.top());
                     }
-                    out.add(new Crossing(road.xs[a], road.zs[a], road.xs[b], road.zs[b], deck));
+                    out.add(new Crossing(road.xs[a], road.zs[a], road.xs[b], road.zs[b], deck, r, a, b));
                     start = -1;
                 }
             }

@@ -139,7 +139,11 @@ public final class ReachTreeGen {
             double a = turn + i * (Math.PI * 2 / limbs) + (r.nextDouble() - 0.5) * 0.6;
             double rise = flat ? 0.35 + r.nextDouble() * 0.25 : 0.6 + r.nextDouble() * 0.5;
             int len = 3 + r.nextInt(3);
-            int[] end = limb(w, x + 0.5, y + h - 1 - r.nextInt(2), z + 0.5, Math.cos(a), rise, Math.sin(a), len, log, false);
+            double fromY = y + h - 1 - r.nextInt(2);
+            int[] end = limb(w, x + 0.5, fromY, z + 0.5, Math.cos(a), rise, Math.sin(a), len, log, false);
+            // A smaller cloud halfway out the limb, so the crown is one full, lumpy mass rather than balls on sticks.
+            int hx = (int) Math.round(x + 0.5 + Math.cos(a) * len * 0.5), hz = (int) Math.round(z + 0.5 + Math.sin(a) * len * 0.5);
+            cluster(w, hx, (int) Math.round(fromY + rise * len * 0.5) + 1, hz, 2.6 + r.nextDouble() * 0.6, flat ? 1.6 : 2.0, 2.6 + r.nextDouble() * 0.6, leaf, second, r);
             // A twig off the limb, for an irregular crown.
             if (r.nextBoolean()) {
                 double b = a + (r.nextBoolean() ? 0.8 : -0.8);
@@ -163,7 +167,11 @@ public final class ReachTreeGen {
         cluster(w, x, y + h, z, 2.4, 2.6, 2.4, Material.BIRCH_LEAVES, Material.BIRCH_LEAVES, r);
     }
 
-    /** A tall spruce: tiers of drooping branches with leaves gathered round them, narrowing to a spike. */
+    /**
+     * A tall spruce: a bare foot of trunk, then one continuous cone of needles in whorls, each whorl a little wider
+     * than the gap above it, its tips drooping a block, narrowing to a spike. The silhouette is the tree's own,
+     * not a stack of plates.
+     */
     private static void spruce(Writer w, int x, int y, int z, SplittableRandom r) {
         int h = 16 + r.nextInt(12);
         boolean thick = h > 24;
@@ -172,8 +180,10 @@ public final class ReachTreeGen {
             log(w, x, y + i, z, Material.SPRUCE_LOG, "y");
             if (thick && i < h * 0.7) { log(w, x + 1, y + i, z, Material.SPRUCE_LOG, "y"); log(w, x, y + i, z + 1, Material.SPRUCE_LOG, "y"); log(w, x + 1, y + i, z + 1, Material.SPRUCE_LOG, "y"); }
         }
-        int start = h / 4 + r.nextInt(3);
-        for (int ty = start; ty < h - 1; ty += 2 + r.nextInt(2)) {
+        int start = 3 + r.nextInt(3);
+        double maxR = thick ? 5.6 : 4.3, phase = r.nextDouble() * 6, lean = r.nextDouble() * Math.PI * 2;
+        double ox = thick ? 0.5 : 0, oz = thick ? 0.5 : 0;
+        for (int ty = start; ty <= h; ty++) {
             double t = (ty - start) / (double) (h - start);
             int len = (int) Math.round((thick ? 5.5 : 4) * (1 - t)) + 1;
             int arms = 4 + r.nextInt(3);

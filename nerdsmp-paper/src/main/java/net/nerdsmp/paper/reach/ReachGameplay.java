@@ -22,8 +22,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -99,6 +101,9 @@ public final class ReachGameplay implements Listener {
     private final YamlConfiguration state;
     private final Map<String, ReachFeatures.Spot> spots;
     private final Map<String, Integer> chestTiers = new HashMap<>();
+    /** Each expedition's door in the Reach, by expedition id: the threshold spot before it. */
+    private final Map<String, ReachFeatures.Spot> doors = new HashMap<>();
+    private final Map<UUID, Long> doorOpened = new HashMap<>();
     private final Map<String, UUID> alive = new HashMap<>();
     private final Map<String, Long> nextSpawn = new HashMap<>();
     private boolean dirty;
@@ -112,6 +117,7 @@ public final class ReachGameplay implements Listener {
         spots.forEach((id, spot) -> {
             String local = id.substring(id.indexOf('.') + 1);
             if (local.startsWith("chest_tier")) chestTiers.put(key(spot), Character.getNumericValue(local.charAt("chest_tier".length())));
+            if (local.startsWith("door_")) doors.put(local.substring("door_".length()), spot);
         });
     }
 
@@ -156,6 +162,60 @@ public final class ReachGameplay implements Listener {
     }
 
     public int discovered(Player player) { return state.getStringList("players." + player.getUniqueId() + ".places").size(); }
+
+    // ------------------------------------------------------------------ no vanilla creatures
+
+    /** Every way the game would bring a creature into the Reach on its own; what the plugin spawns is CUSTOM. */
+    private static final Set<CreatureSpawnEvent.SpawnReason> WILD = Set.of(CreatureSpawnEvent.SpawnReason.NATURAL,
+        CreatureSpawnEvent.SpawnReason.SPAWNER, CreatureSpawnEvent.SpawnReason.TRIAL_SPAWNER,
+        CreatureSpawnEvent.SpawnReason.PATROL, CreatureSpawnEvent.SpawnReason.RAID, CreatureSpawnEvent.SpawnReason.REINFORCEMENTS,
+        CreatureSpawnEvent.SpawnReason.JOCKEY, CreatureSpawnEvent.SpawnReason.MOUNT, CreatureSpawnEvent.SpawnReason.TRAP,
+        CreatureSpawnEvent.SpawnReason.LIGHTNING, CreatureSpawnEvent.SpawnReason.VILLAGE_DEFENSE, CreatureSpawnEvent.SpawnReason.VILLAGE_INVASION,
+        CreatureSpawnEvent.SpawnReason.SILVERFISH_BLOCK, CreatureSpawnEvent.SpawnReason.ENDER_PEARL, CreatureSpawnEvent.SpawnReason.NETHER_PORTAL);
+
+    /** The game rules stop natural spawning; this stops the rest (spawners, traps, lightning, raids) in the Reach. */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onWildSpawn(CreatureSpawnEvent event) {
+        if (WILD.contains(event.getSpawnReason()) && reach.isReach(event.getLocation().getWorld())) event.setCancelled(true);
+    }
+
+    // ------------------------------------------------------------------ expedition doors
+
+    /**
+     * Stepping into an expedition's starlit door opens that expedition's board. The player is set back on the
+     * threshold, facing the door, so closing the board leaves them standing before it rather than inside it.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onDoor(PlayerMoveEvent event) {
+        Location from = event.getFrom(), to = event.getTo();
+        if (from.getBlockX() == to.getBlockX() && from.getBlockY() == to.getBlockY() && from.getBlockZ() == to.getBlockZ()) return;
+        if (!reach.isReach(to.getWorld())) return;
+        Block feet = to.getBlock();
+        if (feet.getType() != Material.END_GATEWAY && feet.getRelative(org.bukkit.block.BlockFace.UP).getType() != Material.END_GATEWAY) return;
+        String expedition = null;
+        ReachFeatures.Spot threshold = null;
+        double nearest = 16 * 16;
+        for (Map.Entry<String, ReachFeatures.Spot> door : doors.entrySet()) {
+            ReachFeatures.Spot s = door.getValue();
+            double dx = to.getX() - s.x(), dz = to.getZ() - s.z();
+            if (dx * dx + dz * dz >= nearest || Math.abs(to.getY() - s.y()) > 16) continue;
+            nearest = dx * dx + dz * dz;
+            expedition = door.getKey();
+            threshold = s;
+        }
+        if (expedition == null) return;
+        Player player = event.getPlayer();
+        event.setTo(new Location(to.getWorld(), threshold.x(), threshold.y(), threshold.z(), threshold.yaw(), 0F));
+        long now = System.currentTimeMillis();
+        Long last = doorOpened.get(player.getUniqueId());
+        if (last != null && now - last < 1500) return;
+        doorOpened.put(player.getUniqueId(), now);
+        player.playSound(event.getTo(), org.bukkit.Sound.BLOCK_END_PORTAL_FRAME_FILL, org.bukkit.SoundCategory.BLOCKS, 0.7F, 0.8F);
+        String id = expedition;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) player.performCommand("expedition info " + id);
+        });
+    }
 
     // ------------------------------------------------------------------ world chests
 

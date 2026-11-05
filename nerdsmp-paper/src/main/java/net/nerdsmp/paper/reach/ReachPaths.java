@@ -61,6 +61,36 @@ final class ReachPaths {
         }
     }
 
+    /**
+     * Walls up every door that opens onto nowhere: into masonry, over a drop, or under a floor. Such doors come from a
+     * building set hard against a wall or a slope; a door that cannot be walked through is worse than none, so it
+     * becomes wall in the material beside it. Doors with somewhere to stand on both sides are left alone.
+     */
+    static void sealBlindDoors(ReachCanvas canvas, ReachTerrain terrain) {
+        Ground g = new Ground(canvas, terrain, new HashMap<>());
+        List<int[]> blind = new ArrayList<>();
+        canvas.forEachBlock((x, y, z, spec) -> {
+            String s = spec.state();
+            if (!s.contains("_door[") || !s.contains("half=lower")) return;
+            String facing = s.replaceAll(".*facing=([a-z]+).*", "$1");
+            int dx = facing.equals("east") ? 1 : facing.equals("west") ? -1 : 0, dz = facing.equals("south") ? 1 : facing.equals("north") ? -1 : 0;
+            boolean front = false, back = false;
+            for (int dy = -1; dy <= 1; dy++) {
+                front |= g.standable(x + dx, y + dy, z + dz);
+                back |= g.standable(x - dx, y + dy, z - dz);
+            }
+            if (!front || !back) blind.add(new int[] {x, y, z, dx, dz});
+        });
+        for (int[] d : blind) {
+            // The wall's own material, taken from beside the door.
+            ReachCanvas.Spec beside = canvas.get(d[0] + d[4], d[1], d[2] + d[3]);
+            if (beside == null || beside.state().contains("door") || beside.state().equals("minecraft:air")) beside = canvas.get(d[0] - d[4], d[1], d[2] - d[3]);
+            String wall = beside == null || beside.state().contains("door") || beside.state().equals("minecraft:air") ? "minecraft:stone_bricks" : beside.state();
+            canvas.set(d[0], d[1], d[2], new ReachCanvas.Spec(wall));
+            canvas.set(d[0], d[1] + 1, d[2], new ReachCanvas.Spec(wall));
+        }
+    }
+
     /** Breadth-first over standable cells to the nearest street; the cells walked, street excluded, or null. */
     private static List<int[]> search(Ground g, Street street, int sx, int sy, int sz, int budget) {
         ArrayDeque<int[]> queue = new ArrayDeque<>();

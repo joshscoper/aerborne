@@ -44,6 +44,7 @@ final class GoldenreachVale {
         // Every chest spot gets a real chest; ReachGameplay turns it into per-player loot.
         for (ReachFeatures.Spot s : vale.spots) if (s.id().startsWith("chest_"))
             vale.canvas.set((int) Math.floor(s.x()), (int) Math.floor(s.y()), (int) Math.floor(s.z()), Material.CHEST, "facing=south,type=single");
+        ReachPaths.sealBlindDoors(vale.canvas, terrain);
         // Any door still without a way to the road or a lane gets a worn path to the nearest.
         ReachPaths.Ground ground = new ReachPaths.Ground(vale.canvas, terrain, new java.util.HashMap<>());
         // Where someone stands, the path is coarse earth: people won't stand on a worn path's lowered surface.
@@ -90,7 +91,7 @@ final class GoldenreachVale {
     private boolean buildable(int x, int z, int w, int d) {
         for (int dx = -1; dx <= w; dx += 2) for (int dz = -1; dz <= d; dz += 2) {
             ReachTerrain.Column c = terrain.column(x + dx, z + dz);
-            if (!c.land() || c.wet() || c.river() < 3 || c.road() > 0.2 || c.edge() < 12 || terrain.field(x + dx, z + dz) >= 0) return false;
+            if (!c.land() || c.wet() || c.river() < 3 || c.across() < 6 || c.edge() < 12 || terrain.field(x + dx, z + dz) >= 0) return false;
         }
         return true;
     }
@@ -240,35 +241,66 @@ final class GoldenreachVale {
         canvas.set(x, y + 2, z, Material.IRON_CHAIN, "axis=y");
     }
 
-    /** A mill on the riverbank with its wheel turning in the Goldwater. */
+    /**
+     * A working mill on the Goldwater: the mill house on the bank, and in front of it a bay cut into the bank and
+     * lined with stone, open to the river so the water runs in. The wheel stands in the bay, its bottom paddles in
+     * the water, a double rim on spokes with a paddle at every eighth, and its axle runs into the mill's wall. The
+     * site keeps clear of the road and its bridge.
+     */
     private void watermill() {
-        // Find the riverbank nearest the green.
         int bestX = 0, bestZ = 0; double best = Double.MAX_VALUE;
-        for (int x = MILLBROOK_X - 60; x <= MILLBROOK_X + 60; x += 2) for (int z = MILLBROOK_Z - 40; z <= MILLBROOK_Z + 60; z += 2) {
+        for (int x = MILLBROOK_X - 70; x <= MILLBROOK_X + 70; x += 2) for (int z = MILLBROOK_Z - 50; z <= MILLBROOK_Z + 70; z += 2) {
             ReachTerrain.Column c = terrain.column(x, z);
             if (!c.land() || c.wet() || c.river() < 2 || c.river() > 4) continue;
+            if (terrain.roadDistance(x, z, 30) < 28) continue;
             double d = Math.hypot(x - MILLBROOK_X, z - MILLBROOK_Z);
             if (d < best && d > 18) { best = d; bestX = x; bestZ = z; }
         }
         if (best == Double.MAX_VALUE) return;
-        // Find which way the water is and face the mill's side wheel toward it.
-        int wx = bestX, wz = bestZ;
-        for (int[] dir : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) if (terrain.column(bestX + dir[0] * 5, bestZ + dir[1] * 5).wet()) { wx = bestX + dir[0] * 5; wz = bestZ + dir[1] * 5; break; }
-        int turn = facing(bestX, bestZ, wx, wz);
-        ReachFeatures.Spot door = house("mill", bestX - (wx - bestX), bestZ - (wz - bestZ), 9, 9, 2, ReachKit.Style.VALE_SPRUCE, true, (turn + 2) & 3, MILLBROOK_FLOOR);
+        // Which way the water lies from the bank: the wheel's bay opens that way.
+        int nx = 0, nz = 0;
+        for (int[] dir : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) if (terrain.column(bestX + dir[0] * 5, bestZ + dir[1] * 5).wet()) { nx = dir[0]; nz = dir[1]; break; }
+        if (nx == 0 && nz == 0) return;
+        int vx = -nz, vz = nx;
+        ReachTerrain.Column river = terrain.column(bestX + nx * 5, bestZ + nz * 5);
+        int water = river.wet() ? river.water() : MILLBROOK_FLOOR - 4;
+        int turn = facing(bestX, bestZ, bestX + nx, bestZ + nz);
+        ReachFeatures.Spot door = house("mill", bestX - nx * 8, bestZ - nz * 8, 9, 9, 2, ReachKit.Style.VALE_SPRUCE, true, (turn + 2) & 3, MILLBROOK_FLOOR);
         if (door != null) spots.add(door);
-        int water = terrain.column(wx, wz).wet() ? terrain.column(wx, wz).water() : MILLBROOK_FLOOR - 4;
-        boolean alongX = wx != bestX;
-        for (int a = 0; a < 360; a += 8) {
+        // The bay: from the mill's wall out to the river, its sides and floor lined with stone, water in it.
+        for (int u = -3; u <= 3; u++) for (int w = -6; w <= 6; w++) {
+            int x = bestX + nx * u + vx * w, z = bestZ + nz * u + vz * w;
+            boolean side = Math.abs(w) == 6;
+            for (int y = water - 3; y <= MILLBROOK_FLOOR + 6; y++) {
+                if (y == water - 3) canvas.set(x, y, z, Material.COBBLESTONE);
+                else if (side && y < MILLBROOK_FLOOR) canvas.set(x, y, z, (x + y + z) % 3 == 0 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
+                else if (side && y == MILLBROOK_FLOOR) canvas.set(x, y, z, Material.STONE_BRICK_WALL, "up=true");
+                else if (side) continue;
+                else if (y <= water) canvas.set(x, y, z, Material.WATER);
+                else canvas.set(x, y, z, Material.AIR);
+            }
+        }
+        // The wheel: a double rim of planks on eight spokes about a hub, paddles round the rim, set in the bay.
+        int hubY = water + 2;
+        for (int u : new int[] {-1, 0}) {
+            for (int a = 0; a < 360; a += 4) {
+                double rad = Math.toRadians(a);
+                int w = (int) Math.round(4 * Math.cos(rad)), y = hubY + (int) Math.round(4 * Math.sin(rad));
+                canvas.set(bestX + nx * u + vx * w, y, bestZ + nz * u + vz * w, Material.STRIPPED_SPRUCE_LOG, "axis=" + (nx != 0 ? "x" : "z"));
+            }
+            for (int k = 1; k <= 3; k++) for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+                canvas.set(bestX + nx * u + vx * d[0] * k, hubY + d[1] * k, bestZ + nz * u + vz * d[0] * k, Material.SPRUCE_FENCE);
+            for (int[] d : new int[][] {{1, 1}, {-1, 1}, {1, -1}, {-1, -1}}) for (int k = 1; k <= 2; k++)
+                canvas.set(bestX + nx * u + vx * d[0] * k, hubY + d[1] * k, bestZ + nz * u + vz * d[0] * k, Material.SPRUCE_FENCE);
+        }
+        for (int a = 0; a < 360; a += 45) {
             double rad = Math.toRadians(a);
-            int dy = (int) Math.round(4 * Math.sin(rad)), dh = (int) Math.round(4 * Math.cos(rad));
-            int px = alongX ? wx : wx + dh, pz = alongX ? wz + dh : wz;
-            canvas.set(px, water + 3 + dy, pz, Material.STRIPPED_SPRUCE_LOG, alongX ? "axis=x" : "axis=z");
+            int w = (int) Math.round(5 * Math.cos(rad)), y = hubY + (int) Math.round(5 * Math.sin(rad));
+            for (int u : new int[] {-1, 0}) canvas.set(bestX + nx * u + vx * w, y, bestZ + nz * u + vz * w, Material.SPRUCE_PLANKS);
         }
-        for (int k = -3; k <= 3; k++) {
-            canvas.set(alongX ? wx : wx + k, water + 3, alongX ? wz + k : wz, Material.SPRUCE_FENCE);
-            canvas.set(wx, water + 3 + k, wz, Material.SPRUCE_FENCE);
-        }
+        // The axle into the mill's wall, on a stone bearing.
+        for (int u = -4; u <= 1; u++) canvas.set(bestX + nx * u, hubY, bestZ + nz * u, Material.STRIPPED_DARK_OAK_LOG, "axis=" + (nx != 0 ? "x" : "z"));
+        canvas.set(bestX + nx * 1, hubY - 1, bestZ + nz * 1, Material.STONE_BRICKS);
     }
 
     // ------------------------------------------------------------------ the windmills
@@ -386,10 +418,14 @@ final class GoldenreachVale {
     }
 
     /** The flattest dry spot within {@code radius} of (x, z). */
-    private int[] flatSpot(int x, int z, int radius) {
+    private int[] flatSpot(int x, int z, int radius) { return flatSpot(x, z, radius, 0); }
+
+    /** As above, and at least {@code roadClear} from any road's centre, for a site that spreads past its middle. */
+    private int[] flatSpot(int x, int z, int radius, int roadClear) {
         int bestX = x, bestZ = z; int best = Integer.MAX_VALUE;
         for (int px = x - radius; px <= x + radius; px += 3) for (int pz = z - radius; pz <= z + radius; pz += 3) {
             if (!buildable(px - 8, pz - 8, 16, 16)) continue;
+            if (roadClear > 0 && terrain.roadDistance(px, pz, roadClear + 2) < roadClear) continue;
             int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
             for (int dx = -8; dx <= 8; dx += 4) for (int dz = -8; dz <= 8; dz += 4) {
                 int t = terrain.column(px + dx, pz + dz).top();
@@ -438,7 +474,8 @@ final class GoldenreachVale {
     // ------------------------------------------------------------------ the Tollroad
 
     private void tollroad() {
-        int[] site = flatSpot(-300, 450, 22);
+        // Off the road by the width of its palisade, so the camp watches the road rather than standing on it.
+        int[] site = flatSpot(-300, 438, 30, 21);
         int tx = site[0], tz = site[1];
         int y = floorOver(tx - 12, tz - 12, tx + 12, tz + 12);
         // A ring of patched tents round a fire, a palisade on the road side, crates of tolls.
@@ -525,6 +562,66 @@ final class GoldenreachVale {
         spot("choir_camp", gx + 18, terrain.column(gx + 18, gz + 18).top() + 1, gz + 18, 0F);
         spot("chest_tier3_granary", lx, gy + 12, lz, 0F);
         cellars(gx, gy, gz);
+        granaryBarn(gx + r + 1, gy, gz);
+    }
+
+    /**
+     * The granary's barn, joined to the tower's east side: a long hall on a stone plinth, the lower walls stone and the
+     * upper a dark timber frame, great doors on the yard side. The fire took the half by the tower: there the roof is
+     * gone to charred rafters and the frame stands black; the far half keeps its roof of dark shingles. Hay, sacks
+     * and a fallen beam lie inside.
+     */
+    private void granaryBarn(int x0, int gy, int gz) {
+        int len = 22, half = 5, x1 = x0 + len - 1, z0 = gz - half, z1 = gz + half, mid = x0 + len / 2;
+        for (int x = x0; x <= x1; x++) for (int z = z0 - 1; z <= z1 + 1; z++) {
+            ReachTerrain.Column c = terrain.column(x, z);
+            for (int y = c.top() + 1; y < gy - 1; y++) canvas.set(x, y, z, Material.STONE_BRICKS);
+            canvas.set(x, gy - 1, z, z == z0 - 1 || z == z1 + 1 ? Material.STONE_BRICKS : (x + z) % 4 == 0 ? Material.COARSE_DIRT : Material.SPRUCE_PLANKS);
+        }
+        for (int x = x0; x <= x1; x++) for (int z = z0; z <= z1; z++) {
+            boolean wall = x == x0 || x == x1 || z == z0 || z == z1;
+            boolean burned = x < mid;
+            for (int y = gy; y <= gy + 7; y++) {
+                if (!wall) { canvas.set(x, y, z, Material.AIR); continue; }
+                boolean post = (x - x0) % 4 == 0 || x == x1;
+                Material m;
+                if (y <= gy + 2) m = y == gy ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
+                else if (post || y == gy + 3 || y == gy + 7) m = burned ? Material.POLISHED_BLACKSTONE : Material.DARK_OAK_LOG;
+                else m = burned ? (y > gy + 5 && (x + z) % 3 != 0 ? Material.AIR : Material.BLACKSTONE) : Material.STRIPPED_SPRUCE_WOOD;
+                boolean window = !post && (y == gy + 4 || y == gy + 5) && (x - x0) % 4 == 2 && (z == z0 || z == z1);
+                canvas.set(x, y, z, window ? (burned ? Material.AIR : Material.GLASS_PANE) : m, m == Material.DARK_OAK_LOG && !window ? "axis=y" : "");
+            }
+        }
+        // The great doors on the yard (south) side, under a lintel.
+        for (int x = mid + 2; x <= mid + 4; x++) for (int y = gy; y <= gy + 3; y++) canvas.set(x, y, z1, Material.AIR);
+        for (int x = mid + 1; x <= mid + 5; x++) canvas.set(x, gy + 4, z1, Material.DARK_OAK_LOG, "axis=x");
+        canvas.set(mid + 2, gy, z1, Material.SPRUCE_DOOR, "facing=south,half=lower,hinge=left,open=true");
+        canvas.set(mid + 2, gy + 1, z1, Material.SPRUCE_DOOR, "facing=south,half=upper,hinge=left,open=true");
+        canvas.set(mid + 4, gy, z1, Material.SPRUCE_DOOR, "facing=south,half=lower,hinge=right,open=true");
+        canvas.set(mid + 4, gy + 1, z1, Material.SPRUCE_DOOR, "facing=south,half=upper,hinge=right,open=true");
+        for (int x = mid + 2; x <= mid + 4; x++) canvas.set(x, gy - 1, z1 + 1, Material.COBBLESTONE);
+        // The roof: intact shingles on the far half, charred rafters and a few hanging boards on the near.
+        int ridge = gy + 8 + half + 1;
+        for (int x = x0; x <= x1 + 1; x++) for (int k = 0; k <= half + 1; k++) {
+            int y = gy + 8 + k;
+            boolean burned = x < mid;
+            for (int z : new int[] {z0 - 1 + k, z1 + 1 - k}) {
+                if (burned) {
+                    if ((x - x0) % 2 == 0) canvas.set(x, y, z, Material.STRIPPED_DARK_OAK_LOG, "axis=y");
+                    else if (k == 0 && (x + z) % 3 == 0) canvas.set(x, y, z, Material.DARK_OAK_SLAB, "type=bottom");
+                } else if (z0 - 1 + k == z1 + 1 - k) canvas.set(x, y, z, Material.DARK_OAK_SLAB, "type=bottom");
+                else canvas.set(x, y, z, Material.DARK_OAK_STAIRS, "facing=" + (z == z0 - 1 + k ? "south" : "north") + ",half=bottom");
+            }
+            if (!burned && k > 0) for (int z = z0 - 1 + k; z <= z1 + 1 - k; z++) if (canvas.get(x, y - 1, z) == null || canvas.get(x, y - 1, z).state().equals("minecraft:air")) canvas.set(x, y - 1, z, Material.DARK_OAK_PLANKS);
+        }
+        for (int x = x0; x < mid; x += 2) canvas.set(x, ridge - 1, gz, Material.STRIPPED_DARK_OAK_LOG, "axis=x");
+        // The east gable, closed in timber.
+        for (int k = 1; k <= half; k++) for (int z = z0 - 1 + k + 1; z <= z1 + 1 - k - 1; z++) canvas.set(x1, gy + 7 + k, z, Material.STRIPPED_SPRUCE_WOOD);
+        // Inside: hay stacked at the far end, sacks, a fallen beam among ash in the burned half.
+        for (int x = x1 - 4; x <= x1 - 1; x++) for (int z = z0 + 1; z <= z0 + 3; z++) for (int y = gy; y < gy + 1 + (x + z) % 2; y++) canvas.set(x, y, z, Material.HAY_BLOCK, "axis=y");
+        for (int z = z1 - 3; z <= z1 - 1; z++) canvas.set(x1 - 1, gy, z, Material.BARREL, "facing=up");
+        for (int x = x0 + 1; x <= mid - 2; x++) canvas.set(x, gy, gz + (x % 3) - 1, (x % 4 == 0) ? Material.STRIPPED_DARK_OAK_LOG : Material.GRAY_CONCRETE_POWDER, (x % 4 == 0) ? "axis=x" : "");
+        canvas.set(mid - 1, gy, gz, Material.COAL_BLOCK);
     }
 
     /**

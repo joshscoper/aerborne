@@ -107,7 +107,7 @@ final class ReachClimate implements Listener {
                 double now = shown.getOrDefault(player.getUniqueId(), (double) target.time());
                 double next = approach(now, target.time());
                 shown.put(player.getUniqueId(), next);
-                player.setPlayerTime((long) Math.floorMod((long) next, 24_000L), false);
+                player.setPlayerTime(Math.floorMod((long) next, 24_000L), false);
                 Boolean wet = raining.get(player.getUniqueId());
                 if (wet == null || wet != target.rain()) {
                     player.setPlayerWeather(target.rain() ? WeatherType.DOWNFALL : WeatherType.CLEAR);

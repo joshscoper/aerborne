@@ -77,7 +77,6 @@ final class HighcrownCity {
         city.crownWard();
         city.marketSquare();
         city.marketWard();
-        city.waterwheel(-104, 878);
         city.dockSquare();
         city.docks();
         city.dockQuarter();
@@ -87,6 +86,7 @@ final class HighcrownCity {
         city.streetLife();
         city.cityGreen();
         city.relayDoorsteps();
+        ReachPaths.sealBlindDoors(city.canvas, terrain);
         city.doorPaths();
         city.lipParapet();
         city.runs.write(city.canvas);
@@ -262,13 +262,19 @@ final class HighcrownCity {
     // ------------------------------------------------------------------ the arrival from the Vale
 
     /**
-     * The Kingsbridge and the Walk of Wardens. A broad stone bridge carries the Kingsroad over the gorge to the gate
-     * on arches springing from deep piers. On three bastions down each side, standing out over the gorge, the
-     * founding Wardens of the Reach stand in stone on lettered pedestals, facing the road, so every traveller walks
-     * between them to the Kingsgate. An arch at the north end names the city.
+     * The Kingsbridge and the Walk of Wardens. The gorge is thirty blocks deep, a sheer cliff on the north and a slope
+     * on the south, so the bridge crosses it the way old gorge bridges do: in one great arch of stone over the river,
+     * springing ten blocks above the water from masonry abutments built into each bank, its shoulders lightened by
+     * small open arches, the voussoirs of its ring picked out with a carved keystone at the crown. The deck runs
+     * level from the cliff top to the gate. Over the arch three refuges stand out from each parapet on stepped
+     * corbels, as on the old stone bridges, and in each a founding Warden stands on a lettered pedestal, facing the
+     * road, so every traveller walks between them to the Kingsgate. An arch at the north end names the city.
      */
     private void kingsbridge() {
-        int z0 = 764, z1 = GATE_Z - 4, half = 7, y0 = CROWN, spanLen = 12;
+        int z0 = 764, z1 = GATE_Z - 4, half = 7, y0 = CROWN;
+        // The great arch: a half circle from abutment to abutment, its crown three under the deck.
+        final int za = 774, zb = 806, crown = y0 - 4;
+        final double zc = (za + zb) / 2.0, radius = (zb - za) / 2.0, spring = crown - radius;
         for (int z = z0; z <= z1; z++) {
             for (int x = -half; x <= half; x++) {
                 double p = terrain.patch(x, z, 0.3);
@@ -283,42 +289,54 @@ final class HighcrownCity {
                 runs.wall(x, y0 + 1, z, Material.STONE_BRICK_WALL);
                 reserve(x, z);
             }
-            int span = (z - z0) % spanLen;
-            // Round arches nine wide between piers three thick: the soffit springs seven under the deck and rises
-            // in a half circle; under it, where the gorge is deep, a second arch ties the piers at half height.
-            boolean pierHere = span <= 1 || span == spanLen - 1;
-            int spring = y0 - 8;
-            double a = Math.abs(span - 6);
-            int soffit = pierHere ? y0 - 2 : spring + (int) Math.floor(Math.sqrt(Math.max(0, 20.25 - a * a)));
-            for (int x = -half - 1; x <= half + 1; x++) for (int y = soffit; y < y0 - 1; y++)
-                canvas.set(x, y, z, y == soffit || Math.abs(x) == half + 1 ? Material.STONE_BRICKS : Material.STONE);
-            if (!pierHere) for (int x = -half - 1; x <= half + 1; x++) {
+            // The body: under the arch only air; above it the ring, then spandrel masonry up to the deck. Outside the
+            // arch the abutments go down to the rock.
+            boolean underArch = z > za && z < zb;
+            double dz = z - zc;
+            int intrados = underArch ? (int) Math.floor(spring + Math.sqrt(Math.max(0, radius * radius - dz * dz))) : Integer.MIN_VALUE;
+            for (int x = -half - 1; x <= half + 1; x++) {
                 ReachTerrain.Column c = terrain.column(x, z);
-                int floor = c.land() ? Math.max(c.top(), c.wet() ? c.water() : c.top()) : y0 - 34;
-                if (spring - floor < 16) continue;
-                int tie = floor + (spring - floor) / 2;
-                int under = tie - 4 + (int) Math.floor(Math.sqrt(Math.max(0, 20.25 - a * a)));
-                for (int y = under; y <= tie + 1; y++) canvas.set(x, y, z, y == under ? Material.STONE_BRICKS : kitWeather(x, y, z));
+                int rock = c.land() ? c.top() : y0 - 40;
+                int bottom = underArch ? intrados : rock + 1;
+                boolean face = Math.abs(x) == half + 1;
+                for (int y = bottom; y < y0 - 1; y++) {
+                    boolean ring = underArch && y <= intrados + 1;
+                    Material m = ring ? (Math.abs(dz) < 1 && y == intrados + 1 && face ? Material.CHISELED_STONE_BRICKS : face ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS)
+                        : face ? kitWeather(x, y, z) : Material.STONE;
+                    canvas.set(x, y, z, m);
+                }
+                if (underArch) for (int y = rock + 1; y < intrados; y++) if (!canvas.has(x, y, z)) canvas.set(x, y, z, Material.AIR);
             }
             // A string course of upside-down stairs along both faces under the parapet.
             for (int x : new int[] {-half - 2, half + 2}) canvas.set(x, y0 - 1, z, Material.STONE_BRICK_STAIRS, x < 0 ? "facing=east,half=top" : "facing=west,half=top");
-            if (span == 0) {
-                for (int x = -half - 2; x <= half + 2; x++) for (int dz = -1; dz <= 1; dz++) {
-                    ReachTerrain.Column c = terrain.column(x, z + dz);
-                    int floor = c.land() ? c.top() : y0 - 34;
-                    for (int y = floor; y < y0 - 1; y++) canvas.set(x, y, z + dz, y < y0 - 18 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
-                    if (c.wet()) for (int y = floor; y <= c.water() + 1; y++) for (int ex : new int[] {-half - 4, half + 4}) canvas.set(ex, y, z + dz, Material.MOSSY_STONE_BRICKS);
-                }
-                // Lamps on the parapet over each pier, except where a bastion opens: there the statue's plaque must show.
-                if (z != 776 && z != 788 && z != 800) for (int x : new int[] {-half - 1, half + 1}) {
-                    canvas.set(x, y0 + 1, z, Material.STONE_BRICKS);
-                    canvas.set(x, y0 + 2, z, Material.CHISELED_STONE_BRICKS);
-                    canvas.set(x, y0 + 3, z, Material.LANTERN);
-                    runs.remove(x, y0 + 1, z);
-                }
+        }
+        // Open arches through the shoulders, where the spandrel is deep: small round openings right through the bridge.
+        for (int ac : new int[] {za + 4, za + 9, zb - 9, zb - 4}) {
+            int top = y0 - 4;
+            for (int z = ac - 2; z <= ac + 2; z++) {
+                double d = Math.abs(z - ac);
+                int base = (int) Math.floor(spring + Math.sqrt(Math.max(0, radius * radius - Math.pow(z - zc, 2)))) + 3;
+                int roof = top - 1 + (d <= 0.5 ? 1 : d <= 1.5 ? 0 : -1);
+                if (roof - base < 2) continue;
+                for (int x = -half - 1; x <= half + 1; x++) for (int y = base; y <= roof; y++) canvas.set(x, y, z, Material.AIR);
+                for (int x : new int[] {-half - 1, half + 1}) canvas.set(x, roof + 1, z, d < 1 ? Material.CHISELED_STONE_BRICKS : Material.POLISHED_ANDESITE);
             }
         }
-        // The Walk of Wardens: three bastions a side over the piers, each carrying a founding Warden.
+        // Buttresses down the abutments' faces where they stand on the banks.
+        for (int z : new int[] {za - 2, zb + 2}) for (int x : new int[] {-half - 2, half + 2}) {
+            ReachTerrain.Column c = terrain.column(x, z);
+            int rock = c.land() ? c.top() : y0 - 40;
+            for (int y = rock + 1; y < y0 - 2; y++) canvas.set(x, y, z, kitWeather(x, y, z));
+            canvas.set(x, y0 - 2, z, Material.STONE_BRICK_STAIRS, x < 0 ? "facing=east,half=bottom" : "facing=west,half=bottom");
+        }
+        // Lamps on the parapet, between the refuges.
+        for (int z : new int[] {768, 782, 794, 808, 814}) for (int x : new int[] {-half - 1, half + 1}) {
+            canvas.set(x, y0 + 1, z, Material.STONE_BRICKS);
+            canvas.set(x, y0 + 2, z, Material.CHISELED_STONE_BRICKS);
+            canvas.set(x, y0 + 3, z, Material.LANTERN);
+            runs.remove(x, y0 + 1, z);
+        }
+        // The Walk of Wardens: three refuges a side over the arch, each holding a founding Warden.
         Object[][] wardens = {
             {-1, 776, ReachStatues.Pose.LANTERN, ReachStatues.Palette.MARBLE, new String[] {"MAELIS", "the Lanternbearer", "who lit the way", "to the Reach"}},
             {1, 776, ReachStatues.Pose.SWORD_PLANTED, ReachStatues.Palette.GRANITE, new String[] {"CORWEN", "First Admiral", "of the Sky", "Fleets"}},
@@ -328,37 +346,48 @@ final class HighcrownCity {
             {1, 800, ReachStatues.Pose.STAFF, ReachStatues.Palette.GRANITE, new String[] {"VARN", "the Lorekeeper", "who kept", "the Archive"}}};
         for (Object[] w : wardens) {
             int side = (Integer) w[0], pz = (Integer) w[1];
-            bastion(side, pz, y0, half);
-            ReachBrush at = new ReachBrush(canvas, side * 13, y0, pz, side < 0 ? 1 : 3);
-            int top = ReachStatues.pedestal(at, 3, 6, (String[]) w[4]);
-            ReachStatues.hero(at.at(0, top + 1, 0, 0), 1.5, (ReachStatues.Pose) w[2], (ReachStatues.Palette) w[3]);
+            refuge(side, pz, y0, half);
+            ReachBrush at = new ReachBrush(canvas, side * 12, y0, pz, side < 0 ? 1 : 3);
+            int top = ReachStatues.pedestal(at, 2, 5, (String[]) w[4]);
+            ReachStatues.hero(at.at(0, top + 1, 0, 0), 1.4, (ReachStatues.Pose) w[2], (ReachStatues.Palette) w[3]);
         }
         wardensArch(z0 - 6, y0);
         marks.add(new Mark("kingsbridge", 0, y0, 790, 180F));
     }
 
-    /** A bastion standing out from the bridge over a pier: a paved platform with a parapet, carried on stepped corbels. */
-    private void bastion(int side, int pz, int y0, int half) {
-        for (int k = half + 2; k <= 17; k++) for (int z = pz - 5; z <= pz + 5; z++) {
+    /**
+     * A refuge off the parapet: a paved bay seven deep and nine long, its own parapet round it, carried on four courses
+     * of corbels stepping back to the bridge's face, opening onto the deck so its Warden faces the road.
+     */
+    private void refuge(int side, int pz, int y0, int half) {
+        int far = half + 8;
+        for (int k = half + 2; k <= far; k++) for (int z = pz - 4; z <= pz + 4; z++) {
             int x = side * k;
-            boolean edge = k == 17 || Math.abs(z - pz) == 5;
+            boolean edge = k == far || Math.abs(z - pz) == 4;
             canvas.set(x, y0 - 1, z, edge ? Material.STONE_BRICKS : (Math.abs(z - pz) + k) % 2 == 0 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS);
             for (int y = y0; y < y0 + 4; y++) canvas.set(x, y, z, Material.AIR);
             if (edge) { canvas.set(x, y0, z, Material.STONE_BRICKS); runs.wall(x, y0 + 1, z, Material.STONE_BRICK_WALL); }
-            // Corbels: the platform's underside steps back toward the pier.
-            int depth = 2 + Math.max(0, 5 - Math.abs(z - pz)) + Math.max(0, 17 - k) / 2;
-            for (int y = y0 - 1 - depth; y < y0 - 1; y++) canvas.set(x, y, z, y == y0 - 1 - depth ? Material.STONE_BRICK_STAIRS : Material.STONE_BRICKS,
-                y == y0 - 1 - depth ? (side < 0 ? "facing=east,half=top" : "facing=west,half=top") : "");
+            // Corbels: each course down steps two back toward the bridge, so the bay reads as carried, not stuck on.
+            int out = k - (half + 1);
+            int courses = Math.max(1, 4 - (out - 1) / 2);
+            for (int c = 1; c <= courses; c++) {
+                int y = y0 - 1 - c;
+                boolean last = c == courses;
+                canvas.set(x, y, z, last ? Material.STONE_BRICK_STAIRS : Material.STONE_BRICKS, last ? (side < 0 ? "facing=east,half=top" : "facing=west,half=top") : "");
+            }
             reserve(x, z);
         }
-        // The bastion opens from the bridge: no parapet across its mouth.
-        for (int z = pz - 4; z <= pz + 4; z++) {
+        for (int z = pz - 3; z <= pz + 3; z++) {
             int x = side * (half + 1);
             runs.remove(x, y0 + 1, z);
             canvas.set(x, y0, z, Material.AIR);
             canvas.set(x, y0 - 1, z, Material.STONE_BRICKS);
         }
-        for (int z : new int[] {pz - 5, pz + 5}) { canvas.set(side * 17, y0 + 1, z, Material.CHISELED_STONE_BRICKS); canvas.set(side * 17, y0 + 2, z, Material.LANTERN); runs.remove(side * 17, y0 + 1, z); }
+        for (int z : new int[] {pz - 4, pz + 4}) {
+            canvas.set(side * far, y0 + 1, z, Material.CHISELED_STONE_BRICKS);
+            canvas.set(side * far, y0 + 2, z, Material.LANTERN);
+            runs.remove(side * far, y0 + 1, z);
+        }
     }
 
     /** The arch at the bridge's north end: two piers and a lintel lettered with the city's name, banners on both faces. */

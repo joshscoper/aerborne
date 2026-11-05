@@ -23,9 +23,10 @@ final class ReachSurface {
     Material top(int x, int z, Column c, int slope) {
         double p = terrain.patch(x, z, 0.045), g = terrain.grain(x, z, 0.11);
         if (c.wet()) return bed(c, p, g);
+        // The road keeps its surface right down to the water, where the bridge takes it on.
+        if (c.carriageway()) return road(c, x, z, p, g);
         if (c.river() >= 0 && c.river() < 2.5) return bank(c.zone(), p, g);
         if (c.lake() >= 1.0 && c.lake() < 1.04) return p > 0.2 ? Material.GRAVEL : Material.SAND;
-        if (c.carriageway()) return road(c, x, z, p, g);
         if (slope >= 3) return cliff(c.zone(), x, c.top(), z, p);
         return switch (c.zone()) {
             case HIGHCROWN -> p > 0.78 ? Material.COARSE_DIRT : Material.GRASS_BLOCK;
@@ -119,13 +120,14 @@ final class ReachSurface {
             if (d > 2.7) return Material.STONE_BRICKS;
             return g > 0.45 ? Material.GRAVEL : p > 0.35 ? Material.ANDESITE : p < -0.4 ? Material.MOSSY_COBBLESTONE : Material.COBBLESTONE;
         }
-        // The bands are dithered with noise so a diagonal road doesn't alias into zigzags: worn path in the middle
-        // with a tuft of grass now and then where the hooves don't fall, packed earth to the sides, a gravel edge.
-        double band = d + 0.9 * terrain.grain(x + 311, z - 173, 0.45);
-        if (band < 0.5 && g > 0.55) return Material.GRASS_BLOCK;
-        if (band < 1.9) return g > 0.62 ? Material.COARSE_DIRT : p > 0.55 ? Material.PACKED_MUD : Material.DIRT_PATH;
-        if (band < 2.9) return g > 0.3 ? Material.COARSE_DIRT : g < -0.5 ? Material.PACKED_MUD : Material.DIRT_PATH;
-        return g > 0.1 ? Material.GRAVEL : g < -0.55 ? Material.COBBLESTONE : Material.COARSE_DIRT;
+        // One worn way: a path the full width of the carriageway, mended here and there with gravel in broad patches,
+        // packed earth along its sides, and only at the very edge a soft dither so a diagonal road doesn't alias.
+        double broad = terrain.patch(x * 0.5 + 311, z * 0.5 - 173, 0.05);
+        double edge = d + 0.45 * terrain.grain(x + 311, z - 173, 0.3);
+        if (edge > 2.75) return broad > 0.35 ? Material.GRAVEL : Material.COARSE_DIRT;
+        if (broad > 0.62) return Material.GRAVEL;
+        if (broad < -0.62 && edge < 1.5) return Material.PACKED_MUD;
+        return Material.DIRT_PATH;
     }
 
     /** The face of a cutting or an embankment: dry-stone, darker and mossier toward the foot. */

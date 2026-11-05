@@ -153,6 +153,15 @@ and culturally. This pass answers it:
   spikes replace the gold cubes, and an open bell lantern under a slate spire stands on the ridge.
 - **Red roofs** keep their colour, without pale brick patches.
 
+## The seventh review (2026-11-05)
+- **The Kingsbridge is one great arch.** A single round arch 32 blocks across springs from abutments footed on
+  the gorge's rock, its spandrels solid and pierced by four small relieving openings, buttresses at both ends. The
+  six Wardens stand in refuges, bays corbelled out from the parapets, so the carriageway runs straight between them.
+  Lamps stand at the ends and the refuges.
+- **The city's waterwheel is gone.** It turned in no water.
+- **Blind doors are walled.** A door with nowhere to stand on one side becomes wall in its own material
+  (`ReachPaths.sealBlindDoors`), and a test checks every remaining door can be walked through.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].
