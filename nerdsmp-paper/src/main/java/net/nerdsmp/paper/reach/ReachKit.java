@@ -333,7 +333,7 @@ final class ReachKit {
     private boolean weatheredRoof(ReachBrush b, int lx, int ly, int lz) {
         // Broad patches several blocks across, the way a roof is mended a section at a time.
         double p = terrain.patch(b.wx(lx, lz) + ly * 0.6, b.wz(lx, lz) - ly * 0.4, 0.11);
-        return p > 0.38;
+        return p > 0.55;
     }
 
     /** Sets a block only where nothing is built yet, so additions never cut into a neighbour. */

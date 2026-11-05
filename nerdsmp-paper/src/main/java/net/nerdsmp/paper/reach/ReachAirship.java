@@ -27,6 +27,11 @@ final class ReachAirship {
 
     /** Builds a galleon {@code length} long and {@code beam} wide; {@code paint} is the band at the waterline. */
     static void build(ReachBrush b, int length, int beam, Material paint, long seed) {
+        build(b, length, beam, paint, seed, false);
+    }
+
+    /** As above; a {@code moored} ship has its wings furled to short stubs, so it lies between piers without fouling them. */
+    static void build(ReachBrush b, int length, int beam, Material paint, long seed, boolean moored) {
         int draught = 7;
         for (int z = 0; z <= length; z++) {
             double t = z / (double) length;
@@ -154,7 +159,7 @@ final class ReachAirship {
             for (int y = low; y <= high; y++) b.set(0, y, z, Material.WHITE_WOOL);
         }
         // Skyfaring wings: a timber spar out from each side under the deck, with canvas stretched behind it.
-        int wz0 = (int) (length * 0.32), wz1 = (int) (length * 0.58), reach = beam / 2 + 4;
+        int wz0 = (int) (length * 0.32), wz1 = (int) (length * 0.58), reach = beam / 2 + (moored ? 2 : 4);
         for (int side : new int[] {-1, 1}) {
             for (int k = beam / 2; k <= reach; k++) b.set(side * k, -2, wz1, Material.STRIPPED_SPRUCE_LOG, "axis=x");
             for (int k = beam / 2 + 1; k <= reach; k++) {
@@ -163,8 +168,8 @@ final class ReachAirship {
                 if (k == reach) b.set(side * k, -1, wz1, Material.LANTERN);
             }
         }
-        // Propellers on the wing tips.
-        for (int side : new int[] {-1, 1}) {
+        // Propellers on the wing tips, unshipped while moored.
+        if (!moored) for (int side : new int[] {-1, 1}) {
             int px = side * reach, pz = wz0 - 1;
             b.set(px, -2, pz, Material.COPPER_BLOCK);
             for (int k = 1; k <= 2; k++) {

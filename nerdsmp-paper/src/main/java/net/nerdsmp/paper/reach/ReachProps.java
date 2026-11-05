@@ -19,11 +19,21 @@ final class ReachProps {
      * shafts lying forward on the ground, and a load piled in the bed.
      */
     static void cart(ReachBrush b, long seed) {
+        // Only where the whole cart, shafts and load included, fits on open ground, and never in front of a door.
+        for (int x = -1; x <= 2; x++) for (int z = -2; z <= 2; z++) for (int y = 0; y <= 2; y++) {
+            ReachCanvas.Spec spec = b.canvas.get(b.wx(x, z), b.oy + y, b.wz(x, z));
+            if (spec != null && !spec.state().equals("minecraft:air")) return;
+        }
+        for (int x = -3; x <= 4; x++) for (int z = -5; z <= 4; z++) for (int y = 0; y <= 1; y++) {
+            ReachCanvas.Spec spec = b.canvas.get(b.wx(x, z), b.oy + y, b.wz(x, z));
+            if (spec != null && spec.state().contains("_door")) return;
+        }
         for (int x = 0; x <= 1; x++) for (int z = 0; z <= 2; z++) b.set(x, 0, z, Material.SPRUCE_SLAB, "type=top");
         // Wheels: open trapdoors lie on the side opposite their facing, so these sit flat against the bed.
         b.set(-1, 0, 1, Material.DARK_OAK_TRAPDOOR, "facing=west,half=bottom,open=true");
         b.set(2, 0, 1, Material.DARK_OAK_TRAPDOOR, "facing=east,half=bottom,open=true");
-        for (int x = 0; x <= 1; x++) for (int z = -2; z <= -1; z++) b.set(x, 0, z, Material.SPRUCE_TRAPDOOR, "facing=south,half=bottom,open=false");
+        // The shafts run forward from the bed at its own height, so they read as part of the cart, not boards on the ground.
+        for (int x = 0; x <= 1; x++) for (int z = -2; z <= -1; z++) b.set(x, 0, z, Material.SPRUCE_TRAPDOOR, "facing=south,half=top,open=false");
         Material load = GOODS[(int) Math.floorMod(seed, (long) GOODS.length)];
         String props = load == Material.BARREL ? "facing=up" : load == Material.HAY_BLOCK ? "axis=z" : "";
         b.set(0, 1, 1, load, props);

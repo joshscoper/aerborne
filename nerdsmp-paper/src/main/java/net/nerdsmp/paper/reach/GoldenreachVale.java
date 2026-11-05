@@ -44,6 +44,21 @@ final class GoldenreachVale {
         // Every chest spot gets a real chest; ReachGameplay turns it into per-player loot.
         for (ReachFeatures.Spot s : vale.spots) if (s.id().startsWith("chest_"))
             vale.canvas.set((int) Math.floor(s.x()), (int) Math.floor(s.y()), (int) Math.floor(s.z()), Material.CHEST, "facing=south,type=single");
+        // Any door still without a way to the road or a lane gets a worn path to the nearest.
+        ReachPaths.Ground ground = new ReachPaths.Ground(vale.canvas, terrain, new java.util.HashMap<>());
+        // Where someone stands, the path is coarse earth: people won't stand on a worn path's lowered surface.
+        java.util.Set<String> standing = new java.util.HashSet<>();
+        for (ReachFeatures.Spot s : vale.spots) standing.add((int) Math.floor(s.x()) + "," + (int) Math.floor(s.z()));
+        ReachPaths.connectDoors(vale.canvas, terrain,
+            (x, y, z) -> {
+                String floor = ground.floor(x, y, z);
+                return floor.equals("road") || floor.contains("dirt_path") || floor.contains("gravel");
+            },
+            (x, y, z) -> {
+                if (ReachPaths.paintable(ground.floor(x, y, z)))
+                    vale.canvas.set(x, y - 1, z, standing.contains(x + "," + z) || Math.floorMod(ReachFlora.hash(x, z), 5L) == 0 ? Material.COARSE_DIRT : Material.DIRT_PATH);
+            },
+            1200);
         return new ReachFeatures.Built(vale.canvas, List.copyOf(vale.spots));
     }
 

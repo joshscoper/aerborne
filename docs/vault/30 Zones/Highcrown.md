@@ -93,12 +93,9 @@ and culturally. This pass answers it:
 
   The churchyard lies along the south aisle, a garden with oaks round the apse.
 - **The Highcrown Exchequer.** The bank, built by `HighcrownExchequer`, holds the east side of the market square
-  facing the avenue:
-  - a white-marble temple front on a podium, steps the full width;
-  - six fluted columns, an entablature lettered with its name, and a pediment with a gilded coin;
-  - a green copper roof and copper doors;
-  - a counting hall under a coffered ceiling and chandeliers, with tellers' high desks down both sides;
-  - Orin Ledger's desk on the axis of the door, and the vault's great round door behind it.
+  facing the avenue. Inside: a marble counting hall under a coffered ceiling and chandeliers, tellers' high desks
+  down both sides, and Orin Ledger's desk on the axis of the door with the vault's great round door behind it. (Its
+  first front, a white temple, was replaced in the fifth review; see below.)
 
   Two clerks (Tallis Penwright, Mirabel Quoin) work the desks. The east stall row stops short of its steps so the
   bank has a forecourt; the market cross moved to the square's south end.
@@ -114,6 +111,31 @@ and culturally. This pass answers it:
   - the bridge's pier lamps no longer stand in front of the Wardens' plaques;
   - the Crown Keep has a carved, closed portal;
   - the ring wall ends in a tower at the lip.
+
+## The fifth review (2026-11-05)
+- **The Exchequer fits the city.** The white temple front looked foreign, so the front is now Highcrown's own
+  stone and slate, the grandest of its guild houses:
+  - an arcade of round arches on stone piers, the middle arch wider, the doors set back in the loggia;
+  - a floor of tall windows between pilasters hung with the city's banners;
+  - a steep slate roof with dormers between crow-stepped gables;
+  - a stepped middle gable with the city clock and gilded finials;
+  - a bell lantern on the ridge.
+- **The Market Hall is a cloth hall.** It used to read as a warehouse. Now it has:
+  - a stone arcade round the covered market;
+  - a stone upper hall with paired lancets between pilasters;
+  - round corner turrets under slate cones;
+  - a dark roof broken by rows of dormers between coped stone gables;
+  - a belfry tower in the middle of its avenue front facing the bank, its foot the hall's gateway.
+- **Every door meets a street.** `ReachPaths` walks from each outside door over open ground (never through a
+  building, a fence or a field) to the nearest street, and paves the way. Paths laid for one door serve the next.
+  The Vale runs the same pass.
+- **Terrace walls.** Every terrace edge gets its stone face and parapet, including where a garden or the
+  churchyard holds the edge.
+- **No terraces outside the walls.** The stepped terraces belong inside the walls only. Past the ring wall, and on
+  the west bank across the gorge, the same three levels ease into one smooth slope, so the country is no longer
+  sliced off in lines (`ReachTerrain.highcrownGround`).
+- **Moored skyships furl their wings** so they no longer foul the piers.
+- **Carts** stand only where the whole cart fits, never by a door, and their shafts are level with the bed.
 
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired

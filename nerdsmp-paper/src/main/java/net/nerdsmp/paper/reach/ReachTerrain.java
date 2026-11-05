@@ -103,6 +103,31 @@ public final class ReachTerrain {
         double r = Math.hypot(x - CROWN_RING_X, z - CROWN_RING_Z);
         return r < CROWN_RADIUS ? CROWN_TOP : r < MARKET_RADIUS ? MARKET_TOP : DOCK_TOP;
     }
+
+    /**
+     * Highcrown's ground: the stepped terraces inside the walls, and outside them (past the ring wall, and across
+     * the gorge on the west bank) the same three levels eased into one smooth slope. The steps belong to the city's
+     * walled streets; carried out into the country they read as terrain sliced off in lines.
+     */
+    static double highcrownGround(double x, double z) {
+        double stepped = highcrownTop(x, z);
+        double outside = Math.max(smoothstep(158, 178, Math.hypot(x, z - 905)), 1 - smoothstep(-24, -8, x - goldwaterX(z)));
+        if (outside <= 0) return stepped;
+        double r = Math.hypot(x - CROWN_RING_X, z - CROWN_RING_Z);
+        double crown = Math.max(1 - smoothstep(72, 104, r), 1 - smoothstep(816, 852, z));
+        double market = Math.max(crown, 1 - smoothstep(132, 172, r));
+        double smooth = DOCK_TOP + (MARKET_TOP - DOCK_TOP) * market + (CROWN_TOP - MARKET_TOP) * crown;
+        return lerp(stepped, smooth, outside);
+    }
+
+    /** The Goldwater's line past Highcrown, as x at a given z (it runs south-west through the city's gorge). */
+    static double goldwaterX(double z) {
+        double[][] p = GOLDWATER;
+        if (z <= p[10][1]) return p[10][0];
+        for (int i = 10; i < p.length - 1; i++)
+            if (z <= p[i + 1][1]) return lerp(p[i][0], p[i + 1][0], (z - p[i][1]) / (p[i + 1][1] - p[i][1]));
+        return p[p.length - 1][0];
+    }
     /** Town platforms. Millbrook's height follows the river, so it is set once the river is known. */
     private volatile List<Pad> pads = FIXED_PADS;
     private int millbrookFloor;
@@ -370,7 +395,7 @@ public final class ReachTerrain {
         // Town platforms: Highcrown's terraces, the keep's crag, Millbrook's riverside shelf.
         for (Pad pad : pads) {
             double dist = Math.hypot(x - pad.x, z - pad.z);
-            double height = pad.id.equals("highcrown") ? highcrownTop(x, z) : pad.height;
+            double height = pad.id.equals("highcrown") ? highcrownGround(x, z) : pad.height;
             if (dist < pad.radius + pad.falloff) h = lerp(h, height, 1 - smoothstep(pad.radius, pad.radius + pad.falloff, dist));
         }
         double lake = lakeRadius(x, z);

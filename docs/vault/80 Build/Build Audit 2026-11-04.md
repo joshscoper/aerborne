@@ -78,3 +78,16 @@ The user asked for more detail and for professional standard. Answered as follow
   (see [[Landmarks]]). A waypoint stands about every 350 blocks of road through the outer zones: a traveller's
   camp, a ruined waystation or a cairn, each with a chest of the zone's tier.
 
+## Fifth review (2026-11-05)
+The cathedral landed. The faults raised, and the fixes:
+- **The bank looked foreign.** It's restyled in the city's stone and slate (see
+  [[Highcrown#The fifth review (2026-11-05)]]).
+- **No parapet past the churchyard.** The terrace-wall pass skipped any edge another build had reserved. It now
+  walls every edge where nothing is built.
+- **Terrain cut off outside Highcrown.** The capital's terrace steps leaked into the town platform's falloff and
+  across the gorge. They now ease into a smooth slope outside the walls.
+- **Ship wings in the piers.** Moored ships furl their wings.
+- **Cart fronts in other things.** A cart checks it fits before it is placed, and keeps away from doors.
+- **Houses not joined to a road.** Every outside door is pathed to the nearest street (`ReachPaths`).
+- **The warehouse in the trade district.** The Market Hall is rebuilt as a cloth hall with a belfry.
+
