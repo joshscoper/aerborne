@@ -246,8 +246,9 @@ public final class ReachGameplay implements Listener {
         World world = world();
         if (world == null) return;
         long now = System.currentTimeMillis();
-        boolean night = world.getTime() > 13_000 && world.getTime() < 23_000;
         for (Encounter e : ENCOUNTERS) {
+            // A night-only creature keeps the hour of its own place: the Reach has no night of its own.
+            boolean night = reach.climate() != null && reach.climate().atSpot(e.spot()).night();
             ReachFeatures.Spot s = spots.get(e.spot());
             if (s == null || plugin.mobs() == null || !plugin.mobs().ids().contains(e.mob())) continue;
             Location home = new Location(world, s.x(), s.y(), s.z(), s.yaw(), 0F);

@@ -388,8 +388,8 @@ final class ReachLandmarks {
                 int zz = z + dz;
                 boolean face = Math.abs(dz) == 2;
                 int base = c.land() && !c.wet() ? s.top(x, zz) : t;
-                // Through a hill: the trench above the channel is cleared.
-                for (int y = channel + 2; y <= base; y++) s.set(x, y, zz, Material.AIR);
+                // Into a hill: the channel runs on in a tunnel under the hillside, which is left whole above it.
+                if (base > channel + 1 && Math.abs(dz) <= 1) for (int y = channel + 1; y <= Math.min(base, channel + 3); y++) s.set(x, y, zz, Material.AIR);
                 for (int y = Math.min(base + 1, channel - 1); y <= channel + 1; y++) {
                     // Round arches between the piers: the upper tier's spring six under the channel, the lower's
                     // five under its own deck, each crown the arch's height above its spring.

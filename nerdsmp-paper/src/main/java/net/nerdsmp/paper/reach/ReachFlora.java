@@ -142,6 +142,52 @@ final class ReachFlora extends BlockPopulator {
             if (!soil) continue;
             plant(region, c, x, y, z, ground, roll, roll2);
         }
+        animals(chunkX, chunkZ, region);
+    }
+
+    /**
+     * The Reach's animals, set down once with the land and kept: sheep and cattle grazing the Vale's pastures,
+     * grey-woolled flocks on the Barrowdowns, foxes and rabbits in Thornwood, frogs on Mistmere's shore, goats on the
+     * Ironspine heights, camels and rabbits in the Sunscar. One small herd at most to a chunk, and most chunks none,
+     * so the country has life without crowding. The city, the Scar and the roads are left to people.
+     */
+    private void animals(int chunkX, int chunkZ, LimitedRegion region) {
+        long h = hash(chunkX * 5039 + 17, chunkZ * 7919 - 3);
+        double roll = (h & 0xFFFF) / 65536.0;
+        int x = (chunkX << 4) + 4 + (int) ((h >>> 16) & 7), z = (chunkZ << 4) + 4 + (int) ((h >>> 20) & 7);
+        Column c = terrain.column(x, z);
+        if (!c.land() || c.wet() || c.road() > 0.02 || c.edge() < 10 || c.river() < 4 || features.occupied(x, z)) return;
+        Zone zone = terrain.groundZone(x, z, c.zone());
+        org.bukkit.entity.EntityType type = null;
+        int herd = 1;
+        switch (zone) {
+            case GOLDENREACH -> {
+                if (terrain.field(x, z) == 6 && roll < 0.55) { type = roll < 0.3 ? org.bukkit.entity.EntityType.SHEEP : org.bukkit.entity.EntityType.COW; herd = 2 + (int) ((h >>> 28) & 1); }
+                else if (terrain.field(x, z) < 0 && roll < 0.02) type = org.bukkit.entity.EntityType.RABBIT;
+            }
+            case BARROWDOWNS -> { if (roll < 0.07) { type = org.bukkit.entity.EntityType.SHEEP; herd = 3 + (int) ((h >>> 28) & 1); } }
+            case THORNWOOD -> { if (roll < 0.025) type = org.bukkit.entity.EntityType.FOX; else if (roll < 0.05) type = org.bukkit.entity.EntityType.RABBIT; }
+            case MISTMERE -> { if (c.lake() < 1.5 && roll < 0.2) { type = org.bukkit.entity.EntityType.FROG; herd = 2; } }
+            case IRONSPINE -> { if (c.top() > 140 && roll < 0.06) { type = org.bukkit.entity.EntityType.GOAT; herd = 2; } }
+            case SUNSCAR -> { if (roll < 0.012) { type = org.bukkit.entity.EntityType.CAMEL; herd = 1 + (int) ((h >>> 28) & 1); } else if (roll < 0.035) type = org.bukkit.entity.EntityType.RABBIT; }
+            default -> { }
+        }
+        if (type == null) return;
+        Class<? extends org.bukkit.entity.Entity> kind = type.getEntityClass();
+        if (kind == null) return;
+        for (int k = 0; k < herd; k++) {
+            int ax = x + (k % 2 == 0 ? k : -k), az = z + (k / 2);
+            Column a = terrain.column(ax, az);
+            if (!a.land() || a.wet() || features.occupied(ax, az)) continue;
+            int ay = a.top() + 1;
+            if (!region.isInRegion(ax, ay, az) || !region.getType(ax, ay, az).isAir() && !region.getType(ax, ay, az).name().contains("GRASS")) continue;
+            boolean grey = zone == Zone.BARROWDOWNS && (k + (int) (h >>> 8)) % 3 != 0;
+            region.spawn(new org.bukkit.Location(null, ax + 0.5, ay, az + 0.5), kind, entity -> {
+                entity.setPersistent(true);
+                if (entity instanceof org.bukkit.entity.LivingEntity living) living.setRemoveWhenFarAway(false);
+                if (grey && entity instanceof org.bukkit.entity.Sheep sheep) sheep.setColor(org.bukkit.DyeColor.LIGHT_GRAY);
+            });
+        }
     }
 
     // ------------------------------------------------------------------ trees

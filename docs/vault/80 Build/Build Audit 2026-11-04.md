@@ -91,3 +91,16 @@ The cathedral landed. The faults raised, and the fixes:
 - **Houses not joined to a road.** Every outside door is pathed to the nearest street (`ReachPaths`).
 - **The warehouse in the trade district.** The Market Hall is rebuilt as a cloth hall with a belfry.
 
+## Sixth review (2026-11-05)
+The user cleared work on the whole world. The faults, and the fixes:
+- **A stub path outside the walls.** The city's streets now stop inside the walls, and the posterns are closed.
+- **Wall piers standing in the river.** The Kingsbridge was rebuilt with slimmer piers, round arches and a lower
+  arch tier. The west wall's run down into the river is gone.
+- **A pit between walls.** Earth banks now rise against the citadel stairs' parapets.
+- **Doors facing outwards.** The gate towers now open into the city.
+- **The bank's top.** A new gable, pinnacles and lantern.
+- **No day and night.** Each zone keeps its own hour, weather and ambience (`ReachClimate`).
+- **Roads that flow.** The routes' corners are rounded by Chaikin cutting, and Ember Road joins the Spine's curve.
+- **A living world.** Herds and wildlife suited to each zone, plus each zone's ambience.
+- **Terrain clipping.** The aqueduct runs into its hill through a tunnel instead of a cut trench.
+

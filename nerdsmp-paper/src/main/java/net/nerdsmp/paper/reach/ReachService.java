@@ -40,11 +40,13 @@ public final class ReachService implements Listener {
     private final Map<UUID, Long> rescued = new ConcurrentHashMap<>();
     private volatile Pregen pregen;
     private ReachGameplay gameplay;
+    private ReachClimate climate;
 
     public ReachService(NerdSmpPlugin plugin) { this.plugin = plugin; }
 
     public ReachTerrain terrain() { return terrain; }
     public ReachFeatures features() { return features; }
+    ReachClimate climate() { return climate; }
 
     public String worldName() {
         return plugin.getConfig().getString("reach.world", DEFAULT_WORLD) + (ReachGenerator.REVISION > 1 ? "_r" + ReachGenerator.REVISION : "");
@@ -59,6 +61,8 @@ public final class ReachService implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
         try { plugin.worldPacks().register(ReachPack.build(worldName(), terrain, features)); }
         catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach world pack is invalid", failure); }
+        climate = new ReachClimate(plugin, this);
+        climate.start();
         gameplay = new ReachGameplay(plugin, this);
         gameplay.start();
         if (Files.isDirectory(directory())) {
@@ -101,6 +105,9 @@ public final class ReachService implements Listener {
         world.setGameRule(GameRules.RANDOM_TICK_SPEED, 0);
         world.setGameRule(GameRules.ADVANCE_WEATHER, false);
         world.setStorm(false);
+        // No day and night: the clock stands at noon and each zone shows its own hour (ReachClimate).
+        world.setGameRule(GameRules.ADVANCE_TIME, false);
+        world.setTime(6000);
         if (world.getDifficulty() == org.bukkit.Difficulty.PEACEFUL) world.setDifficulty(org.bukkit.Difficulty.NORMAL);
         org.bukkit.WorldBorder border = world.getWorldBorder();
         double centreX = (ReachTerrain.MIN_X + ReachTerrain.MAX_X) / 2.0, centreZ = (ReachTerrain.MIN_Z + ReachTerrain.MAX_Z) / 2.0;

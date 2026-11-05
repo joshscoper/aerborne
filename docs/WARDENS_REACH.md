@@ -80,6 +80,38 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
 - **The skyfarer's line.** Anyone who falls off the edge is hauled back to the last solid ground they stood on,
   with no fall damage.
 
+## Climate: no day and night
+The Reach has no day and night cycle. The world's clock stands at noon, and each zone shows its own hour, weather
+and air to each player, eased from one zone's hour to the next as they walk (`ReachClimate`):
+
+| Zone | Hour | Weather | Air |
+| --- | --- | --- | --- |
+| Highcrown | late morning | clear | a bell now and then |
+| Goldenreach Vale | golden early morning | clear | drifting pollen, bees |
+| The Barrowdowns | long sunset | clear | low mist on the heather, a wolf far off |
+| Thornwood | midday under rain | rain | spores and drip under the canopy |
+| Mistmere | grey dawn | drizzle | mist on the water, frogs |
+| The Ironspine | bright morning | clear | snow blowing on the heights, wind |
+| The Sunscar Breaks | hot afternoon | clear | red dust on the wind |
+| The Ashen Scar | ember-lit night | none | falling ash and embers, the deltas' rumble |
+| The Archive Isle | still twilight | clear | motes of light, chimes |
+
+A few places keep their own hour inside their zone: Windmill Ridge is always moonlit, so Hollow Jack still walks
+there. Night-only encounters read the hour of their own place. Leaving the Reach restores a player's own time and
+weather.
+
+## Life
+The country has animals, set down with the land and kept:
+- sheep and cattle in the Vale's pastures;
+- grey-woolled flocks on the Barrowdowns;
+- foxes and rabbits in Thornwood;
+- frogs on Mistmere's shore;
+- goats on the Ironspine heights;
+- camels and rabbits in the Sunscar.
+
+There's at most one small herd to a chunk, and most chunks have none. The city, the Scar and the roads are left
+to people. Mob griefing is off, so sheep never crop the turf.
+
 ## Protection (anti-grief)
 The Reach is public land, held by the plugin's own claim protection.
 - **What players can't do:**
@@ -109,6 +141,8 @@ pot flowers, trampling and crop picking, and it can still open doors.
 | Building kit (houses, towers, stalls, lamps), trees | `ReachKit`, `ReachBrush`, `ReachTrees` |
 | Highcrown, its castle, cathedral and bank; the Vale; bridges | `HighcrownCity`, `HighcrownCastle`, `HighcrownCathedral`, `HighcrownExchequer`, `GoldenreachVale`, `ReachBridges` |
 | Zone landmarks, roadside waypoints | `ReachLandmarks`, `ReachRoadside` |
+| Each zone's hour, weather and ambience | `ReachClimate` |
+| Paths from every door to the streets | `ReachPaths` |
 | The world pack, built in code | `ReachPack` (registered with `WorldPackService`, which now also matches a world by name) |
 | Places, world chests, encounters | `ReachGameplay` (progress in `plugins/NerdSMP/reach-progress.yml`) |
 | World, pre-generation, rebuild, rescue, `/reach` | `ReachService` |

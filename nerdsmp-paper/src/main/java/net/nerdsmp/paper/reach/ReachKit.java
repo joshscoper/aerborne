@@ -325,7 +325,7 @@ final class ReachKit {
             case SPRUCE_STAIRS -> new Material[] {Material.DARK_OAK_STAIRS, Material.DARK_OAK_PLANKS, Material.DARK_OAK_SLAB};
             case DARK_OAK_STAIRS -> new Material[] {Material.SPRUCE_STAIRS, Material.SPRUCE_PLANKS, Material.SPRUCE_SLAB};
             case DEEPSLATE_TILE_STAIRS -> new Material[] {Material.COBBLED_DEEPSLATE_STAIRS, Material.COBBLED_DEEPSLATE, Material.COBBLED_DEEPSLATE_SLAB};
-            case MANGROVE_STAIRS -> new Material[] {Material.BRICK_STAIRS, Material.BRICKS, Material.BRICK_SLAB};
+
             default -> null;
         };
     }

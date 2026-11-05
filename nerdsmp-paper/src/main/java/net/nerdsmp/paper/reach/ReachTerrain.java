@@ -153,10 +153,21 @@ public final class ReachTerrain {
         misc = new ReachNoise(SEED + 6), cloud = new ReachNoise(SEED + 7);
     private final ReachPath goldwater = new ReachPath(GOLDWATER, 3.5, 7.5);
     private final ReachPath longFall = new ReachPath(LONG_FALL, 5, 6);
+    /** Ember Road's curve, starting exactly on the Spine's curve where the two meet, so the junction has no gap. */
+    private static double[][] emberCurve() {
+        double[] start = EMBER_ROAD[0];
+        double[] best = SPINE_CURVE[0];
+        for (double[] p : SPINE_CURVE) if (Math.hypot(p[0] - start[0], p[1] - start[1]) < Math.hypot(best[0] - start[0], best[1] - start[1])) best = p;
+        double[][] route = EMBER_ROAD.clone();
+        route[0] = best;
+        return ReachPath.chaikin(route, 3);
+    }
+
     /** How far a road's grading reaches into the hillside, and the tallest retaining wall at a cutting's verge. */
     static final double GRADE_REACH = 34, CUT_WALL = 3;
-    private final ReachPath spine = new ReachPath(SPINE, 2.6, 2.6);
-    private final ReachPath emberRoad = new ReachPath(EMBER_ROAD, 2.6, 2.6);
+    private static final double[][] SPINE_CURVE = ReachPath.chaikin(SPINE, 3);
+    private final ReachPath spine = new ReachPath(SPINE_CURVE, 2.6, 2.6);
+    private final ReachPath emberRoad = new ReachPath(emberCurve(), 2.6, 2.6);
 
     private final List<Fall> falls;
 

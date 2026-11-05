@@ -260,9 +260,7 @@ final class HighcrownExchequer {
             set(x, top + 1, z, Material.STONE_BRICK_SLAB, "type=bottom");
         }
         for (int z : new int[] {Z0, Z1}) {
-            set(ridgeX, B + ROOF + 2 * (half / 2) + 2, z, Material.CHISELED_STONE_BRICKS);
-            set(ridgeX, B + ROOF + 2 * (half / 2) + 3, z, Material.GOLD_BLOCK);
-            set(ridgeX, B + ROOF + 2 * (half / 2) + 4, z, Material.LIGHTNING_ROD, "facing=up");
+            pinnacle(ridgeX, B + ROOF + 2 * (half / 2) + 2, z);
             // A round window high in each gable.
             for (int x = ridgeX - 1; x <= ridgeX + 1; x++) for (int y = B + ROOF + 3; y <= B + ROOF + 5; y++)
                 set(x, y, z, Math.abs(x - ridgeX) + Math.abs(y - (B + ROOF + 4)) <= 1 ? Material.YELLOW_STAINED_GLASS_PANE : Material.CHISELED_STONE_BRICKS);
@@ -305,54 +303,61 @@ final class HighcrownExchequer {
             set(FRONT, top + 1, z, Material.STONE_BRICK_SLAB, "type=bottom");
             set(FRONT + 1, top + 1, z, Material.STONE_BRICK_SLAB, "type=bottom");
         }
-        // The clock: a pale face in a carved ring, gilded hour marks, hands at ten past ten.
-        double cy = base + 6.5, cz = mid;
-        for (int z = z0; z <= z1; z++) for (int y = base + 3; y <= base + 12; y++) {
-            double r = Math.hypot(z - cz, y - cy);
-            if (r > 3.6) continue;
-            Material m = r > 2.8 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.CALCITE;
-            double a = Math.atan2(y - cy, z - cz);
-            if (r > 2.0 && r <= 2.8 && Math.abs(Math.sin(a * 2)) < 0.25) m = Material.GOLD_BLOCK;
-            set(FRONT, y, z, m);
+        // Twin round-headed lights over the name, a small round window above them.
+        for (int z : new int[] {AXIS - 2, AXIS + 3}) {
+            for (int y = base + 3; y <= base + 7; y++) set(FRONT, y, z, y == base + 7 ? Material.CHISELED_STONE_BRICKS : Material.GLASS_PANE);
+            set(FRONT - 1, base + 2, z, Material.STONE_BRICK_STAIRS, "facing=east,half=top");
         }
-        set(FRONT, (int) Math.floor(cy), (int) Math.floor(cz), Material.POLISHED_BLACKSTONE);
-        set(FRONT, (int) Math.floor(cy) + 1, (int) Math.floor(cz), Material.POLISHED_BLACKSTONE);
-        set(FRONT, (int) Math.floor(cy) + 1, (int) Math.floor(cz) - 1, Material.POLISHED_BLACKSTONE);
-        set(FRONT, (int) Math.floor(cy), (int) Math.floor(cz) + 1, Material.POLISHED_BLACKSTONE);
-        // The name under the clock.
-        set(FRONT - 1, base + 2, AXIS, Material.DARK_OAK_WALL_SIGN, "facing=west");
-        canvas.text(FRONT - 1, base + 2, AXIS, "", "THE", "HIGHCROWN", "");
-        set(FRONT - 1, base + 2, AXIS + 1, Material.DARK_OAK_WALL_SIGN, "facing=west");
-        canvas.text(FRONT - 1, base + 2, AXIS + 1, "", "EXCHEQUER", "coin & vaults", "");
-        // Pinnacles on the lowest steps and a gilded finial on the top one.
-        for (int z : new int[] {z0, z1}) {
-            set(FRONT, base + 7, z, Material.STONE_BRICK_WALL, "up=true");
-            set(FRONT, base + 8, z, Material.GOLD_BLOCK);
+        for (int z = AXIS - 1; z <= AXIS + 2; z++) for (int y = base + 8; y <= base + 11; y++) {
+            boolean ring = z == AXIS - 1 || z == AXIS + 2 || y == base + 8 || y == base + 11;
+            boolean corner = (z == AXIS - 1 || z == AXIS + 2) && (y == base + 8 || y == base + 11);
+            if (corner) continue;
+            set(FRONT, y, z, ring ? Material.CHISELED_STONE_BRICKS : Material.YELLOW_STAINED_GLASS_PANE);
         }
+        // The name, lettered on the panel between the lights.
+        set(FRONT - 1, base + 4, AXIS, Material.DARK_OAK_WALL_SIGN, "facing=west");
+        canvas.text(FRONT - 1, base + 4, AXIS, "", "THE", "HIGHCROWN", "");
+        set(FRONT - 1, base + 4, AXIS + 1, Material.DARK_OAK_WALL_SIGN, "facing=west");
+        canvas.text(FRONT - 1, base + 4, AXIS + 1, "", "EXCHEQUER", "coin & vaults", "");
+        // Stone pinnacles with iron spikes on the lowest steps and the top one.
+        for (int z : new int[] {z0, z1}) pinnacle(FRONT, base + 7, z);
         int topStep = base + 6 + 3 * (int) Math.floor((z1 - z0) / 4.0) + 1;
-        set(FRONT, topStep + 1, AXIS, Material.GOLD_BLOCK);
-        set(FRONT, topStep + 1, AXIS + 1, Material.GOLD_BLOCK);
-        set(FRONT, topStep + 2, AXIS, Material.LIGHTNING_ROD, "facing=up");
-        set(FRONT, topStep + 2, AXIS + 1, Material.LIGHTNING_ROD, "facing=up");
+        pinnacle(FRONT, topStep, AXIS);
+        pinnacle(FRONT, topStep, AXIS + 1);
     }
 
-    /** A bell lantern on the ridge: four corner posts, open arches, a slate cap and a gilded vane. */
+    /** A small stone pinnacle: a carved block, a shaft, an iron spike. */
+    private void pinnacle(int x, int y, int z) {
+        set(x, y, z, Material.CHISELED_STONE_BRICKS);
+        set(x, y + 1, z, Material.STONE_BRICK_WALL, "up=true");
+        set(x, y + 2, z, Material.LIGHTNING_ROD, "facing=up");
+    }
+
+    /** A bell lantern on the ridge: a stone base, four slender posts round the bell, a cornice and a slate spire. */
     private void lantern(int cx, int y0) {
-        int z0 = AXIS - 1, z1 = AXIS + 2;
-        // A solid base down into the roof, so the lantern stands on the ridge rather than over it.
-        for (int x = cx - 1; x <= cx + 2; x++) for (int z = z0; z <= z1; z++) for (int y = y0 - 4; y < y0; y++) set(x, y, z, Material.STONE_BRICKS);
-        for (int x = cx - 1; x <= cx + 2; x++) for (int z = z0; z <= z1; z++) {
-            boolean edge = x == cx - 1 || x == cx + 2 || z == z0 || z == z1;
-            boolean corner = (x == cx - 1 || x == cx + 2) && (z == z0 || z == z1);
-            set(x, y0, z, Material.STONE_BRICKS);
-            for (int y = y0 + 1; y <= y0 + 4; y++) set(x, y, z, corner ? Material.POLISHED_ANDESITE : edge && y == y0 + 4 ? Material.STONE_BRICKS : Material.AIR);
+        int z0 = AXIS - 1, z1 = AXIS + 2, x0 = cx - 1, x1 = cx + 2;
+        for (int x = x0; x <= x1; x++) for (int z = z0; z <= z1; z++) for (int y = y0 - 4; y <= y0; y++) set(x, y, z, Material.STONE_BRICKS);
+        for (int x = x0; x <= x1; x++) for (int z = z0; z <= z1; z++) {
+            boolean corner = (x == x0 || x == x1) && (z == z0 || z == z1);
+            for (int y = y0 + 1; y <= y0 + 4; y++) set(x, y, z, corner ? Material.STONE_BRICK_WALL : Material.AIR, corner ? "up=true" : "");
             set(x, y0 + 5, z, Material.STONE_BRICKS);
         }
+        for (int x = x0 - 1; x <= x1 + 1; x++) for (int z = z0 - 1; z <= z1 + 1; z++) {
+            boolean ring = x == x0 - 1 || x == x1 + 1 || z == z0 - 1 || z == z1 + 1;
+            if (!ring || (x == x0 - 1 || x == x1 + 1) && (z == z0 - 1 || z == z1 + 1)) continue;
+            set(x, y0 + 5, z, Material.STONE_BRICK_STAIRS, x == x0 - 1 ? "facing=east,half=top" : x == x1 + 1 ? "facing=west,half=top"
+                : z == z0 - 1 ? "facing=south,half=top" : "facing=north,half=top");
+        }
         set(cx, y0 + 4, AXIS, Material.BELL, "attachment=ceiling,facing=west");
-        for (int k = 0; k < 3; k++) for (int x = cx - 1 + k; x <= cx + 2 - k; x++) for (int z = z0 + k; z <= z1 - k; z++)
-            set(x, y0 + 6 + k, z, Material.DEEPSLATE_TILES);
-        set(cx, y0 + 9, AXIS, Material.GOLD_BLOCK);
-        set(cx, y0 + 10, AXIS, Material.LIGHTNING_ROD, "facing=up");
+        // The spire: courses of slate stepping in two at a time to a point.
+        int y = y0 + 6;
+        for (int lo = 0, hi = 3; lo <= hi; lo++, hi--) for (int k = 0; k < 3; k++, y++)
+            for (int x = x0 + lo; x <= x0 + hi; x++) for (int z = z0 + lo; z <= z0 + hi; z++) {
+                boolean edge = x == x0 + lo || x == x0 + hi || z == z0 + lo || z == z0 + hi;
+                if (!edge) { set(x, y, z, Material.DEEPSLATE_TILES); continue; }
+                set(x, y, z, Material.DEEPSLATE_TILE_STAIRS, "facing=" + (x == x0 + lo ? "east" : x == x0 + hi ? "west" : z == z0 + lo ? "south" : "north") + ",half=bottom");
+            }
+        set(cx, y, AXIS, Material.LIGHTNING_ROD, "facing=up");
     }
 
     // ------------------------------------------------------------------ hall

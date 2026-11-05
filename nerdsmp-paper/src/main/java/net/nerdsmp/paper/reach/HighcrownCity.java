@@ -72,6 +72,7 @@ final class HighcrownCity {
         city.plaza();
         city.citadel();
         city.fane();
+        city.citadelBanks();
         city.hallOfCallings();
         city.crownWard();
         city.marketSquare();
@@ -140,7 +141,6 @@ final class HighcrownCity {
         reserve(x, z);
     }
 
-    /** Doorsteps cut by the house kit are earth; in the city they're re-laid to match the street they open onto. */
     /** Joins every door to the streets: a lane of the city's paving from each doorstep that doesn't already meet one. */
     private void doorPaths() {
         ReachPaths.Ground ground = new ReachPaths.Ground(canvas, terrain, new HashMap<>());
@@ -153,6 +153,7 @@ final class HighcrownCity {
             1500);
     }
 
+    /** Doorsteps cut by the house kit are earth; in the city they're re-laid to match the street they open onto. */
     private void relayDoorsteps() {
         for (Map.Entry<Long, double[]> e : streets.entrySet()) {
             int x = (int) (e.getKey() >> 32), z = (int) (long) e.getKey().intValue();
@@ -283,14 +284,26 @@ final class HighcrownCity {
                 reserve(x, z);
             }
             int span = (z - z0) % spanLen;
-            double arch = Math.sin(Math.PI * span / spanLen);
-            int soffit = y0 - 2 - (int) Math.round(9 * (1 - arch));
+            // Round arches nine wide between piers three thick: the soffit springs seven under the deck and rises
+            // in a half circle; under it, where the gorge is deep, a second arch ties the piers at half height.
+            boolean pierHere = span <= 1 || span == spanLen - 1;
+            int spring = y0 - 8;
+            double a = Math.abs(span - 6);
+            int soffit = pierHere ? y0 - 2 : spring + (int) Math.floor(Math.sqrt(Math.max(0, 20.25 - a * a)));
             for (int x = -half - 1; x <= half + 1; x++) for (int y = soffit; y < y0 - 1; y++)
                 canvas.set(x, y, z, y == soffit || Math.abs(x) == half + 1 ? Material.STONE_BRICKS : Material.STONE);
+            if (!pierHere) for (int x = -half - 1; x <= half + 1; x++) {
+                ReachTerrain.Column c = terrain.column(x, z);
+                int floor = c.land() ? Math.max(c.top(), c.wet() ? c.water() : c.top()) : y0 - 34;
+                if (spring - floor < 16) continue;
+                int tie = floor + (spring - floor) / 2;
+                int under = tie - 4 + (int) Math.floor(Math.sqrt(Math.max(0, 20.25 - a * a)));
+                for (int y = under; y <= tie + 1; y++) canvas.set(x, y, z, y == under ? Material.STONE_BRICKS : kitWeather(x, y, z));
+            }
             // A string course of upside-down stairs along both faces under the parapet.
             for (int x : new int[] {-half - 2, half + 2}) canvas.set(x, y0 - 1, z, Material.STONE_BRICK_STAIRS, x < 0 ? "facing=east,half=top" : "facing=west,half=top");
             if (span == 0) {
-                for (int x = -half - 2; x <= half + 2; x++) for (int dz = -2; dz <= 2; dz++) {
+                for (int x = -half - 2; x <= half + 2; x++) for (int dz = -1; dz <= 1; dz++) {
                     ReachTerrain.Column c = terrain.column(x, z + dz);
                     int floor = c.land() ? c.top() : y0 - 34;
                     for (int y = floor; y < y0 - 1; y++) canvas.set(x, y, z + dz, y < y0 - 18 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
@@ -432,7 +445,7 @@ final class HighcrownCity {
         for (int x : new int[] {-5, 5}) canvas.set(x, y0 + 7, z1 + 1, Material.GREEN_WALL_BANNER, "facing=south");
         for (int sx : new int[] {-1, 1}) {
             int cx = sx * 16;
-            kit.keepTower(new ReachBrush(canvas, cx - 5, y0, z0 - 2, 0), 11, 40, s, 7 + sx);
+            kit.keepTower(new ReachBrush(canvas, cx + 5, y0, z0 + 8, 2), 11, 40, s, 7 + sx);
             for (int x = cx - 7; x <= cx + 7; x++) for (int z = z0 - 4; z <= z0 + 10; z++) reserve(x, z);
         }
         marks.add(new Mark("kingsgate", 0, y0, GATE_Z + 14, 180F));
@@ -476,13 +489,6 @@ final class HighcrownCity {
 
     /** The west wall: down the gorge side from the Kingsgate to the water, then along the rim of the gorge to the lip. */
     private void westWall() {
-        for (int x = -22; x >= -48; x--) {
-            int zc = GATE_Z + 3;
-            ReachTerrain.Column c = terrain.column(x, zc);
-            if (!c.land() || c.wet()) break;
-            int walk = Math.max(c.top() + 8, CROWN + 12 - 4 * ((-22 - x) / 4));
-            for (int dz = 0; dz < 4; dz++) wallColumn(x, zc + dz, walk, dz == 0, dz == 3);
-        }
         // The rim: for each step south, the last level column of the city before the drop into the gorge.
         List<double[]> rim = new ArrayList<>();
         for (int z = 838; z <= 1072; z += 3) {
@@ -595,11 +601,8 @@ final class HighcrownCity {
                 ReachTerrain.Column c = terrain.column(x, z);
                 if (!c.land() || c.edge() < 3) continue;
                 int walk = runWalk.getOrDefault((int) Math.floor(a / 3), Math.max(street(x, z) + 8, c.top() + 6));
-                // Postern arches where the ring streets, the terrace walk and the dock street pass through.
-                double rc = ring(x, z);
-                int level = street(x, z);
-                boolean way = level == MARKET && (rc >= 99.5 && rc < 107 || rc >= 136.5 && rc < 146) || level == DOCK && rc >= 164.5 && rc < 172;
-                wallColumn(x, z, walk, r > 161, r < 159, way && c.top() == level - 1 ? level : -1);
+                // No posterns: the streets end inside the wall, and the Kingsgate is the city's way in and out.
+                wallColumn(x, z, walk, r > 161, r < 159, -1);
             }
         }
         for (double a : new double[] {-12, 22, 52, 72}) {
@@ -692,6 +695,36 @@ final class HighcrownCity {
             @Override public void mark(String id, int x, int y, int z, float yaw) { marks.add(new Mark(id, x, y, z, yaw)); }
             @Override public void reserve(int x, int z) { HighcrownCity.this.reserve(x, z); }
         }).build();
+    }
+
+    /**
+     * Earth banks against both parapets of the citadel stairs. The stairs climb twelve blocks to the castle gate;
+     * without these, the ground beside them stays at the Crown Ward's level and the parapets stand as sheer walls
+     * over pits between them, the castle and the cathedral. Each bank falls one for one away from its parapet, under
+     * turf, and stops at anything built.
+     */
+    private void citadelBanks() {
+        int z0 = 865, z1 = 871;
+        for (int x = 49; x <= 74; x++) {
+            int walk = Math.min(KEEP, CROWN + Math.max(0, (x - 48) / 2));
+            if (walk <= CROWN + 1) continue;
+            for (int side : new int[] {-1, 1}) for (int k = 1; k <= walk - CROWN + 1; k++) {
+                int z = side < 0 ? z0 - 1 - k : z1 + 1 + k;
+                int top = walk - 1 - (k - 1);
+                if (top < CROWN) break;
+                ReachTerrain.Column c = terrain.column(x, z);
+                if (!c.land() || c.top() >= top) continue;
+                boolean open = true;
+                for (int y = CROWN; y <= top + 1; y++) {
+                    ReachCanvas.Spec s = canvas.get(x, y, z);
+                    if (s != null && !s.state().equals("minecraft:air") && !ReachPaths.Ground.plant(s.state()) && !s.state().contains("grass_block")) { open = false; break; }
+                }
+                if (!open) break;
+                for (int y = c.top() + 1; y <= top; y++) canvas.set(x, y, z, y == top ? Material.GRASS_BLOCK : y > top - 3 ? Material.DIRT : Material.STONE);
+                canvas.set(x, top + 1, z, Material.AIR);
+                reserve(x, z);
+            }
+        }
     }
 
     private void stepEast(int x, int z, int l) {
@@ -1076,7 +1109,7 @@ final class HighcrownCity {
     private void marketWard() {
         double[][] alleys = {{68, 98, 137}, {150, 98, 137}};
         for (int x = -120; x <= 175; x++) for (int z = 834; z <= 1000; z++) {
-            if (street(x, z) != MARKET || !onPlatform(x, z) || reserved.contains(key(x, z))) continue;
+            if (street(x, z) != MARKET || !insideWalls(x, z) || !onPlatform(x, z) || reserved.contains(key(x, z))) continue;
             double r = ring(x, z), a = angle(x, z);
             boolean ring1 = r >= 100 && r < 106.5, walk = r >= 137 && r < 145.5;
             boolean alley = false;
@@ -1190,7 +1223,7 @@ final class HighcrownCity {
         for (int x = x0 - 2; x <= x1 + 2; x++) for (int z = z0 - 2; z <= z1 + 2; z++) {
             ReachTerrain.Column c = terrain.column(x, z);
             if (!c.land() || c.wet() || c.river() < 5 || c.edge() < 6 || street(x, z) != level || Math.abs(c.top() - (level - 1)) > 3) return false;
-            if (outsideRing(x, z)) return false;
+            if (!insideWalls(x, z)) return false;
             boolean core = x >= x0 && x <= x1 && z >= z0 && z <= z1;
             if (core && reserved.contains(key(x, z))) return false;
         }
@@ -1489,7 +1522,7 @@ final class HighcrownCity {
     /** Warehouses backing onto the Market Ward's wall, facing a dock street, under red and dark roofs. */
     private void dockQuarter() {
         for (int x = -120; x <= 175; x++) for (int z = 900; z <= 1080; z++) {
-            if (street(x, z) != DOCK || !onPlatform(x, z) || reserved.contains(key(x, z))) continue;
+            if (street(x, z) != DOCK || !insideWalls(x, z) || !onPlatform(x, z) || reserved.contains(key(x, z))) continue;
             double r = ring(x, z);
             if (r >= 165 && r < 171.5) street(x, z, DOCK, Math.abs(r - 168.2) / 3.4);
         }
@@ -1548,6 +1581,7 @@ final class HighcrownCity {
         Map<Long, Integer> parapet = new HashMap<>();
         for (int x = -200; x <= 200; x++) for (int z = 834; z <= 1080; z++) {
             int top = ReachTerrain.highcrownTop(x, z);
+            if (!insideWalls(x, z)) continue;
             ReachTerrain.Column c = terrain.column(x, z);
             // A garden, churchyard or lawn may hold the edge: what matters is that nothing is built on it.
             if (!c.land() || c.wet() || c.top() != top || !openAbove(x, top, z)) continue;
@@ -1679,6 +1713,16 @@ final class HighcrownCity {
         ReachProps.waymark(canvas, -9, DOCK, 997, new String[] {"Market", "Ward"}, new String[] {"Tethered", "Gull"},
             new String[] {"Sky", "Piers"}, null);
         for (int[] p : new int[][] {{9, CROWN, 866}, {9, CROWN, 902}, {9, MARKET, 921}, {-9, DOCK, 997}}) reserve(p[0], p[2]);
+    }
+
+    /**
+     * True inside the city's walls: south of the north wall, east of the gorge, inside the ring wall. Streets, lots,
+     * terrace walls and the city's furniture stop here; outside is country.
+     */
+    static boolean insideWalls(int x, int z) {
+        if (outsideRing(x, z) || Math.hypot(x, z - 905) > 168) return false;
+        if (z < GATE_Z + 7 + (int) Math.round(6 * Math.sin(x / 40.0))) return false;
+        return x > ReachTerrain.goldwaterX(z) + 4;
     }
 
     /** True beyond the ring wall on the east, where no house of the city may stand. */

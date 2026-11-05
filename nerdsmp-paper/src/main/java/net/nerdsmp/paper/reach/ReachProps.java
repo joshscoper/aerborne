@@ -13,10 +13,9 @@ final class ReachProps {
     private static final Material[] GOODS = {Material.HAY_BLOCK, Material.PUMPKIN, Material.MELON, Material.DRIED_KELP_BLOCK,
         Material.BARREL, Material.HONEYCOMB_BLOCK, Material.BROWN_MUSHROOM_BLOCK};
 
-    /** A hand cart: a raised plank bed on two wheels, shafts to the front, loaded with something. */
     /**
      * A two-wheeled cart: a plank bed two wide and three long raised on its axle, a wheel against each side, two
-     * shafts lying forward on the ground, and a load piled in the bed.
+     * shafts running forward at the bed's height, and a load piled in the bed.
      */
     static void cart(ReachBrush b, long seed) {
         // Only where the whole cart, shafts and load included, fits on open ground, and never in front of a door.
@@ -62,7 +61,6 @@ final class ReachProps {
         b.set(2, 0, 0, Material.SPRUCE_TRAPDOOR, "facing=east,half=bottom,open=true");
     }
 
-    /** A raised stone planter of flowers or a little tree, {@code w} by 2. */
     /**
      * A raised planter {@code w} long: a kerb of stone with a capping of stairs round a bed of grass level with the
      * kerb's top, planted with flowers and a little shrub, never bare soil above the stone.

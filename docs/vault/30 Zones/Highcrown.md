@@ -137,6 +137,22 @@ and culturally. This pass answers it:
 - **Moored skyships furl their wings** so they no longer foul the piers.
 - **Carts** stand only where the whole cart fits, never by a door, and their shafts are level with the bed.
 
+## The sixth review (2026-11-05)
+- **Inside the walls.** Streets, lots, terrace walls and the city's furniture stop at the walls
+  (`HighcrownCity.insideWalls`). Before, the market's ring street ran out through posterns into the country. The
+  posterns are closed; the Kingsgate is the way in and out.
+- **The west wall no longer steps down the gorge side into the river.** The gorge is the defence there.
+- **Banks beside the citadel stairs.** As the stairs climb to the castle gate, the ground on both sides is banked
+  up against their parapets, so there is no pit between the stairs, the castle and the cathedral.
+- **The Kingsbridge reads as a bridge:**
+  - piers three thick, with round arches nine wide between them;
+  - a second arch tier tying the piers where the gorge is deep;
+  - no more tall slots.
+- **Doors face the city.** The Kingsgate's towers open onto the gate square, not the bridge.
+- **The Exchequer's gable** has twin lights under an oculus, with the name between them. Stone pinnacles with iron
+  spikes replace the gold cubes, and an open bell lantern under a slate spire stands on the ridge.
+- **Red roofs** keep their colour, without pale brick patches.
+
 ## Look
 - **Palette:** stone bricks, andesite and tuff walls, deepslate footings; dark oak and spruce frames; steep **spired
   spruce roofs** with dark grey slate accents; green banners (ref 4's green emblem). See [[Build Style Guide#Highcrown]].

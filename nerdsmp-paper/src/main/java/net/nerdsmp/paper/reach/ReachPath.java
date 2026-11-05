@@ -56,6 +56,27 @@ final class ReachPath {
 
     int size() { return xs.length; }
 
+    /**
+     * Rounds a polyline's corners by Chaikin's cutting: each pass replaces every segment with points a quarter and
+     * three quarters along it, keeping the two ends. Three passes turn a route's kinks into sweeping curves that stay
+     * inside the original line's bends.
+     */
+    static double[][] chaikin(double[][] points, int passes) {
+        double[][] p = points;
+        for (int pass = 0; pass < passes; pass++) {
+            List<double[]> out = new ArrayList<>();
+            out.add(p[0]);
+            for (int i = 0; i < p.length - 1; i++) {
+                double[] a = p[i], b = p[i + 1];
+                out.add(new double[] {a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25});
+                out.add(new double[] {a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75});
+            }
+            out.add(p[p.length - 1]);
+            p = out.toArray(new double[0][]);
+        }
+        return p;
+    }
+
     /** Fills each sample's value from {@code sampler(x, z)}. */
     void sample(DoubleBinaryOperator sampler) {
         for (int i = 0; i < xs.length; i++) values[i] = sampler.applyAsDouble(xs[i], zs[i]);
