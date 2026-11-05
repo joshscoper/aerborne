@@ -11,9 +11,17 @@ import java.util.function.Predicate;
 public final class ClaimRegionPolicy implements Predicate<ChunkKey> {
     private final Map<UUID, Bounds> borders = new HashMap<>();
     private final List<Region> regions = new ArrayList<>();
+    /** Whole worlds held as public land: nobody without the claim bypass builds, breaks, tramples or burns there. */
+    private final java.util.Set<UUID> protectedWorlds = new java.util.HashSet<>();
+
+    /** The story map is protected unless config names its own list. */
+    static final List<String> DEFAULT_PROTECTED_WORLDS = List.of("aerborne_reach");
 
     public ClaimRegionPolicy(FileConfiguration config, List<World> worlds) {
+        List<String> guarded = config.isList("claims.protected-worlds")
+            ? config.getStringList("claims.protected-worlds") : DEFAULT_PROTECTED_WORLDS;
         for (World world : worlds) {
+            if (guarded.stream().anyMatch(name -> name.equalsIgnoreCase(world.getName()))) protectedWorlds.add(world.getUID());
             var border = world.getWorldBorder();
             double half = border.getSize() / 2D;
             var center = border.getCenter();
@@ -44,6 +52,7 @@ public final class ClaimRegionPolicy implements Predicate<ChunkKey> {
     }
 
     @Override public boolean test(ChunkKey chunk) {
+        if (protectedWorlds.contains(chunk.worldId())) return true;
         Bounds border = borders.get(chunk.worldId());
         if (border == null || !border.contains(chunk)) return true;
         return regions.stream().anyMatch(region -> region.contains(chunk));

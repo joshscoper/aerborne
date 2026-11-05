@@ -15,6 +15,13 @@ final class ClaimRegionPolicyTest {
         assertFalse(region.contains(new ChunkKey(UUID.randomUUID(), 0, 0)));
     }
 
+    /** The story map is public land in any gameplay mode, and a world the policy hasn't seen is never claimable. */
+    @Test void theStoryMapIsProtectedAndUnknownWorldsAreReserved() {
+        assertTrue(ClaimRegionPolicy.DEFAULT_PROTECTED_WORLDS.contains("aerborne_reach"));
+        var policy = new ClaimRegionPolicy(new org.bukkit.configuration.file.YamlConfiguration(), java.util.List.of());
+        assertTrue(policy.test(new ChunkKey(UUID.randomUUID(), 0, 0)));
+    }
+
     @Test void aClaimMustFitCompletelyInsideTheWorldBorder() {
         UUID world = UUID.randomUUID();
         var border = new ClaimRegionPolicy.Bounds(-32, -32, 32, 32);

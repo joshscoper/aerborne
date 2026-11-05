@@ -69,6 +69,25 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
 - **The skyfarer's line.** Anyone who falls off the edge is hauled back to the last solid ground they stood on,
   with no fall damage.
 
+## Protection (anti-grief)
+The Reach is public land, held by the plugin's own claim protection.
+- **What players can't do:**
+  - break or place blocks;
+  - pour or take water or lava;
+  - light fires;
+  - trample farmland or pick the fields' crops;
+  - take flowers from pots, edit signs (they're waxed), or use containers, cauldrons or composters.
+- **What still works:** doors, trapdoors, gates, buttons and bells; NPCs; and the world chests, which roll their
+  own loot.
+- **The world itself:** mobs can't change blocks, explosions and fire don't damage it, and the gamerules turn off
+  mob griefing, fire spread and random ticks. Crops don't grow, leaves don't decay and grass doesn't spread.
+- **Mode and config:** the protection holds in any gameplay mode, because `claims.protected-worlds` (default
+  `[aerborne_reach]`) always reserves the world.
+- **Who bypasses it:** staff with `nerdsmp.claim.bypass` (ops by default), so builders can still edit the map.
+
+A bot playing as a plain player checks this on the scratch server: it is denied breaking, building, water, fire,
+pot flowers, trampling and crop picking, and it can still open doors.
+
 ## How it's built (for developers)
 
 | Piece | Class |
