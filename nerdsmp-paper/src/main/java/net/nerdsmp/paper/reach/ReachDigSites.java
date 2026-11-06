@@ -203,7 +203,12 @@ public final class ReachDigSites {
             if (plugin.zones().find(spec.zoneId()).isEmpty()) { all = false; continue; }
             ReachFeatures.Feature feature = reach.features().feature(spec.featureId()).orElse(null);
             if (feature == null) continue;
-            List<DigSiteDefinition.Node> nodes = nodes(reach.features().plan(feature), spec.nodes());
+            ReachFeatures.Spot dig = reach.features().spots().get(spec.featureId() + ".dig");
+            if (dig == null) continue;
+            // Only the pit's own floors and faces: the apron, the shelter's floor and the fill under them are not dug.
+            int cx = (int) Math.floor(dig.x()), cz = (int) Math.floor(dig.z()), g = (int) Math.floor(dig.y()) + 3;
+            List<DigSiteDefinition.Node> nodes = nodes(reach.features().plan(feature), spec.nodes()).stream()
+                .filter(n -> Math.abs(n.x() - cx) <= HX && Math.abs(n.z() - cz) <= HZ && n.y() >= g - 6 && n.y() <= g - 2).toList();
             if (nodes.isEmpty()) continue;
             String id = "reach_" + spec.id();
             UUID generation = UUID.nameUUIDFromBytes((id + "|" + world.getUID() + "|" + nodes.hashCode()).getBytes(StandardCharsets.UTF_8));
