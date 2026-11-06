@@ -173,13 +173,13 @@ final class ReachRoadside {
                 } else if (stretch > -0.05) hedge(x, y, z, c, grain);
             }
             case HIGHCROWN, BARROWDOWNS -> {
-                if (stretch > -0.15 && grain > -0.75) {
+                if (stretch > -0.15) {
                     canvas.set(x, c.top(), z, Material.GRASS_BLOCK);
                     runs.wall(x, y, z, terrain.patch(x, z, 0.2) > 0.2 ? Material.MOSSY_COBBLESTONE_WALL : Material.COBBLESTONE_WALL);
                 }
             }
             case THORNWOOD -> {
-                if (stretch > 0.35 && grain > -0.6) {
+                if (stretch > 0.35) {
                     canvas.set(x, c.top(), z, Material.PODZOL);
                     runs.fence(x, y, z, Material.SPRUCE_FENCE);
                 }
@@ -435,16 +435,36 @@ final class ReachRoadside {
     /** A low wall along the outer edge wherever the road stands on an embankment more than a couple of blocks high. */
     private void parapets(int from, int to) {
         java.util.Set<Long> seen = new java.util.HashSet<>();
+        java.util.Map<Long, int[]> edge = new java.util.HashMap<>();
         for (int i = from; i <= to; i++) {
             int cx = (int) Math.floor(road.xs[i]), cz = (int) Math.floor(road.zs[i]);
             for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {
                 int x = cx + dx, z = cz + dz;
-                if (!seen.add(((long) x << 32) ^ (z & 0xFFFFFFFFL))) continue;
+                long key = ((long) x << 32) ^ (z & 0xFFFFFFFFL);
+                if (!seen.add(key)) continue;
                 Column c = terrain.column(x, z);
-                if (!c.land() || !c.carriageway() || c.across() < 2.6 || c.fill() < 2.5 || clearance.blocked(x, z)) continue;
-                int y = c.top() + 1;
-                runs.wall(x, y, z, terrain.patch(x, z, 0.2) > 0.3 ? Material.MOSSY_STONE_BRICK_WALL : Material.STONE_BRICK_WALL);
+                if (!c.land() || !c.carriageway() || c.across() < 2.6 || c.fill() < 1.5 || clearance.blocked(x, z)) continue;
+                edge.put(key, new int[] {x, z, c.top() + 1});
             }
+        }
+        // A parapet is a run: lone posts and scraps under six blocks long are left out, so the embankment's edge
+        // reads as a wall where it is high and as open verge where it is not.
+        java.util.Set<Long> done = new java.util.HashSet<>();
+        for (long start : edge.keySet()) {
+            if (done.contains(start)) continue;
+            java.util.List<int[]> run = new java.util.ArrayList<>();
+            java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>(java.util.List.of(start));
+            done.add(start);
+            while (!queue.isEmpty()) {
+                int[] p = edge.get(queue.poll());
+                run.add(p);
+                for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+                    long n = ((long) (p[0] + dx) << 32) ^ ((p[1] + dz) & 0xFFFFFFFFL);
+                    if (edge.containsKey(n) && done.add(n)) queue.add(n);
+                }
+            }
+            if (run.size() < 6) continue;
+            for (int[] p : run) runs.wall(p[0], p[2], p[1], terrain.patch(p[0], p[1], 0.2) > 0.3 ? Material.MOSSY_STONE_BRICK_WALL : Material.STONE_BRICK_WALL);
         }
     }
 }

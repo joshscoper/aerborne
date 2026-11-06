@@ -113,17 +113,37 @@ public final class ReachTreeGen {
         }
     }
 
-    /** Roots: short logs leaning out from the base, one or two reaching further and dipping into the ground. */
+    /**
+     * Roots: short logs leaning out from the base, one or two reaching further and dipping into the ground. Where the
+     * ground falls away under a root it climbs down to it, so no root hangs in the air; over a drop deeper than three
+     * it stops at the edge.
+     */
     private static void roots(Writer w, int x, int y, int z, int count, int reach, Material log, SplittableRandom r) {
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
         for (int i = 0; i < count; i++) {
             int[] d = dirs[r.nextInt(dirs.length)];
             int len = 1 + r.nextInt(Math.max(1, reach));
+            boolean up = r.nextBoolean();
             for (int k = 1; k <= len; k++) {
-                int yy = y + (k == 1 ? (r.nextBoolean() ? 1 : 0) : 0) - (k > 2 ? 1 : 0);
-                log(w, x + d[0] * k, yy, z + d[1] * k, wood(log), d[0] != 0 && d[1] == 0 ? "x" : d[1] != 0 && d[0] == 0 ? "z" : "y");
+                int rx = x + d[0] * k, rz = z + d[1] * k;
+                int yy = y + (k == 1 && up ? 1 : 0) - (k > 2 ? 1 : 0);
+                int foot = k == 1 && up ? yy - 1 : yy;
+                int drop = 0;
+                while (drop < 4 && w.air(rx, foot - 1 - drop, rz)) drop++;
+                if (drop >= 4) break;
+                log(w, rx, yy, rz, wood(log), d[0] != 0 && d[1] == 0 ? "x" : d[1] != 0 && d[0] == 0 ? "z" : "y");
+                for (int down = foot; down >= foot - drop; down--) if (down < yy) log(w, rx, down, rz, wood(log), "y");
             }
         }
+    }
+
+    /** A root column from {@code top} down to the ground under it, at most four below {@code y}; false over a drop. */
+    private static boolean rootDown(Writer w, int x, int y, int z, int top, Material log) {
+        int drop = 0;
+        while (drop < 4 && w.air(x, y - 2 - drop, z)) drop++;
+        if (drop >= 4) return false;
+        for (int yy = y - 1 - drop; yy <= top; yy++) log(w, x, yy, z, log, "y");
+        return true;
     }
 
     // ------------------------------------------------------------------ species
@@ -185,18 +205,21 @@ public final class ReachTreeGen {
         double ox = thick ? 0.5 : 0, oz = thick ? 0.5 : 0;
         for (int ty = start; ty <= h; ty++) {
             double t = (ty - start) / (double) (h - start);
-            int len = (int) Math.round((thick ? 5.5 : 4) * (1 - t)) + 1;
-            int arms = 4 + r.nextInt(3);
-            double turn = r.nextDouble() * Math.PI;
-            for (int a = 0; a < arms; a++) {
-                double ang = turn + a * Math.PI * 2 / arms;
-                double bx = x + 0.5 + Math.cos(ang) * (thick ? 1 : 0), bz = z + 0.5 + Math.sin(ang) * (thick ? 1 : 0);
-                int[] end = limb(w, bx, y + ty, bz, Math.cos(ang), -0.25, Math.sin(ang), Math.max(1, len - 1), Material.SPRUCE_LOG, false);
-                cluster(w, (int) Math.round((bx + end[0]) / 2), end[1], (int) Math.round((bz + end[2]) / 2), len * 0.7 + 1, 1.2, len * 0.7 + 1,
-                    Material.SPRUCE_LEAVES, Material.SPRUCE_LEAVES, r);
+            double whorl = 0.8 + 0.2 * Math.sin(ty * 1.35 + phase);
+            double radius = maxR * Math.pow(1 - t, 0.9) * whorl + 0.7;
+            int span = (int) Math.ceil(radius) + 1;
+            for (int dx = -span; dx <= span; dx++) for (int dz = -span; dz <= span; dz++) {
+                double a = Math.atan2(dz, dx);
+                double d = Math.hypot(dx - ox, dz - oz) * (1 + 0.12 * Math.sin(a * 3 + ty + lean));
+                if (d > radius) continue;
+                int lx = x + dx, lz = z + dz, ly = y + ty;
+                if (w.air(lx, ly, lz)) w.set(lx, ly, lz, Material.SPRUCE_LEAVES, "persistent=true");
+                // The tips of a whorl's widest boughs droop a block.
+                if (d > radius - 1 && whorl > 0.92 && ty > start && w.air(lx, ly - 1, lz)) w.set(lx, ly - 1, lz, Material.SPRUCE_LEAVES, "persistent=true");
             }
         }
-        for (int i = 0; i < 3; i++) if (w.air(x, y + h + i, z)) w.set(x, y + h + i, z, Material.SPRUCE_LEAVES, "persistent=true");
+        // The spike runs on from the trunk's top without a gap, on thick trees too.
+        for (int i = 0; i <= 2; i++) if (w.air(x, y + h + i, z)) w.set(x, y + h + i, z, Material.SPRUCE_LEAVES, "persistent=true");
     }
 
     /** A pine: a long bare trunk and a ragged crown of flat sprays near the top. */
@@ -223,7 +246,7 @@ public final class ReachTreeGen {
             for (int k = 0; k < len; k++) {
                 int rx = x + (int) Math.round(Math.cos(a) * (k + 1.5)), rz = z + (int) Math.round(Math.sin(a) * (k + 1.5));
                 int top = Math.max(0, 3 - k);
-                for (int yy = -1; yy <= top; yy++) log(w, rx, y + yy, rz, log, "y");
+                if (!rootDown(w, rx, y, rz, y + top, log)) break;
             }
         }
         for (int i = 0; i < h; i++) for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) log(w, x + dx, y + i, z + dz, log, "y");
@@ -240,7 +263,10 @@ public final class ReachTreeGen {
         cluster(w, x + 1, y + h + 1, z + 1, 5, 3, 5, Material.DARK_OAK_LEAVES, Material.OAK_LEAVES, r);
     }
 
-    /** Vines hanging below a cluster's underside. */
+    /**
+     * Strands hanging below a cluster's underside: cave vines, which hang from the leaves over them in one unbroken
+     * strand down to a tip, now and then bearing glow berries.
+     */
     private static void vines(Writer w, int cx, int cy, int cz, int radius, SplittableRandom r) {
         for (int k = 0; k < 6; k++) {
             int vx = cx + r.nextInt(radius * 2 + 1) - radius, vz = cz + r.nextInt(radius * 2 + 1) - radius;
@@ -248,7 +274,14 @@ public final class ReachTreeGen {
             while (top < cy + 4 && w.air(vx, top, vz)) top++;
             if (w.air(vx, top, vz)) continue;
             int len = 2 + r.nextInt(5);
-            for (int i = 1; i <= len && w.air(vx, top - i, vz); i++) w.set(vx, top - i, vz, Material.VINE, "up=true");
+            while (len > 0 && !w.air(vx, top - len, vz)) len--;
+            boolean berries = r.nextInt(4) == 0;
+            for (int i = 1; i <= len; i++) {
+                if (!w.air(vx, top - i, vz)) break;
+                boolean tip = i == len || !w.air(vx, top - i - 1, vz);
+                w.set(vx, top - i, vz, tip ? Material.CAVE_VINES : Material.CAVE_VINES_PLANT, tip ? "age=25,berries=" + berries : "berries=false");
+                if (tip) break;
+            }
         }
     }
 

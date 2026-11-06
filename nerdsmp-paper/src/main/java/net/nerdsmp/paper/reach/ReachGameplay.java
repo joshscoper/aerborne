@@ -198,7 +198,7 @@ public final class ReachGameplay implements Listener {
         for (Map.Entry<String, ReachFeatures.Spot> door : doors.entrySet()) {
             ReachFeatures.Spot s = door.getValue();
             double dx = to.getX() - s.x(), dz = to.getZ() - s.z();
-            if (dx * dx + dz * dz >= nearest || Math.abs(to.getY() - s.y()) > 16) continue;
+            if (dx * dx + dz * dz >= nearest || Math.abs(to.getY() - s.y()) > 24) continue;
             nearest = dx * dx + dz * dz;
             expedition = door.getKey();
             threshold = s;

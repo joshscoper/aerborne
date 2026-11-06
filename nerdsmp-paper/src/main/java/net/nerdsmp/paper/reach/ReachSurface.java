@@ -139,6 +139,28 @@ final class ReachSurface {
         return fromFoot % 4 == 3 ? Material.STONE_BRICKS : Material.COBBLESTONE;
     }
 
+    /**
+     * How strongly the Nether's corruption has spilled out of the Rift at a point, from about one at the lip to
+     * nothing forty blocks out: strongest along streaks that run outward from the edge, so it reaches out in
+     * tongues across the ash rather than in a ring.
+     */
+    double corruption(int x, int z, double rift) {
+        if (rift > 60) return 0;
+        double angle = Math.atan2(z - ReachTerrain.RIFT_Z, x - ReachTerrain.RIFT_X);
+        double streak = terrain.patch(angle * 38, rift * 0.035, 1);
+        return (1 - rift / 46) + 0.55 * streak + 0.12 * terrain.grain(x, z, 0.2);
+    }
+
+    /** The Rift's walls: netherrack and blackstone shot through with magma and crying obsidian, as if the rock bled. */
+    Material riftRock(int x, int y, int z) {
+        int h = Math.floorMod(x * 73856093 ^ y * 19349663 ^ z * 83492791, 97);
+        if (h < 4) return Material.MAGMA_BLOCK;
+        if (h < 6) return Material.CRYING_OBSIDIAN;
+        if (h < 8) return Material.NETHER_GOLD_ORE;
+        double band = terrain.patch(x * 0.3, y * 0.4 + z * 0.3, 0.3);
+        return band > 0.3 ? Material.BLACKSTONE : band < -0.4 ? Material.NETHER_WART_BLOCK : Material.NETHERRACK;
+    }
+
     private Material cliff(Zone zone, int x, int y, int z, double p) {
         return switch (zone) {
             case SUNSCAR -> BADLANDS[Math.floorMod(Math.floorDiv(y, 2), BADLANDS.length)];
@@ -152,7 +174,11 @@ final class ReachSurface {
 
     private Material ash(int x, int z, double p, double g) {
         double rift = terrain.riftEdge(x + 0.5, z + 0.5);
-        if (rift < 8) return g > 0.35 ? Material.MAGMA_BLOCK : Material.BLACKSTONE;
+        double spill = corruption(x, z, rift);
+        if (spill > 0.95) return g > 0.3 ? Material.MAGMA_BLOCK : p > 0.2 ? Material.NETHER_WART_BLOCK : Material.NETHERRACK;
+        if (spill > 0.7) return p > 0.1 ? Material.CRIMSON_NYLIUM : g > 0.45 ? Material.MAGMA_BLOCK : Material.NETHERRACK;
+        if (spill > 0.5) return g > 0.2 ? Material.NETHERRACK : p < -0.2 ? Material.SOUL_SOIL : Material.BLACKSTONE;
+        if (spill > 0.38) return g > 0.4 ? Material.NETHERRACK : Material.BLACKSTONE;
         if (rift < 22 && g > 0.5) return Material.MAGMA_BLOCK;
         if (p > 0.45) return Material.LIGHT_GRAY_CONCRETE_POWDER;
         if (p > 0.15) return Material.GRAY_CONCRETE_POWDER;

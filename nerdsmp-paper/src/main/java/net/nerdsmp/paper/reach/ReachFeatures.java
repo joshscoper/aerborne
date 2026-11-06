@@ -70,6 +70,9 @@ public final class ReachFeatures {
             done = built.get(feature.id());
             if (done != null) return done;
             Built result = feature.build().apply(terrain);
+            ReachSupport.secure(result.canvas(), terrain);
+            // A door the rest of the build has left opening onto a roof or a wall is walled up, whoever built it.
+            ReachPaths.sealBlindDoors(result.canvas(), terrain);
             ReachSettle.settle(result.canvas(), terrain);
             spots.put(feature.id(), List.copyOf(result.spots()));
             ReachCanvas.Frozen frozen = result.canvas().freeze();
@@ -94,10 +97,26 @@ public final class ReachFeatures {
 
     /** Writes every feature's blocks that fall in this chunk. */
     void place(int chunkX, int chunkZ, ChunkGenerator.ChunkData data) {
+        // Each column's water level, read once and only where a build clears air: a plan's air under the water line
+        // (the open arch of a bridge, the space round a pier) stays river, never a hole in it.
+        int[] water = new int[256];
+        boolean[] known = new boolean[256];
+        org.bukkit.block.data.BlockData river = org.bukkit.Material.WATER.createBlockData();
         for (Feature feature : features) {
             if (!feature.footprint().touches(chunkX, chunkZ)) continue;
-            plan(feature).forEach(chunkX, chunkZ, cell ->
-                data.setBlock(cell.lx(), cell.y(), cell.lz(), states.computeIfAbsent(cell.spec().state(), Bukkit::createBlockData)));
+            plan(feature).forEach(chunkX, chunkZ, cell -> {
+                String state = cell.spec().state();
+                if (state.equals("minecraft:air")) {
+                    int i = cell.lz() << 4 | cell.lx();
+                    if (!known[i]) {
+                        ReachTerrain.Column c = terrain.column((chunkX << 4) + cell.lx(), (chunkZ << 4) + cell.lz());
+                        water[i] = c.land() && c.wet() ? c.water() : Integer.MIN_VALUE;
+                        known[i] = true;
+                    }
+                    if (cell.y() <= water[i]) { data.setBlock(cell.lx(), cell.y(), cell.lz(), river); return; }
+                }
+                data.setBlock(cell.lx(), cell.y(), cell.lz(), states.computeIfAbsent(state, Bukkit::createBlockData));
+            });
         }
     }
 

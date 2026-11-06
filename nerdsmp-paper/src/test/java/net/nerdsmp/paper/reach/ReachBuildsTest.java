@@ -113,6 +113,11 @@ class ReachBuildsTest {
                 break;
             }
             java.awt.Color colour = top == null ? new java.awt.Color(20, 24, 40) : planColour(top, c);
+            // The terrain's own road shows as the road, and a cutting's exposed face as stone.
+            if (plan.get(x, topY, z) == null && c.land()) {
+                if (c.carriageway()) colour = new java.awt.Color(200, 170, 110);
+                else if (c.cut() >= 2) colour = new java.awt.Color(140, 140, 140);
+            }
             double shade = top == null ? 1 : Math.max(0.55, Math.min(1.35, 0.6 + (topY - 90) / 80.0));
             g.setColor(new java.awt.Color((int) Math.min(255, colour.getRed() * shade), (int) Math.min(255, colour.getGreen() * shade), (int) Math.min(255, colour.getBlue() * shade)));
             g.fillRect((x - x0) * s, (z - z0) * s, s, s);

@@ -15,7 +15,7 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 8;
+    public static final int VERSION = 9;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */
@@ -105,6 +105,17 @@ public final class ReachPack {
         specs.add(new ZoneSpec("reach_granary_cellars", "The Old Granary Cellars", "6-7", gx - 16, gz - 120, gx + 16, gz + 2,
             cellarFloor - 2, cellarFloor + 15, false,
             List.of(mob("choir_initiate", 3, 7), mob("choir_cantor", 1, 7), mob("ember_scarecrow", 4, 7)), 9));
+
+        // Each dig site is its own small safe zone, so its nodes have a zone to belong to (ReachDigSites).
+        for (ReachDigSites.Spec dig : ReachDigSites.SITES) {
+            ReachFeatures.Spot at = spots.get(dig.featureId() + ".dig");
+            if (at == null) continue;
+            int x = (int) Math.floor(at.x()), y = (int) Math.floor(at.y()), z = (int) Math.floor(at.z());
+            ZoneSpec zone = new ZoneSpec(dig.zoneId(), dig.title(), "1-30", x - 12, z - 10, x + 12, z + 10, y - 6, y + 12, true, List.of(), 1);
+            // Pack zones may not overlap: a pit that falls inside another zone goes without one (and without nodes).
+            if (specs.stream().noneMatch(o -> o.x0() <= zone.x1() && zone.x0() <= o.x1() && o.z0() <= zone.z1() && zone.z0() <= o.z1()
+                && o.y0() <= zone.y1() && zone.y0() <= o.y1())) specs.add(zone);
+        }
 
         Map<String, WorldPack.Zone> zones = new LinkedHashMap<>();
         for (ZoneSpec s : specs) {

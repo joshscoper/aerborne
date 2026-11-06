@@ -13,6 +13,8 @@ final class ReachBuilds {
         ));
         all.addAll(ReachBridges.features(terrain));
         all.addAll(ReachLandmarks.features(terrain));
+        all.add(ReachWardensBridge.feature(terrain));
+        all.addAll(ReachDigSites.features(terrain));
         return all;
     }
 }

@@ -28,7 +28,16 @@ public final class ReachGenerator extends ChunkGenerator {
     private final ReachSurface surface;
     private final ReachFeatures features;
     private final BlockData farmland, fallingWater, cloud;
+    private final BlockData fallingLava = org.bukkit.Bukkit.createBlockData("minecraft:lava[level=8]");
     private final ReachBiomes biomes;
+
+    private ReachEdits edits;
+
+    /** As below, with hand edits laid over everything the generator makes (see {@link ReachEdits}). */
+    public ReachGenerator(ReachTerrain terrain, ReachFeatures features, ReachEdits edits) {
+        this(terrain, features);
+        this.edits = edits;
+    }
 
     public ReachGenerator(ReachTerrain terrain, ReachFeatures features) {
         this.terrain = terrain;
@@ -65,7 +74,10 @@ public final class ReachGenerator extends ChunkGenerator {
             c = c.withZone(terrain.groundZone(x, z, c.zone()));
             double p = terrain.patch(x, z, 0.05);
             data.setBlock(lx, c.bottom(), lz, surface.underside(c, p));
-            for (int y = c.bottom() + 1; y < c.top() - 3; y++) data.setBlock(lx, y, lz, surface.rock(x, y, z, c.zone()));
+            // The Rift's walls bleed: within a few blocks of its edge the rock is the Nether's own.
+            double toRift = c.zone() == ReachTerrain.Zone.SCAR ? terrain.riftEdge(x + 0.5, z + 0.5) : 999;
+            boolean riftWall = toRift < 5;
+            for (int y = c.bottom() + 1; y < c.top() - 3; y++) data.setBlock(lx, y, lz, riftWall ? surface.riftRock(x, y, z) : surface.rock(x, y, z, c.zone()));
             for (int d = 3; d >= 1; d--) {
                 int y = c.top() - d;
                 if (y > c.bottom()) data.setBlock(lx, y, lz, surface.sub(c, d, slope));
@@ -73,8 +85,9 @@ public final class ReachGenerator extends ChunkGenerator {
             Material top = surface.top(x, z, c, slope);
             if (top == Material.FARMLAND) data.setBlock(lx, c.top(), lz, farmland);
             else data.setBlock(lx, c.top(), lz, top);
-            // Where the road climbs a block to the next column of road, a half step of stone eases the way up.
-            if (c.carriageway() && !c.wet()) {
+            // Where a paved road climbs a block to the next column of road, a half step of its stone eases the way up.
+            // A dirt road has no slab that looks like it, so it keeps its whole steps.
+            if (c.carriageway() && !c.wet() && paved(c, x, z)) {
                 for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
                     Column n = grid[(lz + 1 + d[1]) * 18 + lx + 1 + d[0]];
                     if (n.land() && n.carriageway() && !n.wet() && n.top() == c.top() + 1) {
@@ -84,6 +97,17 @@ public final class ReachGenerator extends ChunkGenerator {
                 }
             }
             if (c.wet()) for (int y = c.top() + 1; y <= c.water(); y++) data.setBlock(lx, y, lz, Material.WATER);
+            // Here and there on the Rift's lip the ground has melted: lava wells up and pours over into the dark.
+            if (riftWall && toRift < 2.5 && Math.floorMod(x * 31 + z * 17, 29) == 0) {
+                int sx = (int) Math.signum(Math.round(ReachTerrain.RIFT_X - x)), sz = (int) Math.signum(Math.round(ReachTerrain.RIFT_Z - z));
+                int nx = lx + (Math.abs(ReachTerrain.RIFT_X - x) > Math.abs(ReachTerrain.RIFT_Z - z) ? sx : 0);
+                int nz = lz + (Math.abs(ReachTerrain.RIFT_X - x) > Math.abs(ReachTerrain.RIFT_Z - z) ? 0 : sz);
+                if (nx >= 0 && nx < 16 && nz >= 0 && nz < 16 && !grid[(nz + 1) * 18 + nx + 1].land()) {
+                    data.setBlock(lx, c.top(), lz, Material.LAVA);
+                    data.setBlock(lx, c.top() - 1, lz, Material.MAGMA_BLOCK);
+                    for (int y = c.top(); y > c.top() - 60 && y > minY; y--) data.setBlock(nx, y, nz, fallingLava);
+                }
+            }
             // A cutting's wall stands on the road's level; an embankment shows a stone face down to the ground.
             if (c.cut() > 1.5 && c.roadLevel() != Integer.MIN_VALUE)
                 for (int y = c.roadLevel() + 1; y < c.top(); y++) data.setBlock(lx, y, lz, surface.retaining(x, y, z, y - c.roadLevel() - 1));
@@ -91,6 +115,12 @@ public final class ReachGenerator extends ChunkGenerator {
                 for (int y = c.top() - (int) Math.ceil(c.fill()); y < c.top(); y++) data.setBlock(lx, y, lz, surface.retaining(x, y, z, y - (c.top() - (int) Math.ceil(c.fill()))));
         }
         features.place(chunkX, chunkZ, data);
+    }
+
+    /** True where the road is laid in stone: a town's streets, the Scar's basalt and the Sunscar's sandstone. */
+    private boolean paved(Column c, int x, int z) {
+        return c.zone() == ReachTerrain.Zone.SCAR || c.zone() == ReachTerrain.Zone.SUNSCAR || c.zone() == ReachTerrain.Zone.HIGHCROWN
+            || terrain.townRoad(x, z);
     }
 
     /** The half step on a climbing road, in the zone's own stone. */
@@ -125,7 +155,7 @@ public final class ReachGenerator extends ChunkGenerator {
 
     @Override
     public List<BlockPopulator> getDefaultPopulators(World world) {
-        return List.of(new ReachFlora(terrain, features));
+        return edits == null ? List.of(new ReachFlora(terrain, features)) : List.of(new ReachFlora(terrain, features), edits.populator());
     }
 
     @Override

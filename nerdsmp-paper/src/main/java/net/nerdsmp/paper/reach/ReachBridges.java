@@ -46,22 +46,40 @@ final class ReachBridges {
         // Where the water is along the road: the span's ends in road samples, and so in blocks along it.
         double wetFrom = c.from() + 2, wetTo = c.to() - 1;
         double mid = (wetFrom + wetTo) / 2.0, halfSpan = Math.max(2, (wetTo - wetFrom) / 2.0 + 1);
-        for (int k = a; k < b; k++) for (int sub = 0; sub < 4; sub++) {
-            double t = k + sub / 4.0;
-            double cx = road.xs[k] + (road.xs[k + 1] - road.xs[k]) * sub / 4.0, cz = road.zs[k] + (road.zs[k + 1] - road.zs[k]) * sub / 4.0;
-            double dx = road.xs[k + 1] - road.xs[k], dz = road.zs[k + 1] - road.zs[k], len = Math.max(1e-6, Math.hypot(dx, dz));
-            double px = -dz / len, pz = dx / len;
+        // Every block within the bridge's width of the road's line, found by measuring, so a deck on a bend or a
+        // diagonal has no holes in it.
+        double minX = Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        for (int k = a; k <= b; k++) {
+            minX = Math.min(minX, road.xs[k]); maxX = Math.max(maxX, road.xs[k]);
+            minZ = Math.min(minZ, road.zs[k]); maxZ = Math.max(maxZ, road.zs[k]);
+        }
+        for (int x = (int) Math.floor(minX) - 5; x <= (int) Math.ceil(maxX) + 5; x++) for (int z = (int) Math.floor(minZ) - 5; z <= (int) Math.ceil(maxZ) + 5; z++) {
+            double bestD = Double.MAX_VALUE, t = 0, sw = 0;
+            int bk = a;
+            double bs = 0;
+            for (int k = a; k < b; k++) {
+                double dx = road.xs[k + 1] - road.xs[k], dz = road.zs[k + 1] - road.zs[k], len2 = Math.max(1e-9, dx * dx + dz * dz);
+                double s = Math.max(0, Math.min(1, ((x + 0.5 - road.xs[k]) * dx + (z + 0.5 - road.zs[k]) * dz) / len2));
+                double ex = road.xs[k] + dx * s - (x + 0.5), ez = road.zs[k] + dz * s - (z + 0.5);
+                double d = Math.hypot(ex, ez);
+                if (d < bestD) {
+                    bestD = d; bk = k; bs = s; t = k + s;
+                    sw = (dx * (z + 0.5 - road.zs[k]) - dz * (x + 0.5 - road.xs[k])) / Math.sqrt(len2);
+                }
+            }
+            // Past either end of the run the road takes over again.
+            if (bestD > 4.6 || (bk == a && bs <= 0 && bestD > Math.abs(sw) + 0.5) || (bk == b - 1 && bs >= 1 && bestD > Math.abs(sw) + 0.5)) continue;
             // The deck's walking level here: level over the span, falling a block every two blocks beyond it to the road.
             double beyond = Math.max(0, Math.abs(t - mid) - halfSpan) * ReachPath.STEP;
-            double roadLevel = road.values[k] + (road.values[k + 1] - road.values[k]) * sub / 4.0;
+            double roadLevel = road.values[bk] + (road.values[bk + 1] - road.values[bk]) * bs;
             int walk = (int) Math.max(Math.floor(roadLevel) + 1, deck - Math.floor(beyond / 2));
             // The arch: highest at mid-span, springing at the water's edges.
             double along = (t - mid) / halfSpan;
             double arch = Math.max(0, 1 - along * along);
-            for (int w = -4; w <= 4; w++) {
-                int x = (int) Math.floor(cx + px * w), z = (int) Math.floor(cz + pz * w);
+            {
                 ReachTerrain.Column col = terrain.column(x, z);
-                boolean parapet = Math.abs(w) == 4;
+                double w = Math.abs(sw);
+                boolean parapet = w > 3.6;
                 canvas.set(x, walk - 1, z, parapet ? Material.STONE_BRICKS : Math.abs(w) <= 1 ? Material.STONE_BRICKS : Material.POLISHED_ANDESITE);
                 if (parapet) canvas.set(x, walk, z, Material.STONE_BRICK_WALL, "up=true");
                 else for (int y = walk; y < walk + 4; y++) if (!canvas.has(x, y, z)) canvas.set(x, y, z, Material.AIR);

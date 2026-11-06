@@ -40,6 +40,9 @@ public final class ReachService implements Listener {
     private final Map<UUID, Long> rescued = new ConcurrentHashMap<>();
     private volatile Pregen pregen;
     private ReachGameplay gameplay;
+    private ReachFlights flights;
+    private ReachEdits edits;
+    private ReachEditor editor;
     private ReachClimate climate;
 
     public ReachService(NerdSmpPlugin plugin) { this.plugin = plugin; }
@@ -61,10 +64,19 @@ public final class ReachService implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
         try { plugin.worldPacks().register(ReachPack.build(worldName(), terrain, features)); }
         catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach world pack is invalid", failure); }
+        // Hand edits are laid over the generated world, so they're loaded before the world is opened.
+        edits = new ReachEdits(new java.io.File(plugin.getDataFolder(), "reach-edits.yml"), plugin.getResource("reach/edits.yml"));
+        editor = new ReachEditor(plugin, this, edits);
+        editor.start();
         climate = new ReachClimate(plugin, this);
         climate.start();
         gameplay = new ReachGameplay(plugin, this);
         gameplay.start();
+        // The dig sites' nodes are registered once the world and the pack's zones are there, retried until they are.
+        flights = new ReachFlights(plugin, this);
+        flights.start();
+        ReachDigSites digs = new ReachDigSites(plugin, this);
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> { if (digs.register()) task.cancel(); }, 200L, 400L);
         if (Files.isDirectory(directory())) {
             try { open(); }
             catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach could not be loaded", failure); }
@@ -84,7 +96,7 @@ public final class ReachService implements Listener {
         World world = WorldCreator.ofKey(NamespacedKey.minecraft(worldName()))
             .environment(World.Environment.NORMAL)
             .seed(ReachTerrain.SEED)
-            .generator(new ReachGenerator(terrain, features))
+            .generator(new ReachGenerator(terrain, features, edits))
             .generateStructures(false)
             .createWorld();
         if (world == null) throw new IllegalStateException("The Reach world did not load");
@@ -256,6 +268,8 @@ public final class ReachService implements Listener {
                         if (!block.getBlockData().equals(want)) block.setBlockData(want, false);
                     }
                 }
+                // Hand edits go back over the rebuilt chunk.
+                if (edits != null) edits.apply(chunk);
                 done[0]++;
             }
             if (chunks.isEmpty()) {
@@ -309,6 +323,14 @@ public final class ReachService implements Listener {
                 int y = column.land() ? Math.max(column.top(), column.wet() ? column.water() : column.top()) + 1 : 140;
                 player.teleportAsync(new Location(world, x + 0.5, y + 1, z + 0.5, player.getLocation().getYaw(), player.getLocation().getPitch()));
             }
+            case "edit" -> {
+                if (editor == null) return true;
+                return editor.command(sender, args);
+            }
+            case "flights", "fly" -> {
+                if (!(sender instanceof Player player) || flights == null) return true;
+                flights.openNear(player);
+            }
             case "places" -> {
                 if (!(sender instanceof Player player) || gameplay == null) return true;
                 List<String> found = gameplay.placesFound(player);
@@ -334,7 +356,7 @@ public final class ReachService implements Listener {
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) return sender.hasPermission("nerdsmp.reach.admin")
-            ? List.of("go", "places", "status", "generate", "rebuild", "stop", "tp", "where") : List.of("go", "places");
+            ? List.of("go", "places", "flights", "edit", "status", "generate", "rebuild", "stop", "tp", "where") : List.of("go", "places", "flights");
         if (args.length == 2 && args[0].equalsIgnoreCase("rebuild") && sender.hasPermission("nerdsmp.reach.admin")) {
             List<String> ids = new java.util.ArrayList<>(features.features().stream().map(ReachFeatures.Feature::id).toList());
             ids.add("all");

@@ -79,7 +79,13 @@ final class ReachPaths {
                 front |= g.standable(x + dx, y + dy, z + dz);
                 back |= g.standable(x - dx, y + dy, z - dz);
             }
-            if (!front || !back) blind.add(new int[] {x, y, z, dx, dz});
+            // A built block in the doorway itself, a roof's eave or a stair, makes the door no door at all.
+            boolean blocked = false;
+            for (int side : new int[] {1, -1}) for (int h = 0; h <= 1; h++) {
+                ReachCanvas.Spec in = canvas.get(x + dx * side, y + h, z + dz * side);
+                if (in != null && !in.state().equals("minecraft:air") && !Ground.plant(in.state()) && !in.state().contains("carpet")) blocked = true;
+            }
+            if (!front || !back || blocked) blind.add(new int[] {x, y, z, dx, dz});
         });
         for (int[] d : blind) {
             // The wall's own material, taken from beside the door.

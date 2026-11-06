@@ -77,6 +77,12 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
 
   A waypoint (camp, ruined waystation or cairn) with a chest stands about every 350 blocks of road through those
   zones.
+- **The Wardens' Bridge.** Where the Spine ends on the Sunscar's east lip, a paved bridgehead between pale towers
+  looks out over the cloud to the Archive Isle. The bridge's first spans still hang from the towers on their chains
+  and end, broken, over the drop. The isle keeps its own broken half. Travellers cross by air.
+- **The Rift.** The Nether's corruption spills out of the Rift across the Ashen Scar in long tongues: netherrack,
+  crimson nylium, nether wart and magma, with crimson roots, fungi and the odd eternal fire. The Rift's walls bleed
+  with magma, crying obsidian and nether gold, and lava pours over its lip into the dark. No cloud lies under it.
 - **Expedition doors.** Six landmarks hold an expedition's door: a starlit gateway in a carved frame, braziers
   burning before it and the expedition's name and level lettered on their pedestals. Stepping in opens that
   expedition's board (`/expedition info`); the player is set back on the threshold, facing the door.
@@ -85,7 +91,8 @@ Changing the generator's output means bumping `ReachGenerator.REVISION`: a new r
   - the Great Aqueduct's sunken cistern court: the Sunken Aqueduct (level 16);
   - the Headframe's shaft: Gloomforge Mines (level 20);
   - the Seal Spire: the Hall of the Three Wardens (level 24);
-  - the Ember Gate, its whole arch alight: the Cinder Keep raid (level 26).
+  - the Ember Gate: the Cinder Keep raid (level 26). It is a great square portal of black stone on a raised dais,
+    between colossal guardians at the head of a grand stair.
 - **The skyfarer's line.** Anyone who falls off the edge is hauled back to the last solid ground they stood on,
   with no fall damage.
 
@@ -133,6 +140,63 @@ The Reach is public land, held by the plugin's own claim protection.
 
 A bot playing as a plain player checks this on the scratch server: it is denied breaking, building, water, fire,
 pot flowers, trampling and crop picking, and it can still open doors.
+
+The one exception is the dig sites (below): their marked blocks can be dug by anyone.
+
+## Flight points
+Ten roosts stand across the Reach, at Highcrown, Millbrook, each outer zone's landmark and both ends of the
+Wardens' Bridge. Each roost is a perch post with a bell. Highcrown's is Kestrel's navigator waystone on the plaza.
+- **Learning one:** walk within ten blocks of a roost.
+- **Flying:** ring its bell (or touch the waystone), or use `/reach flights` beside it. The list shows every flight
+  point, the known ones ready to fly to. Choosing one puts you on a harnessed sky beast. It rises from the roost,
+  crosses high over the country on a smooth arc and sets you down at the other roost, in about a minute for the
+  longest crossing.
+- **Safety** (`ReachFlights`):
+  - You can't fall, be hurt or get off on the way.
+  - The beast is never saved with the world.
+  - Each flight is written to `reach-flights.yml` as it leaves. Quitting, being kicked or a server stop lands you
+    at the destination. A crash sets you down there when you next join.
+  - Dying, changing world, being teleported by something else or the beast vanishing ends the flight without
+    leaving you in the air.
+
+## Dig sites
+Five excavation pits, each a terraced pit in its own small safe zone (`ReachDigSites`):
+
+| Pit | Zone | What's dug |
+| --- | --- | --- |
+| Goldwater Clay Pits | the Barrowdowns' stretch of the river | clay and gravel |
+| The Barrow Diggings | by the Huntsman's Barrow | earth |
+| The Foreman's Open Cut | the Ironspine | iron, coal and copper ore in its faces, gravel on its floors |
+| Redsand Diggings | the Sunscar | red sand |
+| Mistmere Mudflats | Mistmere | mud and clay |
+
+When the Reach starts, each pit's diggable blocks are registered with the dig-site service as nodes:
+- only those blocks can be broken there, in survival;
+- each regrows 45 seconds after it's dug;
+- digging soil trains Excavation, and digging ore trains Mining.
+
+The dig-site service now runs in every gameplay mode, not only skyblock.
+
+## Editor mode (for staff)
+Staff with `nerdsmp.reach.admin` can fix the map by hand as they walk it, and the fix survives the world being
+generated again.
+
+| Command | What it does |
+| --- | --- |
+| `/reach edit` | Turns editor mode on: creative mode, the protection bypass and a debug stick. Run it again to turn it off. |
+| `/reach edit undo` | Takes back your last change. |
+| `/reach edit revert <radius>` | Puts every edited block within the radius back the way the generator made it. |
+| `/reach edit note <text>` | Leaves a located note (place, facing, zone, build and your words) in `reach-notes.yml` for a builder to fix in the generator. |
+| `/reach edit notes` | Lists the latest notes. |
+| `/reach edit count` | Says how many edits are kept. |
+
+While editor mode is on, every block you place, break, fill, empty, turn with the stick or letter is recorded.
+Its final state, and what the generator first put there, go to the overlay `reach-edits.yml` in the plugin's folder
+(`ReachEdits`).
+- **When it applies:** the overlay is laid down last whenever a chunk of the Reach is generated, and again after
+  `/reach rebuild`.
+- **Baking edits into the map:** copy `reach-edits.yml` to `nerdsmp-paper/src/main/resources/reach/edits.yml`.
+  Every server then gets them.
 
 ## How it's built (for developers)
 

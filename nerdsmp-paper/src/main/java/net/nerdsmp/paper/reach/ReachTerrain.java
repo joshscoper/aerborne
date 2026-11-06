@@ -85,7 +85,9 @@ public final class ReachTerrain {
     private static final List<Pad> FIXED_PADS = List.of(
         new Pad("highcrown", 0, 905, 165, 107, 45),
         new Pad("highcrown_keep", 112, 868, 46, ReachTerrain.CROWN_TOP + 12, 18),
-        new Pad("last_light", 285, -325, 34, 112, 20)
+        new Pad("last_light", 285, -325, 34, 112, 20),
+        // The Wardens' Bridge's head on the Sunscar's east lip, where the Spine ends (ReachWardensBridge).
+        new Pad("wardens_bridgehead", 1146, 8, 13, 114, 16)
     );
     static final double MILLBROOK_X = 40, MILLBROOK_Z = 560;
 
@@ -144,7 +146,7 @@ public final class ReachTerrain {
         {0, 770}, {12, 660}, {40, 575}, {-100, 505}, {-230, 470}, {-330, 452}, {-480, 445}, {-640, 455},
         {-790, 320}, {-880, 80}, {-860, -80}, {-760, -220}, {-700, -420}, {-560, -570}, {-430, -690},
         {-300, -600}, {-100, -600}, {110, -680}, {300, -650}, {600, -560}, {700, -380}, {700, -200},
-        {760, 40}, {830, 320}, {1000, 200}, {1120, 10}
+        {760, 40}, {830, 320}, {1000, 200}, {1146, 8}
     };
     static final double[][] EMBER_ROAD = {{600, -560}, {420, -430}, {285, -325}, {150, -250}, {60, -200}};
 
@@ -196,6 +198,14 @@ public final class ReachTerrain {
             });
             road.smooth(6);
             road.limitSlope(0.3);
+        }
+        ReachPath.Hit join = spine.nearest(emberRoad.xs[0], emberRoad.zs[0], 30);
+        if (join != null) {
+            int n = Math.min(40, emberRoad.values.length);
+            for (int i = 0; i < n; i++) {
+                double t = i / (double) n, ease = t * t * (3 - 2 * t);
+                emberRoad.values[i] = join.value() * (1 - ease) + emberRoad.values[i] * ease;
+            }
         }
     }
 
@@ -615,6 +625,8 @@ public final class ReachTerrain {
     /** Thickness of cloud at this column (0 for none). Blocky, like the reference art. */
     public int cloud(int bx, int bz) {
         if (bx < MIN_X || bx > MAX_X || bz < MIN_Z || bz > MAX_Z) return 0;
+        // The Rift has no floor of cloud: looking down it, the dark goes on.
+        if (Math.hypot(bx - RIFT_X, bz - RIFT_Z) < RIFT_R * 1.6 && riftEdge(bx, bz) < 10) return 0;
         double qx = Math.floorDiv(bx, 4) * 4, qz = Math.floorDiv(bz, 4) * 4;
         double n = cloud.fbm(qx * 0.0045, qz * 0.0045, 3);
         if (n < 0.28) return 0;

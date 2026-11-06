@@ -125,3 +125,35 @@ The faults, and the fixes:
 - **Expedition entrances were easy to miss.** Each is now a starlit gateway with braziers, banners and lettered
   pedestals (see [[Landmarks#Expedition doors]]).
 - **Vanilla mobs spawned.** None do now, and the herds are gone. Only the Reach's own creatures and NPCs appear.
+
+## Eighth review (2026-11-05)
+The faults, and the fixes:
+- **Blocks not properly placed.** Every plan is now secured before it's settled (`ReachSupport`):
+  - lanterns hang on a chain from the ceiling over them, from a bracket out of the wall beside them, or stand on a
+    floor;
+  - chains run up to their beam, and loose links turn to what they touch;
+  - ladders lean on a wall, and pots sit on a window box;
+  - anything that can't be held up goes.
+
+  The windmills' caps rest on their towers, and their sails hang on a shaft. The Heart Tree's thorns grow from its
+  bark, and the headframe's braces are unbroken timbers. Tests fail on anything hanging from nothing or on any piece
+  of a build adrift (`ReachSupportTest`).
+- **Doors in the way.** A door whose doorway holds a roof, stair or wall is walled up on every plan. A test checks
+  every doorway is clear at feet and head, over a floor or one step, including other builds' blocks.
+- **The river under the bridge.** A build's air below the water line stays water, so an arch never empties a river.
+- **Holes in Millbrook's bridge.** Road bridge decks are laid by measuring each block's distance from the road's
+  line, with no gaps on a bend.
+- **The mill's water.** The wheel now turns in the river's current, between a stone revetment and a pier carrying
+  its axle, its paddles in the water.
+- **Camps floating and clipping.** Every camp stands on a levelled campground eased into the slope. The Choir camp
+  moved clear of the granary, its barn and loading bay, and the road.
+- **The Hollow Barrow.** Rebuilt (see [[Landmarks]]). Its crown stones stand on the mound, and an avenue of stones
+  leads to it from the road.
+- **Trees.** Roots climb down to the ground or stop at a drop. Hanging strands are cave vines that hang
+  unbroken. Thick spruces keep their spike.
+- **The junction in the hills.** Ember Road leaves the Spine at the Spine's own height. Half steps are laid only on
+  paved roads, since no slab looks like dirt. Parapets and verge walls run in lengths instead of lone posts.
+- **The mesa road that went nowhere.** The Spine now runs on to the Wardens' Bridge.
+- **The Ember Gate.** Rebuilt as a great portal over the corrupted Rift (see [[Landmarks]]).
+- **New: dig sites, flight points and editor mode.** See the guide (`docs/WARDENS_REACH.md`).
+

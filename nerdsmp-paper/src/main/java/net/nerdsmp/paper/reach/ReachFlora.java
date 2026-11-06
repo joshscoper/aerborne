@@ -137,6 +137,13 @@ final class ReachFlora extends BlockPopulator {
                 region.setBlockData(x, y, z, hay);
                 continue;
             }
+            if (ground == Material.CRIMSON_NYLIUM) {
+                if (roll < 0.24) region.setType(x, y, z, Material.CRIMSON_ROOTS);
+                else if (roll > 0.982) region.setType(x, y, z, Material.CRIMSON_FUNGUS);
+                continue;
+            }
+            if (ground == Material.NETHERRACK && roll < 0.012) { region.setType(x, y, z, Material.FIRE); continue; }
+            if (ground == Material.SOUL_SOIL && roll < 0.008) { region.setType(x, y, z, Material.SOUL_FIRE); continue; }
             boolean soil = ground == Material.GRASS_BLOCK || ground == Material.PODZOL || ground == Material.MOSS_BLOCK
                 || ground == Material.COARSE_DIRT || ground == Material.MUD || ground == Material.RED_SAND || ground == Material.ROOTED_DIRT;
             if (!soil) continue;

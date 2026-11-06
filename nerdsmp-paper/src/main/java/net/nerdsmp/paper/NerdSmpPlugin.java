@@ -521,10 +521,9 @@ public final class NerdSmpPlugin extends JavaPlugin {
         areaWand = new net.nerdsmp.paper.zone.AreaWand(this);
         zoneCommands.wand(areaWand);
         zoneSpawner = new net.nerdsmp.paper.zone.ZoneSpawner(this,zones);
-        if (skyblockEnabled) {
-            digSites = new net.nerdsmp.paper.digsite.DigSiteService(this,
-                new net.nerdsmp.paper.digsite.DigSiteStore(new java.io.File(getDataFolder(), "dig-sites.yml")));
-        }
+        // Dig sites serve the skyblock hub and the Wardens' Reach alike; they act only on registered nodes.
+        digSites = new net.nerdsmp.paper.digsite.DigSiteService(this,
+            new net.nerdsmp.paper.digsite.DigSiteStore(new java.io.File(getDataFolder(), "dig-sites.yml")));
         digSiteCommands = new net.nerdsmp.paper.digsite.DigSiteCommand(this);
         quests = new net.nerdsmp.paper.quest.QuestService(this);
         worldPacks = new net.nerdsmp.paper.worldpack.WorldPackService(this);

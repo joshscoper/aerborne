@@ -39,7 +39,9 @@ final class ReachLandmarks {
             int[] at = plan.id().equals("ember_gate") ? riftLip(terrain, plan.x(), plan.z(), plan.search())
                 : plan.id().equals("great_aqueduct") ? new int[] {plan.x(), plan.z()}
                 : site(terrain, plan.x(), plan.z(), plan.search(), plan.reach() / 2, plan.roadClear());
-            int r = plan.reach() + 4, rz = plan.reachZ() + 4;
+            // The barrow's avenue runs out to the road, well past the mound.
+            int pad = plan.id().equals("huntsmans_barrow") ? 70 : 0;
+            int r = plan.reach() + 4 + pad, rz = plan.reachZ() + 4 + pad;
             out.add(new ReachFeatures.Feature(plan.id(), new ReachFeatures.Footprint(at[0] - r, at[1] - rz, at[0] + r, at[1] + rz), t -> {
                 Site s = new Site(t, plan.id(), at[0], at[1]);
                 plan.builder().build(s);
@@ -218,40 +220,69 @@ final class ReachLandmarks {
     // ------------------------------------------------------------------ the Barrowdowns
 
     /**
-     * The Huntsman's Barrow: a long grassy mound crowned with a ring of standing stones, its kerb of grey boulders
-     * showing at the foot, and the Hollow Barrow's door in its side: a stone passage with a lintel, the expedition's
-     * starlit door just inside it, the Sexton's braziers burning before it.
+     * The Huntsman's Barrow: a long grassy mound with a kerb of grey boulders at its foot and a ring of standing
+     * stones on its crown, every stone standing on the mound itself. On its south side a crescent of tall stones
+     * frames the forecourt and the passage mouth under a great capstone, where the Hollow Barrow's door stands. An
+     * avenue of paired stones leads to it from the road, the mourners' lights along its last stretch, and two small
+     * round barrows keep it company.
      */
     private static void barrow(Site s) {
         int cx = s.x, cz = s.z, g = s.ground;
-        double rx = 22, rz = 16, height = 11;
-        for (int dx = (int) -rx - 2; dx <= rx + 2; dx++) for (int dz = (int) -rz - 2; dz <= rz + 2; dz++) {
-            double d = Math.hypot(dx / rx, dz / rz);
-            int x = cx + dx, z = cz + dz, t = s.top(x, z);
-            if (d > 1.06) continue;
-            int mound = d >= 1 ? g - 1 : (int) Math.round(g - 1 + height * Math.pow(Math.cos(d * Math.PI / 2), 1.4));
-            for (int y = t + 1; y <= mound; y++) s.set(x, y, z, y == mound ? (s.terrain.grain(x, z, 0.4) > 0.6 ? Material.MOSS_BLOCK : Material.GRASS_BLOCK)
-                : y > mound - 3 ? Material.DIRT : Material.STONE);
-            // The kerb: boulders round the foot.
-            if (d > 0.97 && Math.floorMod(dx * 3 + dz * 5, 7) == 0) {
-                s.set(x, mound + 1, z, Material.MOSSY_COBBLESTONE);
-                if (Math.floorMod(dx + dz, 2) == 0) s.set(x, mound + 2, z, Material.COBBLESTONE_WALL, "up=true");
-            }
-            if (d < 1 && Math.floorMod(dx * 7 + dz * 3, 11) == 0) s.set(x, mound + 1, z, Material.SHORT_GRASS);
-        }
-        // The crown: nine standing stones and a fallen one, round a stone where offerings are left.
-        int crown = g + (int) height;
-        for (int k = 0; k < 9; k++) {
-            double a = k * Math.PI * 2 / 9;
-            int x = cx + (int) Math.round(Math.cos(a) * 7), z = cz + (int) Math.round(Math.sin(a) * 6);
-            int h = k == 4 ? 0 : 3 + (k % 3);
-            for (int y = 0; y < h; y++) s.set(x, crown + y, z, weathered(s, x, crown + y, z, Material.ANDESITE, Material.MOSSY_COBBLESTONE, Material.COBBLESTONE));
-            if (h == 0) for (int i = 0; i < 3; i++) s.set(x + i, crown, z, Material.ANDESITE_SLAB, "type=bottom");
-        }
-        s.set(cx, crown, cz, Material.CHISELED_STONE_BRICKS);
-        s.set(cx, crown + 1, cz, Material.CANDLE, "candles=3,lit=true");
-        // The door, in the side facing the road (south): a passage cut into the mound, its stones and grate.
+        double rx = 22, rz = 15, height = 10;
         int dz0 = cz + (int) rz;
+        // The long mound, its top rolling a little, built up from the ground under it.
+        for (int dx = (int) -rx - 1; dx <= rx + 1; dx++) for (int dz = (int) -rz - 1; dz <= rz + 1; dz++) {
+            int x = cx + dx, z = cz + dz;
+            int m = moundTop(s, cx, cz, g, rx, rz, height, x, z);
+            if (m == Integer.MIN_VALUE) continue;
+            int t = s.top(x, z);
+            for (int y = t + 1; y <= m; y++) s.set(x, y, z, y == m ? (s.terrain.grain(x, z, 0.4) > 0.6 ? Material.MOSS_BLOCK : Material.GRASS_BLOCK)
+                : y > m - 3 ? Material.DIRT : Material.STONE);
+        }
+        // The kerb: boulders round the foot, seated where the mound meets the ground, leaving the forecourt open.
+        for (int k = 0; k < 64; k++) {
+            double a = k * Math.PI * 2 / 64;
+            int x = cx + (int) Math.round(Math.cos(a) * rx), z = cz + (int) Math.round(Math.sin(a) * rz);
+            if (Math.abs(x - cx) <= 9 && z > cz) continue;
+            if (Math.floorMod(k * 5 + 3, 4) == 0) continue;
+            int base = surface(s, cx, cz, g, rx, rz, height, x, z) + 1;
+            s.set(x, base, z, weathered(s, x, base, z, Material.ANDESITE, Material.MOSSY_COBBLESTONE, Material.COBBLESTONE));
+            if (k % 3 == 0) s.set(x, base + 1, z, Material.MOSSY_COBBLESTONE_WALL, "up=true");
+        }
+        // The crown: nine stones in a ring, each on the mound's own surface where it stands, and one fallen.
+        int crownTop = surface(s, cx, cz, g, rx, rz, height, cx, cz);
+        for (int k = 0; k < 9; k++) {
+            double a = k * Math.PI * 2 / 9 + 0.2;
+            int x = cx + (int) Math.round(Math.cos(a) * 7), z = cz + (int) Math.round(Math.sin(a) * 5);
+            if (k == 4) {
+                for (int i = 0; i < 3; i++) s.set(x + i, surface(s, cx, cz, g, rx, rz, height, x + i, z) + 1, z, Material.ANDESITE_SLAB, "type=bottom");
+                continue;
+            }
+            int h = 3 + (k % 3 == 0 ? 1 : 0);
+            // Each stone two wide along the ring, the second shoulder a block lower: a slab of rock, not a post.
+            int tx = (int) Math.round(-Math.sin(a)), tz = (int) Math.round(Math.cos(a));
+            standingStone(s, x, z, surface(s, cx, cz, g, rx, rz, height, x, z) + 1, h);
+            standingStone(s, x + tx, z + tz, surface(s, cx, cz, g, rx, rz, height, x + tx, z + tz) + 1, h - 1);
+        }
+        s.set(cx, crownTop + 1, cz, Material.CHISELED_STONE_BRICKS);
+        s.set(cx, crownTop + 2, cz, Material.CANDLE, "candles=3,lit=true");
+        // The forecourt before the passage: levelled earth in a half round.
+        for (int dx = -12; dx <= 12; dx++) for (int dz = 0; dz <= 12; dz++) {
+            double d = Math.hypot(dx, dz);
+            if (d > 12) continue;
+            int x = cx + dx, z = dz0 + dz;
+            if (moundTop(s, cx, cz, g, rx, rz, height, x, z) != Integer.MIN_VALUE) continue;
+            Column c = s.terrain.column(x, z);
+            if (!c.land() || c.wet()) continue;
+            int t = c.top();
+            double ease = d <= 9 ? 1 : 1 - (d - 9) / 3.0;
+            int target = (int) Math.round(t + (g - 1 - t) * ease);
+            for (int y = t + 1; y < target; y++) s.set(x, y, z, Material.DIRT);
+            for (int y = target + 1; y <= t; y++) s.set(x, y, z, Material.AIR);
+            double p = s.terrain.patch(x * 0.7, z * 0.7, 0.2);
+            s.set(x, target, z, d > 9 ? Material.GRASS_BLOCK : p > 0.35 ? Material.GRAVEL : p < -0.3 ? Material.PACKED_MUD : Material.COARSE_DIRT);
+        }
+        // The passage cut into the mound, stone-lined and roofed.
         for (int k = -2; k <= 6; k++) for (int x = cx - 2; x <= cx + 2; x++) {
             int z = dz0 - k;
             s.set(x, g - 1, z, Material.COBBLESTONE);
@@ -262,12 +293,145 @@ final class ReachLandmarks {
                     : k == 5 ? Material.MOSSY_STONE_BRICKS : Material.AIR);
             }
         }
-        for (int x = cx - 3; x <= cx + 3; x++) s.set(x, g + 4, dz0 + 1, Material.STONE_BRICK_SLAB, "type=bottom");
         expeditionDoor(s, cx, g, dz0 - 1, 0, 1, BARROW_DOOR, "hollow_barrow",
             new String[] {"EXPEDITION", "The Hollow", "Barrow", ""}, new String[] {"Level 8", "", "Step through", "to set out"});
-        s.chest(2, "barrow", cx + 2, crown, cz + 1, "south");
+        // The capstone: one great flat stone over the passage mouth, resting on the door's frame and two side stones.
+        for (int x = cx - 3; x <= cx + 3; x++) for (int z = dz0 - 1; z <= dz0 + 1; z++)
+            s.set(x, g + 6, z, Math.abs(x - cx) == 3 || z == dz0 + 1 ? Material.POLISHED_ANDESITE : Material.ANDESITE);
+        for (int z = dz0 - 1; z <= dz0 + 1; z++) for (int x : new int[] {cx - 3, cx + 3}) for (int y = g; y < g + 6; y++)
+            if (s.air(x, y, z)) s.set(x, y, z, weathered(s, x, y, z, Material.ANDESITE, Material.MOSSY_STONE_BRICKS, Material.TUFF));
+        // The crescent: tall stones either side of the forecourt, tallest beside the door, standing on its floor.
+        for (int deg : new int[] {20, 38, 56, 124, 142, 160}) {
+            double a = Math.toRadians(deg);
+            int x = cx + (int) Math.round(Math.cos(a) * 8), z = dz0 - 2 + (int) Math.round(Math.sin(a) * 8);
+            int h = deg == 56 || deg == 124 ? 6 : deg == 38 || deg == 142 ? 5 : 4;
+            int base = groundAt(s, x, z);
+            standingStone(s, x, z, base, h);
+            int ox = x + (x > cx ? 1 : -1);
+            standingStone(s, ox, z, groundAt(s, ox, z), h - 2);
+        }
+        // An offering stone in the forecourt: a low slab with candles and the bones of the hunt.
+        int ox = cx + 5, oz = dz0 + 6;
+        s.set(ox, g, oz, Material.POLISHED_ANDESITE);
+        s.set(ox + 1, g, oz, Material.ANDESITE_SLAB, "type=bottom");
+        s.set(ox, g + 1, oz, Material.CANDLE, "candles=2,lit=true");
+        s.set(ox + 1, g, oz + 1, Material.BONE_BLOCK, "axis=x");
+        avenue(s, cx, dz0 + 10, g);
+        roundBarrow(s, cx - 36, cz + 6, 5, 3);
+        roundBarrow(s, cx + 35, cz - 3, 4, 3);
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, cx - 10, dz0 + 9, 0, 1, "Huntsman's Barrow"));
+        s.chest(2, "barrow", cx + 2, crownTop + 1, cz + 1, "south");
         s.spot("barrow_door", cx, g, dz0 + 2, 0F);
-        s.groundSpot("place", cx, dz0 + 3, 0F);
+        s.groundSpot("place", cx, dz0 + 5, 0F);
+    }
+
+    /** The first open block over whatever is really at a column: the build's floor where it laid one, else the ground. */
+    private static int groundAt(Site s, int x, int z) {
+        int y = s.top(x, z) + 1;
+        while (y > s.top(x, z) - 6 && s.air(x, y - 1, z)) y--;
+        while (!s.air(x, y, z)) y++;
+        return y;
+    }
+
+    /** The mound's top at a column, or MIN_VALUE off the mound: a long rounded back, rolling a little. */
+    private static int moundTop(Site s, int cx, int cz, int g, double rx, double rz, double height, int x, int z) {
+        double d = Math.hypot((x - cx) / rx, (z - cz) / rz);
+        if (d >= 1) return Integer.MIN_VALUE;
+        double h = height * Math.pow(1 - d * d, 0.7) + 0.9 * s.terrain.patch(x * 0.7, z * 0.7, 0.2) * (1 - d);
+        return (int) Math.round(g - 1 + Math.max(0, h));
+    }
+
+    /** What a stone stands on at a column: the mound where it is, else the ground. */
+    private static int surface(Site s, int cx, int cz, int g, double rx, double rz, double height, int x, int z) {
+        return Math.max(moundTop(s, cx, cz, g, rx, rz, height, x, z), s.top(x, z));
+    }
+
+    /** A standing stone {@code h} tall from {@code base}, weathered, its head a block of lichened rock. */
+    private static void standingStone(Site s, int x, int z, int base, int h) {
+        for (int y = base; y < base + h; y++)
+            s.set(x, y, z, y == base + h - 1 ? Material.MOSSY_COBBLESTONE : weathered(s, x, y, z, Material.ANDESITE, Material.TUFF, Material.COBBLESTONE));
+    }
+
+    /**
+     * The avenue to the barrow: from the forecourt to the nearest road a worn track three wide, following the ground,
+     * with a pair of standing stones every eight blocks and the mourners' lights on the last stretch before the
+     * door: a lantern nearest, then lit candles, then one cold candle further out.
+     */
+    private static void avenue(Site s, int fx, int fz, int g) {
+        double bestD = Double.MAX_VALUE, rxp = fx, rzp = fz + 40;
+        for (ReachPath road : s.terrain.roads()) for (int i = 0; i < road.xs.length; i++) {
+            double d = Math.hypot(road.xs[i] - fx, road.zs[i] - fz);
+            if (d < bestD) { bestD = d; rxp = road.xs[i]; rzp = road.zs[i]; }
+        }
+        double len = Math.hypot(rxp - fx, rzp - fz);
+        if (len < 2 || len > 120) return;
+        double ux = (rxp - fx) / len, uz = (rzp - fz) / len, px = -uz, pz = ux;
+        double sway = s.terrain.patch(fx, fz, 0.1) > 0 ? 1 : -1;
+        int[] bank = {g - 1};
+        int lastStone = -100;
+        for (double t = 0; t <= len + 1; t += 0.5) {
+            double bend = 3 * Math.sin(t / len * Math.PI) * sway;
+            double ax = fx + ux * t + px * bend, az = fz + uz * t + pz * bend;
+            boolean onRoad = s.terrain.column((int) Math.floor(ax), (int) Math.floor(az)).carriageway();
+            for (double w = -1.5; w <= 1.5; w += 0.5) {
+                int x = (int) Math.floor(ax + px * w), z = (int) Math.floor(az + pz * w);
+                Column c = s.terrain.column(x, z);
+                // Over water, a plank footbridge level with the bank behind it, railed on both sides.
+                if (c.land() && c.wet()) {
+                    int deck = Math.max(c.water() + 1, bank[0]);
+                    if (!s.canvas.has(x, deck, z)) s.set(x, deck, z, Math.abs(w) > 1 ? Material.STRIPPED_SPRUCE_LOG : Material.SPRUCE_PLANKS,
+                        Math.abs(w) > 1 ? (Math.abs(ux) > Math.abs(uz) ? "axis=x" : "axis=z") : "");
+                    if (Math.abs(w) > 1.2) s.set(x, deck + 1, z, Material.SPRUCE_FENCE);
+                    if (Math.floorMod((int) Math.floor(t), 4) == 0 && Math.abs(w) > 1.2)
+                        for (int y = c.top() + 1; y < deck; y++) s.set(x, y, z, Material.STRIPPED_SPRUCE_LOG, "axis=y");
+                    continue;
+                }
+                if (!c.land() || c.carriageway() || s.canvas.has(x, c.top(), z)) continue;
+                if (Math.abs(w) < 0.6) bank[0] = c.top();
+                double p = s.terrain.patch(x * 0.8, z * 0.8, 0.2);
+                s.set(x, c.top(), z, Math.abs(w) > 1 ? Material.COARSE_DIRT : p > 0.4 ? Material.GRAVEL : Material.DIRT_PATH);
+            }
+            if (onRoad) break;
+            int step = (int) Math.floor(t);
+            if (t == step && step - lastStone >= 8 && step >= 12) {
+                for (int side : new int[] {-1, 1}) {
+                    int x = (int) Math.floor(ax + px * 3.5 * side), z = (int) Math.floor(az + pz * 3.5 * side);
+                    Column c = s.terrain.column(x, z);
+                    if (!c.land() || c.wet() || c.across() < 4.5) continue;
+                    standingStone(s, x, z, c.top() + 1, 2 + Math.floorMod(x * 3 + z, 2));
+                }
+                lastStone = step;
+            }
+            // The mourners' lane on the last stretch, narrowing toward the door.
+            for (int lane = 0; lane < 3; lane++) {
+                if (t != 1 + lane * 3) continue;
+                for (int side : new int[] {-1, 1}) {
+                    int x = (int) Math.floor(ax + px * (2.5 + lane) * side), z = (int) Math.floor(az + pz * (2.5 + lane) * side);
+                    int y = groundAt(s, x, z);
+                    s.set(x, y, z, Material.MOSSY_STONE_BRICKS);
+                    s.set(x, y + 1, z, Material.ANDESITE_WALL, "up=true");
+                    if (lane == 0) s.set(x, y + 2, z, Material.LANTERN, "hanging=false");
+                    else s.set(x, y + 2, z, Material.CANDLE, lane == 1 ? "candles=3,lit=true" : "candles=1,lit=false");
+                }
+            }
+        }
+    }
+
+    /** A small round barrow beside the long one: a low grassy dome with one stone on its top. */
+    private static void roundBarrow(Site s, int bx, int bz, int r, int h) {
+        Column centre = s.terrain.column(bx, bz);
+        if (!centre.land() || centre.wet() || centre.across() < r + 8) return;
+        int base = centre.top();
+        int top = base;
+        for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+            double d = Math.hypot(dx, dz) / r;
+            if (d >= 1) continue;
+            int x = bx + dx, z = bz + dz, t = s.top(x, z);
+            int m = base + (int) Math.round(h * Math.sqrt(1 - d * d));
+            for (int y = t + 1; y <= m; y++) s.set(x, y, z, y == m ? Material.GRASS_BLOCK : Material.DIRT);
+            if (dx == 0 && dz == 0) top = Math.max(m, t);
+        }
+        standingStone(s, bx, bz, top + 1, 2);
     }
 
     /** The Stone Rings: an old circle of standing stones on the open down, a flat altar stone at its heart. */
@@ -357,7 +521,8 @@ final class ReachLandmarks {
                 s.set(cx + dx, g + y, cz + dz, d > r - 1.1 ? Material.DARK_OAK_WOOD : Material.DARK_OAK_LOG, "axis=y");
             }
             double a = y * 0.42;
-            int tx = cx + (int) Math.round(Math.cos(a) * (r + 1)), tz = cz + (int) Math.round(Math.sin(a) * (r + 1));
+            // The thorn grows out of the bark, so it sits on the trunk's skin, not a block off it.
+            int tx = cx + (int) Math.round(Math.cos(a) * (r + 0.4)), tz = cz + (int) Math.round(Math.sin(a) * (r + 0.4));
             if (y > 2 && y < h - 6) s.set(tx, g + y, tz, Material.BLACKSTONE_WALL, "up=true");
             if (y % 7 == 3) s.set(tx, g + y + 1, tz, Material.POINTED_DRIPSTONE, "vertical_direction=up,thickness=tip");
         }
@@ -390,6 +555,7 @@ final class ReachLandmarks {
         for (int y = g; y <= g + 6; y++) s.set(cx + 4, y, cz, Material.DARK_OAK_WOOD, "axis=y");
         s.chest(3, "heart_tree", cx + 4, g + 7, cz, "east");
         for (int y = g; y <= g + 6; y++) s.set(cx + 5, y, cz, Material.VINE, "west=true");
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, cx + 7, cz + 11, 0, 1, "The Heart Tree"));
         s.groundSpot("place", cx, cz + 9, 180F);
     }
 
@@ -487,6 +653,7 @@ final class ReachLandmarks {
         s.chest(3, "aqueduct", sx + 1, channel + 1, lz + 2, "south");
         int[] court = cisternSite(s, slope);
         cistern(s, court[0], court[1]);
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, court[0] + 8, court[1] + 6, 0, 1, "Great Aqueduct"));
         s.groundSpot("place", court[0], court[1] + 7, 180F);
     }
 
@@ -617,6 +784,7 @@ final class ReachLandmarks {
         }
         for (int y = g; y <= g + 2; y++) s.set(wx, y, wz + 3, Material.AIR);
         for (int dz = 2; dz <= 4; dz++) s.set(wx + 4, g + 1, wz + dz, Material.STRIPPED_SPRUCE_LOG, "axis=z");
+        for (int dz : new int[] {2, 4}) s.set(wx + 4, g, wz + dz, Material.DARK_OAK_FENCE);
         s.set(wx + 2, g + 3, wz + 3, Material.LANTERN, "hanging=true");
         s.chest(3, "headframe", wx + 6, g, wz + 2, "west");
         // Spoil heaps.
@@ -626,6 +794,7 @@ final class ReachLandmarks {
             int x = cx + heap[0] + dx, z = cz + heap[1] + dz, t = s.top(x, z);
             for (int y = t + 1; y <= t + (int) Math.round(3 * (1 - d / 4.2)); y++) s.set(x, y, z, d < 2 ? Material.TUFF : Material.GRAVEL);
         }
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, cx - 8, cz - 12, 0, -1, "The Headframe"));
         s.groundSpot("place", cx, cz - 9, 0F);
     }
 
@@ -662,14 +831,17 @@ final class ReachLandmarks {
             if (k % 3 == 0) s.set(x, t + 1, z, Material.DEAD_BUSH);
         }
         s.chest(3, "sunscar_arch", cx, g + (int) rise + 2, cz, "south");
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, cx + 8, cz + 15, 0, 1, "Sunscar Arch"));
         s.groundSpot("place", cx, cz + 12, 0F);
     }
 
     // ------------------------------------------------------------------ the Ashen Scar
 
     /**
-     * The Ember Gate on the Rift's lip: two blackstone towers with a pointed arch between them, magma glowing in
-     * their slits, the arch filled with the starlit way to Cinder Keep, chains hanging into the Rift from beams.
+     * The Ember Gate on the Rift's lip: a great square portal of black stone standing on a raised dais, its opening
+     * thirteen wide and twenty tall alight with the way to Cinder Keep. Its pillars are carved with glowing runes and
+     * its lintel watches with a weeping eye. A broad stair climbs to the dais between two colossal stone guardians,
+     * swords planted, facing all who come. Behind it the ground the corruption has taken runs out to the abyss.
      */
     private static void emberGate(Site s) {
         int cx = s.x, cz = s.z, g = s.ground;
@@ -677,46 +849,103 @@ final class ReachLandmarks {
         double ax = ReachTerrain.RIFT_X - cx, az = ReachTerrain.RIFT_Z - cz;
         int fx = Math.abs(ax) >= Math.abs(az) ? (int) Math.signum(ax) : 0, fz = fx == 0 ? (int) Math.signum(az) : 0;
         int px = -fz, pz = fx;
-        for (int side : new int[] {-1, 1}) {
-            int tx = cx + px * side * 6, tz = cz + pz * side * 6;
-            for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
-                double d = Math.max(Math.abs(dx), Math.abs(dz));
-                int x = tx + dx, z = tz + dz;
-                s.footing(x, g - 1, z, Material.BLACKSTONE);
-                for (int y = g - 1; y <= g + 20; y++) {
-                    boolean wall = d == 3, slit = wall && (y - g) % 5 == 2 && (dx == 0 || dz == 0);
-                    if (y > g + 18 && wall && Math.floorMod(dx + dz, 2) == 1) continue;
-                    s.set(x, y, z, slit ? Material.MAGMA_BLOCK : wall ? (Math.floorMod(x * 3 + y, 5) == 0 ? Material.GILDED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS)
-                        : y == g - 1 ? Material.BLACKSTONE : Material.BASALT, wall || y == g - 1 ? "" : "axis=y");
-                }
+        int floor = g + 5, open = 6, high = 20;
+        // The dais: a platform of polished black stone from the stair's head to just behind the gate, footed to the
+        // ground, a processional runner inlaid with magma leading to the portal, a low parapet round its edges.
+        for (int f = -16; f <= 3; f++) for (int k = -15; k <= 15; k++) {
+            int x = cx + fx * f + px * k, z = cz + fz * f + pz * k;
+            s.footing(x, floor - 1, z, Material.BLACKSTONE);
+            boolean runner = Math.abs(k) <= 2 && f < -2;
+            boolean edge = Math.abs(k) == 15 || f == -16 && Math.abs(k) > 8;
+            s.set(x, floor - 1, z, runner ? (Math.abs(k) == 2 ? Material.GILDED_BLACKSTONE : f % 3 == 0 ? Material.MAGMA_BLOCK : Material.CHISELED_POLISHED_BLACKSTONE)
+                : Math.floorMod(f + k, 2) == 0 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.POLISHED_BLACKSTONE);
+            for (int y = floor; y <= floor + high + 8; y++) if (s.top(x, z) >= y || !s.canvas.has(x, y, z)) s.set(x, y, z, Material.AIR);
+            if (edge) s.set(x, floor, z, Material.POLISHED_BLACKSTONE_BRICK_WALL, "up=true");
+        }
+        // The grand stair down to the ash, as wide as the portal.
+        for (int step = 1; step <= 6; step++) for (int k = -8; k <= 8; k++) {
+            int f = -16 - step;
+            int x = cx + fx * f + px * k, z = cz + fz * f + pz * k;
+            int y = floor - 1 - step;
+            s.footing(x, y, z, Material.BLACKSTONE);
+            s.set(x, y, z, Math.abs(k) == 8 ? Material.POLISHED_BLACKSTONE_BRICKS : Material.POLISHED_BLACKSTONE_BRICK_STAIRS,
+                Math.abs(k) == 8 ? "" : "facing=" + facing(fx, fz) + ",half=bottom");
+            for (int yy = y + 1; yy <= floor + 4; yy++) if (s.top(x, z) >= yy || !s.canvas.has(x, yy, z)) s.set(x, yy, z, Material.AIR);
+            if (Math.abs(k) == 8 && step % 2 == 0) {
+                s.set(x, y + 1, z, Material.POLISHED_BLACKSTONE_WALL, "up=true");
+                s.set(x, y + 2, z, Material.SOUL_LANTERN, "hanging=false");
             }
         }
-        // The arch between the towers, and the barred gate in it.
-        for (int k = -3; k <= 3; k++) for (int y = g; y <= g + 14; y++) {
-            int x = cx + px * k, z = cz + pz * k;
-            int up = y - (g + 8);
-            boolean open = Math.abs(k) <= 2 && (up <= 0 || Math.pow(Math.abs(k) + 2.5, 2) + up * up <= 25);
-            s.set(x, y, z, open ? Material.END_GATEWAY : Material.POLISHED_BLACKSTONE_BRICKS);
-            s.set(x - fx, y, z - fz, open ? Material.AIR : Material.CHISELED_POLISHED_BLACKSTONE);
+        // The portal: pillars four thick and five deep, a lintel over the opening, a stepped crown.
+        for (int k = -open - 5; k <= open + 5; k++) for (int f = -2; f <= 2; f++) for (int up = 0; up <= high + 8; up++) {
+            int x = cx + fx * f + px * k, z = cz + fz * f + pz * k, y = floor + up;
+            int a = Math.abs(k);
+            boolean opening = a <= open && up < high;
+            if (opening) {
+                s.set(x, y, z, f == 0 ? Material.END_GATEWAY : Material.AIR);
+                continue;
+            }
+            int crown = up - (high + 5);
+            if (crown > 0 && a > open + 4 - crown * 2) continue;
+            if (up > high + 8) continue;
+            boolean face = Math.abs(f) == 2;
+            boolean reveal = a == open + 1;
+            Material m;
+            if (reveal) m = up % 3 == 1 ? Material.MAGMA_BLOCK : Material.GILDED_BLACKSTONE;
+            else if (face && a == open + 3 && up > 1 && up < high - 1) m = up % 4 == 0 ? Material.SHROOMLIGHT : Material.CHISELED_POLISHED_BLACKSTONE;
+            else if (up == high || up == high + 5) m = Material.CHISELED_POLISHED_BLACKSTONE;
+            else if (up % 6 == 0) m = Material.POLISHED_BLACKSTONE;
+            else m = Math.floorMod(x * 3 + y + z * 5, 7) == 0 ? Material.CRACKED_POLISHED_BLACKSTONE_BRICKS : Material.POLISHED_BLACKSTONE_BRICKS;
+            // The front face's panels are sunk a block between the pillars' edges.
+            if (face && f < 0 && a >= open + 2 && a <= open + 4 && up > 1 && up < high - 1 && a != open + 3) { s.set(x, y, z, Material.AIR); continue; }
+            s.set(x, y, z, m);
+            if (up == 0) s.footing(x, y, z, Material.BLACKSTONE);
         }
-        for (int k = -2; k <= 2; k++) s.set(cx + px * k, g + 15, cz + pz * k, Material.CRYING_OBSIDIAN);
-        // Beams out over the drop with chains hanging into the Rift.
+        // The weeping eye on the lintel: crying obsidian round a core of magma.
+        for (int dk = -1; dk <= 1; dk++) for (int du = -1; du <= 1; du++) {
+            int x = cx - fx * 2 + px * dk, z = cz - fz * 2 + pz * dk;
+            s.set(x - fx, floor + high + 2 + du, z - fz, dk == 0 && du == 0 ? Material.MAGMA_BLOCK : Material.CRYING_OBSIDIAN);
+        }
+        // The guardians: two colossi on plinths at the dais's front corners, swords planted, facing the stair.
+        int turn = fx == 0 ? (fz > 0 ? 0 : 2) : (fx > 0 ? 3 : 1);
+        ReachStatues.Palette dark = new ReachStatues.Palette(Material.POLISHED_BLACKSTONE, Material.POLISHED_DEEPSLATE, Material.BLACKSTONE,
+            Material.GILDED_BLACKSTONE, Material.POLISHED_BLACKSTONE_BRICKS);
         for (int side : new int[] {-1, 1}) {
-            int bx = cx + px * side * 6, bz = cz + pz * side * 6;
-            int end = 4;
-            while (end < 22 && s.terrain.column(bx + fx * end, bz + fz * end).land()) end++;
-            end = Math.min(22, end + 2);
-            for (int k = 4; k <= end; k++) s.set(bx + fx * k, g + 16, bz + fz * k, Material.POLISHED_BASALT, "axis=" + (fx != 0 ? "x" : "z"));
-            int ex = bx + fx * end, ez = bz + fz * end;
-            if (!s.terrain.column(ex, ez).land()) for (int y = g + 15; y >= g - 30; y--) s.set(ex, y, ez, Material.IRON_CHAIN, "axis=y");
-            s.set(bx + fx * 9, g + 15, bz + fz * 9, Material.SOUL_LANTERN, "hanging=true");
+            int x = cx - fx * 11 + px * 12 * side, z = cz - fz * 11 + pz * 12 * side;
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
+                for (int y = floor; y < floor + 3; y++) s.set(x + dx, y, z + dz, y == floor + 2 ? Material.CHISELED_POLISHED_BLACKSTONE : Material.POLISHED_BLACKSTONE_BRICKS);
+            ReachStatues.hero(new ReachBrush(s.canvas, x, floor + 3, z, turn), 2.0, ReachStatues.Pose.SWORD_PLANTED, dark);
         }
-        for (int k = -2; k <= 2; k++) for (int d = 1; d <= 6; d++) s.set(cx - fx * d + px * k, g - 1, cz - fz * d + pz * k, Material.POLISHED_BLACKSTONE_BRICKS);
-        for (int side : new int[] {-1, 1}) s.set(cx - fx * 4 + px * 4 * side, g + 7, cz - fz * 4 + pz * 4 * side, EMBER_DOOR.banner(), "facing=" + facing(-fx, -fz));
-        doorBraziers(s, cx, g, cz, -fx, -fz, 4, 6, EMBER_DOOR, new String[] {"RAID", "Cinder Keep", "", ""}, new String[] {"Level 26", "", "Step through", "to set out"});
-        s.spot("door_cinder_keep", cx - fx * 3, g, cz - fz * 3, yawToward(fx, fz));
-        s.chest(4, "ember_gate", cx - fx * 3 + px * 4, g, cz - fz * 3 + pz * 4, fx > 0 ? "west" : fx < 0 ? "east" : fz > 0 ? "north" : "south");
-        s.groundSpot("place", cx - fx * 6, cz - fz * 6, 0F);
+        // Beams out over the drop from the portal's top, chains hanging into the Rift.
+        for (int side : new int[] {-1, 1}) {
+            int bx = cx + px * (open + 3) * side, bz = cz + pz * (open + 3) * side;
+            int end = 3;
+            while (end < 24 && s.terrain.column(bx + fx * end, bz + fz * end).land()) end++;
+            end = Math.min(24, end + 3);
+            for (int k = 3; k <= end; k++) s.set(bx + fx * k, floor + high + 4, bz + fz * k, Material.POLISHED_BASALT, "axis=" + (fx != 0 ? "x" : "z"));
+            int ex = bx + fx * end, ez = bz + fz * end;
+            for (int y = floor + high + 3; y >= floor - 40; y--) {
+                if (s.terrain.column(ex, ez).land() && y <= s.top(ex, ez)) break;
+                s.set(ex, y, ez, Material.IRON_CHAIN, "axis=y");
+            }
+            s.set(bx + fx * 9, floor + high + 3, bz + fz * 9, Material.IRON_CHAIN, "axis=y");
+            s.set(bx + fx * 9, floor + high + 2, bz + fz * 9, Material.SOUL_LANTERN, "hanging=true");
+        }
+        // Behind the portal the corruption has the ground: netherrack and nylium, the odd shroomlight swelling up.
+        for (int f = 4; f <= 20; f++) for (int k = -14; k <= 14; k++) {
+            int x = cx + fx * f + px * k, z = cz + fz * f + pz * k;
+            Column c = s.terrain.column(x, z);
+            if (!c.land()) continue;
+            int h = Math.floorMod(x * 7 + z * 13, 11);
+            s.set(x, c.top(), z, h < 4 ? Material.CRIMSON_NYLIUM : h < 7 ? Material.NETHERRACK : h < 9 ? Material.MAGMA_BLOCK : Material.NETHER_WART_BLOCK);
+            if (h == 10 && f > 8) s.set(x, c.top() + 1, z, Material.SHROOMLIGHT);
+        }
+        doorBraziers(s, cx, floor, cz, -fx, -fz, open + 3, 8, EMBER_DOOR, new String[] {"RAID", "Cinder Keep", "", ""}, new String[] {"Level 26", "", "Step through", "to set out"});
+        for (int side : new int[] {-1, 1}) s.set(cx - fx * 3 + px * (open + 3) * side, floor + 12, cz - fz * 3 + pz * (open + 3) * side, EMBER_DOOR.banner(), "facing=" + facing(-fx, -fz));
+        s.spot("door_cinder_keep", cx - fx * 4, floor, cz - fz * 4, yawToward(fx, fz));
+        s.chest(4, "ember_gate", cx - fx * 14 + px * 13, floor, cz - fz * 14 + pz * 13, facing(px, pz));
+        s.spots.add(ReachRoost.build(s.canvas, s.terrain, cx - fx * 25 + px * 11, cz - fz * 25 + pz * 11, -fx, -fz, "The Ember Gate"));
+        s.groundSpot("place", cx - fx * 26, cz - fz * 26, 0F);
     }
 
     // ------------------------------------------------------------------ the Archive Isle

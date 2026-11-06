@@ -41,6 +41,7 @@ final class GoldenreachVale {
         vale.wardenPost();
         vale.groves();
         vale.chests();
+        vale.roost();
         // Every chest spot gets a real chest; ReachGameplay turns it into per-player loot.
         for (ReachFeatures.Spot s : vale.spots) if (s.id().startsWith("chest_"))
             vale.canvas.set((int) Math.floor(s.x()), (int) Math.floor(s.y()), (int) Math.floor(s.z()), Material.CHEST, "facing=south,type=single");
@@ -267,22 +268,26 @@ final class GoldenreachVale {
         int turn = facing(bestX, bestZ, bestX + nx, bestZ + nz);
         ReachFeatures.Spot door = house("mill", bestX - nx * 8, bestZ - nz * 8, 9, 9, 2, ReachKit.Style.VALE_SPRUCE, true, (turn + 2) & 3, MILLBROOK_FLOOR);
         if (door != null) spots.add(door);
-        // The bay: from the mill's wall out to the river, its sides and floor lined with stone, water in it.
-        for (int u = -3; u <= 3; u++) for (int w = -6; w <= 6; w++) {
+        // The wheel stands in the river itself, the current running under it: between a stone revetment on the
+        // bank and a pier in the stream that carries the far end of its axle. The bed is cut clean round the
+        // wheel's sweep so its paddles dip into water, never into the bank.
+        int hubY = water + 2;
+        for (int u = 0; u <= 5; u++) for (int w = -7; w <= 7; w++) {
             int x = bestX + nx * u + vx * w, z = bestZ + nz * u + vz * w;
-            boolean side = Math.abs(w) == 6;
             for (int y = water - 3; y <= MILLBROOK_FLOOR + 6; y++) {
-                if (y == water - 3) canvas.set(x, y, z, Material.COBBLESTONE);
-                else if (side && y < MILLBROOK_FLOOR) canvas.set(x, y, z, (x + y + z) % 3 == 0 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
-                else if (side && y == MILLBROOK_FLOOR) canvas.set(x, y, z, Material.STONE_BRICK_WALL, "up=true");
-                else if (side) continue;
+                if (y == water - 3) canvas.set(x, y, z, Material.GRAVEL);
+                else if (u == 0 && y < MILLBROOK_FLOOR) canvas.set(x, y, z, (x + y + z) % 3 == 0 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS);
+                else if (u == 0 && y == MILLBROOK_FLOOR) canvas.set(x, y, z, Material.STONE_BRICK_WALL, "up=true");
                 else if (y <= water) canvas.set(x, y, z, Material.WATER);
                 else canvas.set(x, y, z, Material.AIR);
             }
         }
-        // The wheel: a double rim of planks on eight spokes about a hub, paddles round the rim, set in the bay.
-        int hubY = water + 2;
-        for (int u : new int[] {-1, 0}) {
+        // The pier in the stream, cutwater upstream and down, its top the bearing for the axle.
+        for (int u = 5; u <= 6; u++) for (int w = -1; w <= 1; w++)
+            for (int y = water - 3; y <= hubY; y++) canvas.set(bestX + nx * u + vx * w, y, bestZ + nz * u + vz * w, y >= water ? Material.STONE_BRICKS : Material.MOSSY_STONE_BRICKS);
+        for (int w : new int[] {-2, 2}) for (int y = water - 3; y <= water; y++) canvas.set(bestX + nx * 5 + vx * w, y, bestZ + nz * 5 + vz * w, Material.STONE_BRICK_STAIRS, "facing=" + compass(-vx * w / 2, -vz * w / 2) + ",half=bottom");
+        // The wheel: a double rim of planks on eight spokes about a hub, paddles round the rim.
+        for (int u : new int[] {2, 3}) {
             for (int a = 0; a < 360; a += 4) {
                 double rad = Math.toRadians(a);
                 int w = (int) Math.round(4 * Math.cos(rad)), y = hubY + (int) Math.round(4 * Math.sin(rad));
@@ -296,12 +301,60 @@ final class GoldenreachVale {
         for (int a = 0; a < 360; a += 45) {
             double rad = Math.toRadians(a);
             int w = (int) Math.round(5 * Math.cos(rad)), y = hubY + (int) Math.round(5 * Math.sin(rad));
-            for (int u : new int[] {-1, 0}) canvas.set(bestX + nx * u + vx * w, y, bestZ + nz * u + vz * w, Material.SPRUCE_PLANKS);
+            for (int u : new int[] {2, 3}) canvas.set(bestX + nx * u + vx * w, y, bestZ + nz * u + vz * w, Material.SPRUCE_PLANKS);
         }
-        // The axle into the mill's wall, on a stone bearing.
-        for (int u = -4; u <= 1; u++) canvas.set(bestX + nx * u, hubY, bestZ + nz * u, Material.STRIPPED_DARK_OAK_LOG, "axis=" + (nx != 0 ? "x" : "z"));
-        canvas.set(bestX + nx * 1, hubY - 1, bestZ + nz * 1, Material.STONE_BRICKS);
+        // The axle from the pier's bearing, through the wheel and the revetment, into the mill's wall.
+        for (int u = -4; u <= 6; u++) canvas.set(bestX + nx * u, hubY, bestZ + nz * u, Material.STRIPPED_DARK_OAK_LOG, "axis=" + (nx != 0 ? "x" : "z"));
     }
+
+    /** Where the Choir camps: a ring round the granary twenty to thirty-two out, the flattest, clear of everything. */
+    private int[] choirCampSite(int gx, int gz, int r) {
+        int[] best = {gx - 24, gz + 10};
+        double bestScore = Double.MAX_VALUE;
+        for (int a = 0; a < 360; a += 15) for (int d = 20; d <= 32; d += 4) {
+            int cx = gx + (int) Math.round(Math.cos(Math.toRadians(a)) * d), cz = gz + (int) Math.round(Math.sin(Math.toRadians(a)) * d);
+            // The barn east of the tower and the loading bay south of it, each with the camp's own width to spare.
+            if (cx > gx + r - 14 && cx < gx + r + 23 + 14 && Math.abs(cz - gz) < 5 + 14) continue;
+            if (Math.hypot(cx - gx, cz - (gz + r + 3)) < 18) continue;
+            if (terrain.roadDistance(cx, cz, 22) < 20) continue;
+            int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+            boolean ok = true;
+            for (int dx = -12; dx <= 12 && ok; dx += 3) for (int dz = -12; dz <= 12; dz += 3) {
+                ReachTerrain.Column c = terrain.column(cx + dx, cz + dz);
+                if (!c.land() || c.wet() || terrain.field(cx + dx, cz + dz) >= 1) { ok = false; break; }
+                lo = Math.min(lo, c.top()); hi = Math.max(hi, c.top());
+            }
+            if (!ok) continue;
+            double score = (hi - lo) + d * 0.05;
+            if (score < bestScore) { bestScore = score; best = new int[] {cx, cz}; }
+        }
+        return best;
+    }
+
+    /**
+     * Millbrook's flight point: a roost on the nearest clear ground by the green, off the road and the fields,
+     * facing the green.
+     */
+    private void roost() {
+        for (int r = 12; r <= 34; r += 2) for (int a = 0; a < 360; a += 15) {
+            int x = (int) Math.round(MILLBROOK_X + Math.cos(Math.toRadians(a)) * r), z = (int) Math.round(MILLBROOK_Z + Math.sin(Math.toRadians(a)) * r);
+            boolean ok = true;
+            for (int dx = -3; dx <= 3 && ok; dx++) for (int dz = -3; dz <= 3; dz++) {
+                ReachTerrain.Column c = terrain.column(x + dx, z + dz);
+                if (!c.land() || c.wet() || c.across() < 5 || terrain.field(x + dx, z + dz) >= 0) { ok = false; break; }
+                for (int y = c.top() - 1; y <= c.top() + 6; y++) if (canvas.has(x + dx, y, z + dz)) { ok = false; break; }
+                if (!ok) break;
+            }
+            if (!ok) continue;
+            double gx = MILLBROOK_X - x, gz = MILLBROOK_Z - z;
+            int fx = Math.abs(gx) >= Math.abs(gz) ? (int) Math.signum(gx) : 0, fz = fx == 0 ? (int) Math.signum(gz) : 0;
+            spots.add(ReachRoost.build(canvas, terrain, x, z, fx, fz, "Millbrook"));
+            return;
+        }
+    }
+
+    /** The compass name of a unit step. */
+    private static String compass(int dx, int dz) { return dx > 0 ? "east" : dx < 0 ? "west" : dz > 0 ? "south" : "north"; }
 
     // ------------------------------------------------------------------ the windmills
 
@@ -377,10 +430,12 @@ final class GoldenreachVale {
                 canvas.set(cx + half - k, capY + k, cz + dz, Material.SPRUCE_STAIRS, "facing=west,half=bottom");
             }
             canvas.set(cx, capY + half, cz + dz, Material.SPRUCE_SLAB, "type=bottom");
+            // The cap's curb: a floor of boards across its foot, resting on the tower's top course.
+            for (int x = cx - half + 1; x <= cx + half - 1; x++) canvas.set(x, capY, cz + dz, Material.SPRUCE_PLANKS);
         }
-        // Sails on the east face: a hub and four lattice arms.
-        int hubX = cx + 5, hubY = capY - 1;
-        canvas.set(hubX - 1, hubY, cz, Material.STRIPPED_SPRUCE_LOG, "axis=x");
+        // Sails on the east face: the windshaft runs out of the cap to the hub, and four lattice arms turn on it.
+        int hubX = cx + 5, hubY = capY;
+        for (int x = cx + 2; x < hubX; x++) canvas.set(x, hubY, cz, Material.STRIPPED_SPRUCE_LOG, "axis=x");
         canvas.set(hubX, hubY, cz, Material.SPRUCE_LOG, "axis=x");
         double turnA = seed * 0.4;
         for (int arm = 0; arm < 4; arm++) {
@@ -388,9 +443,11 @@ final class GoldenreachVale {
             for (int r = 1; r <= 10; r++) {
                 int dy = (int) Math.round(Math.sin(a) * r), dz = (int) Math.round(Math.cos(a) * r);
                 canvas.set(hubX, hubY + dy, cz + dz, Material.SPRUCE_FENCE);
-                if (r > 2) {
-                    int sy = (int) Math.round(Math.sin(a) * r + Math.cos(a) * 1.5), sz = (int) Math.round(Math.cos(a) * r - Math.sin(a) * 1.5);
-                    canvas.set(hubX, hubY + sy, cz + sz, (r % 2 == 0) ? Material.WHITE_WOOL : Material.BIRCH_FENCE);
+                // The sail's cloth on its lattice, from the arm out, so it hangs on the arm rather than beside it.
+                if (r > 2) for (double off : new double[] {1, 2}) {
+                    int sy = (int) Math.round(Math.sin(a) * r + Math.cos(a) * off), sz = (int) Math.round(Math.cos(a) * r - Math.sin(a) * off);
+                    if (canvas.get(hubX, hubY + sy, cz + sz) == null)
+                        canvas.set(hubX, hubY + sy, cz + sz, (r % 2 == 0) ? Material.WHITE_WOOL : Material.BIRCH_FENCE);
                 }
             }
         }
@@ -479,11 +536,12 @@ final class GoldenreachVale {
         int tx = site[0], tz = site[1];
         int y = floorOver(tx - 12, tz - 12, tx + 12, tz + 12);
         // A ring of patched tents round a fire, a palisade on the road side, crates of tolls.
-        camp(tx, tz, Material.RED_WOOL, Material.BROWN_WOOL, 4);
-        for (int a = 0; a < 360; a += 6) {
+        int floor = camp(tx, tz, Material.RED_WOOL, Material.BROWN_WOOL, 4);
+        // The palisade stands just past the campground's eased edge, on the hillside's own ground.
+        for (int a = 0; a < 360; a += 5) {
             if (a > 300 || a < 30) continue;
             double rad = Math.toRadians(a);
-            int px = tx + (int) Math.round(Math.cos(rad) * 15), pz = tz + (int) Math.round(Math.sin(rad) * 15);
+            int px = tx + (int) Math.round(Math.cos(rad) * 17), pz = tz + (int) Math.round(Math.sin(rad) * 17);
             int top = terrain.column(px, pz).top();
             for (int yy = top + 1; yy <= top + 3; yy++) canvas.set(px, yy, pz, Material.STRIPPED_SPRUCE_LOG, "axis=y");
             canvas.set(px, top + 4, pz, Material.SPRUCE_FENCE);
@@ -491,19 +549,23 @@ final class GoldenreachVale {
         // The old toll house, roof half fallen.
         ReachFeatures.Spot toll = house("toll_house", tx + 22, tz - 10, 7, 7, 1, ReachKit.Style.VALE, true, 3, 0);
         if (toll != null) spots.add(toll);
-        spot("tollkeeper_camp", tx + 3, terrain.column(tx + 3, tz - 3).top() + 1, tz - 3, 0F);
-        spot("toll_captain", tx + 2, terrain.column(tx + 2, tz + 2).top() + 1, tz + 2, 0F);
+        spot("tollkeeper_camp", tx + 3, floor, tz - 3, 0F);
+        spot("toll_captain", tx + 2, floor, tz + 2, 0F);
     }
 
-    /** Tents in a ring round a campfire. */
-    private void camp(int cx, int cz, Material cloth, Material patch, int tents) {
-        int top = terrain.column(cx, cz).top();
+    /**
+     * Tents in a ring round a campfire, on a campground levelled for them: the ground cut and made up to one floor
+     * across the ring, its edge eased back into the slope, so no tent hangs off a hillside or sits in it.
+     */
+    private int camp(int cx, int cz, Material cloth, Material patch, int tents) {
+        int floor = campGround(cx, cz, 12);
+        int top = floor - 1;
         canvas.set(cx, top + 1, cz, Material.CAMPFIRE, "lit=true");
         for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) canvas.set(cx + d[0], top, cz + d[1], Material.COBBLESTONE);
         for (int t = 0; t < tents; t++) {
             double rad = Math.toRadians(t * 360.0 / tents + 20);
             int tx = cx + (int) Math.round(Math.cos(rad) * 8), tz = cz + (int) Math.round(Math.sin(rad) * 8);
-            int ty = terrain.column(tx, tz).top() + 1;
+            int ty = floor;
             for (int dz = -2; dz <= 2; dz++) for (int k = 0; k <= 2; k++) {
                 Material m = (dz + k + t) % 4 == 0 ? patch : cloth;
                 canvas.set(tx - 2 + k, ty + k, tz + dz, m);
@@ -513,6 +575,34 @@ final class GoldenreachVale {
             canvas.set(tx, ty + 3, tz + 2, Material.SPRUCE_FENCE);
             canvas.set(tx, ty, tz, Material.BARREL, "facing=up");
         }
+        return floor;
+    }
+
+    /**
+     * Levels a round campground: the floor is the middle height of the ground there; inside {@code radius} the ground
+     * is cut down or made up to it, and over the next four blocks it eases back to the slope. Returns the standing level.
+     */
+    private int campGround(int cx, int cz, int radius) {
+        List<Integer> tops = new ArrayList<>();
+        for (int dx = -radius; dx <= radius; dx += 2) for (int dz = -radius; dz <= radius; dz += 2)
+            if (Math.hypot(dx, dz) <= radius) tops.add(terrain.column(cx + dx, cz + dz).top());
+        tops.sort(Integer::compare);
+        int ground = tops.get(tops.size() / 2);
+        for (int dx = -radius - 4; dx <= radius + 4; dx++) for (int dz = -radius - 4; dz <= radius + 4; dz++) {
+            double d = Math.hypot(dx, dz);
+            if (d > radius + 4) continue;
+            int x = cx + dx, z = cz + dz;
+            ReachTerrain.Column c = terrain.column(x, z);
+            if (!c.land() || c.wet()) continue;
+            int t = c.top();
+            double ease = d <= radius ? 1 : 1 - (d - radius) / 4.0;
+            int target = (int) Math.round(t + (ground - t) * ease);
+            if (target == t) continue;
+            for (int y = t + 1; y < target; y++) canvas.set(x, y, z, Material.DIRT);
+            for (int y = target + 1; y <= t; y++) canvas.set(x, y, z, Material.AIR);
+            canvas.set(x, target, z, d <= radius ? (ReachFlora.hash(x, z) % 3 == 0 ? Material.PODZOL : Material.COARSE_DIRT) : Material.GRASS_BLOCK);
+        }
+        return ground + 1;
     }
 
     // ------------------------------------------------------------------ the Black Granary and its cellars
@@ -556,10 +646,12 @@ final class GoldenreachVale {
         int lx = gx + (int) Math.round(Math.cos(landing) * (r - 1.6)), lz = gz + (int) Math.round(Math.sin(landing) * (r - 1.6));
         for (int y = gy; y < gy + 12; y++) canvas.set(lx, y, lz, Material.STONE_BRICKS);
         for (int y = gy + 12; y < gy + 15; y++) canvas.set(lx, y, lz, Material.AIR);
-        // The Choir's camp round the tower: grey tents marked in red, braziers.
-        camp(gx + 18, gz + 14, Material.LIGHT_GRAY_WOOL, Material.RED_WOOL, 3);
+        // The Choir's camp below the tower: grey tents marked in red round a fire, on the flattest ground clear of the
+        // tower, its barn, the loading bay and the road.
+        int[] cs = choirCampSite(gx, gz, r);
+        int campFloor = camp(cs[0], cs[1], Material.LIGHT_GRAY_WOOL, Material.RED_WOOL, 3);
         spot("granary", gx, terrain.column(gx, gz + r + 3).top() + 1, gz + r + 3, 0F);
-        spot("choir_camp", gx + 18, terrain.column(gx + 18, gz + 18).top() + 1, gz + 18, 0F);
+        spot("choir_camp", cs[0] + 3, campFloor, cs[1] + 3, 0F);
         spot("chest_tier3_granary", lx, gy + 12, lz, 0F);
         cellars(gx, gy, gz);
         granaryBarn(gx + r + 1, gy, gz);
