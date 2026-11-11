@@ -192,6 +192,18 @@ public final class SkyblockController implements Listener, AutoCloseable {
                 case "kick", "cancel" -> { requireArgs(args, "/island kick <player>"); islands.remove(account, account, resolve(args[1])); recheckVisitors(); Chat.success(player, "Co-op access and any invitation have been removed."); }
                 case "leave" -> { requireArgs(args, "/island leave <owner>"); islands.remove(account, resolve(args[1]), account); recheckVisitors(); Chat.success(player, "You no longer belong to that co-op or hold its invitation."); }
                 case "hub" -> plugin.travel().handle("spawn", sender, new String[0]);
+                case "reset" -> {
+                    if (!player.hasPermission("nerdsmp.admin")) { Chat.noPermission(player); break; }
+                    requireArgs(args, "/island reset <player>");
+                    AccountId target = resolve(args[1]);
+                    int cleared = islands.reset(target);
+                    recheckVisitors();
+                    Player online = Bukkit.getOnlinePlayers().stream().filter(p -> target.equals(account(p))).findFirst().orElse(null);
+                    if (online != null && isIslandWorld(online.getWorld())) returnToHub(online);
+                    if (online != null) Chat.notice(online, "Staff reset your island. Use /island to start a fresh one.");
+                    Chat.success(player, cleared == 0 ? Chat.escape(args[1]) + " had no island or co-op to reset."
+                        : "Reset " + Chat.escape(args[1]) + ": " + cleared + " island record" + (cleared == 1 ? "" : "s") + " cleared. Their next /island builds a fresh island.");
+                }
                 default -> Chat.usage(player, usage());
             }
         } catch (UsageException usage) { Chat.usage(player, usage.getMessage()); }

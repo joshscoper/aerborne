@@ -9,6 +9,7 @@ import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class IslandServiceTest {
@@ -34,6 +35,22 @@ final class IslandServiceTest {
         assertEquals(first, s.create(owner)); assertEquals(0, first.slot());
         assertEquals(1, s.create(friend).slot()); assertEquals(2, s.create(stranger).slot());
         assertEquals(48, first.width()); assertFalse(first.visitors());
+    }
+    @Test void staffResetClearsIslandAndCoopsAndNeverReusesTheSlot() {
+        var data = data();
+        var s = new IslandService(data, "sky-test");
+        int oldSlot = s.create(friend).slot();
+        s.create(owner);
+        s.invite(owner, friend, now); s.accept(friend, owner, now);
+        assertEquals(2, s.reset(friend));
+        assertTrue(s.owned(friend).isEmpty());
+        assertTrue(s.homes(friend).isEmpty());
+        assertFalse(s.owned(owner).orElseThrow().members().contains(friend));
+        // A fresh island goes to a new slot, before and after a restart.
+        assertNotEquals(oldSlot, s.create(friend).slot());
+        var reloaded = new IslandService(data, "sky-test");
+        assertNotEquals(oldSlot, reloaded.create(stranger).slot());
+        assertEquals(0, new IslandService(data, "sky-test").reset(AccountId.random()));
     }
     @Test void ownedIslandAndJoinedHomesRemainSeparate() {
         var s = service(); var own = s.create(friend); s.create(owner);

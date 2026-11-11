@@ -33,6 +33,10 @@ public final class IslandService {
             islands.put(owner, island);
             index(island);
         }
+        // Slots freed by a staff reset stay taken, so no new island is ever built on an old one's ground.
+        for (AccountId owner : data.knownAccounts())
+            for (Integer slot : data.read(owner, yaml -> yaml.getIntegerList(retiredPath())))
+                slots.putIfAbsent(slot, owner);
         advanceSlot();
     }
 
@@ -52,6 +56,47 @@ public final class IslandService {
             .sorted(Comparator.comparingInt(Island::slot)).toList();
         return directoryCache;
     }
+    private String retiredPath() { return path + "_retired_slots"; }
+
+    /**
+     * Staff reset: takes away a player's island and every co-op place and invitation they hold, so their next
+     * {@code /island} builds a fresh island. The old island's slot stays reserved (recorded with the player), so the
+     * new island is never built on the old one's ground. Returns how many records were cleared.
+     */
+    public synchronized int reset(AccountId player) {
+        int cleared = 0;
+        for (AccountId owner : new ArrayList<>(memberIndex.getOrDefault(player, Set.of()))) {
+            if (owner.equals(player)) continue;
+            Island i = islands.get(owner);
+            if (i == null) continue;
+            Set<AccountId> members = new HashSet<>(i.members()); members.remove(player);
+            Map<AccountId, Instant> invites = new HashMap<>(i.invites()); invites.remove(player);
+            commit(copyTeam(i, members, invites));
+            cleared++;
+        }
+        for (AccountId owner : new ArrayList<>(inviteIndex.getOrDefault(player, Set.of()))) {
+            Island i = islands.get(owner);
+            if (i == null || !i.invites().containsKey(player)) continue;
+            Map<AccountId, Instant> invites = new HashMap<>(i.invites()); invites.remove(player);
+            commit(copyTeam(i, i.members(), invites));
+            cleared++;
+        }
+        Island own = islands.get(player);
+        if (own != null) {
+            data.update(player, yaml -> {
+                List<Integer> retired = new ArrayList<>(yaml.getIntegerList(retiredPath()));
+                if (!retired.contains(own.slot())) retired.add(own.slot());
+                yaml.set(retiredPath(), retired);
+                yaml.set(path, null);
+            });
+            islands.remove(player);
+            unindex(own);
+            directoryCache = null;
+            cleared++;
+        }
+        return cleared;
+    }
+
     public synchronized Island create(AccountId owner) {
         Island existing = islands.get(owner);
         if (existing != null) return existing;
