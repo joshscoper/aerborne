@@ -528,9 +528,10 @@ public final class NpcManager implements Listener, AutoCloseable {
                 responses.add(new ChatDialogueRenderer.Choice(resolveDialogue(choice.text(), player, context),
                     access.available(), hints, access.reasons(), choice.id().equals(QUEST_REPLY) && questReplyLit(player, npc)));
             }
-            ChatDialogueRenderer.render(token, npc.name(), npc.title(),
-                node.text().stream().map(line -> resolveDialogue(line, player, context)).toList(), responses)
-                .forEach(player::sendMessage);
+            List<String> body = node.text().stream().map(line -> resolveDialogue(line, player, context)).toList();
+            // The Aerborne client shows the page in its own dialogue panel; everyone else reads it in chat.
+            if (!net.nerdsmp.paper.presentation.ClientFeeds.dialogue(player, token, npc.name(), npc.title(), body, responses))
+                ChatDialogueRenderer.render(token, npc.name(), npc.title(), body, responses).forEach(player::sendMessage);
             conversation.rendered().set(true);
         }));
     }
@@ -636,7 +637,10 @@ public final class NpcManager implements Listener, AutoCloseable {
     private void endChat(UUID playerId) {
         ChatConversation previous = chatConversations.remove(playerId);
         chatSessions.invalidate(playerId);
-        if (previous != null) conversationTokens.remove(playerId, previous.token());
+        if (previous != null) {
+            conversationTokens.remove(playerId, previous.token());
+            net.nerdsmp.paper.presentation.ClientFeeds.endDialogue(previous.player(), previous.token());
+        }
     }
 
     private void clearChat() {

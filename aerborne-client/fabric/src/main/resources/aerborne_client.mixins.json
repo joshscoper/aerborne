@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "net.aerborne.client.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["AbstractContainerScreenAccessor", "AbstractContainerScreenMixin", "ContainerScreenMixin", "EntityRendererMixin", "TitleScreenMixin"],
+  "injectors": {"defaultRequire": 1}
+}

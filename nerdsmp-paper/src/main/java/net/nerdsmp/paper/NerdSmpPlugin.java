@@ -128,6 +128,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private CustomMobManager mobs;
     private VanillaBossMechanicsService bossMechanics;
     private PlayerPresentationService presentation;
+    private net.nerdsmp.paper.presentation.ClientHudFeed clientHud;
     private DamageDisplayService damageDisplays;
     private MobHealthBarService mobHealthBars;
     private MenuManager menus;
@@ -360,6 +361,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
             bossMechanics.close();
         }
         if (presentation != null) {
+            if (clientHud != null) clientHud.close();
             presentation.close();
         }
         if (reputation instanceof AutoCloseable closeable) {
@@ -673,6 +675,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(expeditionMenu, this);
         plugins.registerEvents(expeditions.forge(), this);
         presentation.start();
+        clientHud = new net.nerdsmp.paper.presentation.ClientHudFeed(this);
+        clientHud.start();
         damageDisplays.start();
         mobHealthBars.start();
         bossMechanics.start();

@@ -1,0 +1,6 @@
+name: AerborneClientBridge
+version: '${version}'
+main: net.aerborne.client.bridge.AerborneClientBridge
+api-version: '26.2'
+description: Optional Aerborne client capability bridge. Vanilla clients remain supported.
+depend: [NerdSMP]

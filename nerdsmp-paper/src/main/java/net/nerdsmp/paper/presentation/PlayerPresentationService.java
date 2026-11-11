@@ -93,6 +93,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
     public ProgressionService.ProgressionSnapshot progression(Player player) {
         return progressionSnapshots.getOrDefault(player.getUniqueId(), ProgressionService.ProgressionSnapshot.empty());
     }
+    public boolean progressionReady(Player player) { return progressionSnapshots.containsKey(player.getUniqueId()); }
 
     public void updateSkillProgress(
         Player player,
@@ -385,7 +386,8 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
         if (objective == null) {
             return;
         }
-        if (!sidebarEnabled || hiddenHud.contains(player.getUniqueId())) {
+        // A player running the Aerborne client draws all of this in its own HUD (ClientHudFeed).
+        if (!sidebarEnabled || hiddenHud.contains(player.getUniqueId()) || ClientHudFeed.modded(player)) {
             if (objective.getDisplaySlot() != null) board.clearSlot(DisplaySlot.SIDEBAR);
             sidebarFrames.remove(player.getUniqueId());
             return;
@@ -396,10 +398,7 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
             renderSidebar(board, objective, player, overlay.title(), overlay.lines());
             return;
         }
-        var island = plugin.skyblock() == null ? null : plugin.skyblock().islands()
-            .at(player.getLocation().getBlockX() >> 4, player.getLocation().getBlockZ() >> 4)
-            .filter(i -> plugin.skyblock().isIslandWorld(player.getWorld())).orElse(null);
-        var islandProgress = island == null ? null : plugin.skyblock().development().progress(island.owner());
+        List<String> progress = progressFor(player, view);
         List<String> lines = new java.util.ArrayList<>(List.of(
             "<dark_gray>────────────</dark_gray>",
             "<gray>Player</gray> <white>" + player.getName() + "</white>",
@@ -411,14 +410,36 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
                     + VisualFormat.compact(view.adventurerExperienceNeeded()) + "</white>",
             "<gray>Marks</gray> <gold>" + VisualFormat.compact(view.marks()) + " ✦</gold>",
             " ",
-            island == null ? "<white>" + escape(view.campaignTitle()) + "</white>"
-                : "<white>" + escape(island.name()) + "</white> <aqua>Lv " + islandProgress.level() + "</aqua>",
-            island == null ? "<gray>Progress</gray> <aqua>" + VisualFormat.compact(view.campaignPoints()) + "</aqua>"
-                : "<gray>" + islandProgress.progressLabel() + "</gray>"
+            progress.get(0),
+            progress.get(1)
         ));
         lines.addAll(appendix.getOrDefault(player.getUniqueId(), List.of()));
         renderSidebar(board, objective, player, plugin.branding().sidebarTitleMarkup(), lines);
     }
+
+    /**
+     * The two progress lines under the player's stats, as MiniMessage: the island they stand on and its level, or
+     * else their campaign and its points.
+     */
+    public List<String> progressFor(Player player, PlayerView view) {
+        var island = plugin.skyblock() == null ? null : plugin.skyblock().islands()
+            .at(player.getLocation().getBlockX() >> 4, player.getLocation().getBlockZ() >> 4)
+            .filter(i -> plugin.skyblock().isIslandWorld(player.getWorld())).orElse(null);
+        if (island == null) return List.of("<white>" + escape(view.campaignTitle()) + "</white>",
+            "<gray>Progress</gray> <aqua>" + VisualFormat.compact(view.campaignPoints()) + "</aqua>");
+        var islandProgress = plugin.skyblock().development().progress(island.owner());
+        return List.of("<white>" + escape(island.name()) + "</white> <aqua>Lv " + islandProgress.level() + "</aqua>",
+            "<gray>" + islandProgress.progressLabel() + "</gray>");
+    }
+
+    /** The overlay replacing this player's sidebar (an expedition's or quest's panel) as title and lines, or null. */
+    public java.util.Map.Entry<String, List<String>> overlayFor(Player player) {
+        Overlay overlay = overlays.get(player.getUniqueId());
+        return overlay == null ? null : java.util.Map.entry(overlay.title(), overlay.lines());
+    }
+
+    /** Extra lines appended under this player's sidebar stats. */
+    public List<String> appendixFor(Player player) { return appendix.getOrDefault(player.getUniqueId(), List.of()); }
 
     /** Draws lines into the board's fixed teams, sending only what changed and hiding unused rows. */
     private void renderSidebar(Scoreboard board, Objective objective, Player player, String title, List<String> lines) {

@@ -34,6 +34,19 @@ public final class SkillToasts {
 
     /** {@code progress} is how far through the level the skill is, from 0 to 1; {@code note} is any bonus worth naming. */
     public static void show(Plugin plugin, Player player, String skill, int level, long earned, double progress, String note) {
+        // The Aerborne client shows the gain in its own HUD, so the bar at the top stays free for bosses.
+        if (ClientHudFeed.modded(player)) {
+            Toast current = SHOWING.get(player.getUniqueId());
+            long total = earned;
+            if (current != null && current.skill.equals(skill)) total += current.earned;
+            if (current != null) { player.hideBossBar(current.bar); if (current.hide != null) current.hide.cancel(); }
+            Toast tally = new Toast(BossBar.bossBar(net.kyori.adventure.text.Component.empty(), 0F, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS), skill);
+            tally.earned = total;
+            SHOWING.put(player.getUniqueId(), tally);
+            tally.hide = Bukkit.getScheduler().runTaskLater(plugin, () -> SHOWING.remove(player.getUniqueId(), tally), SHOWN_TICKS);
+            if (ClientHudFeed.skill(player, Chat.render("<aqua>" + Chat.escape(skill) + " " + level + "</aqua> <white>+" + total + " XP</white>"
+                + (note == null || note.isEmpty() ? "" : " <dark_gray>•</dark_gray> " + note)), progress)) return;
+        }
         Toast toast = SHOWING.computeIfAbsent(player.getUniqueId(), id -> {
             Toast created = new Toast(BossBar.bossBar(net.kyori.adventure.text.Component.empty(), 0F, BossBar.Color.BLUE, BossBar.Overlay.PROGRESS), skill);
             player.showBossBar(created.bar);
