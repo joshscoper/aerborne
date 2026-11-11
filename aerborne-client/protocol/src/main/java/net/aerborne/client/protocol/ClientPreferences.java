@@ -32,6 +32,12 @@ public final class ClientPreferences {
     public boolean hud = true, coordinates = true, durability = true, topRight = false, serverSeeded;
     /** The compass strip, the minimap and the frame for the creature under the crosshair. */
     public boolean compass = true, minimap = true, target = true;
+    /** The companion features, each of which can be switched off (see FeaturesScreen). */
+    public boolean effects = true, vignette = true, damageNumbers = true, session = true, waypointMarker = true,
+            rarity = true, deathWaypoint = true, chatTimestamps = true, chatMentions = true, chatStack = true,
+            chatCoordinates = true, partyFrames = true;
+    /** Player inventory slots (0-35, 40 off hand) the player has locked against dropping and moving. */
+    public final Set<Integer> lockedSlots = new TreeSet<>();
     public int scale = 100;
     public String tracked = "";
     public final List<Waypoint> waypoints = new ArrayList<>();
@@ -62,6 +68,22 @@ public final class ClientPreferences {
         result.minimap = bool(data, "minimap", true);
         result.target = bool(data, "target", true);
         result.serverSeeded = bool(data, "serverSeeded", false);
+        result.effects = bool(data, "effects", true);
+        result.vignette = bool(data, "vignette", true);
+        result.damageNumbers = bool(data, "damageNumbers", true);
+        result.session = bool(data, "session", true);
+        result.waypointMarker = bool(data, "waypointMarker", true);
+        result.rarity = bool(data, "rarity", true);
+        result.deathWaypoint = bool(data, "deathWaypoint", true);
+        result.chatTimestamps = bool(data, "chatTimestamps", true);
+        result.chatMentions = bool(data, "chatMentions", true);
+        result.chatStack = bool(data, "chatStack", true);
+        result.chatCoordinates = bool(data, "chatCoordinates", true);
+        result.partyFrames = bool(data, "partyFrames", true);
+        for (String slot : data.getProperty("lockedSlots", "").split(",")) {
+            try { int value = Integer.parseInt(slot.trim()); if (value >= 0 && value <= 40) result.lockedSlots.add(value); }
+            catch (NumberFormatException ignored) { }
+        }
         result.scale = Math.max(75, Math.min(125, number(data, "scale", 100)));
         result.tracked = data.getProperty("tracked", "");
         int count = Math.max(0, Math.min(32, number(data, "waypoints", 0)));
@@ -87,6 +109,19 @@ public final class ClientPreferences {
         data.setProperty("minimap", Boolean.toString(minimap));
         data.setProperty("target", Boolean.toString(target));
         data.setProperty("serverSeeded", Boolean.toString(serverSeeded));
+        data.setProperty("effects", Boolean.toString(effects));
+        data.setProperty("vignette", Boolean.toString(vignette));
+        data.setProperty("damageNumbers", Boolean.toString(damageNumbers));
+        data.setProperty("session", Boolean.toString(session));
+        data.setProperty("waypointMarker", Boolean.toString(waypointMarker));
+        data.setProperty("rarity", Boolean.toString(rarity));
+        data.setProperty("deathWaypoint", Boolean.toString(deathWaypoint));
+        data.setProperty("chatTimestamps", Boolean.toString(chatTimestamps));
+        data.setProperty("chatMentions", Boolean.toString(chatMentions));
+        data.setProperty("chatStack", Boolean.toString(chatStack));
+        data.setProperty("chatCoordinates", Boolean.toString(chatCoordinates));
+        data.setProperty("partyFrames", Boolean.toString(partyFrames));
+        data.setProperty("lockedSlots", String.join(",", lockedSlots.stream().map(String::valueOf).toList()));
         data.setProperty("scale", Integer.toString(scale));
         data.setProperty("tracked", tracked);
         data.setProperty("waypoints", Integer.toString(waypoints.size()));

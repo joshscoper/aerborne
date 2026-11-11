@@ -90,12 +90,34 @@ public final class ClientHudFeed implements Listener, AutoCloseable {
         }
         // The first time a client is seen, redraw its sidebar so the plugin's one disappears straight away.
         if (known.add(player.getUniqueId()) && plugin.presentation() != null) plugin.presentation().refresh(player);
+        try { sendParty(player); } catch (RuntimeException ignored) { }
         byte[] bytes;
         try { bytes = encode(player); } catch (IOException | RuntimeException failure) { return; }
         byte[] previous = lastSent.get(player.getUniqueId());
         if (previous != null && Arrays.equals(previous, bytes)) return;
         lastSent.put(player.getUniqueId(), bytes);
         player.sendPluginMessage(plugin, CHANNEL, bytes);
+    }
+
+    /** The player's party as the client's party frames show it; ClientFeeds sends it only when it changes. */
+    private void sendParty(Player player) {
+        var parties = plugin.partyManager();
+        var account = plugin.sessions().account(player.getUniqueId()).orElse(null);
+        List<ClientFeeds.Member> members = new java.util.ArrayList<>();
+        if (parties != null && account != null) {
+            var details = parties.roster().details(account).orElse(null);
+            if (details != null) for (var member : details.members()) {
+                if (member.equals(account)) continue;
+                Player online = plugin.sessions().player(member).map(Bukkit::getPlayer).filter(Player::isOnline).orElse(null);
+                String name = online != null ? online.getName() : plugin.social().accountName(member);
+                if (online == null) { members.add(new ClientFeeds.Member(name, member.equals(details.leader()), false, 0, 0, -1)); continue; }
+                var maximum = online.getAttribute(Attribute.MAX_HEALTH);
+                int distance = online.getWorld().equals(player.getWorld()) ? (int) Math.round(online.getLocation().distance(player.getLocation())) : -1;
+                members.add(new ClientFeeds.Member(name, member.equals(details.leader()), true, (float) online.getHealth(),
+                    (float) (maximum == null ? 20 : maximum.getValue()), distance));
+            }
+        }
+        ClientFeeds.party(player, members);
     }
 
     private byte[] encode(Player player) throws IOException {

@@ -382,6 +382,9 @@ public final class SkillListener implements Listener {
                 + " (+" + (int) rhythm.bonusPercent() + "%)</green>" : null);
         if (adventurerLeveledUp) {
             boolean rankedUp = adventurer.rank() != previousAdventurer.rank();
+            if (!net.nerdsmp.paper.presentation.ClientFeeds.toast(player, "level",
+                miniMessage.deserialize("<light_purple>Adventurer " + adventurer.level() + "</light_purple>"),
+                miniMessage.deserialize(rankedUp ? "<gold>Rank earned: " + adventurer.rank().displayName() + "</gold>" : "<gray>Your journey continues.</gray>")))
             player.showTitle(Title.title(
                 miniMessage.deserialize("<light_purple><bold>Adventurer " + adventurer.level()
                     + "</bold></light_purple>"),
@@ -392,6 +395,9 @@ public final class SkillListener implements Listener {
             ));
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8F, 1.1F);
         } else if (result.leveledUp()) {
+            if (!net.nerdsmp.paper.presentation.ClientFeeds.toast(player, "skill",
+                miniMessage.deserialize("<aqua>" + skill.displayName() + " " + level + "</aqua>"),
+                miniMessage.deserialize(level == ProgressionService.MASTERY_LEVEL ? "<gold>Mastery is now available.</gold>" : "<gray>New skill level reached.</gray>")))
             player.showTitle(Title.title(
                 miniMessage.deserialize("<aqua><bold>" + skill.displayName() + " " + level + "</bold></aqua>"),
                 miniMessage.deserialize(level == ProgressionService.MASTERY_LEVEL

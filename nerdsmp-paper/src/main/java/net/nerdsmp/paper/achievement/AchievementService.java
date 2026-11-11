@@ -354,6 +354,9 @@ public final class AchievementService implements Listener {
             Player online = player != null && player.isOnline() ? player
                 : sessions.player(account).map(Bukkit::getPlayer).orElse(null);
             if (newlyUnlocked && online != null && online.isOnline() && sessions.account(online.getUniqueId()).filter(account::equals).isPresent()) {
+                if (!net.nerdsmp.paper.presentation.ClientFeeds.toast(online, "achievement", miniMessage.deserialize("<gold>Achievement Unlocked</gold>"),
+                    miniMessage.deserialize("<white>" + escape(definition.title()) + "</white>" + (definition.markReward() > 0L
+                        ? " <dark_gray>•</dark_gray> <gold>+" + Chat.marks(definition.markReward()) + "</gold>" : ""))))
                 online.showTitle(Title.title(
                     miniMessage.deserialize("<gold><bold>Achievement Unlocked</bold></gold>"),
                     miniMessage.deserialize("<white>" + escape(definition.title()) + "</white>" + (definition.markReward() > 0L

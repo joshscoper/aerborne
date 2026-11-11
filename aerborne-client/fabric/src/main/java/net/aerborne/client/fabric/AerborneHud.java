@@ -84,6 +84,8 @@ public final class AerborneHud {
         }
         if (target.isPresent()) y += 44;
         if (server != null) y = AerborneOverlays.panels(g, mc.font, x, y, server, p);
+        y = AerborneExtras.session(g, mc.font, x, y, p);
+        y = AerborneSocial.party(g, mc.font, x, y, p);
         g.pose().popMatrix();
         AerborneOverlays.screenWide(g, mc, server, p, target.orElse(null));
     }

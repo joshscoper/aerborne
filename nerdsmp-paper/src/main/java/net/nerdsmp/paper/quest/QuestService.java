@@ -453,6 +453,8 @@ public final class QuestService implements Listener, AutoCloseable {
         player.sendMessage(Component.empty());
         for (String line : quest.complete()) player.sendRichMessage("<gold>" + Chat.escape(npcName(npc)) + ":</gold> <white>" + Chat.escape(line) + "</white>");
         player.sendRichMessage("<green><bold>Quest complete:</bold></green> <white>" + Chat.escape(quest.title()) + "</white>");
+        net.nerdsmp.paper.presentation.ClientFeeds.toast(player, "quest", Chat.render("<green>Quest complete</green>"),
+            Chat.render("<white>" + Chat.escape(quest.title()) + "</white>"));
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7F, 1.2F);
         grant(player, account, quest, operation).whenComplete((ignored, error) -> Bukkit.getScheduler().runTask(plugin, () -> {
             paying.remove(operation);
@@ -549,6 +551,7 @@ public final class QuestService implements Listener, AutoCloseable {
             if (log == null || quest == null || !log.active().containsKey(quest.id())) { Chat.error(player, "You are not on that quest."); return true; }
             track(player, quest.id());
             Chat.success(player, "Tracking <white>" + Chat.escape(quest.title()) + "</white>. Follow the gold trail.");
+            sendBook(player, log, false);
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("untrack")) {
@@ -563,6 +566,7 @@ public final class QuestService implements Listener, AutoCloseable {
             save();
             guide.refresh(player);
             Chat.notice(player, "Abandoned <white>" + Chat.escape(quest.title()) + "</white>. Its giver can offer it again.");
+            sendBook(player, log, false);
             return true;
         }
         journal(player);
@@ -623,6 +627,8 @@ public final class QuestService implements Listener, AutoCloseable {
     private void journal(Player player) {
         QuestProgress log = log(player);
         if (log == null) { Chat.accountLoading(player); return; }
+        // The Aerborne client opens its own quest book instead of the chat listing.
+        if (sendBook(player, log, true)) return;
         player.sendRichMessage("<gold><bold>Quest journal</bold></gold> <gray>(" + log.completed().size() + " completed)</gray>");
         if (log.active().isEmpty()) {
             player.sendRichMessage("<gray>No active quests. Look for NPCs with quests in Highcrown and the outposts.</gray>");
@@ -645,6 +651,71 @@ public final class QuestService implements Listener, AutoCloseable {
                     + (have >= objective.count() ? "</green>" : "</gray>"));
             }
         }
+    }
+
+    /**
+     * The quest book for the Aerborne client (ClientFeeds.QUESTS), version 1: open (boolean: show the book now rather
+     * than refresh it), completed count (int), tracked quest id (string), then quests (int count) each with id,
+     * title, chain title (strings), status (byte: 0 available, 1 active, 2 ready, 3 completed), giver and turn-in
+     * names (strings), minimum level (int), daily (boolean), offer lines (int count, strings), objectives (int count;
+     * each description string, have and count ints, zone string) and rewards: Marks (long), XP (int count; skill
+     * string, amount long) and items (int count, strings).
+     */
+    public boolean sendBook(Player player, QuestProgress log, boolean open) {
+        if (!net.nerdsmp.paper.presentation.ClientFeeds.listens(player, net.nerdsmp.paper.presentation.ClientFeeds.QUESTS)) return false;
+        try {
+            int level = plugin.presentation() == null ? 1 : plugin.presentation().view(player).adventurerLevel();
+            List<QuestDefinition> shown = new java.util.ArrayList<>();
+            for (String id : log.active().keySet()) if (catalog.quests().containsKey(id)) shown.add(catalog.quests().get(id));
+            for (QuestDefinition quest : catalog.quests().values())
+                if (!log.active().containsKey(quest.id()) && log.status(quest, level) == QuestProgress.Status.AVAILABLE && shown.size() < 60) shown.add(quest);
+            for (QuestDefinition quest : catalog.quests().values())
+                if (log.completed().contains(quest.id()) && !shown.contains(quest) && shown.size() < 90) shown.add(quest);
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(4096);
+            java.io.DataOutputStream out = new java.io.DataOutputStream(bytes);
+            out.writeInt(1);
+            out.writeBoolean(open);
+            out.writeInt(log.completed().size());
+            net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, tracked(player).map(QuestDefinition::id).orElse(""));
+            out.writeInt(shown.size());
+            for (QuestDefinition quest : shown) {
+                boolean active = log.active().containsKey(quest.id());
+                int[] counts = active ? log.counts(quest) : new int[quest.objectives().size()];
+                boolean ready = active && QuestProgress.done(quest, counts);
+                int status = active ? (ready ? 2 : 1) : log.completed().contains(quest.id()) && !quest.daily() ? 3 : 0;
+                str(out, quest.id()); str(out, quest.title()); str(out, chainTitle(quest));
+                out.writeByte(status);
+                str(out, npcName(quest.giver())); str(out, npcName(quest.turnIn()));
+                out.writeInt(quest.minimumLevel());
+                out.writeBoolean(quest.daily());
+                List<String> offer = quest.offer().stream().limit(8).toList();
+                out.writeInt(offer.size());
+                for (String line : offer) str(out, line);
+                out.writeInt(quest.objectives().size());
+                for (int i = 0; i < quest.objectives().size(); i++) {
+                    QuestDefinition.Objective objective = quest.objectives().get(i);
+                    int have = !active ? (status == 3 ? objective.count() : 0)
+                        : objective.type() == QuestDefinition.Type.DELIVER ? Math.min(objective.count(), held(player, objective)) : counts[i];
+                    str(out, objective.description());
+                    out.writeInt(have);
+                    out.writeInt(objective.count());
+                    str(out, objective.zone() == null ? "" : zoneTitle(objective.zone()));
+                }
+                out.writeLong(quest.rewards().marks());
+                out.writeInt(quest.rewards().experience().size());
+                for (var xp : quest.rewards().experience().entrySet()) { str(out, xp.getKey()); out.writeLong(xp.getValue()); }
+                out.writeInt(quest.rewards().items().size());
+                for (var item : quest.rewards().items()) str(out, item.amount() + "x " + item.id().replace('_', ' '));
+            }
+            out.flush();
+            return net.nerdsmp.paper.presentation.ClientFeeds.questBook(player, bytes.toByteArray());
+        } catch (java.io.IOException | RuntimeException failure) {
+            return false;
+        }
+    }
+
+    private static void str(java.io.DataOutputStream out, String value) throws java.io.IOException {
+        net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, net.nerdsmp.paper.presentation.ClientFeeds.clean(value));
     }
 
     // ---------------------------------------------------------------- helpers and storage

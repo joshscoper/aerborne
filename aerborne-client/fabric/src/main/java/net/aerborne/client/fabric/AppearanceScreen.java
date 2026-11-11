@@ -16,6 +16,7 @@ public final class AppearanceScreen extends AerborneScreen {
         button(x + w + gap, y + 26, w, "Corner: " + (p.topRight ? "Right" : "Left"), () -> change(() -> p.topRight = !p.topRight));
         button(x, y + 52, w, "Coordinates: " + on(p.coordinates), () -> change(() -> p.coordinates = !p.coordinates));
         button(x + w + gap, y + 52, w, "Durability: " + on(p.durability), () -> change(() -> p.durability = !p.durability));
+        button(left + panelWidth - 12 - w, top + panelHeight - 30, w, "Companion features...", () -> minecraft.gui.setScreen(new FeaturesScreen(this)));
     }
     private static String on(boolean value) { return value ? "On" : "Off"; }
     private void change(Runnable action) { action.run(); ClientState.save(); rebuildWidgets(); }

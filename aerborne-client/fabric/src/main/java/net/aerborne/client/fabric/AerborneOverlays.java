@@ -40,9 +40,14 @@ final class AerborneOverlays {
     static void screenWide(GuiGraphicsExtractor g, Minecraft mc, HudPayload server, ClientPreferences p, ClientPreferences.Waypoint tracked) {
         Player player = mc.player;
         int width = g.guiWidth(), height = g.guiHeight();
+        AerborneExtras.vignette(g, mc, p);
+        AerborneExtras.damageNumbers(g, mc);
+        AerborneExtras.waypointMarker(g, mc, p, tracked);
+        AerborneSocial.toasts(g, mc);
         int x = p.topRight ? 12 : width - 12 - MAP_PIXELS, y = 12;
         if (p.minimap) { minimap(g, mc, x, y, tracked); y += MAP_PIXELS + 10; }
-        if (p.compass) compass(g, mc.font, player, tracked, x + MAP_PIXELS / 2, y, MAP_PIXELS / 2 + 4);
+        if (p.compass) { compass(g, mc.font, player, tracked, x + MAP_PIXELS / 2, y, MAP_PIXELS / 2 + 4); y += 22; }
+        AerborneExtras.effects(g, mc, p, y);
         int bottom = height - 72;
         if (server != null && !server.notice().isEmpty()) {
             int w = mc.font.width(server.notice());

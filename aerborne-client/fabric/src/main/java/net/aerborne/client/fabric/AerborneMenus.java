@@ -94,6 +94,99 @@ public final class AerborneMenus {
         g.text(font, title, left + (width - font.width(title)) / 2, top + 5, GOLD, true);
     }
 
+    // ------------------------------------------------------------------ rarity
+
+    private static final String[] RARITIES = {"RELIC", "MYTHIC", "LEGENDARY", "EPIC", "RARE", "UNCOMMON", "COMMON"};
+    private static final int[] RARITY_COLOURS = {0x3FD7C9, 0xE0405A, 0xF4B13A, 0xB061FF, 0x4A8CFF, 0x55D46A, 0x9AA3B5};
+
+    /** The colour of the item's rarity, from the rarity word in its lore, or 0 when it has none worth showing. */
+    public static int rarityColour(ItemStack item) {
+        if (item.isEmpty() || filler(item)) return 0;
+        var lore = item.get(net.minecraft.core.component.DataComponents.LORE);
+        if (lore != null) {
+            for (var line : lore.lines()) {
+                String text = line.getString().toUpperCase(java.util.Locale.ROOT);
+                for (int i = 0; i < RARITIES.length; i++)
+                    if (text.matches(".*\\b" + RARITIES[i] + "\\b.*")) return i == RARITIES.length - 1 ? 0 : RARITY_COLOURS[i];
+            }
+        }
+        var vanilla = item.get(net.minecraft.core.component.DataComponents.RARITY);
+        if (vanilla == null) return 0;
+        return switch (vanilla) {
+            case UNCOMMON -> RARITY_COLOURS[5];
+            case RARE -> RARITY_COLOURS[4];
+            case EPIC -> RARITY_COLOURS[3];
+            default -> 0;
+        };
+    }
+
+    // ------------------------------------------------------------------ search
+
+    private static final Map<Screen, net.minecraft.client.gui.components.EditBox> SEARCH =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** Adds the search box above a chest screen's grid. */
+    static void addSearch(ContainerScreen screen, int left, int top, int width) {
+        var font = Minecraft.getInstance().font;
+        var box = new net.minecraft.client.gui.components.EditBox(font, left + width - 92, top - 24, 92, 13,
+                net.minecraft.network.chat.Component.literal("Search"));
+        box.setHint(net.minecraft.network.chat.Component.literal("Search…").withColor(0xFF8E9AAF));
+        box.setMaxLength(40);
+        net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(box);
+        SEARCH.put(screen, box);
+    }
+
+    public static net.minecraft.client.gui.components.EditBox search(Object screen) {
+        return screen instanceof Screen s ? SEARCH.get(s) : null;
+    }
+
+    /** True when the screen has a search typed in and this item does not match it. */
+    public static boolean hiddenBySearch(Object screen, ItemStack item) {
+        var box = search(screen);
+        if (box == null || box.getValue().isBlank()) return false;
+        if (item.isEmpty() || filler(item)) return true;
+        String query = box.getValue().toLowerCase(java.util.Locale.ROOT).strip();
+        if (item.getHoverName().getString().toLowerCase(java.util.Locale.ROOT).contains(query)) return false;
+        var lore = item.get(net.minecraft.core.component.DataComponents.LORE);
+        if (lore != null) for (var line : lore.lines())
+            if (line.getString().toLowerCase(java.util.Locale.ROOT).contains(query)) return false;
+        return true;
+    }
+
+    // ------------------------------------------------------------------ item lock
+
+    /** The saved index of a player inventory slot, or -1 for any other slot. */
+    public static int lockIndex(Slot slot) {
+        return slot != null && slot.container instanceof Inventory ? slot.getContainerSlot() : -1;
+    }
+
+    public static boolean locked(Slot slot) {
+        int index = lockIndex(slot);
+        return index >= 0 && ClientState.preferences.lockedSlots.contains(index);
+    }
+
+    public static boolean lockedIndex(int index) { return ClientState.preferences.lockedSlots.contains(index); }
+
+    /** Locks or unlocks the player inventory slot under the cursor. */
+    public static void toggleLock(Slot slot) {
+        int index = lockIndex(slot);
+        if (index < 0) return;
+        var locked = ClientState.preferences.lockedSlots;
+        if (!locked.remove(index)) locked.add(index);
+        ClientState.save();
+        Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                net.minecraft.sounds.SoundEvents.NOTE_BLOCK_HAT, locked.contains(index) ? 1.4F : 0.8F));
+    }
+
+    /** A small gold padlock in a slot's corner. */
+    public static void lockBadge(GuiGraphicsExtractor g, int x, int y) {
+        g.fill(x + 10, y + 9, x + 16, y + 15, 0xFF0D1A2B);
+        g.fill(x + 11, y + 11, x + 15, y + 14, GOLD);
+        g.fill(x + 11, y + 9, x + 12, y + 11, GOLD);
+        g.fill(x + 14, y + 9, x + 15, y + 11, GOLD);
+        g.fill(x + 12, y + 8, x + 14, y + 9, GOLD);
+    }
+
     /** Draws a navigation item as a button with its icon, in slot coordinates. */
     public static void navigationButton(GuiGraphicsExtractor g, Identifier icon, int x, int y) {
         g.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON, x - 1, y - 1, 18, 18);

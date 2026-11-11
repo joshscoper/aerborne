@@ -47,11 +47,12 @@ public final class ClientFeeds {
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, PLATES);
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, DIALOGUE);
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, MENU);
+        for (String channel : List.of(PARTY, TOAST, QUESTS)) owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, channel);
     }
 
-    static void stop() { plugin = null; lastPlates.clear(); }
+    static void stop() { plugin = null; lastPlates.clear(); lastParty.clear(); }
 
-    static void forget(UUID player) { lastPlates.remove(player); }
+    static void forget(UUID player) { lastPlates.remove(player); lastParty.remove(player); }
 
     public static boolean listens(Player player, String channel) {
         return plugin != null && player != null && player.getListeningPluginChannels().contains(channel);
@@ -114,6 +115,74 @@ public final class ClientFeeds {
         }
     }
 
+    // ------------------------------------------------------------------ party, toasts, quest book
+
+    public static final String PARTY = "aerborne:party";
+    public static final String TOAST = "aerborne:toast";
+    public static final String QUESTS = "aerborne:quests";
+    private static final Map<UUID, byte[]> lastParty = new ConcurrentHashMap<>();
+
+    /** One party member as the party frames show them. {@code distance} is -1 when offline or in another world. */
+    public record Member(String name, boolean leader, boolean online, float health, float maxHealth, int distance) { }
+
+    /**
+     * {@value #PARTY}, version 1: member count (int), then per member their name (string), leader and online
+     * (booleans), health and max health (floats) and distance in blocks (int, -1 when not in this world).
+     * The player themself is left out; an empty list means no party. Sent only when it changes.
+     */
+    static void party(Player player, List<Member> members) {
+        Plugin owner = plugin;
+        if (owner == null || !listens(player, PARTY)) return;
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(64 + members.size() * 32);
+            DataOutputStream out = new DataOutputStream(bytes);
+            out.writeInt(VERSION);
+            out.writeInt(Math.min(16, members.size()));
+            for (Member member : members.subList(0, Math.min(16, members.size()))) {
+                writeString(out, clean(member.name()));
+                out.writeBoolean(member.leader());
+                out.writeBoolean(member.online());
+                out.writeFloat(member.health());
+                out.writeFloat(member.maxHealth());
+                out.writeInt(member.distance());
+            }
+            byte[] encoded = bytes.toByteArray();
+            byte[] previous = lastParty.get(player.getUniqueId());
+            if (previous != null && Arrays.equals(previous, encoded)) return;
+            lastParty.put(player.getUniqueId(), encoded);
+            player.sendPluginMessage(owner, PARTY, encoded);
+        } catch (IOException | RuntimeException ignored) { }
+    }
+
+    /**
+     * {@value #TOAST}, version 1: kind (string: level, skill, achievement, quest, drop), title and line (strings,
+     * legacy colours). Returns false when this player's client shows no toasts, so the caller shows its title.
+     */
+    public static boolean toast(Player player, String kind, Component title, Component line) {
+        Plugin owner = plugin;
+        if (owner == null || player == null || !listens(player, TOAST)) return false;
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(128);
+            DataOutputStream out = new DataOutputStream(bytes);
+            out.writeInt(VERSION);
+            writeString(out, kind);
+            writeString(out, LEGACY.serialize(title));
+            writeString(out, LEGACY.serialize(line));
+            player.sendPluginMessage(owner, TOAST, bytes.toByteArray());
+            return true;
+        } catch (IOException | RuntimeException failure) {
+            return false;
+        }
+    }
+
+    /** Sends an already encoded quest book (see QuestService.sendBook); false when the client has no quest book. */
+    public static boolean questBook(Player player, byte[] encoded) {
+        Plugin owner = plugin;
+        if (owner == null || !listens(player, QUESTS)) return false;
+        player.sendPluginMessage(owner, QUESTS, encoded);
+        return true;
+    }
+
     /** Tells the client the chest screen about to open is one of the plugin's menus. */
     static void menu(Player player, String kind, String title) {
         Plugin owner = plugin;
@@ -145,12 +214,12 @@ public final class ClientFeeds {
         } catch (IOException | RuntimeException ignored) { }
     }
 
-    private static String clean(String text) {
+    public static String clean(String text) {
         String value = text == null ? "" : text.replaceAll("[\\p{Cntrl}\\u00a7]", " ").strip();
         return value.length() > 2000 ? value.substring(0, 2000) : value;
     }
 
-    static void writeString(DataOutputStream out, String value) throws IOException {
+    public static void writeString(DataOutputStream out, String value) throws IOException {
         byte[] utf = value.getBytes(StandardCharsets.UTF_8);
         int length = utf.length;
         while ((length & ~0x7F) != 0) { out.writeByte((length & 0x7F) | 0x80); length >>>= 7; }

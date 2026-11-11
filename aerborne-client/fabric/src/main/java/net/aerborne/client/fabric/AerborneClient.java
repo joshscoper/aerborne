@@ -36,6 +36,7 @@ public final class AerborneClient implements ClientModInitializer {
         // Registering this receiver is what tells the server we draw our own HUD: it then stops its action bar and sidebar.
         PayloadTypeRegistry.clientboundPlay().register(HudPayload.TYPE, HudPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(HudPayload.TYPE, (payload, context) -> {
+            AerborneExtras.onHud(payload);
             ClientState.hud = payload;
             ClientState.hudAt = System.nanoTime();
         });
@@ -53,14 +54,35 @@ public final class AerborneClient implements ClientModInitializer {
         // The server tags its own chest menus as they open; those are drawn in the Aerborne frame (AerborneMenus).
         PayloadTypeRegistry.clientboundPlay().register(MenuPayload.TYPE, MenuPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(MenuPayload.TYPE, (payload, context) -> AerborneMenus.tagged(context.client(), payload));
-        ClientPlayConnectionEvents.INIT.register((handler, client) -> ClientState.reset());
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientState.reset());
+        PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Party.TYPE, FeedPayloads.Party.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Party.TYPE, (payload, context) -> AerborneSocial.party = payload);
+        PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Toast.TYPE, FeedPayloads.Toast.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Toast.TYPE, (payload, context) -> AerborneSocial.toast(payload));
+        PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Quests.TYPE, FeedPayloads.Quests.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Quests.TYPE, (payload, context) -> {
+            var client = context.client();
+            if (client.gui.screen() instanceof QuestBookScreen open) open.update(payload);
+            else if (payload.open()) client.gui.setScreen(new QuestBookScreen(payload));
+        });
+        ClientPlayConnectionEvents.INIT.register((handler, client) -> { ClientState.reset(); AerborneExtras.resetSession(); AerborneSocial.party = null; });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { ClientState.reset(); AerborneExtras.resetSession(); });
+        // Our effect column replaces the vanilla icons while the Aerborne HUD is up.
+        HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, vanilla -> (graphics, delta) -> {
+            var p = ClientState.preferences;
+            if (p.effects && p.hud && ClientState.available()) return;
+            vanilla.extractRenderState(graphics, delta);
+        });
         ClientConfigurationConnectionEvents.INIT.register((handler, client) -> ClientState.reset());
         ClientLifecycleEvents.CLIENT_STARTED.register(DefaultServer::seed);
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.parse("aerborne_client:hud"),
                 (graphics, delta) -> AerborneHud.draw(graphics));
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
             AerborneMenus.opened(screen);
+            // Chest screens get a search box above their grid.
+            if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen chest && ClientState.available()) {
+                var at = (net.aerborne.client.fabric.mixin.AbstractContainerScreenAccessor) chest;
+                AerborneMenus.addSearch(chest, at.aerborne$left(), at.aerborne$top(), at.aerborne$width());
+            }
             if (screen instanceof TitleScreen) Screens.getWidgets(screen).add(Button.builder(Component.literal("Client appearance"),
                     button -> client.gui.setScreen(new AppearanceScreen(screen))).bounds(width - 128, 8, 120, 20).build());
         });
@@ -81,13 +103,36 @@ public final class AerborneClient implements ClientModInitializer {
                             + ". Menu: " + menu.getTranslatedKeyMessage().getString()
                             + "; HUD: " + hud.getTranslatedKeyMessage().getString()
                             + "; waypoints: " + waypoints.getTranslatedKeyMessage().getString() + ".")); return 1;
-                })).then(literal("settings").executes(context -> {
+                })).then(literal("waypoint").then(com.mojang.brigadier.builder.RequiredArgumentBuilder
+                        .<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource, Integer>argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                        .then(com.mojang.brigadier.builder.RequiredArgumentBuilder
+                        .<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource, Integer>argument("y", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                        .then(com.mojang.brigadier.builder.RequiredArgumentBuilder
+                        .<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource, Integer>argument("z", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                        .executes(context -> {
+                            // Clickable coordinates in chat run this (see ChatComponentMixin).
+                            String scope = ClientState.scope();
+                            var p = ClientState.preferences;
+                            if (scope.isEmpty() || p.waypoints.size() >= 32) {
+                                context.getSource().sendError(Component.literal("Waypoints are full or unavailable here."));
+                                return 0;
+                            }
+                            int x = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "x");
+                            int y = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "y");
+                            int z = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "z");
+                            var point = new net.aerborne.client.protocol.ClientPreferences.Waypoint(java.util.UUID.randomUUID().toString(),
+                                    scope, "Chat " + x + " " + z, x, Math.max(-2048, Math.min(2048, y)), z);
+                            p.waypoints.add(point); p.tracked = point.id(); ClientState.save();
+                            context.getSource().sendFeedback(Component.literal("Tracking waypoint at " + x + ", " + y + ", " + z + "."));
+                            return 1;
+                        }))))).then(literal("settings").executes(context -> {
                     pendingAction = () -> context.getSource().getClient().gui.setScreen(new AppearanceScreen(null)); return 1;
                 }))));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> org.slf4j.LoggerFactory.getLogger("Aerborne")
                 .info("Client controls: menu={}, HUD={}, waypoints={}. Use /aerborneclient status for connection diagnostics.",
                         menu.getTranslatedKeyMessage().getString(), hud.getTranslatedKeyMessage().getString(), waypoints.getTranslatedKeyMessage().getString()));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            AerborneExtras.tick(client);
             // Open after the chat screen has finished handling/closing for a client command.
             if (pendingAction != null) { Runnable action = pendingAction; pendingAction = null; action.run(); }
             while (menu.consumeClick()) {
