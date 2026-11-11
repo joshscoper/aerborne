@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 
 /** Switches for every companion feature, two columns, saved as they change. */
 public final class FeaturesScreen extends AerborneScreen {
+    private int page, pages, rows;
     private record Toggle(String label, Predicate<ClientPreferences> get, Consumer<ClientPreferences> flip) { }
 
     private static final List<Toggle> TOGGLES = List.of(
@@ -31,22 +32,30 @@ public final class FeaturesScreen extends AerborneScreen {
     public FeaturesScreen(Screen parent) { super("Companion Features", parent); }
 
     @Override protected void init() {
-        int rows = (TOGGLES.size() + 1) / 2;
-        frame(440, 70 + rows * 24 + 34);
+        frame(480, 300);
+        rows = Math.max(1, Math.min(8, (panelHeight - 106) / 24));
+        int perPage = rows * 2;
+        pages = (TOGGLES.size() + perPage - 1) / perPage;
+        page = Math.min(page, pages - 1);
         var p = ClientState.preferences;
         int gap = 8, w = (panelWidth - 32) / 2, x = left + 12, y = top + 45;
-        for (int i = 0; i < TOGGLES.size(); i++) {
-            Toggle toggle = TOGGLES.get(i);
+        for (int i = 0; i < perPage && page * perPage + i < TOGGLES.size(); i++) {
+            Toggle toggle = TOGGLES.get(page * perPage + i);
             button(x + (i % 2) * (w + gap), y + (i / 2) * 24, w, toggle.label() + ": " + (toggle.get().test(p) ? "On" : "Off"), () -> {
                 toggle.flip().accept(p);
                 ClientState.save();
                 rebuildWidgets();
             });
         }
+        if (pages > 1) {
+            button(left + panelWidth - 132, top + panelHeight - 30, 56, "Previous", () -> { page--; rebuildWidgets(); }).active = page > 0;
+            button(left + panelWidth - 70, top + panelHeight - 30, 58, "Next", () -> { page++; rebuildWidgets(); }).active = page + 1 < pages;
+        }
     }
 
     @Override protected void drawContent(GuiGraphicsExtractor g, int mx, int my, float delta) {
-        int rows = (TOGGLES.size() + 1) / 2;
-        g.text(font, "Item lock: press L over an inventory slot.", left + 14, top + 45 + rows * 24 + 4, 0xFF8E9AAF);
+        g.text(font, "Choose what stays on your screen.", left + 14, top + 28, Ui.MUTED);
+        g.text(font, fit("Item lock: press L over an inventory slot.", panelWidth - 28), left + 14, top + panelHeight - 48, Ui.MUTED);
+        if (pages > 1) g.text(font, (page + 1) + " / " + pages, left + 98, top + panelHeight - 24, Ui.MUTED);
     }
 }

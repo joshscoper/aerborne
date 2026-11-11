@@ -131,13 +131,14 @@ public final class DialogueScreen extends Screen {
     }
 
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, left, top, panelWidth, panelHeight);
+        Ui.inset(graphics, left, top, panelWidth, panelHeight);
         // The speaker's name on a tab over the panel's top edge.
-        int nameWidth = font.width(page.name());
-        graphics.fill(left + 12, top - 8, left + 24 + nameWidth, top + 8, 0xFF17243B);
-        graphics.outline(left + 12, top - 8, nameWidth + 12, 16, GOLD);
-        graphics.text(font, page.name(), left + 18, top - 4, GOLD, true);
-        if (!page.title().isEmpty()) graphics.text(font, page.title(), left + 30 + nameWidth, top - 4, MUTED, true);
+        String name = Ui.fit(font, page.name(), panelWidth - 48);
+        int nameWidth = font.width(name);
+        graphics.fill(left + 8, top - 10, left + 32 + nameWidth, top + 8, 0xFF1C2B42);
+        graphics.outline(left + 8, top - 10, nameWidth + 24, 18, GOLD);
+        graphics.text(font, name, left + 20, top - 5, CLOUD, false);
+        if (!page.title().isEmpty()) graphics.text(font, Ui.fit(font, page.title(), Math.max(0, panelWidth - 220)), left + 14, top + 12, Ui.MUTED, false);
         int remaining = shownChars();
         int y = textTop - 12;
         for (String line : lines) {

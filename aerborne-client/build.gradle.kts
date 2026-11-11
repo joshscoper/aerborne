@@ -4,7 +4,7 @@ plugins {
 }
 allprojects {
     group = "net.aerborne.client"
-    version = "0.2.1-alpha.1"
+    version = "0.3.0-alpha.1"
     repositories {
         mavenCentral()
         maven("https://repo.papermc.io/repository/maven-public/")

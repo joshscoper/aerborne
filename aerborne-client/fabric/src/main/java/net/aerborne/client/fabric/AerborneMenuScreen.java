@@ -24,7 +24,7 @@ import net.minecraft.util.ARGB;
 public final class AerborneMenuScreen extends Screen {
     private record Destination(String title, String detail, String command, String icon) {}
     private static final List<Destination> DESTINATIONS = List.of(
-            new Destination("Character Overview", "Live vitals, equipment details and durability", "@character", "equipment"),
+            new Destination("Character Overview", "Vitals, gear and durability", "@character", "equipment"),
             new Destination("Personal Waypoints", "Save favorite places and track their distance", "@waypoints", "your_island"),
             new Destination("Appearance & HUD", "Themes, HUD size, position and visibility", "@appearance", "player_settings"),
             new Destination("Your Island", "Home, co-op and island development", "island", "your_island"),
@@ -43,8 +43,7 @@ public final class AerborneMenuScreen extends Screen {
 
     private static final Component TAGLINE = Component.literal("Small beginnings. Endless skies.");
     private static final Identifier PANEL = sprite("menu/panel");
-    private static final WidgetSprites BUTTON = new WidgetSprites(
-            sprite("menu/button"), sprite("menu/button_disabled"), sprite("menu/button_highlighted"));
+    private static final WidgetSprites BUTTON = Ui.BUTTON;
     /** Tooltips drawn with {@code tooltip/menu_background}: the dark box with the gold line. */
     private static final Identifier TOOLTIP_STYLE = sprite("menu");
     private static final Identifier HEADER = sprite("textures/gui/brand/header.png");
@@ -58,6 +57,9 @@ public final class AerborneMenuScreen extends Screen {
 
     private final BooleanSupplier available;
     private int page;
+    private int section;
+    private int pageCount;
+    private static final String[] SECTIONS = {"Home", "Character", "Adventure", "Island", "Client"};
     private int top;
     private int panelLeft, panelTop, panelWidth, panelHeight;
     private int headerWidth, headerHeight;
@@ -69,47 +71,60 @@ public final class AerborneMenuScreen extends Screen {
 
     private static Identifier sprite(String path) { return Identifier.fromNamespaceAndPath("aerborne_client", path); }
 
+    private List<Destination> destinations() {
+        int[] indexes = switch (section) {
+            case 1 -> new int[] {0, 4, 5, 6, 11};
+            case 2 -> new int[] {7, 8, 12, 13, 14};
+            case 3 -> new int[] {3, 9, 10, 1};
+            case 4 -> new int[] {2, 1, 12, 14};
+            default -> new int[] {0, 3, 7, 5, 9, 2};
+        };
+        return java.util.Arrays.stream(indexes).mapToObj(DESTINATIONS::get).toList();
+    }
+
     @Override protected void init() {
-        int columns = width >= 600 ? 3 : width >= 280 ? 2 : 1;
-        int rows = Math.max(1, Math.min(3, (height - 96) / (TILE_HEIGHT + TILE_GAP)));
+        int columns = width >= 360 ? 2 : 1;
+        int rows = Math.max(1, Math.min(3, (height - 150) / 60));
         int perPage = columns * rows;
-        int pages = (DESTINATIONS.size() + perPage - 1) / perPage;
-        page = Math.min(page, pages - 1);
-
-        panelWidth = Math.min(columns == 3 ? 540 : columns == 2 ? 360 : 220, width - 16);
-        headerWidth = Math.min(240, panelWidth - 16);
+        var destinations = destinations();
+        pageCount = Math.max(1, (destinations.size() + perPage - 1) / perPage);
+        page = Math.min(page, pageCount - 1);
+        panelWidth = Math.min(560, width - 20);
+        headerWidth = Math.min(240, panelWidth - 32);
         headerHeight = headerWidth * HEADER_TEXTURE_HEIGHT / HEADER_TEXTURE_WIDTH;
-        int tilesTop = headerHeight - HEADER_RISE + 22;
-        int tilesHeight = rows * (TILE_HEIGHT + TILE_GAP) - TILE_GAP;
-        panelHeight = tilesTop + tilesHeight + 8 + BUTTON_HEIGHT + 12;
-        top = Math.max(4, (height - (HEADER_RISE + panelHeight)) / 2);
-        panelTop = top + HEADER_RISE;
+        panelHeight = 98 + rows * 60 + 34;
+        panelTop = Math.max(6, (height - panelHeight) / 2);
+        top = panelTop + 8;
         panelLeft = (width - panelWidth) / 2;
-
-        int left = panelLeft + MARGIN;
-        int inner = panelWidth - MARGIN * 2;
-        int tileWidth = (inner - (columns - 1) * TILE_GAP) / columns;
-        for (int i = 0; i < perPage && page * perPage + i < DESTINATIONS.size(); i++) {
-            Destination destination = DESTINATIONS.get(page * perPage + i);
-            SpriteButton tile = addRenderableWidget(new SpriteButton(
-                    left + (i % columns) * (tileWidth + TILE_GAP), panelTop + tilesTop + (i / columns) * (TILE_HEIGHT + TILE_GAP),
-                    tileWidth, TILE_HEIGHT, Component.literal(destination.title()),
-                    sprite("icon/menu/" + destination.icon()), 32, false, button -> open(destination)));
+        int left = panelLeft + 16, inner = panelWidth - 32;
+        int tabWidth = (inner - 16) / 5;
+        for (int i = 0; i < SECTIONS.length; i++) {
+            int nextSection = i;
+            var tab = addRenderableWidget(new SpriteButton(left + i * (tabWidth + 4), panelTop + 66, tabWidth, 20,
+                    Component.literal(SECTIONS[i]), null, 0, false, b -> { section = nextSection; page = 0; rebuildWidgets(); }));
+            tab.selected = section == i;
+            tab.setTooltip(tooltip(SECTIONS[i]));
+        }
+        int tileWidth = (inner - (columns - 1) * 10) / columns;
+        for (int i = 0; i < perPage && page * perPage + i < destinations.size(); i++) {
+            Destination destination = destinations.get(page * perPage + i);
+            CardButton tile = addRenderableWidget(new CardButton(
+                    left + (i % columns) * (tileWidth + 10), panelTop + 98 + (i / columns) * 60,
+                    tileWidth, destination, button -> open(destination)));
             tile.setTooltip(tooltip(destination.detail()));
         }
-
-        int footer = panelTop + tilesTop + tilesHeight + 8;
-        if (pages > 1) {
+        int footer = panelTop + panelHeight - 30;
+        if (pageCount > 1) {
             SpriteButton back = addRenderableWidget(new SpriteButton(left, footer, 32, BUTTON_HEIGHT,
                     Component.literal("Previous page"), sprite("icon/nav/left"), 16, true, button -> { page--; rebuildWidgets(); }));
             back.active = page > 0;
             back.setTooltip(tooltip("Previous page"));
             SpriteButton next = addRenderableWidget(new SpriteButton(left + inner - 32, footer, 32, BUTTON_HEIGHT,
                     Component.literal("Next page"), sprite("icon/nav/right"), 16, true, button -> { page++; rebuildWidgets(); }));
-            next.active = page + 1 < pages;
+            next.active = page + 1 < pageCount;
             next.setTooltip(tooltip("Next page"));
         }
-        int closeWidth = Math.min(120, inner - (pages > 1 ? 76 : 0));
+        int closeWidth = Math.min(120, inner - (pageCount > 1 ? 76 : 0));
         addRenderableWidget(new SpriteButton(width / 2 - closeWidth / 2, footer, closeWidth, BUTTON_HEIGHT,
                 Component.literal("Back to game"), null, 0, false, button -> onClose()));
     }
@@ -129,13 +144,15 @@ public final class AerborneMenuScreen extends Screen {
 
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         // The panel and header go down first; the buttons are drawn over them by the screen itself.
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, panelLeft, panelTop, panelWidth, panelHeight);
+        Ui.inset(graphics, panelLeft, panelTop, panelWidth, panelHeight);
         int headerLeft = (width - headerWidth) / 2;
         graphics.blit(RenderPipelines.GUI_TEXTURED, HEADER, headerLeft, top, 0F, 0F, headerWidth, headerHeight,
                 HEADER_TEXTURE_WIDTH, HEADER_TEXTURE_HEIGHT, HEADER_TEXTURE_WIDTH, HEADER_TEXTURE_HEIGHT);
         // The ribbon's writing space is the lower two thirds of the art, between its top star and bottom rim.
         graphics.centeredText(font, title, width / 2, top + headerHeight * 57 / 100 - 4, ClientState.preferences.theme.accent);
         graphics.centeredText(font, TAGLINE, width / 2, top + headerHeight + 7, CLOUD);
+        if (pageCount > 1) graphics.text(font, (page + 1) + " / " + pageCount,
+                panelLeft + 58, panelTop + panelHeight - 24, Ui.MUTED, false);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
 
@@ -149,6 +166,7 @@ public final class AerborneMenuScreen extends Screen {
         private final Identifier icon;
         private final int iconSize;
         private final boolean iconOnly;
+        boolean selected;
 
         SpriteButton(int x, int y, int width, int height, Component message, Identifier icon, int iconSize, boolean iconOnly, OnPress onPress) {
             super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
@@ -158,9 +176,9 @@ public final class AerborneMenuScreen extends Screen {
         }
 
         @Override protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON.get(active, isHoveredOrFocused()),
+            boolean highlighted = active && (isHoveredOrFocused() || selected);
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON.get(active, highlighted),
                     getX(), getY(), getWidth(), getHeight(), ARGB.white(alpha));
-            if (isHoveredOrFocused() && active) graphics.outline(getX(), getY(), getWidth(), getHeight(), ClientState.preferences.theme.accent);
             int iconTop = getY() + (getHeight() - iconSize) / 2;
             // A greyed button's icon fades with it.
             int tint = ARGB.white(active ? alpha : alpha * 0.4F);
@@ -170,11 +188,33 @@ public final class AerborneMenuScreen extends Screen {
             }
             ActiveTextCollector text = graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE);
             if (icon == null) {
-                extractDefaultLabel(text);
+                var font = net.minecraft.client.Minecraft.getInstance().font;
+                String label = Ui.fit(font, getMessage().getString(), getWidth() - 12);
+                graphics.text(font, label, getX() + (getWidth() - font.width(label)) / 2, getY() + (getHeight() - 8) / 2,
+                        !active ? Ui.MUTED : highlighted ? 0xFF17243B : Ui.TEXT, !highlighted);
                 return;
             }
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, icon, getX() + 6, iconTop, iconSize, iconSize, tint);
             text.accept(TextAlignment.LEFT, getX() + 6 + iconSize + 6, getY() + (getHeight() - 8) / 2, getMessage());
+        }
+    }
+
+    /** Large quiet targets: an icon, a title and a useful description, with gold reserved for focus. */
+    private static final class CardButton extends Button {
+        private final Destination destination;
+        CardButton(int x, int y, int width, Destination destination, OnPress action) {
+            super(x, y, width, 52, Component.literal(destination.title()), action, DEFAULT_NARRATION);
+            this.destination = destination;
+        }
+        @Override protected void extractContents(GuiGraphicsExtractor g, int mx, int my, float delta) {
+            var font = net.minecraft.client.Minecraft.getInstance().font;
+            boolean focus = isHoveredOrFocused();
+            g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), focus ? 0xFF2A405E : 0xFF1C2B42);
+            g.outline(getX(), getY(), getWidth(), getHeight(), focus ? ClientState.preferences.theme.accent : 0xFF354762);
+            g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite("icon/menu/" + destination.icon()), getX() + 10, getY() + 14, 24, 24);
+            int x = getX() + 44, textWidth = getWidth() - 54;
+            g.text(font, Ui.fit(font, destination.title(), textWidth), x, getY() + 13, focus ? ClientState.preferences.theme.accent : Ui.TEXT, false);
+            g.text(font, Ui.fit(font, destination.detail(), textWidth), x, getY() + 29, Ui.MUTED, false);
         }
     }
 }

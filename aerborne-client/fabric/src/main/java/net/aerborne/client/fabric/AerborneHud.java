@@ -101,18 +101,30 @@ public final class AerborneHud {
         box(g, x, y, 184, 72, p);
         var font = Minecraft.getInstance().font;
         g.text(font, "AERBORNE", x + 8, y + 7, p.theme.accent);
-        bar(g, x + 8, y + 22, 168, 18, 20, 0xFF70DBC3, "Health 18 / 20");
-        bar(g, x + 8, y + 40, 168, 16, 20, 0xFFF4C76B, "Food 16 / 20");
-        g.text(font, "Armor 12   XP level 24", x + 8, y + 59, 0xFFF4F9FF);
+        g.text(font, "Adventurer · Lv 24", x + 66, y + 7, Ui.TEXT);
+        bar(g, x + 8, y + 22, 168, 128, 160, 0xFFE05A5A, "Health 128 / 160");
+        bar(g, x + 8, y + 40, 168, 3240, 5000, 0xFF77C8F5, "XP 3,240 / 5,000");
+        g.text(font, "Defense 42", x + 8, y + 59, 0xFF9BE0A4);
+        g.text(font, "1,840 Marks", x + 176 - font.width("1,840 Marks"), y + 59, 0xFFF4C76B);
     }
     static void box(GuiGraphicsExtractor g, int x, int y, int w, int h, ClientPreferences p) {
         g.fill(x, y, x + w, y + h, 0xE817243B);
-        g.outline(x, y, w, h, 0xFF354760);
-        g.fill(x, y, x + 2, y + h, p.theme.accent);
+        g.outline(x, y, w, h, 0xFF354762);
+        g.fill(x, y + 4, x + 2, y + h - 4, p.theme.accent);
     }
+    /** A framed bar; the colour picks the fill art (red health, gold, sky-blue Adventurer XP, green skill XP). */
     static void bar(GuiGraphicsExtractor g, int x, int y, int w, float value, float max, int color, String label) {
-        g.fill(x, y, x + w, y + 14, 0xFF283752);
-        g.fill(x, y, x + Math.round(w * Math.clamp(max > 0 ? value / max : 0, 0F, 1F)), y + 14, (color & 0x00FFFFFF) | 0x99000000);
-        g.text(Minecraft.getInstance().font, label, x + 4, y + 3, 0xFFF4F9FF);
+        var fill = switch (color & 0xFFFFFF) {
+            case 0xF4C76B -> Ui.ABSORPTION;
+            case 0x77C8F5 -> Ui.ADVENTURER_XP;
+            case 0x70DBC3 -> Ui.SKILL_XP;
+            default -> Ui.HEALTH;
+        };
+        Ui.bar(g, x, y, w, 14, fill, max > 0 ? value / max : 0);
+        // Keep the numeric label readable over both bright fill and decorative highlights.
+        g.fill(x + 3, y + 2, x + w - 3, y + 12, 0x700D1A2B);
+        // Health held back by recovery is shown dimmed.
+        if ((color & 0xFFFFFF) == 0x8C2F39) g.fill(x + 2, y + 2, x + w - 2, y + 12, 0x900D1A2B);
+        g.text(Minecraft.getInstance().font, label, x + 5, y + 3, 0xFFF4F9FF, true);
     }
 }

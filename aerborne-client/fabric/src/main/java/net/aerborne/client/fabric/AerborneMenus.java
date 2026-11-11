@@ -65,39 +65,44 @@ public final class AerborneMenus {
     public static Identifier navigation(ItemStack item) {
         if (!item.is(Items.ARROW) && !item.is(Items.BARRIER)) return null;
         String name = item.getHoverName().getString().toLowerCase(java.util.Locale.ROOT);
-        if (item.is(Items.BARRIER)) return name.contains("close") ? sprite("icon/nav/close") : null;
-        if (name.contains("previous page")) return sprite("icon/nav/left");
-        if (name.contains("next page")) return sprite("icon/nav/right");
-        if (name.startsWith("← back") || name.startsWith("back") || name.equals("cancel")) return sprite("icon/nav/back");
+        if (item.is(Items.BARRIER)) return name.contains("close") ? Ui.control("close") : null;
+        if (name.contains("previous page")) return Ui.control("page_left");
+        if (name.contains("next page")) return Ui.control("page_right");
+        if (name.startsWith("← back") || name.startsWith("back") || name.equals("cancel")) return Ui.control("back");
         return null;
     }
 
     /** Draws the frame, the title and a tile under every slot that holds something real. */
     public static void background(GuiGraphicsExtractor g, ContainerScreen screen, int left, int top, int width, int height) {
         var font = Minecraft.getInstance().font;
-        g.blitSprite(RenderPipelines.GUI_TEXTURED, PANEL, left - 6, top - 6, width + 12, height + 12);
+        Ui.window(g, left - 6, top - 8, width + 12, height + 14);
         int dividerY = Integer.MAX_VALUE;
         for (Slot slot : screen.getMenu().slots) {
             if (!slot.isActive()) continue;
             boolean player = slot.container instanceof Inventory;
             if (player) dividerY = Math.min(dividerY, top + slot.y - 14);
             if (!player && (slot.getItem().isEmpty() || filler(slot.getItem()))) continue;
-            int x = left + slot.x - 1, y = top + slot.y - 1;
-            g.fill(x, y, x + 18, y + 18, TILE_EDGE);
-            g.fill(x + 1, y + 1, x + 17, y + 17, player ? SHADE : TILE);
+            g.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.SLOT, left + slot.x - 1, top + slot.y - 1, 18, 18);
         }
         if (dividerY != Integer.MAX_VALUE) {
             g.fill(left + 8, dividerY + 4, left + width - 8, dividerY + 5, 0x804A5A75);
             g.text(font, "Your pack", left + 8, dividerY + 7, 0xFF8E9AAF, false);
         }
         String title = font.plainSubstrByWidth(screen.getTitle().getString(), width - 16);
-        g.text(font, title, left + (width - font.width(title)) / 2, top + 5, GOLD, true);
+        g.text(font, title, left + 12, top - 3, GOLD, true);
     }
 
     // ------------------------------------------------------------------ rarity
 
     private static final String[] RARITIES = {"RELIC", "MYTHIC", "LEGENDARY", "EPIC", "RARE", "UNCOMMON", "COMMON"};
     private static final int[] RARITY_COLOURS = {0x3FD7C9, 0xE0405A, 0xF4B13A, 0xB061FF, 0x4A8CFF, 0x55D46A, 0x9AA3B5};
+
+    /** The item's rarity as the slot art names it (uncommon ... relic), or null for none worth showing. */
+    public static String rarityName(ItemStack item) {
+        int colour = rarityColour(item);
+        for (int i = 0; i < RARITY_COLOURS.length; i++) if (colour == RARITY_COLOURS[i]) return RARITIES[i].toLowerCase(java.util.Locale.ROOT);
+        return null;
+    }
 
     /** The colour of the item's rarity, from the rarity word in its lore, or 0 when it has none worth showing. */
     public static int rarityColour(ItemStack item) {
@@ -128,8 +133,16 @@ public final class AerborneMenus {
     /** Adds the search box above a chest screen's grid. */
     static void addSearch(ContainerScreen screen, int left, int top, int width) {
         var font = Minecraft.getInstance().font;
-        var box = new net.minecraft.client.gui.components.EditBox(font, left + width - 92, top - 24, 92, 13,
-                net.minecraft.network.chat.Component.literal("Search"));
+        // The Aerborne search field: its art behind a borderless text box, the magnifier at the left.
+        var box = new net.minecraft.client.gui.components.EditBox(font, left + width - 96, top - 27, 74, 12,
+                net.minecraft.network.chat.Component.literal("Search")) {
+            @Override public void extractWidgetRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
+                g.blitSprite(RenderPipelines.GUI_TEXTURED, isFocused() ? Ui.SEARCH_FOCUSED : Ui.SEARCH, getX() - 24, getY() - 5, getWidth() + 30, 20);
+                super.extractWidgetRenderState(g, mouseX, mouseY, delta);
+            }
+        };
+        box.setBordered(false);
+        box.setTextColor(0xFFF4F9FF);
         box.setHint(net.minecraft.network.chat.Component.literal("Search…").withColor(0xFF8E9AAF));
         box.setMaxLength(40);
         net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(box);
@@ -189,7 +202,7 @@ public final class AerborneMenus {
 
     /** Draws a navigation item as a button with its icon, in slot coordinates. */
     public static void navigationButton(GuiGraphicsExtractor g, Identifier icon, int x, int y) {
-        g.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON, x - 1, y - 1, 18, 18);
-        g.blitSprite(RenderPipelines.GUI_TEXTURED, icon, x, y, 16, 16);
+        g.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.BUTTON.get(true, false), x - 1, y - 1, 18, 18);
+        g.blitSprite(RenderPipelines.GUI_TEXTURED, icon, x + 1, y + 1, 14, 14);
     }
 }

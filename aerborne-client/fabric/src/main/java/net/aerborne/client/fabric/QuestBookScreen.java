@@ -13,7 +13,15 @@ import net.minecraft.network.chat.Component;
  * {@code /journal track} and {@code /journal abandon}; the server answers with a fresh book.
  */
 public final class QuestBookScreen extends AerborneScreen {
-    private static final int TEXT = 0xFFF4F9FF, MUTED = 0xFF8E9AAF, GOLD = 0xFFF4C76B, GREEN = 0xFF55E58A, ROW = 13;
+    /** Ink on parchment: body, faded, heading gold-brown, done green, section blue. */
+    private static final int ROW = 13;
+    /** Colours for the page in use: ink on parchment in the book, light text in the plain window. */
+    private int TEXT, MUTED, GOLD, GREEN, INK_BLUE;
+    /** The open book needs room; on a small screen the quest book uses a plain window instead. */
+    private boolean bookMode;
+    /** The open book art, in art pixels: pages run from 11 to 115 and from 128 to 231 across, 7 to 190 down. */
+    private static final int ART_W = 242, ART_H = 220;
+    private int bookW, bookH, detailLeft, detailWidth;
     private static final String[] SECTIONS = {"Available", "Active", "Ready to turn in", "Completed"};
 
     private FeedPayloads.Quests book;
@@ -46,9 +54,52 @@ public final class QuestBookScreen extends AerborneScreen {
         return book.quests().stream().filter(q -> q.id().equals(selected)).findFirst().orElse(null);
     }
 
+    /**
+     * The book is laid out on a canvas at least {@value #CANVAS} pixels tall and drawn scaled to the screen, so it
+     * stays a readable open book at every GUI scale. Mouse positions are scaled back the same way.
+     */
+    private static final int CANVAS = 470;
+    private float scale = 1F;
+
+    private MouseButtonEvent canvas(MouseButtonEvent event) {
+        return new MouseButtonEvent(event.x() / scale, event.y() / scale, event.buttonInfo());
+    }
+
+    @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float delta) {
+        g.pose().pushMatrix();
+        g.pose().scale(scale, scale);
+        super.extractRenderState(g, Math.round(mx / scale), Math.round(my / scale), delta);
+        g.pose().popMatrix();
+    }
+
+    @Override public boolean mouseReleased(MouseButtonEvent event) { return super.mouseReleased(canvas(event)); }
+
+    @Override public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        return super.mouseDragged(canvas(event), dx / scale, dy / scale);
+    }
+
     @Override protected void init() {
-        frame(560, 320);
-        listLeft = left + 12; listTop = top + 42; listWidth = 176; listHeight = panelHeight - 42 - 40;
+        int realWidth = minecraft.getWindow().getGuiScaledWidth(), realHeight = minecraft.getWindow().getGuiScaledHeight();
+        scale = Math.min(1F, realHeight / (float) CANVAS);
+        width = Math.round(realWidth / scale);
+        height = Math.round(realHeight / scale);
+        // The book keeps its shape; the buttons sit on the table below it.
+        bookH = Math.min(height - 44, 480);
+        bookW = Math.min(width - 16, bookH * ART_W / ART_H);
+        bookH = bookW * ART_H / ART_W;
+        bookMode = bookW >= 380;
+        if (bookMode) {
+            TEXT = 0xFF3A2A1C; MUTED = 0xFF7A6248; GOLD = 0xFF8A5A12; GREEN = 0xFF2F7A3A; INK_BLUE = 0xFF1F5A8A;
+            frame(bookW, bookH + 32);
+            listLeft = left + bookW * 17 / ART_W; listTop = top + bookH * 37 / ART_H;
+            listWidth = bookW * 92 / ART_W; listHeight = bookH * 130 / ART_H;
+            detailLeft = left + bookW * 134 / ART_W; detailWidth = bookW * 86 / ART_W;
+        } else {
+            TEXT = 0xFFF4F9FF; MUTED = 0xFF8E9AAF; GOLD = 0xFFF4C76B; GREEN = 0xFF55E58A; INK_BLUE = 0xFF8CE8ED;
+            frame(560, 320);
+            listLeft = left + 14; listTop = top + 40; listWidth = Math.min(176, panelWidth / 3); listHeight = panelHeight - 40 - 40;
+            detailLeft = listLeft + listWidth + 14; detailWidth = left + panelWidth - 14 - detailLeft;
+        }
         rows.clear();
         // Tracked first, then ready, active, available and completed.
         int[] order = {2, 1, 0, 3};
@@ -79,6 +130,7 @@ public final class QuestBookScreen extends AerborneScreen {
     }
 
     @Override public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        event = canvas(event);
         double mx = event.x(), my = event.y();
         if (mx >= listLeft && mx < listLeft + listWidth && my >= listTop && my < listTop + listHeight) {
             int index = scroll + (int) ((my - listTop) / ROW);
@@ -93,6 +145,7 @@ public final class QuestBookScreen extends AerborneScreen {
     }
 
     @Override public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        mx /= scale; my /= scale;
         if (mx >= listLeft && mx < listLeft + listWidth) {
             scroll = Math.max(0, Math.min(rows.size() - listHeight / ROW, scroll - (int) Math.signum(dy) * 2));
             return true;
@@ -100,37 +153,52 @@ public final class QuestBookScreen extends AerborneScreen {
         return super.mouseScrolled(mx, my, dx, dy);
     }
 
-    @Override protected void drawContent(GuiGraphicsExtractor g, int mx, int my, float delta) {
+    private int headingY() { return bookMode ? top + bookH * 21 / ART_H : top + 26; }
+
+    @Override protected void drawFrame(GuiGraphicsExtractor g) {
+        if (!bookMode) {
+            super.drawFrame(g);
+            Ui.inset(g, listLeft - 4, listTop - 4, listWidth + 8, listHeight + 8);
+        } else {
+            g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Ui.BOOK, left, top, bookW, bookH);
+            g.text(font, "Quest Book", left + bookW * 24 / ART_W, headingY(), GOLD, false);
+        }
         String summary = book.completed() + " completed";
-        g.text(font, summary, left + panelWidth - 14 - font.width(summary), top + 14, MUTED);
-        // The list.
-        g.fill(listLeft - 2, listTop - 2, listLeft + listWidth + 2, listTop + listHeight + 2, 0xFF0D1A2B);
+        if (font.width(summary) + (bookMode ? font.width("Quest Book") + 8 : 0) <= listWidth)
+            g.text(font, summary, listLeft + listWidth - font.width(summary), headingY(), MUTED, false);
+    }
+
+    @Override protected void drawContent(GuiGraphicsExtractor g, int mx, int my, float delta) {
         int visible = listHeight / ROW;
         for (int i = 0; i < visible && scroll + i < rows.size(); i++) {
             Row row = rows.get(scroll + i);
             int y = listTop + i * ROW;
-            if (row.quest() == null) { g.text(font, row.header(), listLeft + 2, y + 3, ClientState.preferences.theme.accent, false); continue; }
+            if (row.quest() == null) { g.text(font, row.header(), listLeft + 2, y + 3, INK_BLUE, false); continue; }
             FeedPayloads.Quest quest = row.quest();
             boolean chosen = quest.id().equals(selected);
             boolean hover = mx >= listLeft && mx < listLeft + listWidth && my >= y && my < y + ROW;
-            if (chosen || hover) g.fill(listLeft, y, listLeft + listWidth, y + ROW, chosen ? 0xFF283752 : 0xFF1A2A44);
-            String mark = switch (quest.status()) { case 2 -> "? "; case 1 -> "• "; case 0 -> "! "; default -> "✔ "; };
-            int colour = switch (quest.status()) { case 2 -> GREEN; case 0 -> GOLD; case 3 -> MUTED; default -> TEXT; };
-            g.text(font, mark + font.plainSubstrByWidth(quest.title(), listWidth - 16), listLeft + 4, y + 3, colour, false);
+            if (chosen || hover) g.fill(listLeft, y, listLeft + listWidth, y + ROW, chosen ? 0x50B8862E : 0x28B8862E);
+            String icon = quest.id().equals(book.tracked()) ? "tracked" : switch (quest.status()) {
+                case 2 -> "ready"; case 3 -> "ready"; default -> quest.daily() ? "daily" : quest.chain().isEmpty() ? "side" : "main_story"; };
+            Ui.icon(g, Ui.quest(icon), listLeft + 1, y + 1, 11);
+            int colour = switch (quest.status()) { case 2 -> GREEN; case 3 -> MUTED; default -> TEXT; };
+            g.text(font, font.plainSubstrByWidth(quest.title(), listWidth - 16), listLeft + 15, y + 3, colour, false);
         }
         if (rows.size() > visible) {
             int bar = Math.max(12, listHeight * visible / rows.size());
             int at = listTop + (listHeight - bar) * scroll / Math.max(1, rows.size() - visible);
-            g.fill(listLeft + listWidth, at, listLeft + listWidth + 2, at + bar, 0xFF4A5A75);
+            g.fill(listLeft + listWidth, at, listLeft + listWidth + 2, at + bar, 0x80B8862E);
         }
         if (rows.isEmpty()) g.text(font, "No quests yet.", listLeft + 4, listTop + 4, MUTED, false);
 
         // The chosen quest.
         FeedPayloads.Quest quest = current();
         if (quest == null) return;
-        int x = listLeft + listWidth + 14, width = left + panelWidth - 14 - x, y = listTop;
-        g.text(font, font.plainSubstrByWidth(quest.title(), width), x, y, GOLD, true);
-        y += 12;
+        int x = detailLeft, width = detailWidth, y = headingY();
+        g.text(font, font.plainSubstrByWidth(quest.title(), width), x, y, GOLD, false);
+        y = listTop;
+        // Nothing on the right page may run off it.
+        g.enableScissor(x - 2, listTop - 2, x + width + 2, listTop + listHeight + 2);
         String meta = (quest.chain().isEmpty() ? "" : quest.chain() + " · ") + (quest.daily() ? "Daily · " : "")
                 + "Level " + quest.minimumLevel() + " · " + (quest.status() == 2 ? "Return to " + quest.turnIn() : "From " + quest.giver());
         for (var wrapped : font.split(Component.literal(meta), width)) { g.text(font, wrapped, x, y, MUTED, false); y += 10; }
@@ -160,12 +228,12 @@ public final class QuestBookScreen extends AerborneScreen {
         for (String line : quest.offer()) {
             for (var wrapped : font.split(Component.literal(line), width)) {
                 if (y + 10 > storyEnd) break;
-                g.text(font, wrapped, x, y, 0xFFD6DEEA, false);
+                g.text(font, wrapped, x, y, TEXT, false);
                 y += 10;
             }
         }
         y += 8;
-        g.text(font, "Objectives", x, y, ClientState.preferences.theme.accent, false);
+        g.text(font, "Objectives", x, y, INK_BLUE, false);
         y += 12;
         for (int i = 0; i < quest.objectives().size(); i++) {
             FeedPayloads.Objective objective = quest.objectives().get(i);
@@ -177,7 +245,7 @@ public final class QuestBookScreen extends AerborneScreen {
                 g.text(font, count, x + width - font.width(count), top, done ? GREEN : MUTED, false);
             }
             if (objective.count() > 1) {
-                g.fill(x, y, x + width, y + 2, 0xFF283752);
+                g.fill(x, y, x + width, y + 2, 0x40000000);
                 g.fill(x, y, x + Math.round(width * Math.min(1F, objective.have() / (float) objective.count())), y + 2, done ? GREEN : GOLD);
                 y += 4;
             }
@@ -185,12 +253,13 @@ public final class QuestBookScreen extends AerborneScreen {
         }
         y += 6;
         if (!rewardLines.isEmpty()) {
-            g.text(font, "Rewards", x, y, ClientState.preferences.theme.accent, false);
+            g.text(font, "Rewards", x, y, INK_BLUE, false);
             y += 12;
             for (var wrapped : rewardLines) {
                 g.text(font, wrapped, x, y, GOLD, false);
                 y += 10;
             }
         }
+        g.disableScissor();
     }
 }

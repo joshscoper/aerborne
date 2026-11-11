@@ -36,9 +36,7 @@ final class AerborneSocial {
             String where = !member.online() ? "offline" : member.distance() < 0 ? "away" : member.distance() + "m";
             g.text(font, where, x + 176 - font.width(where), row, MUTED, false);
             float ratio = member.online() && member.maxHealth() > 0 ? Math.min(1, member.health() / member.maxHealth()) : 0;
-            g.fill(x + 8, row + 10, x + 176, row + 14, 0xFF283752);
-            int colour = ratio > 0.5F ? 0xFF55E58A : ratio > 0.25F ? 0xFFF6C85F : 0xFFFF5D73;
-            if (member.online()) g.fill(x + 8, row + 10, x + 8 + Math.round(168 * ratio), row + 14, colour);
+            Ui.bar(g, x + 8, row + 9, 168, 7, Ui.HEALTH, ratio);
             row += 22;
         }
         return y + height + 6;
@@ -84,16 +82,15 @@ final class AerborneSocial {
             int alpha = Math.round(255 * Math.min(slide, fade));
             if (alpha < 8) continue;
             String title = shown.toast().title(), line = shown.toast().line();
-            int w = Math.max(160, Math.max(mc.font.width(title), mc.font.width(line)) + 28);
+            int w = Math.max(190, Math.max(mc.font.width(title), mc.font.width(line)) + 64);
             int x = g.guiWidth() / 2 - w / 2, top = y - Math.round((1 - slide) * 12);
             int a = alpha << 24;
-            g.fill(x, top, x + w, top + 30, (Math.round(alpha * 0.85F) << 24) | 0x0D1A2B);
-            int accent = accent(shown.toast().kind()) & 0xFFFFFF | a;
-            g.fill(x, top, x + w, top + 1, accent);
-            g.fill(x, top + 29, x + w, top + 30, accent);
-            g.fill(x, top, x + 3, top + 30, accent);
-            g.text(mc.font, title, x + w / 2 - mc.font.width(title) / 2, top + 5, TEXT & 0xFFFFFF | a, true);
-            g.text(mc.font, line, x + w / 2 - mc.font.width(line) / 2, top + 17, MUTED & 0xFFFFFF | a, false);
+            // The banner art carries its own emblem at the left; the words sit in the space after it.
+            g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Ui.toast(shown.toast().kind()), x, top, w, 30,
+                    net.minecraft.util.ARGB.white(alpha / 255F));
+            int centre = x + 22 + (w - 26) / 2;
+            g.text(mc.font, title, centre - mc.font.width(title) / 2, top + 6, TEXT & 0xFFFFFF | a, true);
+            g.text(mc.font, line, centre - mc.font.width(line) / 2, top + 17, MUTED & 0xFFFFFF | a, false);
             y += 34;
         }
     }

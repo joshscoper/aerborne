@@ -23,11 +23,11 @@ public final class AppearanceScreen extends AerborneScreen {
     @Override protected void drawContent(GuiGraphicsExtractor g, int mx, int my, float delta) {
         int y = top + 128;
         if (panelHeight >= 258) {
-            g.text(font, "LIVE STYLE PREVIEW - sample values", left + 14, y - 12, 0xFF8E9AAF);
+            g.text(font, "HUD PREVIEW / SAMPLE VALUES", left + 14, y - 12, Ui.MUTED);
             AerborneHud.drawPreview(g, left + 14, y, ClientState.preferences);
             g.textWithWordWrap(font, net.minecraft.network.chat.Component.literal(
-                    "Personalize your interface. Saved automatically. HUD changes apply on Aerborne."),
-                    left + 220, y + 8, Math.max(70, panelWidth - 234), 0xFFF4F9FF);
+                    "Your theme, your sky. Changes save automatically and apply on Aerborne."),
+                    left + 220, y + 8, Math.max(70, panelWidth - 234), Ui.MUTED);
         } else {
             g.text(font, "Saved automatically", left + 14, y, 0xFF8E9AAF);
         }

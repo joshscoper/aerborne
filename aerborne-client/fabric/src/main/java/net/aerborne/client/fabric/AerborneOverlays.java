@@ -118,7 +118,7 @@ final class AerborneOverlays {
             sample(mc, px, pz);
             mapAt = now; mapX = px; mapZ = pz;
         }
-        g.blitSprite(RenderPipelines.GUI_TEXTURED, FRAME, x - 6, y - 6, MAP_PIXELS + 12, MAP_PIXELS + 12);
+        Ui.inset(g, x - 4, y - 4, MAP_PIXELS + 8, MAP_PIXELS + 8);
         g.fill(x, y, x + MAP_PIXELS, y + MAP_PIXELS, UNLOADED);
         for (int row = 0; row < MAP_CELLS; row++) {
             // Runs of one colour are drawn as one strip.
@@ -146,9 +146,7 @@ final class AerborneOverlays {
         g.pose().translate(cx, cy);
         // Yaw 0 faces south (down the map); the arrow is drawn pointing up.
         g.pose().rotate((float) Math.toRadians(yaw + 180));
-        int[][] rows = {{0, 0}, {-1, 1}, {-1, 1}, {-2, 2}, {-2, 2}, {-3, 3}, {-3, -1}, {1, 3}};
-        for (int i = 0; i < rows.length; i++) g.fill(rows[i][0] - 1, i - 5, rows[i][1] + 2, i - 2, 0xFF0D1A2B);
-        for (int i = 0; i < rows.length; i++) g.fill(rows[i][0], i - 4, rows[i][1] + 1, i - 3, TEXT);
+        g.blitSprite(RenderPipelines.GUI_TEXTURED, Ui.CURSOR, -6, -7, 12, 12);
         g.pose().popMatrix();
     }
 

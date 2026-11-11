@@ -39,10 +39,11 @@ abstract class AbstractContainerScreenMixin {
             }
         }
         if (ClientState.preferences.rarity) {
-            int colour = AerborneMenus.rarityColour(slot.getItem());
-            if (colour != 0) {
-                graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, 0x45000000 | colour);
-                graphics.outline(slot.x, slot.y, 16, 16, 0xA0000000 | colour);
+            String rarity = AerborneMenus.rarityName(slot.getItem());
+            if (rarity != null) {
+                graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, 0x30000000 | AerborneMenus.rarityColour(slot.getItem()));
+                graphics.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, net.aerborne.client.fabric.Ui.rarity(rarity),
+                        slot.x - 1, slot.y - 1, 18, 18);
             }
         }
     }

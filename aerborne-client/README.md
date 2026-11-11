@@ -4,7 +4,7 @@ Optional Fabric client for Aerborne, targeting **Minecraft Java 26.2** and **Jav
 This is an early implementation, not a public release or a standalone launcher.
 Players using vanilla Minecraft retain the existing menus and gameplay.
 
-## Client features (0.2.1 alpha)
+## Client features (0.3.0 alpha)
 
 - **B** opens the Aerborne menu on new installs (G conflicts with Minecraft 26.2 Quick Actions).
   Existing saved bindings are preserved. Rebind in Options → Controls → Key Binds → Aerborne.
@@ -18,12 +18,17 @@ Players using vanilla Minecraft retain the existing menus and gameplay.
   your HUD; **J** opens this screen directly. Locations are isolated by server, account and Paper world UUID.
 - **Appearance & HUD** offers Sky, Relic and Celestial accent themes, HUD size (75/100/125%),
   left/right anchoring, and individual coordinate/durability toggles. It is also available from the title screen.
-- The HUD displays live health, food, armor, vanilla XP level, latency, equipment durability and
-  optional coordinates/facing. **H** toggles it. F1 and open screens hide it; the vanilla HUD stays available.
-- Existing illustrated title art and gold-framed icon menus are preserved. Fifteen destinations
-  include the three native client screens and twelve existing server command destinations.
-- Gameplay buttons invoke existing `nerdsmp:` commands. Skills, quests, shops and transactions
-  currently remain server inventory/chat interfaces. No skill progress or RPG Marks are fabricated.
+- With the matching NerdSMP server feeds, the HUD displays true RPG health, Defense, Adventurer XP,
+  Marks and tracked objectives. Without that feed it falls back to vanilla stats. **H** toggles it.
+  Equipment durability, coordinates, minimap, compass, effects, party frames and session rates are configurable.
+- The illustrated title art and winged header are retained. Fifteen destinations are grouped under
+  Home, Character, Adventure, Island and Client, with descriptive cards and responsive pagination.
+- Claude's native quest book, NPC dialogue, party/toast feeds, enemy nameplates and container styling
+  are preserved. Gameplay actions continue through server commands and server validation.
+  These integrations require the matching NerdSMP server build; the standalone bridge alone supplies
+  capabilities and world identity, not quests, dialogue or RPG stats.
+- Companion settings paginate at smaller GUI sizes. Shared controls use readable focus colours;
+  HUD panels have quieter borders, and bar fills stay stable as values change.
 - Local menus and HUD work on `play.aerborne.net` even without the bridge. Other servers require
   a compatible bridge advertisement. Waypoint saving/tracking still requires fresh bridge world data.
   Unsupported-server shortcuts show an explanation, and H confirms whether the HUD is enabled or hidden.
@@ -46,9 +51,9 @@ Fabric API 0.161.0+26.2, and Paper API 26.2.build.121-stable.
 ## Install for development
 
 1. Install Fabric Loader 0.20.1 for Minecraft 26.2 in a separate game profile.
-2. Put Fabric API 0.161.0+26.2 and `fabric/build/libs/aerborne-client-0.2.1-alpha.1.jar`
+2. Put Fabric API 0.161.0+26.2 and `fabric/build/libs/aerborne-client-0.3.0-alpha.1.jar`
    into that profile's `mods` folder. Do not install the sources jar.
-3. Put `paper-bridge/build/libs/aerborne-client-bridge-0.2.1-alpha.1.jar` into the
+3. Put `paper-bridge/build/libs/aerborne-client-bridge-0.3.0-alpha.1.jar` into the
    Aerborne Paper server's `plugins` folder alongside NerdSMP, then restart that server.
 4. Restart Minecraft, join Aerborne, then use your saved menu binding or `/aerborneclient`.
    A current bridge supplies waypoint world data within five seconds.
@@ -87,12 +92,9 @@ the server. The client receives no web API bearer token or administrative creden
 
 ## Next milestones
 
-1. Extend the native character overview with RPG stats and a quest journal from bounded server snapshots.
-2. Extend the configurable HUD with tracked quests, skill progress and server-published ability cooldowns.
-3. Searchable recipe browser and item comparisons using authoritative visible item data.
-4. Native talent trees and transactional screens, with validated action requests, stale-state
-   rejection and the same confirmations as vanilla menus.
-5. Tested distribution profile and update process; evaluate a custom launcher separately.
+See [the product direction](../docs/AERBORNE_CLIENT_DIRECTION.md) for proposed signature features:
+a goal planner, shared island projects and an expedition preparation screen. These are proposals,
+not features included in this build. A tested distribution/update process remains a release prerequisite.
 
 Every milestone retains a vanilla route to gameplay. New UI can improve presentation and
 navigation without changing rewards, progression, combat rules or access to content.
