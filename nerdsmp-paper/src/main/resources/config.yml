@@ -570,6 +570,12 @@ tips:
 reach:
   enabled: true
   world: aerborne_reach
+  # The Reach is the central world: once it exists it is the public spawn (/spawn, first join, respawn), and /reach
+  # takes anyone there. A spawn set in another world moves to its sky docks on start; set false to keep yours.
+  central: true
+  # Old maps retired at the cutover. Their records stay and staff can visit, but players found there are sent to
+  # the Reach, and old warps, homes and beds there no longer take them back.
+  retired-worlds: [MMORPG]
   # Chunks generating at once during /reach generate.
   pregen-in-flight: 24
 world-packs:

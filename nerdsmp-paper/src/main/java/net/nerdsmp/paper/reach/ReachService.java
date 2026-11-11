@@ -14,8 +14,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -82,6 +86,81 @@ public final class ReachService implements Listener {
             catch (RuntimeException failure) { plugin.getLogger().log(Level.SEVERE, "The Wardens' Reach could not be loaded", failure); }
         }
         Bukkit.getScheduler().runTaskTimer(plugin, this::recordFooting, 40L, 10L);
+        // Once the world packs have applied, the Reach takes the public spawn if it is the central world.
+        Bukkit.getScheduler().runTaskLater(plugin, this::takeSpawn, 200L);
+    }
+
+    // ------------------------------------------------------------------ the central world (cutover from the old map)
+
+    /** Whether the Reach is the server's central world: the public spawn, and where anyone on a retired map is sent. */
+    public boolean central() { return plugin.getConfig().getBoolean("reach.central", true); }
+
+    /** A world retired at the cutover: its records stay and staff can still visit, but players are sent to the Reach. */
+    public boolean retired(World world) {
+        if (world == null || isReach(world)) return false;
+        for (String name : plugin.getConfig().getStringList("reach.retired-worlds")) if (world.getName().equalsIgnoreCase(name)) return true;
+        return false;
+    }
+
+    private boolean cutover() { return central() && world() != null; }
+
+    private static boolean staff(Player player) { return player.hasPermission("nerdsmp.reach.admin"); }
+
+    /**
+     * Makes the Reach's sky docks the public spawn whenever the spawn is in another world: the spawn an older map's
+     * pack or staff set there no longer holds once the Reach is central. A spawn staff set inside the Reach is kept.
+     * {@code reach.central: false} leaves the spawn alone.
+     */
+    void takeSpawn() {
+        if (!cutover() || plugin.travel() == null) return;
+        Location spawn = plugin.travel().publicSpawn();
+        if (spawn != null && isReach(spawn.getWorld())) return;
+        Location arrival = arrival();
+        if (arrival == null) return;
+        try {
+            plugin.travel().saveSpawn(arrival);
+            plugin.getLogger().info("The Wardens' Reach is the central world: the public spawn is now its sky docks"
+                + (spawn == null ? "." : " (it was in " + spawn.getWorld().getName() + ")."));
+        } catch (RuntimeException failure) {
+            plugin.getLogger().log(Level.WARNING, "The Wardens' Reach could not take the public spawn", failure);
+        }
+    }
+
+    /** Sends a player found on a retired map to the public spawn in the Reach (staff may stay). */
+    private void bringIn(Player player) {
+        if (!cutover() || !retired(player.getWorld()) || staff(player)) return;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline() || !retired(player.getWorld())) return;
+            Location to = plugin.travel() != null && plugin.travel().publicSpawn() != null && isReach(plugin.travel().publicSpawn().getWorld())
+                ? plugin.travel().publicSpawn() : arrival();
+            if (to == null) return;
+            player.teleportAsync(to);
+            Chat.notice(player, "The old map has been retired. Welcome to the Wardens' Reach.");
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoinRetired(PlayerJoinEvent event) { bringIn(event.getPlayer()); }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldRetired(PlayerChangedWorldEvent event) { bringIn(event.getPlayer()); }
+
+    /** A bed or anchor on a retired map no longer holds: players respawn at the public spawn in the Reach. */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRespawnRetired(PlayerRespawnEvent event) {
+        if (!cutover() || staff(event.getPlayer()) || !retired(event.getRespawnLocation().getWorld())) return;
+        Location spawn = plugin.travel() == null ? null : plugin.travel().publicSpawn();
+        Location to = spawn != null && isReach(spawn.getWorld()) ? spawn : arrival();
+        if (to != null) event.setRespawnLocation(to);
+    }
+
+    /** Old warps, homes and portals into a retired map are refused, except for staff. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onTeleportRetired(PlayerTeleportEvent event) {
+        Location to = event.getTo();
+        if (!cutover() || to == null || !retired(to.getWorld()) || retired(event.getFrom().getWorld()) || staff(event.getPlayer())) return;
+        event.setCancelled(true);
+        Chat.notice(event.getPlayer(), "That place was on the old map, which has been retired. The Wardens' Reach is the world now: try /spawn or /reach.");
     }
 
     private Path directory() {
@@ -222,8 +301,9 @@ public final class ReachService implements Listener {
                 String line = "Reach pre-generation finished: " + total + " chunks in " + (now - started) / 1000 + " s.";
                 plugin.getLogger().info(line);
                 if (reporter != null) Chat.success(reporter, Chat.escape(line));
-                // Populate it now: zones, NPCs, warps and the arrival spawn.
+                // Populate it now: zones, NPCs, warps and the arrival spawn; then, if it is central, it takes the spawn.
                 plugin.worldPacks().applyAll(false, reporter);
+                takeSpawn();
             }
         }
     }
@@ -283,11 +363,11 @@ public final class ReachService implements Listener {
 
     public boolean command(CommandSender sender, String[] args) {
         String sub = args.length == 0 ? "go" : args[0].toLowerCase(java.util.Locale.ROOT);
-        if (!sub.equals("go") && !sub.equals("places") && !sender.hasPermission("nerdsmp.reach.admin")) { Chat.noPermission(sender); return true; }
+        if (!sub.equals("go") && !sub.equals("places") && !sub.equals("flights") && !sub.equals("fly") && !sender.hasPermission("nerdsmp.reach.admin")) { Chat.noPermission(sender); return true; }
         switch (sub) {
             case "go" -> {
                 if (!(sender instanceof Player player)) { Chat.error(sender, "Only players can travel."); return true; }
-                if (!sender.hasPermission("nerdsmp.reach.visit")) { Chat.noPermission(sender); return true; }
+                if (!central() && !sender.hasPermission("nerdsmp.reach.visit")) { Chat.noPermission(sender); return true; }
                 Location arrival = arrival();
                 if (arrival == null) { Chat.error(sender, "The Reach hasn't been generated yet."); return true; }
                 player.teleportAsync(arrival);

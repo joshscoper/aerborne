@@ -514,5 +514,5 @@ permissions:
     description: Generate, pre-generate and inspect the Wardens' Reach.
     default: op
   nerdsmp.reach.visit:
-    description: Travel to the Wardens' Reach with /reach (staff only until the Reach replaces the old map).
+    description: Travel to the Wardens' Reach with /reach while it isn't the central world (reach.central false).
     default: op

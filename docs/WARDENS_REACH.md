@@ -225,6 +225,19 @@ elevations without generating a world:
 ## Cutover from the MMORPG map
 
 Agreed (vault `Decisions`): the Reach becomes the central world and the old map is retired with its records kept.
-Old quest progress stays in the files, but those quests aren't offered, and the old map stays loadable for staff.
-That switch happens in the last phase. Until then both maps can be loaded together; the service NPCs then stand in
-both, so raise `npcs.maximum-instances` if needed.
+The cutover happens on its own once the Reach world exists on a server (`reach.central: true`, the default):
+- **Spawn.** On start, and when `/reach generate` finishes, a public spawn in any other world moves to the Reach's
+  sky docks. That covers the spawn an older map's pack or staff set. A spawn staff set inside the Reach is kept.
+  First joins and respawns follow the public spawn.
+- **Retired maps** (`reach.retired-worlds`, default `[MMORPG]`): players found there when they join or arrive are
+  sent to the Reach. Old warps, homes and portals into them are refused, and beds there no longer hold. Their files
+  and records stay, and staff (`nerdsmp.reach.admin`) can still visit.
+- **Travel.** `/reach` takes anyone to the sky docks; `nerdsmp.reach.visit` only matters with `central: false`.
+
+To keep the old spawn, set `reach.central: false`. To retire a map under another folder name, list it in
+`reach.retired-worlds`.
+
+On a server that already has the old map, the Reach world must be there first: run `/reach generate`, or copy a
+generated `world/dimensions/minecraft/aerborne_reach` folder in while the server is stopped. If you copy one, keep
+the server's own `data/paper/metadata.dat` for that folder if it already had one. Restart, and the log says
+"The Wardens' Reach is the central world: the public spawn is now its sky docks".
