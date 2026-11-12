@@ -663,7 +663,8 @@ public final class IslandGuests implements Listener, AutoCloseable {
 
     private boolean matches(ItemStack stack, Want want) {
         if (stack == null || stack.getType().isAir()) return false;
-        if (!want.special()) return stack.getType() == want.material() && FoodItems.ordinary(stack);
+        // Crafted bread, pumpkin pie and the like carry the kitchen's staple tags; they're still the plain item to a visitor.
+        if (!want.special()) return stack.getType() == want.material() && FoodItems.plain(stack);
         if (want.item().startsWith("meal:")) {
             if (!stack.hasItemMeta()) return false;
             String dish = stack.getItemMeta().getPersistentDataContainer().get(dishKey, PersistentDataType.STRING);

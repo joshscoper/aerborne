@@ -175,7 +175,7 @@ public final class Bazaar implements Listener, AutoCloseable {
 
     private boolean matches(Product product, ItemStack stack) {
         if (stack == null || stack.getType().isAir()) return false;
-        if (product.itemId() == null) return stack.getType() == product.icon() && FoodItems.ordinary(stack);
+        if (product.itemId() == null) return stack.getType() == product.icon() && FoodItems.plain(stack);
         return plugin.items().describe(stack).map(d -> d.itemId().value().equals(product.itemId())).orElse(false);
     }
 

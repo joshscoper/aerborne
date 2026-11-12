@@ -49,6 +49,12 @@ public final class FoodItems {
         }
         return Optional.of(copy);
     }
+    /**
+     * Plain food for trading and requests: ordinary, or made by the vanilla recipe (crafted bread, pumpkin pie and the
+     * like carry only the kitchen's staple tags). Prepared meals and anything else special are not plain.
+     */
+    public static boolean plain(ItemStack item) { return ordinary(item) || KitchenService.isStaple(item); }
+
     /** Strip only verified server presentation; extra lore, names, enchantments and tags remain special. */
     public static boolean ordinary(ItemStack item) {
         if (item == null || item.getType() == Material.AIR || item.getType() == Material.CAVE_AIR || item.getType() == Material.VOID_AIR) return false;
