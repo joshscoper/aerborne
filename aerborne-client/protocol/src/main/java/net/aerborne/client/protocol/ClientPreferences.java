@@ -30,15 +30,19 @@ public final class ClientPreferences {
     public static final String SERVER = "play.aerborne.net";
     public Theme theme = Theme.SKY;
     public boolean hud = true, coordinates = true, durability = true, topRight = false, serverSeeded;
-    /** The compass strip, the minimap and the frame for the creature under the crosshair. */
+    /** The compass strip, the minimap and the nameplates over the creatures the server lists. */
     public boolean compass = true, minimap = true, target = true;
+    /** The frame beside the player's own for the creature they look at, and effect icons on nameplates. */
+    public boolean targetFrame = true, plateEffects = true;
     /** The companion features, each of which can be switched off (see FeaturesScreen). */
     public boolean effects = true, vignette = true, damageNumbers = true, session = true, waypointMarker = true,
             rarity = true, deathWaypoint = true, chatTimestamps = true, chatMentions = true, chatStack = true,
-            chatCoordinates = true, partyFrames = true;
+            chatCoordinates = true, partyFrames = true, hideVanilla = true, nativeMenus = true, throttleUnfocused = true, styledChat = true;
     /** Player inventory slots (0-35, 40 off hand) the player has locked against dropping and moving. */
     public final Set<Integer> lockedSlots = new TreeSet<>();
     public int scale = 100;
+    /** HUD elements the player moved, scaled or hid in edit mode, by element id; the rest keep their defaults. */
+    public final Map<String, HudLayout> layout = new TreeMap<>();
     public String tracked = "";
     public final List<Waypoint> waypoints = new ArrayList<>();
 
@@ -67,6 +71,8 @@ public final class ClientPreferences {
         result.compass = bool(data, "compass", true);
         result.minimap = bool(data, "minimap", true);
         result.target = bool(data, "target", true);
+        result.targetFrame = bool(data, "targetFrame", true);
+        result.plateEffects = bool(data, "plateEffects", true);
         result.serverSeeded = bool(data, "serverSeeded", false);
         result.effects = bool(data, "effects", true);
         result.vignette = bool(data, "vignette", true);
@@ -80,11 +86,21 @@ public final class ClientPreferences {
         result.chatStack = bool(data, "chatStack", true);
         result.chatCoordinates = bool(data, "chatCoordinates", true);
         result.partyFrames = bool(data, "partyFrames", true);
+        result.hideVanilla = bool(data, "hideVanilla", true);
+        result.nativeMenus = bool(data, "nativeMenus", true);
+        result.throttleUnfocused = bool(data, "throttleUnfocused", true);
+        result.styledChat = bool(data, "styledChat", true);
         for (String slot : data.getProperty("lockedSlots", "").split(",")) {
             try { int value = Integer.parseInt(slot.trim()); if (value >= 0 && value <= 40) result.lockedSlots.add(value); }
             catch (NumberFormatException ignored) { }
         }
         result.scale = Math.max(75, Math.min(125, number(data, "scale", 100)));
+        for (String key : data.stringPropertyNames()) {
+            if (!key.startsWith("layout.") || result.layout.size() >= 64) continue;
+            String id = key.substring(7);
+            HudLayout entry = HudLayout.decode(data.getProperty(key));
+            if (entry != null && id.matches("[a-z_]{1,32}")) result.layout.put(id, entry);
+        }
         result.tracked = data.getProperty("tracked", "");
         int count = Math.max(0, Math.min(32, number(data, "waypoints", 0)));
         for (int i = 0; i < count; i++) {
@@ -108,6 +124,8 @@ public final class ClientPreferences {
         data.setProperty("compass", Boolean.toString(compass));
         data.setProperty("minimap", Boolean.toString(minimap));
         data.setProperty("target", Boolean.toString(target));
+        data.setProperty("targetFrame", Boolean.toString(targetFrame));
+        data.setProperty("plateEffects", Boolean.toString(plateEffects));
         data.setProperty("serverSeeded", Boolean.toString(serverSeeded));
         data.setProperty("effects", Boolean.toString(effects));
         data.setProperty("vignette", Boolean.toString(vignette));
@@ -121,8 +139,13 @@ public final class ClientPreferences {
         data.setProperty("chatStack", Boolean.toString(chatStack));
         data.setProperty("chatCoordinates", Boolean.toString(chatCoordinates));
         data.setProperty("partyFrames", Boolean.toString(partyFrames));
+        data.setProperty("hideVanilla", Boolean.toString(hideVanilla));
+        data.setProperty("nativeMenus", Boolean.toString(nativeMenus));
+        data.setProperty("throttleUnfocused", Boolean.toString(throttleUnfocused));
+        data.setProperty("styledChat", Boolean.toString(styledChat));
         data.setProperty("lockedSlots", String.join(",", lockedSlots.stream().map(String::valueOf).toList()));
         data.setProperty("scale", Integer.toString(scale));
+        layout.forEach((id, entry) -> data.setProperty("layout." + id, entry.encode()));
         data.setProperty("tracked", tracked);
         data.setProperty("waypoints", Integer.toString(waypoints.size()));
         for (int i = 0; i < waypoints.size(); i++) {

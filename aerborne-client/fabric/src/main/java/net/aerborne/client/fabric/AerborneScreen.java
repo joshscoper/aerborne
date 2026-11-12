@@ -30,9 +30,9 @@ public abstract class AerborneScreen extends Screen {
     }
     protected void drawFrame(GuiGraphicsExtractor g) {
         Ui.inset(g, left, top, panelWidth, panelHeight);
-        g.fill(left + 4, top + 4, left + panelWidth - 4, top + 24, 0xFF1C2B42);
-        g.text(font, fit(title.getString(), panelWidth - 28), left + 14, top + 10, Ui.TEXT, false);
-        g.fill(left + 14, top + 23, left + panelWidth - 14, top + 24, 0xFF354762);
+        g.fill(left + 4, top + 4, left + panelWidth - 4, top + 22, 0xFF1C2B42);
+        g.fill(left + 4, top + 22, left + panelWidth - 4, top + 23, 0xFF8A6A2E);
+        Ui.titleBar(g, font, title.getString(), left + 4, top + 4, panelWidth - 8, 18, 0);
     }
     protected abstract void drawContent(GuiGraphicsExtractor g, int mx, int my, float delta);
     protected String fit(String s, int pixels) {

@@ -34,27 +34,67 @@ final class AerborneExtras {
     // ------------------------------------------------------------------ effects
 
     /** Active effects as a column of icon, name and time, under the map in the free corner. */
-    static void effects(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p, int top) {
-        if (!p.effects || mc.player == null) return;
-        List<MobEffectInstance> active = new ArrayList<>(mc.player.getActiveEffects());
-        if (active.isEmpty()) return;
-        active.sort((a, b) -> Integer.compare(b.getDuration(), a.getDuration()));
-        int width = 112, x = p.topRight ? 12 : g.guiWidth() - 12 - width, y = top;
-        for (MobEffectInstance effect : active) {
-            if (!effect.showIcon()) continue;
-            boolean harmful = !effect.getEffect().value().isBeneficial();
-            g.fill(x, y, x + width, y + 20, 0xC017243B);
-            g.fill(x, y, x + 2, y + 20, harmful ? 0xFFE05A5A : GOLD);
-            var key = effect.getEffect().unwrapKey();
-            if (key.isPresent()) g.blitSprite(RenderPipelines.GUI_TEXTURED, key.get().identifier().withPrefix("mob_effect/"), x + 4, y + 1, 18, 18);
-            String name = effect.getEffect().value().getDisplayName().getString()
-                    + (effect.getAmplifier() > 0 ? " " + roman(effect.getAmplifier() + 1) : "");
-            g.text(mc.font, mc.font.plainSubstrByWidth(name, width - 28), x + 25, y + 2, TEXT, false);
-            String time = effect.isInfiniteDuration() ? "∞" : clock(effect.getDuration() / 20);
-            boolean ending = !effect.isInfiniteDuration() && effect.getDuration() < 200;
-            g.text(mc.font, time, x + 25, y + 11, ending ? 0xFFF6C85F : MUTED, false);
-            y += 22;
+    private static final int TILE = 18, STEP = 21, ROW = 29, PER_ROW = 8;
+
+    /** Sample effects for edit mode, with how full each tile's drain bar is. */
+    private static List<AerborneEffects.Shown> sampleEffects(long now) {
+        List<AerborneEffects.Shown> list = new ArrayList<>();
+        String[][] sample = {{"poison", "1", "8"}, {"slowness", "0", "40"}, {"strength", "1", "220"}, {"speed", "0", "95"}, {"night_vision", "0", "-1"}};
+        for (String[] e : sample) {
+            Identifier key = Identifier.withDefaultNamespace(e[0]);
+            long seconds = Long.parseLong(e[2]);
+            list.add(new AerborneEffects.Shown(key, net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getValue(key),
+                    Integer.parseInt(e[1]), seconds < 0 ? -1 : now + seconds * 1000));
         }
+        return list;
+    }
+
+    /**
+     * The player's effects as a grid of icon tiles, debuffs first: red-edged for harm, gold for help, each with a
+     * drain bar and the time left beneath, blinking when nearly over. Returns false when there are none.
+     */
+    static boolean buffs(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p, boolean preview) {
+        if (mc.player == null) return false;
+        long now = System.currentTimeMillis();
+        List<AerborneEffects.Shown> active = AerborneEffects.on(mc.player);
+        boolean sample = active.isEmpty() && preview;
+        if (active.isEmpty() && !sample) return false;
+        List<AerborneEffects.Shown> list = sample ? sampleEffects(now) : active;
+        int count = list.size(), cols = Math.min(PER_ROW, count), rows = (count + PER_ROW - 1) / PER_ROW;
+        HudElements.track(0, 0, cols * STEP - (STEP - TILE), rows * ROW - 4);
+        for (int i = 0; i < count; i++) {
+            AerborneEffects.Shown s = list.get(i);
+            int x = (i % PER_ROW) * STEP, y = (i / PER_ROW) * ROW;
+            float fraction = sample ? (s.endless() ? 1 : 0.2F + 0.15F * i) : s.fraction(now);
+            effectTile(g, mc.font, s, x, y, fraction, s.secondsLeft(now), now);
+        }
+        return true;
+    }
+
+    /** One effect tile: icon on a tinted square, level at the corner, drain bar and time beneath. */
+    static void effectTile(GuiGraphicsExtractor g, Font font, AerborneEffects.Shown s, int x, int y, float fraction, long seconds, long now) {
+        boolean harmful = s.harmful();
+        g.fill(x, y, x + TILE, y + TILE, harmful ? 0xD03A1218 : 0xD0142236);
+        g.outline(x, y, TILE, TILE, harmful ? 0xFFB84A4A : 0xFF8A6A2E);
+        boolean ending = seconds >= 0 && seconds <= 5;
+        float alpha = ending ? 0.5F + 0.5F * (float) Math.abs(Math.sin(now / 180.0)) : 1F;
+        g.blitSprite(RenderPipelines.GUI_TEXTURED, s.sprite(), x + 1, y + 1, TILE - 2, TILE - 2, net.minecraft.util.ARGB.white(alpha));
+        if (s.amplifier() > 0) {
+            String level = AerborneEffects.roman(s.amplifier() + 1);
+            small(g, font, level, x + TILE - 1 - Math.round(font.width(level) * 0.75F), y + 1, 0xFFFFFFFF);
+        }
+        g.fill(x, y + TILE + 1, x + TILE, y + TILE + 3, 0xFF0D1626);
+        g.fill(x, y + TILE + 1, x + Math.round(TILE * Math.clamp(fraction, 0F, 1F)), y + TILE + 3, harmful ? 0xFFD05050 : GOLD);
+        String time = seconds < 0 ? "∞" : AerborneEffects.shortTime(seconds);
+        small(g, font, time, x + TILE / 2 - Math.round(font.width(time) * 0.375F), y + TILE + 5, ending ? 0xFFF6C85F : MUTED);
+    }
+
+    static void small(GuiGraphicsExtractor g, Font font, String text, int x, int y, int colour) {
+        g.pose().pushMatrix();
+        g.pose().translate(x, y);
+        g.pose().scale(0.75F, 0.75F);
+        g.text(font, text, 0, 0, colour, true);
+        g.pose().popMatrix();
     }
 
     private static String roman(int value) {
@@ -163,15 +203,34 @@ final class AerborneExtras {
         if (distance < 4) return;
         float[] at = project(mc, g, point);
         if (at == null) return;
-        int x = Math.round(Math.max(16, Math.min(g.guiWidth() - 16, at[0])));
-        int y = Math.round(Math.max(16, Math.min(g.guiHeight() - 40, at[1])));
-        g.fill(x - 1, y - 9, x + 1, y - 3, GOLD);
-        g.fill(x - 4, y - 4, x + 5, y + 5, 0xFF0D1A2B);
-        g.fill(x - 3, y - 3, x + 4, y + 4, GOLD);
-        String label = tracked.name() + "  " + Math.round(distance) + "m";
-        int w = mc.font.width(label);
-        g.fill(x - w / 2 - 3, y + 7, x + w / 2 + 3, y + 18, 0xB00D1A2B);
-        g.text(mc.font, label, x - w / 2, y + 9, TEXT, false);
+        quietMarker(g, mc, at, GOLD, tracked.name(), distance);
+    }
+
+    /**
+     * A marker that stays out of the way: a small translucent pin with the distance in small type. The name only
+     * shows while the player looks towards it (the marker is near the middle of the screen).
+     */
+    static void quietMarker(GuiGraphicsExtractor g, Minecraft mc, float[] at, int colour, String name, double distance) {
+        int x = Math.round(Math.max(12, Math.min(g.guiWidth() - 12, at[0])));
+        int y = Math.round(Math.max(12, Math.min(g.guiHeight() - 40, at[1])));
+        double fromCentre = Math.hypot(x - g.guiWidth() / 2.0, y - g.guiHeight() / 2.0);
+        boolean looking = fromCentre < 48;
+        int alpha = looking ? 0xF0 : 0xA0;
+        int body = alpha << 24 | colour & 0xFFFFFF, edge = alpha << 24 | 0x0D1A2B;
+        // The pin: a round head on a short point.
+        g.fill(x - 3, y - 8, x + 4, y - 2, edge);
+        g.fill(x - 2, y - 9, x + 3, y - 1, edge);
+        g.fill(x - 2, y - 7, x + 3, y - 3, body);
+        g.fill(x - 1, y - 8, x + 2, y - 2, body);
+        g.fill(x - 1, y - 2, x + 2, y, edge);
+        g.fill(x, y - 2, x + 1, y + 1, body);
+        String distanceText = distance >= 1000 ? String.format(java.util.Locale.ROOT, "%.1fkm", distance / 1000) : Math.round(distance) + "m";
+        g.pose().pushMatrix();
+        g.pose().translate(x, y + 3);
+        g.pose().scale(0.75F, 0.75F);
+        g.text(mc.font, distanceText, -mc.font.width(distanceText) / 2, 0, alpha << 24 | 0xF4F9FF, true);
+        if (looking) g.text(mc.font, name, -mc.font.width(name) / 2, 11, alpha << 24 | colour & 0xFFFFFF, true);
+        g.pose().popMatrix();
     }
 
     // ------------------------------------------------------------------ session
@@ -192,17 +251,19 @@ final class AerborneExtras {
     static void resetSession() { previous = null; }
 
     /** One line under the trackers: Marks and Adventurer XP per hour, and how long this session has run. */
-    static int session(GuiGraphicsExtractor g, Font font, int x, int y, ClientPreferences p) {
-        if (!p.session || previous == null) return y;
+    /** Marks and XP per hour this session, as one slim line; a sample in edit mode. False when nothing earned yet. */
+    static boolean session(GuiGraphicsExtractor g, Font font, ClientPreferences p, boolean preview) {
         long seconds = Math.max(1, (System.nanoTime() - sessionStart) / 1_000_000_000L);
-        if (marksEarned == 0 && xpEarned == 0) return y;
+        boolean real = previous != null && (marksEarned != 0 || xpEarned != 0);
+        if (!real && !preview) return false;
         double hours = seconds / 3600D;
-        AerborneHud.box(g, x, y, 184, 22, p);
-        String line = compact(marksEarned / hours) + " Marks/h  ·  " + compact(xpEarned / hours) + " XP/h";
-        g.text(font, line, x + 8, y + 7, TEXT, false);
-        String time = clock(seconds);
-        g.text(font, time, x + 176 - font.width(time), y + 7, MUTED, false);
-        return y + 28;
+        String line = real ? compact(marksEarned / hours) + " Marks/h  ·  " + compact(xpEarned / hours) + " XP/h" : "1.2k Marks/h  ·  840 XP/h";
+        String time = real ? clock(seconds) : "0:42:10";
+        int width = font.width(line) + font.width(time) + 22;
+        AerborneHud.box(g, 0, 0, width, 18, p);
+        g.text(font, line, 6, 5, TEXT, false);
+        g.text(font, time, width - 6 - font.width(time), 5, MUTED, false);
+        return true;
     }
 
     private static String compact(double value) {

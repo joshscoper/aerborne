@@ -1,0 +1,24 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        " ": 4
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "aerborne_client:font/heading.png",
+      "height": 12,
+      "ascent": 9,
+      "chars": [
+        "ABCDEFGHIJKLMNOP",
+        "QRSTUVWXYZabcdef",
+        "ghijklmnopqrstuv",
+        "wxyz0123456789.,",
+        ":;!?'-+/()[]%&#*",
+        "=\u00b7\u00d7<>_\"\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+      ]
+    }
+  ]
+}

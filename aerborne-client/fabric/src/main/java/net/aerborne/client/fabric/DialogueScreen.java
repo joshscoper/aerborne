@@ -133,11 +133,10 @@ public final class DialogueScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         Ui.inset(graphics, left, top, panelWidth, panelHeight);
         // The speaker's name on a tab over the panel's top edge.
-        String name = Ui.fit(font, page.name(), panelWidth - 48);
+        var name = Ui.heading(font, page.name(), panelWidth - 48);
         int nameWidth = font.width(name);
-        graphics.fill(left + 8, top - 10, left + 32 + nameWidth, top + 8, 0xFF1C2B42);
-        graphics.outline(left + 8, top - 10, nameWidth + 24, 18, GOLD);
-        graphics.text(font, name, left + 20, top - 5, CLOUD, false);
+        graphics.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Ui.NAME_TAB, left + 8, top - 11, nameWidth + 24, 18);
+        graphics.text(font, name, left + 20, top - 6, GOLD, true);
         if (!page.title().isEmpty()) graphics.text(font, Ui.fit(font, page.title(), Math.max(0, panelWidth - 220)), left + 14, top + 12, Ui.MUTED, false);
         int remaining = shownChars();
         int y = textTop - 12;

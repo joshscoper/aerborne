@@ -30,26 +30,50 @@ public final class AerborneMenus {
     private static final long PENDING_NANOS = 3_000_000_000L;
 
     private static final Map<Screen, Boolean> SKINNED = Collections.synchronizedMap(new WeakHashMap<>());
-    private static String pendingTitle;
+    private static String pendingTitle, pendingKind;
     private static long pendingAt;
+    /** Chest screens the player switched back to with "Classic view": they stay as slot grids. */
+    static final Map<Screen, Boolean> CLASSIC = Collections.synchronizedMap(new WeakHashMap<>());
+    /**
+     * Staff editors keep the slot view. Storage grids (bank, trade offers, equipment, loot to take) open in the native
+     * storage screen, which keeps every slot's position. Every other plugin menu opens as a native Aerborne screen; stations that act on
+     * what you carry (repair, forge, alchemy, kitchen) show your bag inside it.
+     */
+    private static final java.util.List<String> SLOT_MENUS = java.util.List.of("RecipeStudio", "StudioUi", "ContentEditor", "StaffManager");
+    /** Grids where position matters, drawn natively cell for cell: vault, trade offers, equipment doll, loot. */
+    private static final java.util.List<String> STORAGE_MENUS = java.util.List.of("BankService", "BankHolder", "TradeManager",
+            "CharacterEquipmentService", "RunLoot");
 
     private static Identifier sprite(String path) { return Identifier.fromNamespaceAndPath("aerborne_client", path); }
 
     /** A menu tag arrived: skin the open screen if it already has that title, otherwise the next one that does. */
     static void tagged(Minecraft mc, MenuPayload menu) {
         if (mc.gui.screen() instanceof ContainerScreen open && open.getTitle().getString().equals(menu.title())) {
-            SKINNED.put(open, true);
+            mark(mc, open, menu.kind());
             return;
         }
         pendingTitle = menu.title();
+        pendingKind = menu.kind();
         pendingAt = System.nanoTime();
     }
 
     /** Called as a screen finishes opening. */
     static void opened(Screen screen) {
-        if (!(screen instanceof ContainerScreen) || pendingTitle == null) return;
+        if (!(screen instanceof ContainerScreen chest) || pendingTitle == null) return;
         if (System.nanoTime() - pendingAt > PENDING_NANOS) { pendingTitle = null; return; }
-        if (screen.getTitle().getString().equals(pendingTitle)) { SKINNED.put(screen, true); pendingTitle = null; }
+        if (screen.getTitle().getString().equals(pendingTitle)) { mark(Minecraft.getInstance(), chest, pendingKind); pendingTitle = null; }
+    }
+
+    private static void mark(Minecraft mc, ContainerScreen screen, String kind) {
+        SKINNED.put(screen, true);
+        if (CLASSIC.containsKey(screen) || !ClientState.preferences.nativeMenus) return;
+        if (STORAGE_MENUS.stream().anyMatch(kind::contains)) {
+            mc.execute(() -> { if (mc.gui.screen() == screen) mc.gui.setScreen(new StorageMenuScreen(screen, kind)); });
+            return;
+        }
+        if (SLOT_MENUS.stream().anyMatch(kind::contains)) return;
+        // Swap in the native screen once this one has finished opening.
+        mc.execute(() -> { if (mc.gui.screen() == screen) mc.gui.setScreen(new NativeMenuScreen(screen, kind)); });
     }
 
     public static boolean skinned(Object screen) { return screen instanceof Screen s && SKINNED.containsKey(s); }
@@ -88,8 +112,7 @@ public final class AerborneMenus {
             g.fill(left + 8, dividerY + 4, left + width - 8, dividerY + 5, 0x804A5A75);
             g.text(font, "Your pack", left + 8, dividerY + 7, 0xFF8E9AAF, false);
         }
-        String title = font.plainSubstrByWidth(screen.getTitle().getString(), width - 16);
-        g.text(font, title, left + 12, top - 3, GOLD, true);
+        Ui.windowTitle(g, font, screen.getTitle().getString(), left - 6, top - 8, width + 12, 0);
     }
 
     // ------------------------------------------------------------------ rarity
@@ -104,25 +127,58 @@ public final class AerborneMenus {
         return null;
     }
 
-    /** The colour of the item's rarity, from the rarity word in its lore, or 0 when it has none worth showing. */
+    /**
+     * The colour of the item's rarity, or 0 when it has none worth showing. Only real items count: the plugin writes
+     * their rarity as a capitals line such as "LEGENDARY SWORD". Menu buttons (anything that says "Click to") never
+     * get a frame, even when their description mentions a rarity.
+     */
     public static int rarityColour(ItemStack item) {
         if (item.isEmpty() || filler(item)) return 0;
         var lore = item.get(net.minecraft.core.component.DataComponents.LORE);
         if (lore != null) {
+            for (var line : lore.lines()) if (line.getString().toLowerCase(java.util.Locale.ROOT).contains("click to")) return 0;
             for (var line : lore.lines()) {
-                String text = line.getString().toUpperCase(java.util.Locale.ROOT);
+                String text = line.getString().strip();
+                if (text.isEmpty() || !text.equals(text.toUpperCase(java.util.Locale.ROOT))) continue;
                 for (int i = 0; i < RARITIES.length; i++)
-                    if (text.matches(".*\\b" + RARITIES[i] + "\\b.*")) return i == RARITIES.length - 1 ? 0 : RARITY_COLOURS[i];
+                    if (text.equals(RARITIES[i]) || text.startsWith(RARITIES[i] + " ")) return i == RARITIES.length - 1 ? 0 : RARITY_COLOURS[i];
             }
         }
-        var vanilla = item.get(net.minecraft.core.component.DataComponents.RARITY);
-        if (vanilla == null) return 0;
-        return switch (vanilla) {
-            case UNCOMMON -> RARITY_COLOURS[5];
-            case RARE -> RARITY_COLOURS[4];
-            case EPIC -> RARITY_COLOURS[3];
-            default -> 0;
-        };
+        return 0;
+    }
+
+    // ------------------------------------------------------------------ menu icons
+
+    /** Words in a menu entry's name and the hand-drawn icon each calls for (tools/make_menu_icons.py, make_skill_icons.py). */
+    private static final String[][] MENU_ICONS = {
+        // Crafting words first: "workshop" contains "shop".
+        {"workshop", "skills/smithing"}, {"forge", "skills/smithing"},
+        {"auction", "menu_icons/trade"}, {"shop", "menu_icons/trade"}, {"market", "menu_icons/trade"}, {"trade", "menu_icons/trade"},
+        {"merchant", "menu_icons/trade"}, {"store", "menu_icons/trade"}, {"bank", "menu_icons/bank"}, {"vault", "menu_icons/bank"},
+        {"island", "menu_icons/island"}, {"homestead", "menu_icons/island"}, {"friend", "menu_icons/friends"},
+        {"party", "menu_icons/party"}, {"community", "menu_icons/party"}, {"social", "menu_icons/party"}, {"guild", "menu_icons/party"},
+        {"setting", "menu_icons/settings"}, {"appearance", "menu_icons/settings"}, {"tutorial", "menu_icons/help"},
+        {"help", "menu_icons/help"}, {"guide", "menu_icons/help"}, {"quest", "menu_icons/quests"}, {"journal", "menu_icons/quests"},
+        {"achievement", "menu_icons/achievements"}, {"milestone", "menu_icons/achievements"}, {"leaderboard", "menu_icons/leaderboards"},
+        {"ranking", "menu_icons/leaderboards"}, {"expedition", "menu_icons/expeditions"}, {"dungeon", "menu_icons/expeditions"},
+        {"travel", "menu_icons/travel"}, {"flight", "menu_icons/travel"}, {"warp", "menu_icons/travel"}, {"aerborne", "menu_icons/travel"},
+        {"cosmetic", "menu_icons/cosmetics"}, {"title", "menu_icons/cosmetics"}, {"wardrobe", "menu_icons/cosmetics"},
+        {"mail", "menu_icons/mail"}, {"character", "menu_icons/character"}, {"profile", "menu_icons/character"},
+        {"equipment", "menu_icons/character"}, {"gear", "menu_icons/character"}, {"adventure", "menu_icons/map"},
+        {"campaign", "menu_icons/map"}, {"map", "menu_icons/map"}, {"waypoint", "menu_icons/map"},
+        {"alchem", "skills/alchemy"}, {"brew", "skills/alchemy"}, {"cook", "skills/cooking"}, {"kitchen", "skills/cooking"},
+        {"fish", "skills/fishing"}, {"excavat", "skills/excavation"}, {"dig", "skills/excavation"}, {"mining", "skills/mining"},
+        {"farm", "skills/farming"}, {"forest", "skills/forestry"}, {"hunt", "skills/hunting"}, {"enchant", "skills/enchanting"},
+        {"build", "skills/building"}, {"smith", "skills/smithing"},
+        {"craft", "skills/smithing"}, {"repair", "skills/smithing"}, {"skill", "skills/adventurer"}, {"talent", "skills/adventurer"},
+        {"adventurer", "skills/adventurer"},
+    };
+
+    /** The hand-drawn icon for a menu entry with this name, or null when none fits. */
+    public static Identifier menuIcon(String name) {
+        String lower = name.toLowerCase(java.util.Locale.ROOT);
+        for (String[] entry : MENU_ICONS) if (lower.contains(entry[0])) return Ui.sprite(entry[1]);
+        return null;
     }
 
     // ------------------------------------------------------------------ search

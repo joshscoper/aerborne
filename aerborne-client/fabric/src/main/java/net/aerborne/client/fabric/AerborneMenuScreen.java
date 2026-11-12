@@ -38,7 +38,8 @@ public final class AerborneMenuScreen extends Screen {
             new Destination("Achievements", "Explore your milestones", "achievements", "achievements"),
             new Destination("Player Settings", "Privacy, chat and personal displays", "settings", "player_settings"),
             new Destination("Tutorial & Help", "Find your next step", "quickstart", "tutorial_help"),
-            new Destination("All Menus", "Open the complete server menu", "menu", "all_menus")
+            new Destination("All Menus", "Open the complete server menu", "menu", "all_menus"),
+            new Destination("Friends & Party", "Your party, friends and requests in one place", "social", "player_settings")
     );
 
     private static final Component TAGLINE = Component.literal("Small beginnings. Endless skies.");
@@ -46,8 +47,9 @@ public final class AerborneMenuScreen extends Screen {
     private static final WidgetSprites BUTTON = Ui.BUTTON;
     /** Tooltips drawn with {@code tooltip/menu_background}: the dark box with the gold line. */
     private static final Identifier TOOLTIP_STYLE = sprite("menu");
-    private static final Identifier HEADER = sprite("textures/gui/brand/header.png");
-    private static final int HEADER_TEXTURE_WIDTH = 960, HEADER_TEXTURE_HEIGHT = 144;
+    /** The gold title plaque (tools/make_title_plaque.py), drawn one art pixel per GUI pixel so it stays crisp. */
+    private static final Identifier HEADER = sprite("textures/gui/brand/title_plaque.png");
+    private static final int HEADER_TEXTURE_WIDTH = 139, HEADER_TEXTURE_HEIGHT = 41;
     private static final int GOLD = 0xFFF4C76B, CLOUD = 0xFFF4F9FF;
 
     /** A tile is tall enough for its 32 pixel icon; plain buttons keep Minecraft's 20. */
@@ -73,11 +75,11 @@ public final class AerborneMenuScreen extends Screen {
 
     private List<Destination> destinations() {
         int[] indexes = switch (section) {
-            case 1 -> new int[] {0, 4, 5, 6, 11};
+            case 1 -> new int[] {0, 4, 5, 6, 11, 15};
             case 2 -> new int[] {7, 8, 12, 13, 14};
             case 3 -> new int[] {3, 9, 10, 1};
             case 4 -> new int[] {2, 1, 12, 14};
-            default -> new int[] {0, 3, 7, 5, 9, 2};
+            default -> new int[] {0, 3, 7, 5, 15, 9};
         };
         return java.util.Arrays.stream(indexes).mapToObj(DESTINATIONS::get).toList();
     }
@@ -90,10 +92,10 @@ public final class AerborneMenuScreen extends Screen {
         pageCount = Math.max(1, (destinations.size() + perPage - 1) / perPage);
         page = Math.min(page, pageCount - 1);
         panelWidth = Math.min(560, width - 20);
-        headerWidth = Math.min(240, panelWidth - 32);
-        headerHeight = headerWidth * HEADER_TEXTURE_HEIGHT / HEADER_TEXTURE_WIDTH;
+        headerWidth = HEADER_TEXTURE_WIDTH;
+        headerHeight = HEADER_TEXTURE_HEIGHT;
         panelHeight = 98 + rows * 60 + 34;
-        panelTop = Math.max(6, (height - panelHeight) / 2);
+        panelTop = Math.max(14, (height - panelHeight) / 2);
         top = panelTop + 8;
         panelLeft = (width - panelWidth) / 2;
         int left = panelLeft + 16, inner = panelWidth - 32;
@@ -146,11 +148,10 @@ public final class AerborneMenuScreen extends Screen {
         // The panel and header go down first; the buttons are drawn over them by the screen itself.
         Ui.inset(graphics, panelLeft, panelTop, panelWidth, panelHeight);
         int headerLeft = (width - headerWidth) / 2;
-        graphics.blit(RenderPipelines.GUI_TEXTURED, HEADER, headerLeft, top, 0F, 0F, headerWidth, headerHeight,
+        // The plaque carries the name in its own lettering; it rises a little above the panel's top edge.
+        graphics.blit(RenderPipelines.GUI_TEXTURED, HEADER, headerLeft, panelTop - 12, 0F, 0F, headerWidth, headerHeight,
                 HEADER_TEXTURE_WIDTH, HEADER_TEXTURE_HEIGHT, HEADER_TEXTURE_WIDTH, HEADER_TEXTURE_HEIGHT);
-        // The ribbon's writing space is the lower two thirds of the art, between its top star and bottom rim.
-        graphics.centeredText(font, title, width / 2, top + headerHeight * 57 / 100 - 4, ClientState.preferences.theme.accent);
-        graphics.centeredText(font, TAGLINE, width / 2, top + headerHeight + 7, CLOUD);
+        graphics.centeredText(font, TAGLINE, width / 2, panelTop + headerHeight - 6, 0xFFE8D9B0);
         if (pageCount > 1) graphics.text(font, (page + 1) + " / " + pageCount,
                 panelLeft + 58, panelTop + panelHeight - 24, Ui.MUTED, false);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
@@ -162,13 +163,13 @@ public final class AerborneMenuScreen extends Screen {
      * A button in the Aerborne frame, with an optional icon. A tile shows its icon at the left and its name beside
      * it; an icon-only button shows the icon alone and keeps its name for narration and its tooltip.
      */
-    static final class SpriteButton extends Button {
+    public static final class SpriteButton extends Button {
         private final Identifier icon;
         private final int iconSize;
         private final boolean iconOnly;
         boolean selected;
 
-        SpriteButton(int x, int y, int width, int height, Component message, Identifier icon, int iconSize, boolean iconOnly, OnPress onPress) {
+        public SpriteButton(int x, int y, int width, int height, Component message, Identifier icon, int iconSize, boolean iconOnly, OnPress onPress) {
             super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
             this.icon = icon;
             this.iconSize = iconSize;
@@ -209,11 +210,15 @@ public final class AerborneMenuScreen extends Screen {
         @Override protected void extractContents(GuiGraphicsExtractor g, int mx, int my, float delta) {
             var font = net.minecraft.client.Minecraft.getInstance().font;
             boolean focus = isHoveredOrFocused();
-            g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), focus ? 0xFF2A405E : 0xFF1C2B42);
-            g.outline(getX(), getY(), getWidth(), getHeight(), focus ? ClientState.preferences.theme.accent : 0xFF354762);
-            g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite("icon/menu/" + destination.icon()), getX() + 10, getY() + 14, 24, 24);
-            int x = getX() + 44, textWidth = getWidth() - 54;
-            g.text(font, Ui.fit(font, destination.title(), textWidth), x, getY() + 13, focus ? ClientState.preferences.theme.accent : Ui.TEXT, false);
+            Ui.inset(g, getX(), getY(), getWidth(), getHeight());
+            if (focus) g.outline(getX() + 1, getY() + 1, getWidth() - 2, getHeight() - 2, Ui.GOLD);
+            // The destination's hand-drawn icon in a framed slot, at twice its size.
+            Ui.icon(g, Ui.SLOT, getX() + 8, getY() + 8, 36);
+            var icon = AerborneMenus.menuIcon(destination.title());
+            if (icon != null) Ui.icon(g, icon, getX() + 10, getY() + 10, 32);
+            else g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite("icon/menu/" + destination.icon()), getX() + 14, getY() + 14, 24, 24);
+            int x = getX() + 52, textWidth = getWidth() - 60;
+            Ui.headingFit(g, font, destination.title(), x, getY() + 11, textWidth, focus ? Ui.GOLD_LIGHT : Ui.GOLD);
             g.text(font, Ui.fit(font, destination.detail(), textWidth), x, getY() + 29, Ui.MUTED, false);
         }
     }

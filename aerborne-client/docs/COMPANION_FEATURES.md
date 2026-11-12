@@ -15,7 +15,10 @@ feed from NerdSMP, **Art** = waits on the asset pack (see `ASSET_PROMPT.md`), **
 | Minimap with compass | Wynntils minimap | Have |
 | Enemy nameplates with health | SkyHanni damage indicator | Have |
 | Skill XP toast instead of a boss bar | Wynntils leveling overlay | Have |
-| Status effect timers in place of vanilla icons | Wynntils "hide vanilla potion indicators" | Now |
+| Status effect timers in place of vanilla icons, debuffs first, with drain bars and a blink when ending | Wynntils "hide vanilla potion indicators" | Have |
+| Status effect icons on enemy nameplates (level, seconds when nearly over) | SkyHanni damage indicator, Neat | Have (`aerborne:effects` feed) |
+| Target frame beside the player frame: name, rank, health, every effect with time left; holds 4 s | WoW-style unit frames, Wynntils | Have |
+| HUD edit mode: drag, scale (wheel) and hide every element, snapping to edges and other elements; key U or Appearance & HUD | WoW Edit Mode | Have |
 | Low health vignette | Wynntils | Now |
 | Damage numbers over creatures | Wynntils damage splashes | Now |
 | Session tracker: Marks and XP per hour | SkyHanni profit trackers | Now |

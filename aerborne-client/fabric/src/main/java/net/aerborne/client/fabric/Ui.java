@@ -11,7 +11,14 @@ import net.minecraft.resources.Identifier;
  */
 public final class Ui {
     private Ui() { }
-    public static final int TEXT = 0xFFF4F9FF, MUTED = 0xFFACBBD0;
+    public static final int TEXT = 0xFFF4F9FF, MUTED = 0xFFACBBD0, GOLD = 0xFFF4C76B, GOLD_LIGHT = 0xFFFFE49A;
+    /** The Aerborne heading font (tools/make_font.py): serif capitals for titles, names and headings. */
+    public static final net.minecraft.network.chat.FontDescription HEADING_FONT =
+            new net.minecraft.network.chat.FontDescription.Resource(Identifier.fromNamespaceAndPath("aerborne_client", "heading"));
+
+    public static net.minecraft.network.chat.MutableComponent heading(String text) {
+        return net.minecraft.network.chat.Component.literal(text).withStyle(style -> style.withFont(HEADING_FONT));
+    }
     public static String fit(net.minecraft.client.gui.Font font, String text, int width) {
         return font.width(text) <= width ? text : font.plainSubstrByWidth(text, Math.max(0, width - font.width("..."))) + "...";
     }
@@ -33,10 +40,74 @@ public final class Ui {
             CURSOR = sprite("minimap/player_cursor"), MAP_PIN = sprite("minimap/tracked_waypoint"),
             CAP_LEFT = sprite("minimap/compass_endcap_left"), CAP_RIGHT = sprite("minimap/compass_endcap_right");
 
-    /** A window: the gold frame with its title bar, and the title bar's star centred above the content. */
+    /** A window: the gold frame with its title bar (rows 3 to 14 of the art). Name it with {@link #windowTitle}. */
     public static void window(GuiGraphicsExtractor g, int x, int y, int w, int h) {
         g.blitSprite(RenderPipelines.GUI_TEXTURED, WINDOW, x, y, w, h);
-        g.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_STAR, x + w / 2 - 10, y + 1, 20, 15);
+    }
+
+    /** The heading text, cut with "..." (the heading font has no ellipsis glyph) to fit {@code width} in that font. */
+    public static net.minecraft.network.chat.MutableComponent heading(net.minecraft.client.gui.Font font, String text, int width) {
+        String plain = text.replaceAll("§.", "").strip();
+        if (font.width(heading(plain)) <= width) return heading(plain);
+        while (!plain.isEmpty() && font.width(heading(plain + "...")) > width) plain = plain.substring(0, plain.length() - 1).stripTrailing();
+        return heading(plain + "...");
+    }
+
+    /**
+     * Draws a heading in {@code width}: whole if it fits, else shrunk (to three quarters at most, kept on the same
+     * middle line) so long names stay readable, and cut with "..." only past that.
+     */
+    public static void headingFit(GuiGraphicsExtractor g, net.minecraft.client.gui.Font font, String text, int x, int y, int width, int colour) {
+        var whole = heading(text.replaceAll("§.", "").strip());
+        int natural = font.width(whole);
+        if (natural <= width) { g.text(font, whole, x, y, colour, true); return; }
+        float scale = Math.max(0.75F, width / (float) natural);
+        var shown = scale * natural <= width ? whole : heading(font, text, (int) (width / scale));
+        g.pose().pushMatrix();
+        g.pose().translate(x, y + Math.round(8 * (1 - scale) / 2));
+        g.pose().scale(scale, scale);
+        g.text(font, shown, 0, 0, colour, true);
+        g.pose().popMatrix();
+    }
+
+    /**
+     * A window's title, centred in its title bar between two short gold rules, as in a raid UI's frames. Anything at
+     * the right of the bar (a search box, {@code reserveRight} wide) is kept clear by the same margin on both sides;
+     * when that leaves too little room the title sits at the left instead. With no title the bar gets its crest.
+     */
+    public static void windowTitle(GuiGraphicsExtractor g, net.minecraft.client.gui.Font font, String text, int x, int y, int w, int reserveRight) {
+        if (text == null || text.isBlank()) {
+            g.blitSprite(RenderPipelines.GUI_TEXTURED, TITLE_STAR, x + w / 2 - 15, y + 2, 31, 13);
+            return;
+        }
+        titleBar(g, font, text, x, y + 3, w, 11, reserveRight);
+    }
+
+    /** A title centred in a bar of {@code barHeight} at {@code barY}, flanked by rules; see {@link #windowTitle}. */
+    public static void titleBar(GuiGraphicsExtractor g, net.minecraft.client.gui.Font font, String text, int x, int barY, int w, int barHeight, int reserveRight) {
+        // The heading font's capitals stand 8 high just below the text's y; centre them in the bar.
+        int ty = barY + (barHeight - 8) / 2, middle = barY + barHeight / 2;
+        int side = Math.max(16, reserveRight + 12), room = w - 2 * side;
+        if (room < 80) {
+            var title = heading(font, text, w - 24 - reserveRight);
+            g.text(font, title, x + 12, ty, GOLD, true);
+            return;
+        }
+        var title = heading(font, text, room - 40);
+        int tw = font.width(title), left = x + w / 2 - tw / 2;
+        g.text(font, title, left, ty, GOLD, true);
+        int rule = Math.min(36, (room - tw) / 2 - 8);
+        if (rule < 8) return;
+        int a = left - 6, b = left + tw + 6;
+        g.fill(a - rule, middle, a - 3, middle + 1, 0xFF8A6A2E);
+        g.fill(b + 3, middle, b + rule, middle + 1, 0xFF8A6A2E);
+        diamond(g, a - 1, middle);
+        diamond(g, b, middle);
+    }
+
+    private static void diamond(GuiGraphicsExtractor g, int cx, int cy) {
+        g.fill(cx - 1, cy, cx + 2, cy + 1, GOLD);
+        g.fill(cx, cy - 1, cx + 1, cy + 2, GOLD);
     }
 
     public static void inset(GuiGraphicsExtractor g, int x, int y, int w, int h) {

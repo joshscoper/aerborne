@@ -64,6 +64,48 @@ final class FeedPayloads {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    // ------------------------------------------------------------------ social
+
+    record Friend(String name, boolean online) { }
+
+    /** {@code partyRole}: 0 not in a party, 1 member, 2 leader. */
+    record Social(boolean open, int partyRole, int partySize, List<Friend> friends, List<String> requests) implements CustomPacketPayload {
+        static final Type<Social> TYPE = new Type<>(Identifier.parse("aerborne:social"));
+        static final StreamCodec<RegistryFriendlyByteBuf, Social> CODEC = readOnly(b -> {
+            version(b, "social");
+            boolean open = b.readBoolean();
+            int role = b.readByte(), size = b.readInt();
+            int n = count(b, 200);
+            List<Friend> friends = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) friends.add(new Friend(b.readUtf(64), b.readBoolean()));
+            return new Social(open, role, size, List.copyOf(friends), strings(b, 50));
+        });
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // ------------------------------------------------------------------ skills
+
+    record Skill(String id, String name, int level, int maxLevel, long xp, long xpNeeded, boolean mastered,
+                 int pointsReady, int pointsSpent, String hint) { }
+
+    record Skills(int adventurerLevel, String rank, long adventurerXp, long adventurerNeeded, List<Skill> skills)
+            implements CustomPacketPayload {
+        static final Type<Skills> TYPE = new Type<>(Identifier.parse("aerborne:skills"));
+        static final StreamCodec<RegistryFriendlyByteBuf, Skills> CODEC = readOnly(b -> {
+            version(b, "skills");
+            int level = b.readInt();
+            String rank = b.readUtf(64);
+            long xp = b.readLong(), need = b.readLong();
+            int n = count(b, 32);
+            List<Skill> skills = new ArrayList<>(n);
+            for (int i = 0; i < n; i++)
+                skills.add(new Skill(b.readUtf(32), b.readUtf(64), b.readInt(), b.readInt(), b.readLong(), b.readLong(),
+                        b.readBoolean(), b.readInt(), b.readInt(), b.readUtf(256)));
+            return new Skills(level, rank, xp, need, List.copyOf(skills));
+        });
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
     // ------------------------------------------------------------------ quest book
 
     record Objective(String description, int have, int count, String zone) { }

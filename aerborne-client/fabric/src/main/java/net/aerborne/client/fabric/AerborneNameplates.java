@@ -16,6 +16,7 @@ public final class AerborneNameplates {
     private AerborneNameplates() { }
 
     private static final int SEGMENTS = 10;
+    private static final int PLATE_EFFECTS = 4;
     private static final double RANGE_SQUARED = 32 * 32;
     private static PlatesPayload indexed;
     private static Map<Integer, PlatesPayload.Plate> byId = Map.of();
@@ -25,13 +26,8 @@ public final class AerborneNameplates {
         PlatesPayload plates = ClientState.plates;
         if (plates == null || !ClientState.preferences.target || distanceSquared > RANGE_SQUARED) return null;
         if (!(entity instanceof LivingEntity living) || !living.isAlive() || living.isInvisible()) return null;
-        if (plates != indexed) {
-            Map<Integer, PlatesPayload.Plate> map = new HashMap<>();
-            for (PlatesPayload.Plate plate : plates.plates()) map.put(plate.entityId(), plate);
-            byId = map; indexed = plates;
-        }
-        PlatesPayload.Plate plate = byId.get(entity.getId());
-        if (plate == null) return null;
+        PlatesPayload.Plate plate = plate(entity.getId());
+        if (plate == null || plate.npc()) return null;
         float max = Math.max(1, living.getMaxHealth()), health = Math.max(0, Math.min(max, living.getHealth()));
         float progress = health / max;
         int filled = health <= 0 ? 0 : Math.max(1, Math.round(progress * SEGMENTS));
@@ -40,8 +36,30 @@ public final class AerborneNameplates {
                 .append(Component.literal("■".repeat(filled)).withColor(0xD9534F))
                 .append(Component.literal("■".repeat(SEGMENTS - filled)).withColor(0x3A4152))
                 .append(Component.literal(" " + AerborneHud.number(health)).withColor(0xC8CDD8));
+        // Its status effects follow the health, debuffs first, so a fight's state reads at a glance.
+        if (ClientState.preferences.plateEffects) {
+            Component effects = AerborneEffects.plateLine(AerborneEffects.on(living), PLATE_EFFECTS);
+            if (effects != null) bar.append(Component.literal("  ")).append(effects);
+        }
+        return new Component[] {name(plate), bar};
+    }
+
+    /** The server's plate for this entity id, or null. */
+    static PlatesPayload.Plate plate(int entityId) {
+        PlatesPayload plates = ClientState.plates;
+        if (plates == null) return null;
+        if (plates != indexed) {
+            Map<Integer, PlatesPayload.Plate> map = new HashMap<>();
+            for (PlatesPayload.Plate plate : plates.plates()) map.put(plate.entityId(), plate);
+            byId = map; indexed = plates;
+        }
+        return byId.get(entityId);
+    }
+
+    /** The plate's name coloured by rank, with a leading "[Lv 2]" tag kept grey. */
+    static MutableComponent name(PlatesPayload.Plate plate) {
         String plain = plate.name().replaceAll("§[0-9a-fk-orx]", "").replaceAll("§#?[0-9a-fA-F]{6}", "").strip();
-        int nameColour = plate.boss() ? 0xC9A2FF : plate.elite() ? 0xF4C76B : 0xF2F2F2;
+        int nameColour = plate.boss() ? 0xC9A2FF : plate.elite() ? 0xF4C76B : plate.npc() ? 0x8FD3FF : 0xF2F2F2;
         MutableComponent name = Component.empty();
         // A leading "[Lv 2]" tag stays grey so the name itself reads first.
         java.util.regex.Matcher tag = java.util.regex.Pattern.compile("^(\\[[^\\]]*\\])\\s*").matcher(plain);
@@ -50,6 +68,6 @@ public final class AerborneNameplates {
             plain = plain.substring(tag.end());
         }
         name.append(Component.literal(plain).withColor(nameColour));
-        return new Component[] {name, bar};
+        return name;
     }
 }

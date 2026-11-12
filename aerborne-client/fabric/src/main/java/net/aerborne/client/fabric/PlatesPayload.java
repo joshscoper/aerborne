@@ -9,10 +9,12 @@ import net.minecraft.resources.Identifier;
 
 /** The creatures to draw nameplates over, from NerdSMP's ClientFeeds, version 1. Health is read from the entity. */
 public record PlatesPayload(List<Plate> plates) implements CustomPacketPayload {
-    /** {@code flags}: 1 boss, 2 named or elite creature. The name keeps section-sign colours. */
+    /** {@code flags}: 1 boss, 2 elite, 4 townsperson (NPC). The name keeps section-sign colours. */
     public record Plate(int entityId, String name, int flags) {
         boolean boss() { return (flags & 1) != 0; }
         boolean elite() { return (flags & 2) != 0; }
+        /** An NPC: named in the target frame, but no health plate drawn over it (it wears its own name). */
+        boolean npc() { return (flags & 4) != 0; }
     }
 
     public static final Type<PlatesPayload> TYPE = new Type<>(Identifier.parse("aerborne:plates"));

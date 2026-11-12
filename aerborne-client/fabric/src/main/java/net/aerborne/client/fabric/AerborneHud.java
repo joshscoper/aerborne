@@ -13,82 +13,122 @@ public final class AerborneHud {
     public static void draw(GuiGraphicsExtractor g) {
         Minecraft mc = Minecraft.getInstance();
         var p = ClientState.preferences;
-        // Fabric's inherited CHAT render condition respects F1; screens also suppress this overlay.
+        // Fabric's inherited CHAT render condition respects F1; screens (edit mode among them) also suppress this.
         if (!ClientState.available() || !p.hud || mc.player == null || mc.gui.screen() != null) return;
+        AerborneOverlays.screenWide(g, mc, p, p.trackedFor(ClientState.scope()).orElse(null));
+        HudElements.drawAll(g, mc, p, false);
+    }
+
+    /** The character plate at (0, 0): the server's numbers when it sends them, else the game's own. */
+    static boolean player(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p) {
         var player = mc.player;
-        var target = p.trackedFor(ClientState.scope());
-        int fullHeight = 94 + (ClientState.hud != null ? 36 : 0) + (p.coordinates ? 30 : 0) + (p.durability ? 46 : 0) + (target.isPresent() ? 38 : 0);
-        float scale = Math.min(p.scale / 100F, Math.min((g.guiWidth() - 16) / 184F, (g.guiHeight() - 48) / (float) fullHeight));
-        int x = p.topRight ? Math.max(8, (int) (g.guiWidth() / scale) - 192) : 8;
-        g.pose().pushMatrix(); g.pose().scale(scale, scale);
-        int y = 8;
+        if (player == null) return false;
         HudPayload server = ClientState.hud;
         if (server != null) {
             // The server's own numbers: true health (not the twenty the hearts are scaled to), Defense, the
             // Adventurer's level and XP, and Marks. Food is left out: the server holds hunger still.
-            box(g, x, y, 184, 72, p);
-            g.text(mc.font, "AERBORNE", x + 8, y + 7, p.theme.accent);
-            g.text(mc.font, server.rank() + " · Lv " + server.level(), x + 66, y + 7, 0xFFF4F9FF);
-            String hp = String.format(Locale.ROOT, "%s / %s", number(server.health()), number(server.maxHealth()))
-                    + (server.absorption() > 0 ? " +" + number(server.absorption()) : "");
-            bar(g, x + 8, y + 20, 168, server.health(), server.maxHealth(), server.recoveryHeld() ? 0xFF8C2F39 : 0xFFE05A5A, "Health " + hp);
+            String hp = number(server.health()) + " / " + number(server.maxHealth()) + (server.absorption() > 0 ? "  +" + number(server.absorption()) : "");
             long need = server.experienceNeeded();
-            bar(g, x + 8, y + 37, 168, need <= 0 ? 1 : server.experience(), need <= 0 ? 1 : need, 0xFF77C8F5,
-                    need <= 0 ? "Adventurer XP  MAX" : "XP " + compact(server.experience()) + " / " + compact(need));
-            g.text(mc.font, "Defense " + number(server.defense()), x + 8, y + 56, 0xFF9BE0A4);
-            String marks = compact(server.marks()) + " Marks";
-            g.text(mc.font, marks, x + 176 - mc.font.width(marks), y + 56, 0xFFF4C76B);
-            y += 78;
-            box(g, x, y, 184, 30, p);
-            g.text(mc.font, mc.font.plainSubstrByWidth(server.progressTitle(), 168), x + 8, y + 6, 0xFFF4F9FF);
-            g.text(mc.font, mc.font.plainSubstrByWidth(server.progressLine(), 168), x + 8, y + 18, 0xFFF4F9FF);
-            y += 36;
+            vitals(g, 0, 0, player.getGameProfile().name(), server.rank(), server.level(),
+                    server.health(), server.maxHealth(), server.recoveryHeld(), hp,
+                    need <= 0 ? 1 : server.experience(), need <= 0 ? 1 : need,
+                    need <= 0 ? "MAX" : compact(server.experience()) + " / " + compact(need),
+                    number(server.defense()), compact(server.marks()) + " Marks", p);
         } else {
-            box(g, x, y, 184, 72, p);
-            var info = mc.getConnection() == null ? null : mc.getConnection().getPlayerInfo(player.getUUID());
-            g.text(mc.font, "AERBORNE", x + 8, y + 7, p.theme.accent);
-            if (info != null) g.text(mc.font, info.getLatency() + " ms", x + 132, y + 7, 0xFF8E9AAF);
-            bar(g, x + 8, y + 22, 168, player.getHealth(), player.getMaxHealth(), 0xFF70DBC3,
-                    String.format(Locale.ROOT, "Health %.0f / %.0f", player.getHealth(), player.getMaxHealth()));
-            bar(g, x + 8, y + 40, 168, player.getFoodData().getFoodLevel(), 20, 0xFFF4C76B,
-                    "Food " + player.getFoodData().getFoodLevel() + " / 20");
-            g.text(mc.font, "Armor " + player.getArmorValue() + "   XP level " + player.experienceLevel, x + 8, y + 59, 0xFFF4F9FF);
-            y += 78;
+            vitals(g, 0, 0, player.getGameProfile().name(), "Adventurer", player.experienceLevel,
+                    player.getHealth(), player.getMaxHealth(), false, number(player.getHealth()) + " / " + number(player.getMaxHealth()),
+                    player.experienceProgress, 1, Math.round(player.experienceProgress * 100) + "%",
+                    Integer.toString(player.getArmorValue()), "Food " + player.getFoodData().getFoodLevel(), p);
         }
-        if (p.coordinates && !player.isReducedDebugInfo()) {
-            box(g, x, y, 184, 24, p);
-            var pos = player.blockPosition();
-            g.text(mc.font, pos.getX() + " / " + pos.getY() + " / " + pos.getZ() + "  " + player.getDirection().getName().toUpperCase(Locale.ROOT), x + 8, y + 8, 0xFFF4F9FF);
-            y += 30;
-        }
-        if (p.durability) {
-            box(g, x, y, 184, 40, p);
-            for (int i = 0; i < SLOTS.length; i++) {
-                var item = player.getItemBySlot(SLOTS[i]);
-                int ix = x + 8 + i * 28;
-                if (!item.isEmpty()) {
-                    g.item(item, ix, y + 5);
-                    if (item.isDamageableItem()) {
-                        int percent = Math.round(100F * (item.getMaxDamage() - item.getDamageValue()) / item.getMaxDamage());
-                        g.text(mc.font, percent + "%", ix - 1, y + 26, percent < 20 ? 0xFFFF8A80 : 0xFF8E9AAF);
-                    }
-                }
-            }
-            y += 46;
-        }
-        if (target.isPresent()) {
-            var w = target.get();
-            box(g, x, y, 184, 38, p);
-            g.text(mc.font, mc.font.plainSubstrByWidth(w.name(), 168), x + 8, y + 7, p.theme.accent);
-            g.text(mc.font, String.format(Locale.ROOT, "%.0f blocks away", w.distance(player.getX(), player.getY(), player.getZ())), x + 8, y + 23, 0xFFF4F9FF);
-        }
-        if (target.isPresent()) y += 44;
-        if (server != null) y = AerborneOverlays.panels(g, mc.font, x, y, server, p);
-        y = AerborneExtras.session(g, mc.font, x, y, p);
-        y = AerborneSocial.party(g, mc.font, x, y, p);
-        g.pose().popMatrix();
-        AerborneOverlays.screenWide(g, mc, server, p, target.orElse(null));
+        return true;
     }
+
+    /**
+     * The objectives stack at (0, 0), like a raid UI's quest tracker: the story progress, the tracked quest, the
+     * server's quest or expedition overlay, and the tracked waypoint, one panel under another.
+     */
+    static boolean objectives(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p, boolean preview) {
+        if (mc.player == null) return false;
+        var font = mc.font;
+        HudPayload server = ClientState.hud;
+        int y = 0;
+        if (server != null && !(server.progressTitle().isBlank() && server.progressLine().isBlank())) {
+            // The progress panel grows with its title and wraps its line instead of cutting them off.
+            var title = Ui.heading(server.progressTitle().replaceAll("§.", ""));
+            int w = panelWidth(font.width(title) + 16);
+            var titleLines = font.split(title, w - 16);
+            var lines = font.split(net.minecraft.network.chat.Component.literal(server.progressLine()), w - 16);
+            int h = 8 + titleLines.size() * 11 + lines.size() * 10 + 2;
+            box(g, 0, y, w, h, p);
+            int row = y + 5;
+            for (var line : titleLines) { g.text(font, line, 8, row, Ui.GOLD, true); row += 11; }
+            for (var line : lines) { g.text(font, line, 8, row, Ui.TEXT, false); row += 10; }
+            y += h + 4;
+        }
+        y = AerborneTracker.panel(g, font, 0, y, p);
+        y = AerborneOverlays.panels(g, font, 0, y, server, p);
+        var tracked = p.trackedFor(ClientState.scope());
+        if (tracked.isPresent()) {
+            var w = tracked.get();
+            String distance = String.format(Locale.ROOT, "%.0fm", w.distance(mc.player.getX(), mc.player.getY(), mc.player.getZ()));
+            int pw = panelWidth(font.width(w.name()) + font.width(distance) + 30);
+            box(g, 0, y, pw, 18, p);
+            g.text(font, "◆ " + font.plainSubstrByWidth(w.name(), pw - 30 - font.width(distance)), 6, y + 5, p.theme.accent, false);
+            g.text(font, distance, pw - 6 - font.width(distance), y + 5, Ui.TEXT, false);
+            y += 22;
+        }
+        if (y == 0 && preview) {
+            box(g, 0, 0, 184, 44, p);
+            g.text(font, Ui.heading("The Ember Accord"), 8, 5, Ui.GOLD, true);
+            g.text(font, "Speak with the Warden at the gate", 8, 18, Ui.TEXT, false);
+            g.text(font, "Bandits driven off  2/5", 8, 29, Ui.MUTED, false);
+            y = 48;
+        }
+        return y > 0;
+    }
+
+    /** Coordinates and facing as one slim line. */
+    static boolean coordinates(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p) {
+        var player = mc.player;
+        if (player == null || player.isReducedDebugInfo()) return false;
+        var pos = player.blockPosition();
+        String text = pos.getX() + "  " + pos.getY() + "  " + pos.getZ();
+        String facing = player.getDirection().getName().substring(0, 1).toUpperCase(Locale.ROOT);
+        int w = mc.font.width(text) + mc.font.width(facing) + 18;
+        box(g, 0, 0, w, 16, p);
+        g.text(mc.font, text, 6, 4, Ui.TEXT, false);
+        g.text(mc.font, facing, w - 6 - mc.font.width(facing), 4, Ui.GOLD, false);
+        return true;
+    }
+
+    /** Worn and held gear as a row of slots, each with a thin bar for what durability is left. */
+    static boolean gear(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p, boolean preview) {
+        var player = mc.player;
+        if (player == null) return false;
+        // Only what is worn or held, so the row stays as short as the kit.
+        java.util.List<net.minecraft.world.item.ItemStack> worn = new java.util.ArrayList<>();
+        for (EquipmentSlot slot : SLOTS) if (!player.getItemBySlot(slot).isEmpty()) worn.add(player.getItemBySlot(slot));
+        if (worn.isEmpty()) {
+            if (!preview) return false;
+            worn.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_HELMET));
+            worn.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
+        }
+        int w = 6 + worn.size() * 20;
+        box(g, 0, 0, w, 26, p);
+        for (int i = 0; i < worn.size(); i++) {
+            var item = worn.get(i);
+            int ix = 3 + i * 20;
+            g.item(item, ix + 1, 4);
+            if (item.isDamageableItem()) {
+                float left = (item.getMaxDamage() - item.getDamageValue()) / (float) item.getMaxDamage();
+                int colour = left < 0.2F ? 0xFFE05A5A : left < 0.5F ? 0xFFF6C85F : 0xFF6FD08C;
+                g.fill(ix + 1, 21, ix + 17, 23, 0xFF0D1626);
+                g.fill(ix + 1, 21, ix + 1 + Math.round(16 * left), 23, colour);
+            }
+        }
+        return true;
+    }
+
     static String number(float value) {
         return Math.rint(value) == value ? Long.toString((long) value) : String.format(Locale.ROOT, "%.1f", value);
     }
@@ -98,19 +138,56 @@ public final class AerborneHud {
         return Long.toString(value);
     }
     public static void drawPreview(GuiGraphicsExtractor g, int x, int y, ClientPreferences p) {
-        box(g, x, y, 184, 72, p);
-        var font = Minecraft.getInstance().font;
-        g.text(font, "AERBORNE", x + 8, y + 7, p.theme.accent);
-        g.text(font, "Adventurer · Lv 24", x + 66, y + 7, Ui.TEXT);
-        bar(g, x + 8, y + 22, 168, 128, 160, 0xFFE05A5A, "Health 128 / 160");
-        bar(g, x + 8, y + 40, 168, 3240, 5000, 0xFF77C8F5, "XP 3,240 / 5,000");
-        g.text(font, "Defense 42", x + 8, y + 59, 0xFF9BE0A4);
-        g.text(font, "1,840 Marks", x + 176 - font.width("1,840 Marks"), y + 59, 0xFFF4C76B);
+        vitals(g, x, y, "Aeronaut", "Adventurer", 24, 128, 160, false, "128 / 160", 3240, 5000, "3.2k / 5.0k", "42", "1,840 Marks", p);
     }
+
+    /** The HUD's own 9x9 icons (tools/make_skill_icons.py), drawn at their exact size. */
+    private static final net.minecraft.resources.Identifier HEART = Ui.icon("hud", "heart"), XP = Ui.icon("hud", "compass"),
+            SHIELD = Ui.icon("hud", "shield"), COIN = Ui.icon("hud", "coin");
+
+    /**
+     * The character plate: the player's name in the heading font with rank and level, health and Adventurer XP bars
+     * with their icons and figures, and Defense and Marks along the foot. 184 by 62.
+     */
+    static void vitals(GuiGraphicsExtractor g, int x, int y, String name, String rank, int level, float health, float maxHealth,
+                       boolean held, String healthLabel, float xp, float xpNeed, String xpLabel, String defense, String marks,
+                       ClientPreferences p) {
+        var font = Minecraft.getInstance().font;
+        box(g, x, y, 184, 62, p);
+        String levelText = "Lv " + level;
+        var levelLine = Ui.heading(levelText);
+        int levelWidth = font.width(levelLine);
+        g.text(font, levelLine, x + 176 - levelWidth, y + 6, Ui.GOLD_LIGHT, true);
+        g.text(font, Ui.heading(font, name, 160 - levelWidth), x + 8, y + 6, Ui.GOLD, true);
+
+        Ui.icon(g, HEART, x + 8, y + 21, 9);
+        Ui.bar(g, x + 20, y + 19, 156, 13, Ui.HEALTH, maxHealth > 0 ? health / maxHealth : 0);
+        // Health held back by recovery is shown dimmed.
+        if (held) g.fill(x + 22, y + 21, x + 174, y + 30, 0x900D1A2B);
+        g.text(font, healthLabel, x + 98 - font.width(healthLabel) / 2, y + 22, Ui.TEXT, true);
+
+        Ui.icon(g, XP, x + 8, y + 35, 9);
+        Ui.bar(g, x + 20, y + 35, 156, 9, Ui.ADVENTURER_XP, xpNeed > 0 ? xp / xpNeed : 0);
+        g.pose().pushMatrix();
+        g.pose().translate(x + 98, y + 36);
+        g.pose().scale(0.75F, 0.75F);
+        g.text(font, xpLabel, -font.width(xpLabel) / 2, 0, Ui.TEXT, true);
+        g.pose().popMatrix();
+
+        Ui.icon(g, SHIELD, x + 8, y + 49, 9);
+        g.text(font, defense, x + 20, y + 50, 0xFFB8E8C0, true);
+        int marksWidth = font.width(marks);
+        // The rank sits quietly in the space between Defense and Marks.
+        int from = x + 20 + font.width(defense) + 8, to = x + 176 - marksWidth - 13 - 6;
+        String shownRank = font.plainSubstrByWidth(rank, Math.max(0, to - from));
+        g.text(font, shownRank, (from + to) / 2 - font.width(shownRank) / 2, y + 50, Ui.MUTED, false);
+        Ui.icon(g, COIN, x + 176 - marksWidth - 12, y + 49, 9);
+        g.text(font, marks, x + 176 - marksWidth, y + 50, Ui.GOLD, true);
+    }
+
     static void box(GuiGraphicsExtractor g, int x, int y, int w, int h, ClientPreferences p) {
-        g.fill(x, y, x + w, y + h, 0xE817243B);
-        g.outline(x, y, w, h, 0xFF354762);
-        g.fill(x, y + 4, x + 2, y + h - 4, p.theme.accent);
+        Ui.inset(g, x, y, w, h);
+        HudElements.track(x, y, w, h);
     }
     /** A framed bar; the colour picks the fill art (red health, gold, sky-blue Adventurer XP, green skill XP). */
     static void bar(GuiGraphicsExtractor g, int x, int y, int w, float value, float max, int color, String label) {
@@ -127,4 +204,7 @@ public final class AerborneHud {
         if ((color & 0xFFFFFF) == 0x8C2F39) g.fill(x + 2, y + 2, x + w - 2, y + 12, 0x900D1A2B);
         g.text(Minecraft.getInstance().font, label, x + 5, y + 3, 0xFFF4F9FF, true);
     }
+
+    /** Side panels are 184 wide and grow to fit a long title, up to 260; text beyond that wraps. */
+    static int panelWidth(int needed) { return Math.clamp(needed, 184, 260); }
 }

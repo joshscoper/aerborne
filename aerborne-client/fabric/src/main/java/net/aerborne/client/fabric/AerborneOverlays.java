@@ -26,46 +26,78 @@ final class AerborneOverlays {
 
     /** The server's quest or expedition overlay and any appended lines, as a tracker panel; returns the next y. */
     static int panels(GuiGraphicsExtractor g, Font font, int x, int y, HudPayload server, ClientPreferences p) {
+        if (server == null) return y;
         List<String> lines = new java.util.ArrayList<>(server.overlay());
         lines.addAll(server.appendix());
         if (lines.isEmpty() && server.overlayTitle().isEmpty()) return y;
-        int height = 10 + (server.overlayTitle().isEmpty() ? 0 : 12) + lines.size() * 10;
-        AerborneHud.box(g, x, y, 184, height, p);
+        // Grow to fit the title, then wrap every line to the panel instead of cutting it off.
+        int width = AerborneHud.panelWidth(font.width(server.overlayTitle()) + 16);
+        var title = font.split(net.minecraft.network.chat.Component.literal(server.overlayTitle()), width - 16);
+        List<net.minecraft.util.FormattedCharSequence> body = new java.util.ArrayList<>();
+        for (String text : lines) body.addAll(font.split(net.minecraft.network.chat.Component.literal(text), width - 16));
+        int height = 10 + (server.overlayTitle().isEmpty() ? 0 : title.size() * 10 + 2) + body.size() * 10;
+        AerborneHud.box(g, x, y, width, height, p);
         int line = y + 6;
-        if (!server.overlayTitle().isEmpty()) { g.text(font, font.plainSubstrByWidth(server.overlayTitle(), 168), x + 8, line, p.theme.accent); line += 12; }
-        for (String text : lines) { g.text(font, font.plainSubstrByWidth(text, 168), x + 8, line, TEXT); line += 10; }
+        if (!server.overlayTitle().isEmpty()) { for (var t : title) { g.text(font, t, x + 8, line, p.theme.accent, false); line += 10; } line += 2; }
+        for (var text : body) { g.text(font, text, x + 8, line, TEXT, false); line += 10; }
         return y + height + 6;
     }
 
-    static void screenWide(GuiGraphicsExtractor g, Minecraft mc, HudPayload server, ClientPreferences p, ClientPreferences.Waypoint tracked) {
-        Player player = mc.player;
-        int width = g.guiWidth(), height = g.guiHeight();
+    /** Effects drawn over the whole screen rather than in a placed element. */
+    static void screenWide(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences p, ClientPreferences.Waypoint tracked) {
         AerborneExtras.vignette(g, mc, p);
         AerborneExtras.damageNumbers(g, mc);
         AerborneExtras.waypointMarker(g, mc, p, tracked);
-        AerborneSocial.toasts(g, mc);
-        int x = p.topRight ? 12 : width - 12 - MAP_PIXELS, y = 12;
-        if (p.minimap) { minimap(g, mc, x, y, tracked); y += MAP_PIXELS + 10; }
-        if (p.compass) { compass(g, mc.font, player, tracked, x + MAP_PIXELS / 2, y, MAP_PIXELS / 2 + 4); y += 22; }
-        AerborneExtras.effects(g, mc, p, y);
-        int bottom = height - 72;
-        if (server != null && !server.notice().isEmpty()) {
-            int w = mc.font.width(server.notice());
-            int nx = width / 2 - w / 2;
-            g.fill(nx - 6, bottom - 4, nx + w + 6, bottom + 12, 0xC017243B);
-            g.text(mc.font, server.notice(), nx, bottom, TEXT, true);
-            bottom -= 20;
+        AerborneTracker.worldMarker(g, mc, p);
+        AerborneFlight.draw(g, mc);
+    }
+
+    static final int ALERT_WIDTH = 240, MAP_SIZE = 84, COMPASS_WIDTH = 86, COMPASS_HEIGHT = 16;
+
+    /** The minimap at (0, 0), framed, {@value #MAP_SIZE} square. */
+    static boolean minimapElement(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences.Waypoint tracked) {
+        if (mc.player == null) return false;
+        minimap(g, mc, 4, 4, tracked);
+        HudElements.track(0, 0, MAP_SIZE, MAP_SIZE);
+        return true;
+    }
+
+    static boolean compassElement(GuiGraphicsExtractor g, Minecraft mc, ClientPreferences.Waypoint tracked) {
+        if (mc.player == null) return false;
+        compass(g, mc.font, mc.player, tracked, COMPASS_WIDTH / 2, 1, COMPASS_WIDTH / 2 - 1);
+        HudElements.track(0, 0, COMPASS_WIDTH, COMPASS_HEIGHT);
+        return true;
+    }
+
+    /**
+     * Passing notices and skill experience, which the server would otherwise put on the action bar and a boss bar,
+     * centred in {@value #ALERT_WIDTH}: the skill gain above, the notice below. A sample of both in edit mode.
+     */
+    static boolean alerts(GuiGraphicsExtractor g, Minecraft mc, HudPayload server, ClientPreferences p, boolean preview) {
+        String notice = server != null ? server.notice() : "", skill = server != null ? server.skill() : "";
+        float progress = server != null ? server.skillProgress() : 0;
+        if (notice.isEmpty() && skill.isEmpty()) {
+            if (!preview) return false;
+            notice = "Entering the Wardens' Bridge"; skill = "+42 Mining XP"; progress = 0.6F;
         }
-        if (server != null && !server.skill().isEmpty()) skillToast(g, mc.font, server, width / 2, bottom - 8, p);
+        HudElements.track(0, 0, ALERT_WIDTH, 42);
+        int centre = ALERT_WIDTH / 2;
+        if (!skill.isEmpty()) skillToast(g, mc.font, skill, progress, centre, 0, p);
+        if (!notice.isEmpty()) {
+            int w = mc.font.width(notice), nx = centre - w / 2;
+            g.fill(nx - 6, 26, nx + w + 6, 42, 0xC017243B);
+            g.text(mc.font, notice, nx, 30, TEXT, true);
+        }
+        return true;
     }
 
     /** Skill experience: the gain over a thin bar showing how far through the level the skill is. */
-    private static void skillToast(GuiGraphicsExtractor g, Font font, HudPayload server, int centre, int top, ClientPreferences p) {
-        int w = Math.max(140, font.width(server.skill()) + 16);
+    private static void skillToast(GuiGraphicsExtractor g, Font font, String skill, float progress, int centre, int top, ClientPreferences p) {
+        int w = Math.max(140, font.width(skill) + 16);
         g.fill(centre - w / 2, top, centre + w / 2, top + 20, 0xC017243B);
-        g.text(font, server.skill(), centre - font.width(server.skill()) / 2, top + 3, TEXT, true);
+        g.text(font, skill, centre - font.width(skill) / 2, top + 3, TEXT, true);
         g.fill(centre - w / 2 + 4, top + 14, centre + w / 2 - 4, top + 17, 0xFF283752);
-        g.fill(centre - w / 2 + 4, top + 14, centre - w / 2 + 4 + Math.round((w - 8) * server.skillProgress()), top + 17, p.theme.accent);
+        g.fill(centre - w / 2 + 4, top + 14, centre - w / 2 + 4 + Math.round((w - 8) * progress), top + 17, p.theme.accent);
     }
 
     // ------------------------------------------------------------------ compass
@@ -93,6 +125,13 @@ final class AerborneOverlays {
             int x = centre + (int) Math.round(Math.max(-90, Math.min(90, offset)) * (half - 6) / 90);
             g.fill(x - 1, top + 11, x + 2, top + 14, GOLD);
         }
+        var quest = AerborneTracker.target();
+        if (quest != null) {
+            double bearing = Math.toDegrees(Math.atan2(quest.x() + 0.5 - player.getX(), -(quest.z() + 0.5 - player.getZ())));
+            int x = centre + (int) Math.round(Math.max(-90, Math.min(90, wrap(bearing - heading))) * (half - 6) / 90);
+            g.fill(x - 2, top + 10, x + 3, top + 14, 0xFF0D1A2B);
+            g.fill(x - 1, top + 11, x + 2, top + 14, AerborneTracker.AMBER);
+        }
         g.fill(centre, top, centre + 1, top + 2, GOLD);
     }
 
@@ -102,41 +141,58 @@ final class AerborneOverlays {
 
     // ------------------------------------------------------------------ minimap
 
-    /** Blocks across the map; each is drawn two pixels wide. North is up. */
-    private static final int MAP_CELLS = 48, MAP_PIXELS = MAP_CELLS * 2;
+    /**
+     * The map shows {@value #MAP_BLOCKS} blocks across in a {@value #MAP_PIXELS} pixel square, north up. The ground is
+     * painted into a texture, one texel per block, so it stays sharp at any GUI scale and costs one draw.
+     */
+    private static final int MAP_PIXELS = 76, MAP_BLOCKS = 96;
     private static final int VOID = 0xFF1B2A44, UNLOADED = 0xFF0D1A2B;
-    private static final int[] colours = new int[MAP_CELLS * MAP_CELLS];
+    private static final int[] colours = new int[MAP_BLOCKS * MAP_BLOCKS];
+    private static final Identifier MAP_TEXTURE = Identifier.fromNamespaceAndPath("aerborne_client", "minimap");
+    private static net.minecraft.client.renderer.texture.DynamicTexture mapTexture;
     private static long mapAt;
     private static int mapX = Integer.MIN_VALUE, mapZ;
+
+    /** Where a block lies on the map, kept just inside its edge. */
+    private static int[] onMap(int x, int y, int px, int pz, int bx, int bz) {
+        float scale = MAP_PIXELS / (float) MAP_BLOCKS;
+        int mx = Math.round(x + MAP_PIXELS / 2F + (bx - px) * scale), mz = Math.round(y + MAP_PIXELS / 2F + (bz - pz) * scale);
+        return new int[] {Math.max(x + 2, Math.min(x + MAP_PIXELS - 3, mx)), Math.max(y + 2, Math.min(y + MAP_PIXELS - 3, mz))};
+    }
 
     private static void minimap(GuiGraphicsExtractor g, Minecraft mc, int x, int y, ClientPreferences.Waypoint tracked) {
         Player player = mc.player;
         int px = player.getBlockX(), pz = player.getBlockZ();
         long now = System.nanoTime();
+        if (mapTexture == null) {
+            mapTexture = new net.minecraft.client.renderer.texture.DynamicTexture(() -> "aerborne minimap", MAP_BLOCKS, MAP_BLOCKS, false);
+            mc.getTextureManager().register(MAP_TEXTURE, mapTexture);
+        }
         // The ground is read again twice a second, or at once after a step.
         if (now - mapAt > 500_000_000L || px != mapX || pz != mapZ) {
             sample(mc, px, pz);
+            var pixels = mapTexture.getPixels();
+            if (pixels != null) {
+                for (int row = 0; row < MAP_BLOCKS; row++)
+                    for (int col = 0; col < MAP_BLOCKS; col++) pixels.setPixel(col, row, colours[row * MAP_BLOCKS + col]);
+                mapTexture.upload();
+            }
             mapAt = now; mapX = px; mapZ = pz;
         }
         Ui.inset(g, x - 4, y - 4, MAP_PIXELS + 8, MAP_PIXELS + 8);
-        g.fill(x, y, x + MAP_PIXELS, y + MAP_PIXELS, UNLOADED);
-        for (int row = 0; row < MAP_CELLS; row++) {
-            // Runs of one colour are drawn as one strip.
-            int start = 0;
-            for (int col = 1; col <= MAP_CELLS; col++) {
-                if (col < MAP_CELLS && colours[row * MAP_CELLS + col] == colours[row * MAP_CELLS + start]) continue;
-                g.fill(x + start * 2, y + row * 2, x + col * 2, y + row * 2 + 2, colours[row * MAP_CELLS + start]);
-                start = col;
-            }
-        }
+        g.blit(RenderPipelines.GUI_TEXTURED, MAP_TEXTURE, x, y, 0F, 0F, MAP_PIXELS, MAP_PIXELS, MAP_BLOCKS, MAP_BLOCKS, MAP_BLOCKS, MAP_BLOCKS);
         if (tracked != null) {
-            int wx = x + MAP_PIXELS / 2 + (tracked.x() - px) * 2, wz = y + MAP_PIXELS / 2 + (tracked.z() - pz) * 2;
-            wx = Math.max(x + 2, Math.min(x + MAP_PIXELS - 3, wx));
-            wz = Math.max(y + 2, Math.min(y + MAP_PIXELS - 3, wz));
-            g.fill(wx - 2, wz - 2, wx + 3, wz + 3, 0xFF0D1A2B);
-            g.fill(wx - 1, wz - 1, wx + 2, wz + 2, GOLD);
+            int[] at = onMap(x, y, px, pz, tracked.x(), tracked.z());
+            g.fill(at[0] - 2, at[1] - 2, at[0] + 3, at[1] + 3, 0xFF0D1A2B);
+            g.fill(at[0] - 1, at[1] - 1, at[0] + 2, at[1] + 2, GOLD);
         }
-        arrow(g, x + MAP_PIXELS / 2 + 1, y + MAP_PIXELS / 2 + 1, player.getYRot());
+        var quest = AerborneTracker.target();
+        if (quest != null) {
+            int[] at = onMap(x, y, px, pz, quest.x(), quest.z());
+            g.fill(at[0] - 2, at[1] - 2, at[0] + 3, at[1] + 3, 0xFF0D1A2B);
+            g.fill(at[0] - 1, at[1] - 1, at[0] + 2, at[1] + 2, AerborneTracker.AMBER);
+        }
+        arrow(g, x + MAP_PIXELS / 2, y + MAP_PIXELS / 2, player.getYRot());
         g.text(mc.font, "N", x + MAP_PIXELS / 2 - 2, y + 2, GOLD, true);
     }
 
@@ -153,15 +209,15 @@ final class AerborneOverlays {
     private static void sample(Minecraft mc, int px, int pz) {
         Level level = mc.level;
         if (level == null) return;
-        int half = MAP_CELLS / 2;
+        int half = MAP_BLOCKS / 2;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int[] north = new int[MAP_CELLS];
+        int[] north = new int[MAP_BLOCKS];
         // The row just north of the map, for the first row's shading.
-        for (int col = 0; col < MAP_CELLS; col++) north[col] = surface(level, px - half + col, pz - half - 1);
-        for (int row = 0; row < MAP_CELLS; row++) {
-            for (int col = 0; col < MAP_CELLS; col++) {
+        for (int col = 0; col < MAP_BLOCKS; col++) north[col] = surface(level, px - half + col, pz - half - 1);
+        for (int row = 0; row < MAP_BLOCKS; row++) {
+            for (int col = 0; col < MAP_BLOCKS; col++) {
                 int x = px - half + col, z = pz - half + row;
-                int index = row * MAP_CELLS + col;
+                int index = row * MAP_BLOCKS + col;
                 pos.set(x, 0, z);
                 if (!level.hasChunkAt(pos)) { colours[index] = UNLOADED; north[col] = Integer.MIN_VALUE; continue; }
                 int top = surface(level, x, z);

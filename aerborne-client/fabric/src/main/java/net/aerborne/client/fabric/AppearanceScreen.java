@@ -12,8 +12,8 @@ public final class AppearanceScreen extends AerborneScreen {
         int gap = 8, w = (panelWidth - 32) / 2, x = left + 12, y = top + 45;
         button(x, y, w, "Theme: " + p.theme.label, () -> change(() -> p.theme = ClientPreferences.Theme.values()[(p.theme.ordinal() + 1) % 3]));
         button(x + w + gap, y, w, "HUD: " + on(p.hud), () -> change(() -> p.hud = !p.hud));
-        button(x, y + 26, w, "Size: " + p.scale + "%", () -> change(() -> p.scale = p.scale >= 125 ? 75 : p.scale + 25));
-        button(x + w + gap, y + 26, w, "Corner: " + (p.topRight ? "Right" : "Left"), () -> change(() -> p.topRight = !p.topRight));
+        button(x, y + 26, w, "HUD size: " + p.scale + "%", () -> change(() -> p.scale = p.scale >= 125 ? 75 : p.scale + 25));
+        button(x + w + gap, y + 26, w, "Edit HUD layout...", () -> minecraft.gui.setScreen(new HudEditScreen(this)));
         button(x, y + 52, w, "Coordinates: " + on(p.coordinates), () -> change(() -> p.coordinates = !p.coordinates));
         button(x + w + gap, y + 52, w, "Durability: " + on(p.durability), () -> change(() -> p.durability = !p.durability));
         button(left + panelWidth - 12 - w, top + panelHeight - 30, w, "Companion features...", () -> minecraft.gui.setScreen(new FeaturesScreen(this)));

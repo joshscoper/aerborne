@@ -161,7 +161,7 @@ public final class QuestBookScreen extends AerborneScreen {
             Ui.inset(g, listLeft - 4, listTop - 4, listWidth + 8, listHeight + 8);
         } else {
             g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, Ui.BOOK, left, top, bookW, bookH);
-            g.text(font, "Quest Book", left + bookW * 24 / ART_W, headingY(), GOLD, false);
+            g.text(font, Ui.heading("Quest Book"), left + bookW * 24 / ART_W, headingY() - 2, GOLD, false);
         }
         String summary = book.completed() + " completed";
         if (font.width(summary) + (bookMode ? font.width("Quest Book") + 8 : 0) <= listWidth)
@@ -195,7 +195,7 @@ public final class QuestBookScreen extends AerborneScreen {
         FeedPayloads.Quest quest = current();
         if (quest == null) return;
         int x = detailLeft, width = detailWidth, y = headingY();
-        g.text(font, font.plainSubstrByWidth(quest.title(), width), x, y, GOLD, false);
+        g.text(font, Ui.heading(font, quest.title(), width - 10), x, y - 2, GOLD, false);
         y = listTop;
         // Nothing on the right page may run off it.
         g.enableScissor(x - 2, listTop - 2, x + width + 2, listTop + listHeight + 2);

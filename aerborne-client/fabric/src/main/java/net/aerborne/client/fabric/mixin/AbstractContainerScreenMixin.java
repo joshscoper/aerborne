@@ -24,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(AbstractContainerScreen.class)
 abstract class AbstractContainerScreenMixin {
     @Shadow protected Slot hoveredSlot;
+    @Shadow protected int titleLabelX, titleLabelY, inventoryLabelX, inventoryLabelY;
+    @Shadow @org.spongepowered.asm.mixin.Final protected net.minecraft.network.chat.Component playerInventoryTitle;
 
     private boolean aerborne$filler(Slot slot) {
         return slot != null && AerborneMenus.skinned(this) && AerborneMenus.filler(slot.getItem());
@@ -56,7 +58,12 @@ abstract class AbstractContainerScreenMixin {
 
     @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
     private void aerborne$labels(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfo info) {
-        if (AerborneMenus.skinned(this)) info.cancel();
+        if (AerborneMenus.skinned(this)) { info.cancel(); return; }
+        // The restyled container art is dark, so its labels are drawn light: the title in gold, the bag in mist.
+        var font = net.minecraft.client.Minecraft.getInstance().font;
+        graphics.text(font, ((net.minecraft.client.gui.screens.Screen) (Object) this).getTitle(), titleLabelX, titleLabelY, 0xFFF4C76B, false);
+        graphics.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0xFFACBBD0, false);
+        info.cancel();
     }
 
     @Inject(method = {"extractSlotHighlightBack", "extractSlotHighlightFront"}, at = @At("HEAD"), cancellable = true)

@@ -10,4 +10,6 @@ public interface AbstractContainerScreenAccessor {
     @Accessor("topPos") int aerborne$top();
     @Accessor("imageWidth") int aerborne$width();
     @Accessor("imageHeight") int aerborne$height();
+    @Accessor("titleLabelX") int aerborne$titleX();
+    @Accessor("titleLabelY") int aerborne$titleY();
 }

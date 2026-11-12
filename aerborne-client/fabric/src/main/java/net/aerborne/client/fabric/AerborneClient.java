@@ -42,6 +42,8 @@ public final class AerborneClient implements ClientModInitializer {
         });
         PayloadTypeRegistry.clientboundPlay().register(PlatesPayload.TYPE, PlatesPayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(PlatesPayload.TYPE, (payload, context) -> ClientState.plates = payload);
+        PayloadTypeRegistry.clientboundPlay().register(EffectsPayload.TYPE, EffectsPayload.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(EffectsPayload.TYPE, (payload, context) -> AerborneEffects.accept(payload));
         PayloadTypeRegistry.clientboundPlay().register(DialoguePayload.TYPE, DialoguePayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(DialoguePayload.TYPE, (payload, context) -> {
             var client = context.client();
@@ -58,20 +60,46 @@ public final class AerborneClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Party.TYPE, (payload, context) -> AerborneSocial.party = payload);
         PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Toast.TYPE, FeedPayloads.Toast.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Toast.TYPE, (payload, context) -> AerborneSocial.toast(payload));
+        PayloadTypeRegistry.clientboundPlay().register(AerborneTracker.Payload.TYPE, AerborneTracker.Payload.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(AerborneTracker.Payload.TYPE, (payload, context) -> AerborneTracker.current = payload);
+        PayloadTypeRegistry.clientboundPlay().register(AerborneFlight.Payload.TYPE, AerborneFlight.Payload.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(AerborneFlight.Payload.TYPE, (payload, context) -> AerborneFlight.receive(payload));
+        RttService.register();
+        PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Social.TYPE, FeedPayloads.Social.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Social.TYPE, (payload, context) -> {
+            var client = context.client();
+            if (client.gui.screen() instanceof SocialScreen open) open.update(payload);
+            else if (payload.open()) client.gui.setScreen(new SocialScreen(payload));
+        });
+        PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Skills.TYPE, FeedPayloads.Skills.CODEC);
+        ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Skills.TYPE, (payload, context) -> context.client().gui.setScreen(new SkillsScreen(payload)));
         PayloadTypeRegistry.clientboundPlay().register(FeedPayloads.Quests.TYPE, FeedPayloads.Quests.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(FeedPayloads.Quests.TYPE, (payload, context) -> {
             var client = context.client();
             if (client.gui.screen() instanceof QuestBookScreen open) open.update(payload);
             else if (payload.open()) client.gui.setScreen(new QuestBookScreen(payload));
         });
-        ClientPlayConnectionEvents.INIT.register((handler, client) -> { ClientState.reset(); AerborneExtras.resetSession(); AerborneSocial.party = null; });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { ClientState.reset(); AerborneExtras.resetSession(); });
+        ClientPlayConnectionEvents.INIT.register((handler, client) -> { ClientState.reset(); AerborneEffects.clear(); AerborneTargetFrame.clear(); AerborneExtras.resetSession(); AerborneSocial.party = null; AerborneTracker.current = null; AerborneFlight.clear(); });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> { ClientState.reset(); AerborneEffects.clear(); AerborneTargetFrame.clear(); AerborneExtras.resetSession(); AerborneFlight.clear(); });
         // Our effect column replaces the vanilla icons while the Aerborne HUD is up.
         HudElementRegistry.replaceElement(VanillaHudElements.MOB_EFFECTS, vanilla -> (graphics, delta) -> {
             var p = ClientState.preferences;
-            if (p.effects && p.hud && ClientState.available()) return;
+            // Our buffs element stands in for them, shown or hidden in edit mode.
+            if (p.hud && ClientState.available()) return;
             vanilla.extractRenderState(graphics, delta);
         });
+        // With the server's stats on our HUD, the vanilla hearts, food, armour and XP bar are redundant.
+        for (var element : java.util.List.of(VanillaHudElements.HEALTH_BAR, VanillaHudElements.FOOD_BAR, VanillaHudElements.ARMOR_BAR,
+                VanillaHudElements.EXPERIENCE_LEVEL, VanillaHudElements.INFO_BAR)) {
+            HudElementRegistry.replaceElement(element, vanilla -> (graphics, delta) -> {
+                var mc = net.minecraft.client.Minecraft.getInstance();
+                var p = ClientState.preferences;
+                boolean ours = p.hideVanilla && p.hud && ClientState.hud != null && ClientState.available() && mc.player != null
+                        // The info bar also carries the horse jump meter; keep it while riding.
+                        && (element != VanillaHudElements.INFO_BAR || mc.player.getVehicle() == null);
+                if (!ours) vanilla.extractRenderState(graphics, delta);
+            });
+        }
         ClientConfigurationConnectionEvents.INIT.register((handler, client) -> ClientState.reset());
         ClientLifecycleEvents.CLIENT_STARTED.register(DefaultServer::seed);
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.parse("aerborne_client:hud"),
@@ -91,6 +119,10 @@ public final class AerborneClient implements ClientModInitializer {
                 "key.aerborne_client.menu", InputConstants.Type.KEYSYM, InputConstants.KEY_B, category));
         KeyMapping hud = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.aerborne_client.hud", InputConstants.Type.KEYSYM, InputConstants.KEY_H, category));
+        KeyMapping social = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "key.aerborne_client.social", InputConstants.Type.KEYSYM, InputConstants.KEY_K, category));
+        KeyMapping editHud = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "key.aerborne_client.edit_hud", InputConstants.Type.KEYSYM, InputConstants.KEY_U, category));
         KeyMapping waypoints = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.aerborne_client.waypoints", InputConstants.Type.KEYSYM, InputConstants.KEY_J, category));
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registries) -> dispatcher.register(
@@ -138,6 +170,9 @@ public final class AerborneClient implements ClientModInitializer {
             while (menu.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) openMenu(client);
             }
+            while (editHud.consumeClick()) {
+                if (client.player != null && client.gui.screen() == null && available()) client.gui.setScreen(new HudEditScreen(null));
+            }
             while (hud.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     if (available()) {
@@ -145,6 +180,11 @@ public final class AerborneClient implements ClientModInitializer {
                         feedback(client, "Aerborne HUD " + (ClientState.preferences.hud ? "enabled" : "hidden") + ".");
                     } else unavailable(client);
                 }
+            }
+            while (social.consumeClick()) {
+                // The server answers /social with the Social screen's snapshot (or its own menu without the feed).
+                if (client.player != null && client.gui.screen() == null && available() && client.getConnection() != null)
+                    client.getConnection().sendCommand("social");
             }
             while (waypoints.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
