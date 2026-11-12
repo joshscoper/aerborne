@@ -35,6 +35,10 @@ Arcane Research weighs gems by grade: Rough 1.0, Flawed 1.25, Fine 1.5, Flawless
 Each socket takes certain gems. Gear tooltips show the slots as `[C]`, `[D]`, `[G]` and `[U]` under
 **Gemstone Slots**, and the forge names the next one.
 
+Materials, ores, ingots, alloys, currencies and consumables have no sockets. Old material tooltips
+that inherited the default two slots refresh through the item updater. Existing equipment capacities
+and installed gems are preserved. Expedition refining and alloy recipes are described in [Metallurgy](METALLURGY.md).
+
 | Socket | Found on | Takes |
 | --- | --- | --- |
 | `[C]` Combat | weapons | Ruby, Amethyst |

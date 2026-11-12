@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 736 406" role="img" aria-labelledby="title desc">
+  <title id="title">Millbrook farm approach, plan and walking section</title>
+  <desc id="desc">The route comes north from the bottom left, rises twice, turns east across the upper yard, then north to a farm door. Two field benches step up beside the lane.</desc>
+  <defs>
+    <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse" x="20" y="56"><path d="M12 0H0V12" fill="none" stroke="#353e32" stroke-opacity=".16"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#883a27"/></marker>
+  </defs>
+  <rect width="736" height="406" fill="#f6f2e8"/>
+  <g font-family="system-ui, sans-serif" fill="#233729">
+    <text x="20" y="31" font-size="19" font-weight="700">Millbrook · proposed farm approach</text>
+    <text x="20" y="48" font-size="12">PLAN   /   one square = one block   /   north ↑</text>
+    <rect x="20" y="56" width="372" height="300" fill="#d9e1c7"/>
+    <rect x="44" y="188" width="60" height="168" fill="#cfbd9d"/>
+    <rect x="44" y="152" width="264" height="36" fill="#d6c7b2"/>
+    <rect x="116" y="248" width="264" height="96" fill="#dfbd63"/>
+    <rect x="116" y="188" width="264" height="60" fill="#e7cc7c"/>
+    <path d="M116 248H380 M116 188H380" stroke="#7d7254" stroke-width="3"/>
+    <rect x="164" y="68" width="108" height="84" fill="#a38469" stroke="#614f40"/>
+    <path d="M164 110H272" stroke="#614f40" stroke-width="3"/>
+    <rect x="212" y="147" width="12" height="7" fill="#efe6d3"/>
+    <rect x="308" y="68" width="84" height="96" fill="#9bb097"/>
+    <circle cx="345" cy="104" r="25" fill="#557a58"/><circle cx="366" cy="144" r="15" fill="#71926f"/>
+    <rect x="20" y="56" width="372" height="300" fill="url(#grid)" stroke="#68745c"/>
+    <path d="M44 236H104 M44 188H104" stroke="#756e63" stroke-width="3"/>
+    <path d="M74 326V170H218V151" fill="none" stroke="#883a27" stroke-width="4" marker-end="url(#arrow)"/>
+    <circle cx="74" cy="326" r="5" fill="#883a27"/>
+    <g font-size="13" font-weight="600">
+      <text x="182" y="99" fill="#231c17">Farm hall</text>
+      <text x="262" y="178">Yard</text><text x="191" y="219">Middle wheat +1</text><text x="191" y="296">Lower wheat 0</text>
+    </g>
+    <text x="20" y="378" font-size="12">Arrival (4, 22) → upper landing → receiving door (16, 7)</text>
+    <text x="416" y="76" font-size="14" font-weight="700">SECTION   /   north along the lane</text>
+    <text x="416" y="100" font-size="12">Profile expanded vertically to show the two rises.</text>
+    <path d="M420 221H497V190H568V159H699V252H420Z" fill="#a7ad8a"/>
+    <path d="M420 221H497V190H568V159H699" fill="none" stroke="#655b4e" stroke-width="3"/>
+    <g font-size="12">
+      <text x="423" y="213">Y 0</text><text x="505" y="182">Y +1</text><text x="587" y="151">Y +2 · yard</text>
+      <text x="472" y="275">Z 15</text><text x="552" y="275">Z 11</text>
+      <text x="416" y="311">Keep a landing between stair runs.</text>
+      <text x="416" y="332">Turn east on level ground before entering.</text>
+      <text x="416" y="353">The hall floor meets the yard at +2.</text>
+    </g>
+  </g>
+</svg>

@@ -21,3 +21,5 @@ refs: []
 - **Chests:** tier I × · II × · III × · IV ×
 - **POIs:**
 - **Island link:**
+
+For the physical build, link a filled [[Build Sheet Template]] with the entry view, route section, site survey and first playable slice. Record subsequent walks and revisions with [[Review Record Template]].

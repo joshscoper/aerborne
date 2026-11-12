@@ -23,3 +23,9 @@ this `preview.py` before stopping it. Logs are in `preview-out.log` and
 Create an empty `offline.flag` in this folder to simulate a connection failure;
 remove it to restore sample responses. Never copy real credentials or player
 records into this fixture.
+
+The Metrics tab uses `metrics-sample.json`, a fictional 100-day history generated
+with the production aggregation code by `scripts/verification/MetricsPreview.java`.
+It exercises retention cohorts, gameplay and economy views, filters and CSV export.
+It is never imported into the plugin. `PANEL_PREVIEW_PORT` can select a second
+loopback port (the metrics preview uses 64141) without disturbing the default helper.

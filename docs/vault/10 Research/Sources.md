@@ -5,6 +5,8 @@ tags: [research, sources]
 
 Read on 2026-11-03. Cited in research notes as *(S#)*.
 
+For the 2026-11-05 research pass, see [[Minecraft Builder Case Studies]] and [[AAA Level Design Case Studies]]. Each case links directly to its builder interview, studio account, team tutorial, postmortem or conference presentation. [[Saltreach Quay Study]] applies those findings to a proposed playable plot.
+
 | # | Source | Used for |
 | --- | --- | --- |
 | S1 | Game Developer: "GDC: Learning from World of Warcraft's quest design mistakes" (Jeff Kaplan, GDC 2009) — gamedeveloper.com/game-platforms/gdc-learning-from-i-world-of-warcraft-i-s-quest-design-mistakes | Quest rules, collection drops, hubs, travel |
@@ -31,6 +33,8 @@ Read on 2026-11-03. Cited in research notes as *(S#)*.
 
 Earlier builder research (TrixyBlox, Jeracraft, shovel241, the Bakery, MrMattRanger, fWhip, Necron, MCME,
 Conquest Reforged, ArdaCraft, WesterosCraft, VoxelSniper presets) is summarised in [[Builders and Terraformers]].
+
+[[Reading a Build Reference]] adds direct links to the WesterosCraft gradient guide, ArdaCraft's project application and The Level Design Book, each paired with a practice exercise.
 
 Notes on access: wowhead and wowpedia pages often come back empty to fetchers; warcraft.wiki.gg works. Planet
 Minecraft and ArdaCraft need the browser pane.

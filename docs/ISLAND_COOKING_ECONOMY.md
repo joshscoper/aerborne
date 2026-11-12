@@ -6,7 +6,7 @@
 - `/cooking` (also `/cookbook`, `/kitchen`): meal recipes, ingredients, level requirements and previews at your current Cooking quality. Craft at a table; the journal itself never grants items.
 - `/island talents`: four vertical island specializations, with current and next-rank effects.
 - `/achievements`: categorized milestone journal, unfinished filter and pagination.
-- `/leaderboard [marks|adventurer|skills|island|achievements|cooking]`: offline-inclusive rankings and your position. Aliases: `/leaderboards`, `/top`, `/baltop`.
+- `/leaderboard [category]`: offline-inclusive rankings and your position. Aliases: `/leaderboards`, `/top`, `/baltop`.
 - `/pay <online-player> <whole-Marks>`: send earned Marks. `/marks pay` uses the same safe payment service. `/pay status` shows your latest eight incoming/outgoing receipts.
 - Character and Workshop menus, quickstart and island tips point to the new systems.
 
@@ -47,8 +47,8 @@ Chef quality is fixed when food is made, survives trading and cannot be upgraded
 
 - Duration = base × (1 + Cooking level/100 + Seasoning bonus/100 + co-op kitchen bonus/100), rounded and bounded to 5–300 seconds.
 - Speed, Haste and Jump Boost meals reach level II at Cooking 40. Regeneration, Resistance and the other meal effects remain level I.
-- Seasoning increases meal duration; Nourishment adds a percentage of the meal's restored saturation, within the normal food/saturation cap. Other Cooking paths offer skill XP and work-Marks bonuses.
-- Hunger, saturation and container behavior use the underlying vanilla item. Existing native stew properties are preserved when styling ordinary crafted food.
+- Seasoning increases meal-effect duration; Nourishment improves the Well Fed recovery bonus on meals you prepare. Other Cooking paths offer skill XP and work-Marks bonuses.
+- Hunger stays full. Ordinary food grants five minutes of Well Fed (+25% passive rest recovery by default); prepared meals retain their extra listed effects. Native consumption and container returns remain intact. See [Food and recovery](FOOD_AND_RECOVERY.md).
 - Named skill-gated meals cannot be made by automatic crafters. Ordinary automated food gets novice-quality buffs but no player Cooking XP.
 - Prepared meals are not raw ingredients. Styled ordinary staples can still be used in appropriate recipes, so making bread or stew does not break later ingredient use.
 
@@ -71,7 +71,7 @@ Existing unlock IDs are retained, including retired entries; their rewards are n
 
 Crafting achievements require actual ingredient/output movement and ignore creative mode. Fishing achievements follow accepted catch receipts rather than raw fish-event previews.
 
-Leaderboards cache canonical account scores, including offline accounts. A bounded refresh processes at most 12 accounts per half-second, with at most 24 in-flight reads; after a complete successful snapshot it waits a minute. Failed reads keep the previous complete snapshot. GUI opening does not scan player files. Island rankings use owner island XP; total skill rankings use summed skill levels; Adventurer and Cooking use their XP; achievement rankings use points; Marks use spendable balances.
+Leaderboards cache canonical account scores, including offline accounts. A bounded refresh processes at most 12 accounts per half-second, with at most 24 in-flight reads; after a complete successful snapshot it waits a minute. Failed reads keep the previous complete snapshot. GUI opening does not scan player files. Island rankings use owner island XP; total skill rankings use summed skill levels; Adventurer and all 11 individual skill boards use exact XP; achievement rankings use points; Marks use spendable balances.
 
 ## Crafting protection
 
@@ -89,3 +89,8 @@ The archive is bounded at 50,000 receipts and fails closed when full; plan reten
 
 Deploy by backing up the server and uploading the rebuilt jar, then restart. Do **not** wipe player_data, replace existing content wholesale or use RefreshConfig. The operator's existing watchdog-panel.yml is separate private configuration and is not overwritten by this gameplay update.
 
+
+The 16 categories are Marks, Adventurer, total skill levels, island XP, achievement points,
+and Mining, Forestry, Farming, Fishing, Hunting, Excavation, Smithing, Alchemy, Building,
+Cooking and Enchanting XP. Tab completion lists every key; the book in the rankings menu
+opens the full category selector. Skill boards distinguish equal-level accounts by XP.

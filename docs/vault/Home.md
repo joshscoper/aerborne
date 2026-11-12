@@ -28,9 +28,14 @@ and never committed.
 - [[Bestiary]] · [[Open-World Dungeons]] · [[NPC Roster]]
 
 ## Building it
+- [[Builder Field Manual]] is the starting point for Codex and Claude. Choose a craft note by task, follow a worked example, then review the result from the player's route.
+- [[Minecraft Builder Case Studies]] · [[AAA Level Design Case Studies]] · [[Saltreach Quay Study]]
+- [[Millbrook Terrace Study]] · [[Practice Builds]] · [[Build Critique]]
 - [[Technical Plan]]: generator, kits, world pack and new systems
 - [[Build Style Guide]]: palettes and rules every build is checked against
 - [[Phases]]
 
 ## Templates
 [[Zone Template]] · [[NPC Template]] · [[Quest Template]] · [[Mob Template]] · [[Dungeon Template]]
+
+[[Build Sheet Template]] · [[Review Record Template]]

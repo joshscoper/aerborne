@@ -13,6 +13,7 @@ local-plugins/*.jar
 
 # Website upload bundle (rebuilt from Website/)
 Website.zip
+NerdSMP-Paper.jar
 __pycache__/
 Website/instance/
 Website/.venv/

@@ -19,8 +19,8 @@ On the first match the pack:
 - registers the dig sites and ore veins inside those zones;
 - places every NPC on a verified floor tile (stable anchor ids, so it never duplicates them);
 - saves the warps and sets the public spawn to the keep gate (777.5, 101, −35.5);
-- raises the world from Peaceful to Normal once, because the map was saved on Peaceful and zone creatures
-  cannot spawn there (staff can still choose Peaceful later with `/difficulty`; the pack won't change it again);
+- raises the world from Peaceful to Normal, because the map was saved on Peaceful and hostile zone creatures
+  cannot spawn there; a five-second guard recovers later difficulty resets (Easy and Hard are kept);
 - turns off vanilla night monsters in this world. Monsters come only from the zones;
 - keeps players on the map (see [Map border](#map-border)).
 
@@ -37,6 +37,14 @@ Staff commands (`nerdsmp.zone.admin`):
 | `/worldpack apply force` | Re-applies the current version too (staff edits are still kept). |
 
 Turn the whole feature off with `world-packs.enabled: false` in `config.yml`.
+
+If passive creatures appear but hostile encounters do not, check the world's difficulty. Older builds
+only repaired Peaceful once and then recorded `difficulty-raised: true`, which could leave hostiles
+permanently blocked after a world loader restored Peaceful. Current builds recover on startup and every
+five seconds for matched pack worlds, even if that old flag exists. This does not enable vanilla night
+spawns or change safe zones. Set `world-packs.maintain-combat-difficulty: false` to intentionally keep an
+already-applied map Peaceful. Zone encounters still require a nearby Survival/Adventure player with a
+loaded account, a loaded chunk and a safe spawn point.
 
 Worlds listed in `world-packs.always-place-npcs` (default `[MMORPG]`, by folder name) always get their NPCs
 back: on every start each pack NPC is put back at its pack position, even one staff removed or moved, and

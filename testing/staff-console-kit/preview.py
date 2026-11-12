@@ -1,5 +1,5 @@
 """Loopback-only UI fixture. Fictional data and intercepted actions; no game server connection."""
-import datetime, json, mimetypes, math, html, hashlib, uuid
+import datetime, json, mimetypes, math, html, hashlib, uuid, os
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
@@ -106,6 +106,8 @@ class Preview(BaseHTTPRequestHandler):
         if path=='/api/status':
             if (HERE/'offline.flag').exists():
                 return self.send(503,'{"error":"Sample connection interrupted."}','application/json')
+            if (HERE/'metrics-sample.json').exists():
+                DATA['metrics']=json.loads((HERE/'metrics-sample.json').read_text(encoding='utf-8'))
             return self.send(200,json.dumps(DATA),'application/json')
         if path.startswith('/api/player/'):
             player = next((p for p in DIRECTORY if p['uuid']==path.split('/')[-1]),None)
@@ -148,5 +150,5 @@ class Preview(BaseHTTPRequestHandler):
             DATA['chat']['paused'] = bool(body.get('paused'))
             DATA['chat']['slowSeconds'] = body.get('slowSeconds',0)
         return self.send(200,json.dumps(dict(message='Preview only. No server action was performed.')),'application/json')
-ThreadingHTTPServer(('127.0.0.1',64140),Preview).serve_forever()
+ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('PANEL_PREVIEW_PORT','64140'))),Preview).serve_forever()
 

@@ -6,6 +6,8 @@ tags: [build, style]
 The checklist every build passes before anyone calls it done, and the palette for each zone. Sources:
 [[Builders and Terraformers]], [[Reference Images]].
 
+Use [[Builder Field Manual]] to choose a technique and [[Build Critique]] to record which checks were verified in a world.
+
 ## Checklist (judges' faults, adapted)
 - [ ] **Massing first.** The shape works in plain blocks before any texture. No "box with detail on".
 - [ ] **One axis to one hero.** The approach aims at the landmark; the sight line stays clear.

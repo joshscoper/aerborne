@@ -58,3 +58,31 @@ HTML, scripts, styles and artwork. Install it and restart to load the new resour
 the running plugin caches them. No production server was restarted or reconfigured,
 and no live-player action, broadcast, permission change or model training occurred.
 Existing authentication, authorization behavior and moderation payloads remain.
+
+## Chat workspace — October 21, 2026
+
+The tenth console section monitors delivered Global, Local, Trade and Staff channel messages.
+It uses the same five-second detached server snapshot and retains at most 300 entries in memory.
+Party, island, homestead and player-to-player private messages are not intercepted. The Direct
+filter contains outgoing panel support replies only. History and public chat controls reset
+on restart; this is shown in the UI.
+
+The composer sends plain-text, attributed messages to Global, Trade or Staff. Staff-channel
+recipients must have `nerdsmp.staff`. Row actions open existing warn/mute/unmute/private-reply
+workflows. Public pause and slow mode cover Global/Local/Trade, including slash-command sends,
+with staff exempt; existing mutes still apply first. Settings require a staff reason and strict
+boolean/integer validation (0-120 seconds). No console-command execution is involved.
+
+Chat sends, private panel replies, broadcasts and control changes use the durable staff audit.
+The HTTP auth/Host/CSRF/same-origin/rate-limit protections are unchanged. All Bukkit reads and
+changes remain on the main thread; HTTP workers receive detached JSON only.
+
+Validation: 35 targeted tests passed across ChatConsoleTest, IslandChatPolicyTest,
+HomesteadChatPolicyTest, WatchdogPanelTest and PanelWebsiteSyncTest. They cover shared cooldowns,
+staff/private exemptions, exact expiry, settings coercion rejection, bounded/detached history,
+private-channel exclusion and restart defaults, plus existing panel/security/channel behavior.
+Browser fixture checks exercised channel/name filtering, mute/reply dialogs, Staff-only sending,
+pause/resume while new messages arrive, and pause/5-second slow-mode controls followed by reset.
+Actions were intercepted; no real player was warned, muted or messaged. In-game multi-client
+acceptance was not performed. The production integration is packaged in the rebuilt JAR and
+requires installation/restart; the testing preview remains fictional data only.
