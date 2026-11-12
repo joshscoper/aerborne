@@ -3,7 +3,7 @@
 {% block title %}{{ member.username }}{% endblock %}
 {% block description %}{{ member.username }}'s profile on the {{ site.SITE_NAME }} forum.{% endblock %}
 {% block body_class %}profile-page{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}"><script src="{{ url_for('static', filename='js/badges.js') }}" defer></script>{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css', v='2') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/social.css') }}"><script src="{{ url_for('static', filename='js/badges.js') }}" defer></script>{% endblock %}
 {% block content %}
 <header class="member-cover">
   <img class="member-cover-art" src="{{ banner_url(member.banner) }}" alt="" width="1280" height="320">
@@ -75,11 +75,11 @@
         {% endfor %}
       </ul>
       <h3 class="game-subhead">Leaderboards</h3>
-      <ul class="game-boards">
-        {% for key, label, long, row in game.standings %}
+      {% for group in game.standing_groups if group.boards %}<details class="member-standing-group"{% if group.key == 'overall' %} open{% endif %}><summary>{{ group.title }} · {{ group.boards|length }} categories</summary><ul class="game-boards">
+        {% for key, label, long in group.boards %}{% set row = stats.boards.get(key) %}
         <li><a href="{{ url_for('community.leaderboards', board=key) }}"><span>{{ long }}</span>{% if row %}<strong>#{{ row.rank | number }}</strong><small>{{ row.score | number }}</small>{% else %}<strong class="unranked">–</strong>{% endif %}</a></li>
         {% endfor %}
-      </ul>
+      </ul></details>{% endfor %}
       {% if game.updated %}<p class="fine">Updated <time datetime="{{ game.updated }}" data-ago="{{ game.updated }}">{{ game.updated[:16].replace('T', ' ') }} UTC</time></p>{% endif %}
     {% elif stats_problem == 'not_found' %}
       <p class="fine">No game stats for {{ member.mc_name }} yet. They appear after playing on the server for a little while.</p>

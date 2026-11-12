@@ -24,6 +24,7 @@ NAV = [
         ("public.explore", "Explore the skies", "Your island, the hub and beyond"),
         ("public.expeditions", "Expeditions", "Party adventures open right now"),
         ("public.campaign", "Season campaign", "Server-wide goals and rewards"),
+        ("public.world", "Market & calendar", "Bazaar prices, events and the council"),
     ]},
     {"label": "Game Guide", "id": "guide", "links": [
         ("public.guide", "Adventurer's Handbook", "Guides from your first island onwards"),
@@ -79,6 +80,7 @@ def create_app(overrides=None):
     from .public import bp as public_bp
     from .social_sync import bp as social_sync_bp
     from .shop import bp as shop_bp
+    from .minecraft import bp as minecraft_bp
     from . import applications  # noqa: F401 (adds public application and private admin review routes)
     from . import creators  # noqa: F401 (creator program and authenticated payment events)
 
@@ -89,6 +91,7 @@ def create_app(overrides=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(social_sync_bp)
     app.register_blueprint(shop_bp)
+    app.register_blueprint(minecraft_bp)
 
     app.teardown_appcontext(db.close_db)
     app.after_request(apply_headers)

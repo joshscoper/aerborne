@@ -31,6 +31,10 @@
 <span class="avatar avatar-{{ size }} {{ cls }}"><img src="{{ avatar_url(key) }}" alt="" width="{{ size }}" height="{{ size }}" loading="lazy"></span>
 {%- endmacro %}
 
+{% macro minecraft_head(name, size=48, cls='', eager=False) -%}
+<img class="minecraft-head {{ cls }}" src="{{ url_for('minecraft.head', name=name, v='mojang-1') }}" width="{{ size }}" height="{{ size }}" alt="" loading="{{ 'eager' if eager else 'lazy' }}" decoding="async">
+{%- endmacro %}
+
 {# The rank's frame from the frames pack around the avatar; members without a rank get the Member frame.
    Character sprites are shown whole inside the opening, other avatars fill it. #}
 {% macro framed(key, frame, size=160, cls='', preview=False) -%}

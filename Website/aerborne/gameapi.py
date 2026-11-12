@@ -22,12 +22,30 @@ BOARDS = [
     ("skills", "Skills", "Total skill levels"),
     ("island", "Islands", "Island XP"),
     ("achievements", "Achievements", "Achievement points"),
-    ("cooking", "Cooking", "Cooking XP"),
     ("marks", "Marks", "Marks"),
 ]
 SKILLS = ["mining", "forestry", "farming", "fishing", "hunting", "excavation", "smithing", "alchemy",
           "building", "cooking", "enchanting"]
 MAX_SKILL_LEVEL = 50
+
+BOARDS += [(skill, skill.capitalize(), skill.capitalize() + " XP") for skill in SKILLS]
+BOARD_DESCRIPTIONS = {
+    "adventurer": "Ranked by total Adventurer XP. This measures experience, not Adventurer level.",
+    "skills": "Ranked by the sum of skill levels across all skills, not their combined XP.",
+    "island": "Ranked by the development XP of each account’s owned island.",
+    "achievements": "Ranked by points from completed achievements.",
+    "marks": "Ranked by current Marks balance. This is not total Marks earned.",
+}
+BOARD_DESCRIPTIONS.update((skill, "Ranked by total %s XP, not %s level. Equal XP is ordered by Minecraft name." %
+                           (skill.capitalize(), skill.capitalize())) for skill in SKILLS)
+
+
+def board_groups(available=None):
+    """Shared navigation groups; profiles show only categories published for that account."""
+    return [{"key": key, "title": title,
+             "boards": [board for board in choices if available is None or board[0] in available]}
+            for key, title, choices in [("overall", "Overall progress", BOARDS[:5]),
+                                        ("skill", "Individual skills", BOARDS[5:])]]
 
 _cache = {}
 _lock = threading.Lock()
@@ -100,6 +118,14 @@ def expeditions():
 def campaign():
     """The running season: goals, milestones, buffs and top contributors."""
     data, problem = _cached("campaign", "/api/v1/campaign", 30)
+    if data is not None and not data.get("ready"):
+        return None, "unavailable"
+    return data, problem
+
+
+def world():
+    """Bazaar prices, the Reach Calendar and the Wardens' Council. Public and cached briefly."""
+    data, problem = _cached("world", "/api/v1/world", 30)
     if data is not None and not data.get("ready"):
         return None, "unavailable"
     return data, problem

@@ -248,3 +248,7 @@
   .game-skills { grid-template-columns: minmax(0, 1fr); }
 }
 
+
+.member-standing-group { border-top:1px solid #9ab1d22a; margin-top:.7rem; }
+.member-standing-group > summary { cursor:pointer; padding:.9rem 0; font-size:.85rem; font-weight:800; color:#d9e7f7; }
+.member-standing-group > summary::marker { color:#8dcdf2; }

@@ -63,3 +63,30 @@ All 33 guide articles now share numbered sections, stable section links, a conte
 Revision 12 clarifies nine untouched guides. Gem recovery is explicitly priced per selected installed gem and preserves its type and tier. Costs 8/12/16/20 Dust match `item/SocketRules.java` (`4 + tier * 4`); input, review expiry and inventory behaviour match `forge/ArcaneForgeService.java` and `gui/MenuManager.java`. Spawner ingredients now have one mob per row, command entries have one command per explanation, and research recipe sizes no longer look like disclosed Aspect recipes. Existing staff copy and direct edits are protected by matching fields and previous body fingerprints.
 
 Interactive selectors read their options and displayed facts directly from the published table. They do not query the game server or calculate personal unlocks. Authors can edit the table in the existing guide editor without keeping a separate UI data file in sync. Full comparisons remain available under “Compare all options”.
+
+## Progression pages — October 21, 2026
+
+Expedition detail pages now separate entry preparation, difficulty, route, enemy drops and
+completion rewards. Lives are explicitly shared; player-level gates apply to every member.
+Server clears and fastest-party records are not presented as personal progress. Tier modifiers
+are expanded in plain text, and copy controls include the selected tier. Enemy drops retain
+amounts on small screens; chances just below 100% are not rounded into guarantees.
+
+Completion items are distinct from loot-profile rolls. Only expeditions with a profile show
+profile rolls. `ExpeditionRun.complete` and `RunProgress` confirm that the Timed modifier and
+par time are both required for a bonus roll. Base Marks are labelled before multiplication;
+the additive public API tier `marks` field publishes the server-calculated reward.
+
+Campaign goals, contribution activities, requirements and rewards are separate sections.
+Progress bars clamp at their target while printed totals retain the actual server value.
+Unfinished goals never round to 100%. Default daily caps are distinguished from goal-specific
+caps (published as `dailyCap` by the updated plugin), and the reset is labelled 00:00 UTC.
+Claimable items/Marks are separate from timed automatic buffs. Dates are formatted from the
+API's UTC timestamp rather than passed unparsed to the database date filter.
+
+All six leaderboard measures are labelled. Marks uses current balance; Skills sums levels;
+Island XP belongs to the account's owned island. Filtering displayed names preserves the
+server's rank numbers. Source: `leaderboard/LeaderboardService.java` and
+`webapi/PublicGameJson.java`. No player ranks, rewards or saved progression were changed.
+
+Leaderboard categories (21 Oct 2026): expanded to five overall boards plus all 11 skill XP boards. Exact XP comes from the progression snapshot; total skill levels, owned-island XP, achievement points and current Marks keep their original meanings. Both website navigation and player standings group overall/skill categories, and older APIs show unavailable categories explicitly.

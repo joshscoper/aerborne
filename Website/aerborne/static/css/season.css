@@ -38,9 +38,8 @@
 .season-rewards li::before { content: '✦ '; color: var(--gold); }
 .season-top { display: grid; gap: .4rem; max-width: 28rem; padding-left: 1.25rem; }
 .season-top span { color: #8fa4bf; margin-left: .5rem; }
-@media (max-width: 40rem) {
-  .expedition-tiers th:nth-child(2), .expedition-tiers td:nth-child(2) { display: none; }
-}
+.expedition-tiers-wrap { overflow-x: auto; scrollbar-width: thin; }
+.expedition-tiers-wrap .expedition-tiers { min-width: 24rem; }
 
 .expedition-rating { margin: 0; color: var(--gold); font-weight: 700; font-size: .85rem; }
 .expedition-rating span { letter-spacing: .08em; margin-right: .3rem; }

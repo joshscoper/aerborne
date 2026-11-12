@@ -221,7 +221,7 @@
     }, { passive: true });
   }
 
-  // The cloud intro ends by itself through CSS; this lets people skip it and remembers it played.
+  // CSS also ends the cloud intro, so a script failure cannot block the page.
   function intro() {
     var root = document.documentElement;
     if (!root.classList.contains("intro-pending")) return;
@@ -230,11 +230,17 @@
       if (done) return;
       done = true;
       root.classList.remove("intro-pending");
-      try { window.sessionStorage.setItem("aerborne-intro", "1"); } catch (e) { /* storage blocked */ }
     };
     setTimeout(finish, 3000);
     var overlay = document.querySelector(".intro");
     if (overlay) overlay.addEventListener("click", finish);
+    var skip = document.querySelector("[data-intro-skip]");
+    if (skip) skip.addEventListener("click", function () {
+      finish();
+      var main = document.getElementById("main");
+      main.setAttribute("tabindex", "-1");
+      main.focus({ preventScroll: true });
+    });
     window.addEventListener("keydown", finish, { once: true });
     window.addEventListener("wheel", finish, { once: true, passive: true });
     window.addEventListener("touchmove", finish, { once: true, passive: true });

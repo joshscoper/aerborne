@@ -3,12 +3,12 @@
 {% block title %}{{ data.name if data else name }} · Player{% endblock %}
 {% block description %}{{ data.name if data else name }}'s Aerborne progress, skills and leaderboard standings.{% endblock %}
 {% block body_class %}player-page{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/player.css') }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/player.css', v='3') }}">{% endblock %}
 {% block content %}
 <header class="player-hero"><div class="wrap">
   <p class="crumbs"><a href="{{ url_for('community.leaderboards') }}">← Leaderboards</a></p>
   <div class="player-identity">
-    {% if member %}{{ c.framed(member.avatar, member.rank_frame, 160) }}{% else %}<img class="player-crest" src="{{ url_for('static',filename='img/brand/skycrest-192.webp') }}" width="112" height="112" alt="">{% endif %}
+    {{ c.minecraft_head(data.name if data else name, 128, 'player-minecraft-head', eager=True) }}
     <div><p class="eyebrow">Adventurer of Aerborne</p><h1>{{ data.name if data else name }}</h1>
     {% if data %}<p class="player-rank"><span class="rank-chip">{{ data.adventurer.rank }}</span><span>Adventurer level <strong>{{ data.adventurer.level }}</strong></span></p>{% endif %}
     {% if member %}<a class="player-forum" href="{{ url_for('community.member_profile', username=member.username) }}"><span aria-hidden="true">✓</span> Verified Minecraft account · {{ member.username }} ↗</a>{% endif %}</div>
@@ -20,6 +20,9 @@
 {% else %}
   <section aria-labelledby="skills-title"><div class="player-section-heading"><div><p class="eyebrow">Your journey, skill by skill</p><h2 id="skills-title">Skills</h2></div><span>Level cap {{ max_level }}</span></div>
   <ul class="player-skills">{% for skill, level in skills %}<li><div class="player-skill-heading"><h3>{{ skill | capitalize }}</h3><span><strong>{{ level }}</strong> / {{ max_level }}</span></div><meter aria-label="{{ skill | capitalize }} level" min="0" max="{{ max_level }}" value="{{ level }}">{{ level }} of {{ max_level }}</meter><span class="player-skill-note">{% if level >= max_level %}Mastered{% elif level == 0 %}Your journey starts here{% else %}{{ ((level / max_level) * 100) | round | int }}% of level cap{% endif %}</span></li>{% endfor %}</ul></section>
-  <aside class="player-standings" aria-labelledby="standing-title"><p class="eyebrow">Among the adventurers</p><h2 id="standing-title">Leaderboard standing</h2><ul>{% for key,label,long in boards %}{% set row=(data.boards or {}).get(key) %}<li><a href="{{ url_for('community.leaderboards',board=key) }}"><span class="standing-label">{{ long }} <span aria-hidden="true">↗</span></span><span class="standing-values">{% if row %}<strong>#{{ row.rank | number }}</strong><span>{{ row.score | number }} <small>{{ 'levels' if key == 'skills' else 'points' if key == 'achievements' else 'Marks' if key == 'marks' else 'XP' }}</small></span>{% else %}<span>Not ranked yet</span>{% endif %}</span></a></li>{% endfor %}</ul>{% if data.updatedAt %}<p class="fine">Synced <time datetime="{{ data.updatedAt }}" data-ago="{{ data.updatedAt }}">{{ data.updatedAt[:16].replace('T',' ') }} UTC</time></p>{% endif %}</aside>
+  <aside class="player-standings" aria-labelledby="standing-title"><p class="eyebrow">Among the adventurers</p><h2 id="standing-title">Leaderboard standing</h2>
+  {% for group in board_groups if group.boards %}<details class="player-standing-group"{% if group.key == 'overall' %} open{% endif %}><summary>{{ group.title }} <span>{{ group.boards|length }}</span></summary><ul>
+  {% for key,label,long in group.boards %}{% set row=(data.boards or {}).get(key) %}<li><a href="{{ url_for('community.leaderboards',board=key) }}"><span class="standing-label">{{ long }} <span aria-hidden="true">↗</span></span><span class="standing-values">{% if row %}<strong>#{{ row.rank | number }}</strong><span>{{ row.score | number }} <small>{{ 'levels' if key == 'skills' else 'points' if key == 'achievements' else 'Marks' if key == 'marks' else 'XP' }}</small></span>{% else %}<span>Not ranked yet</span>{% endif %}</span></a></li>{% endfor %}
+  </ul></details>{% endfor %}{% if data.updatedAt %}<p class="fine">Synced <time datetime="{{ data.updatedAt }}" data-ago="{{ data.updatedAt }}">{{ data.updatedAt[:16].replace('T',' ') }} UTC</time></p>{% endif %}</aside>
 {% endif %}</div>
 {% endblock %}

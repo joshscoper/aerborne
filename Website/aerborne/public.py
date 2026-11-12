@@ -219,6 +219,23 @@ def campaign():
                            buffs=[b for b in season.get("buffs") or [] if isinstance(b, dict)], top=top, problem=problem)
 
 
+@bp.route("/world")
+def world():
+    data, problem = gameapi.world()
+    feed = data or {}
+    bazaar = feed.get("bazaar") or {}
+    products = [p for p in bazaar.get("products") or [] if isinstance(p, dict) and p.get("name")]
+    categories = {}
+    for product in products:
+        categories.setdefault(str(product.get("category") or "Other"), []).append(product)
+    calendar = [e for e in (feed.get("calendar") or {}).get("events") or [] if isinstance(e, dict) and e.get("title")]
+    council = feed.get("council") or {}
+    return render_template("world.html", categories=categories, tax=bazaar.get("taxPercent"), events=calendar,
+                           festival=(feed.get("calendar") or {}).get("festival"), council=council,
+                           candidates=[c for c in council.get("candidates") or [] if isinstance(c, dict)],
+                           sampled=feed.get("sampledAt"), problem=problem)
+
+
 # --- Game guide and codex --------------------------------------------------------------------
 
 def _guide_sections():
@@ -544,7 +561,7 @@ def robots():
 def sitemap():
     base = current_app.config["SITE_URL"] or request.url_root.rstrip("/")
     paths = [url_for("public." + name) for name in (
-        "index", "play", "status_page", "explore", "expeditions", "campaign", "guide", "codex", "companions", "news", "store",
+        "index", "play", "status_page", "explore", "expeditions", "campaign", "world", "guide", "codex", "companions", "news", "store",
         "community", "streamers", "support")]
     data, _problem = gameapi.expeditions()
     paths += [url_for("public.expedition", slug=raw["id"]) for raw in (data or {}).get("expeditions") or []

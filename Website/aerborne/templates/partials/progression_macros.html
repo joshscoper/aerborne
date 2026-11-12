@@ -1,0 +1,7 @@
+{% macro duration(seconds) -%}{% if seconds %}{{ seconds // 60 }}m {{ '%02d'|format(seconds % 60) }}s{% else %}No clear recorded{% endif %}{%- endmacro %}
+{% macro progress(points, target, label) -%}
+{% set maximum = target or 1 %}{% set value = [[points or 0, 0]|max, maximum]|min %}
+<progress class="journey-progress" value="{{ value }}" max="{{ maximum }}" aria-label="{{ label }}">{{ value }} / {{ maximum }}</progress>
+{%- endmacro %}
+{% macro command(value) -%}<div class="journey-command"><code data-address>{{ value }}</code><button type="button" class="btn btn-ghost" data-copy="{{ value }}" aria-label="Copy {{ value }}">Copy</button></div>{%- endmacro %}
+{% macro trophy() -%}<svg class="ranking-trophy" viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M21 10h22v16c0 10-5 16-11 16s-11-6-11-16V10Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="2"/><path d="M21 15H12v9c0 8 5 11 12 11m19-20h9v9c0 8-5 11-12 11M32 42v10m-10 3h20M26 51h12M32 17l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{%- endmacro %}

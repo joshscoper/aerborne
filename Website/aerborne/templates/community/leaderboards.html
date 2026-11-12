@@ -1,56 +1,25 @@
 {% extends "base.html" %}
 {% import "community/_macros.html" as c with context %}
+{% import "partials/progression_macros.html" as p %}
 {% block title %}Leaderboards{% endblock %}
-{% block description %}Top players on {{ site.SITE_NAME }}: Adventurer XP, skills, islands, achievements, cooking and Marks.{% endblock %}
+{% block body_class %}journey-page rankings-page{% endblock %}
+{% block description %}Aerborne's leading adventurers, skills, islands, achievements, cooks and Marks balances. Browse the rankings and find your player profile.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/progression.css', v='4') }}"><script src="{{ url_for('static', filename='js/progression.js', v='1') }}" defer></script>{% endblock %}
 {% block content %}
-<header class="page-head page-head-gold">
-  <div class="wrap">
-    <h1>Leaderboards</h1>
-    <p class="lede">Every account counts, online or not. Rankings come straight from the game and refresh about once a minute.</p>
-    <form class="player-search" method="get" action="{{ url_for('community.player_search') }}" role="search">
-      <label class="sr-only" for="player-name">Find a player</label>
-      <input id="player-name" name="name" placeholder="Find a player by Minecraft name" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" required>
-      <button class="btn btn-primary" type="submit">Find player</button>
-    </form>
-  </div>
-</header>
+<header class="page-head ranking-head"><div class="wrap ranking-head-inner"><div><p class="eyebrow">The hall of adventurers</p><h1>Leaderboards</h1><p class="lede">Builders, explorers and masters of their craft. See who leads Aerborne—and find your next goal.</p><p class="ranking-head-note">Online and offline accounts are included.</p></div><div class="ranking-emblem"><img class="ranking-mascot" src="{{ url_for('static', filename='img/brand/leaderboard-mascot-960.webp') }}" srcset="{{ url_for('static', filename='img/brand/leaderboard-mascot-480.webp') }} 480w, {{ url_for('static', filename='img/brand/leaderboard-mascot-960.webp') }} 960w" sizes="(max-width: 580px) 180px, (max-width: 800px) 240px, 360px" width="960" height="850" alt="Aerborne’s crowned cloud mascot lifting a golden trophy above a winners’ podium" decoding="async" fetchpriority="high"></div></div></header>
 {% set group = 'community' %}{% include "partials/subnav.html" %}
-<div class="wrap board-layout">
-  {{ c.flashes() }}
-  <nav class="tabs" aria-label="Leaderboards">
-    {% for key, label, _ in boards %}
-    <a href="{{ url_for('community.leaderboards', board=key) }}"{% if key == board %} aria-current="page"{% endif %}>{{ label }}</a>
-    {% endfor %}
-  </nav>
-
-  {% if problem %}
-  <div class="notice notice-warn" role="status">
-    <strong>Leaderboards are offline right now.</strong> The game server's API can't be reached, so there are no rankings to show. They'll come back on their own once it's reachable.
-  </div>
-  {% elif not rows %}
-  <p class="empty">No one is ranked on this board yet.</p>
-  {% else %}
-  <h2 class="board-title">{{ board_info[2] }}</h2>
-  <p class="fine">{{ players | number }} players ranked{% if updated %} · updated <time datetime="{{ updated }}" data-ago="{{ updated }}">{{ updated[:16].replace('T', ' ') }} UTC</time>{% endif %}</p>
-  <ol class="podium">
-    {% for row in rows[:3] %}
-    <li class="podium-{{ row.rank }}">
-      <span class="podium-rank">#{{ row.rank }}</span>
-      <a class="podium-name" href="{{ url_for('community.player_profile', name=row.name) }}">{{ row.name }}</a>
-      <span class="podium-score">{{ row.score | number }}{% if board == 'marks' %} Marks{% endif %}</span>
-    </li>
-    {% endfor %}
-  </ol>
-  {% if rows | length > 3 %}
-  <table class="board-table">
-    <thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col" class="num">{{ board_info[2] }}</th></tr></thead>
-    <tbody>
-      {% for row in rows[3:] %}
-      <tr><td>#{{ row.rank }}</td><td><a href="{{ url_for('community.player_profile', name=row.name) }}">{{ row.name }}</a></td><td class="num">{{ row.score | number }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% endif %}
-  {% endif %}
-</div>
-{% endblock %}
+<div class="wrap journey-content rankings-content">{{ c.flashes() }}
+<nav class="ranking-categories" aria-label="Leaderboard categories">
+<div class="ranking-category-heading"><h2>Choose your category</h2><span>{{ boards|length }} rankings</span></div>
+{% for group in board_groups %}<details class="ranking-category-group"{% if group.key == board_group %} open{% endif %}>
+<summary><span>{{ group.title }}</span><small>{{ group.boards|length }} categories{% if group.key == board_group %} · {{ board_info[1] }} selected{% endif %}</small></summary>
+<div class="ranking-boards">{% for key,label,metric in group.boards %}<a href="{{ url_for('community.leaderboards', board=key) }}"{% if key == board %} aria-current="page"{% endif %}><span>{{ label }}</span><small>{{ metric }}</small>{% if not problem and key not in published_boards %}<small class="ranking-pending">Awaiting rankings</small>{% endif %}<span class="board-arrow" aria-hidden="true">↗</span></a>{% endfor %}</div>
+</details>{% endfor %}</nav>
+<section class="ranking-selected" aria-labelledby="ranking-title"><div><p class="eyebrow">{{ board_info[1] }} leaderboard</p><h2 id="ranking-title">{{ board_info[2] }}</h2><p>{{ board_description }}</p></div>{% if not problem and rows %}<div class="ranking-snapshot"><strong>{{ players|number }} players ranked</strong><span>Top {{ rows|length }} shown{% if updated %} · <time datetime="{{ updated }}" data-ago="{{ updated }}">{{ updated[:16].replace('T',' ') }} UTC</time>{% endif %}</span></div>{% endif %}</section>
+{% if problem %}<div class="notice notice-warn" role="status"><strong>Leaderboards are offline right now.</strong> Rankings are unavailable from the game server. Try again later; scores are never estimated.</div>{% elif not board_available %}<div class="notice notice-info" role="status"><strong>This ranking is not available yet.</strong> The game server has not published {{ board_info[2] }} standings. Please check back later.</div>{% elif not rows %}<div class="ranking-empty">{{ p.trophy() }}<h3>No one is ranked on this board yet.</h3><p>Rankings will appear when the server publishes player scores.</p></div>
+{% else %}
+<ol class="ranking-podium" aria-label="Leading players">{% for row in rows[:3] %}<li class="ranking-winner place-{{ row.rank }}"><div class="winner-top"><span class="winner-place">{% if row.rank == 1 %}First place{% elif row.rank == 2 %}Second place{% elif row.rank == 3 %}Third place{% else %}Rank {{ row.rank }}{% endif %}</span><span class="winner-rank">#{{ row.rank }}</span></div><div class="winner-identity">{{ c.minecraft_head(row.name, 64, 'winner-avatar', eager=True) }}<div><a class="winner-name" href="{{ url_for('community.player_profile', name=row.name) }}">{{ row.name }}</a><a class="winner-profile" href="{{ url_for('community.player_profile', name=row.name) }}">View player →</a></div></div><div class="winner-score"><strong>{{ row.score|number }}</strong><span>{{ board_info[2] }}</span></div><span class="winner-decoration" aria-hidden="true">{{ p.trophy() }}</span></li>{% endfor %}</ol>
+<section class="ranking-list" aria-labelledby="ranking-list-title"><div class="ranking-list-head"><div><h3 id="ranking-list-title">The standings</h3><p class="journey-note" data-ranking-count>{{ rows|length }} entries · Highest score first</p></div><label class="journey-search">Find in this board<input type="search" data-ranking-search placeholder="Minecraft name…" autocomplete="off"></label></div><div class="journey-table-wrap" tabindex="0" aria-label="{{ board_info[2] }} standings"><table class="ranking-table"><caption class="sr-only">{{ board_info[2] }} leaderboard. Highest score first; equal scores are ordered by player name.</caption><thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col" class="num">{{ board_info[2] }}</th></tr></thead><tbody>{% for row in rows %}<tr data-ranking-name="{{ row.name|lower }}"><td><span class="table-rank{% if row.rank <= 3 %} is-podium{% endif %}">#{{ row.rank }}</span></td><td><a class="ranking-player" href="{{ url_for('community.player_profile', name=row.name) }}">{{ c.minecraft_head(row.name, 32, 'ranking-head-avatar') }}<span>{{ row.name }}</span><span class="ranking-player-arrow" aria-hidden="true">↗</span></a></td><td class="num"><strong>{{ row.score|number }}</strong></td></tr>{% endfor %}</tbody></table></div><p class="ranking-no-match" data-ranking-empty hidden>No displayed players match that name. Use the player search below to look beyond this board.</p><p class="ranking-list-foot">Ranks stay unchanged when you filter. Equal scores are ordered by Minecraft name. This snapshot includes online and offline accounts.</p></section>
+{% endif %}
+<aside class="ranking-find"><div><p class="eyebrow">Your adventure, in numbers</p><h2>Find your player profile</h2><p>View your skills and standing across all {{ boards|length }} leaderboard categories—even if you are outside the displayed top players.</p></div><form class="player-search" method="get" action="{{ url_for('community.player_search') }}" role="search"><label class="sr-only" for="player-name">Find a player</label><input id="player-name" name="name" placeholder="Minecraft name" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" required><button class="btn btn-primary" type="submit">Find player →</button></form></aside>
+</div>{% endblock %}

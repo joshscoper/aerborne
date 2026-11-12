@@ -3,15 +3,12 @@ param([int]$Port = 5050)
 $ErrorActionPreference = 'Stop'
 $bundledPython = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
 $venvPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
-$localPackages = Join-Path $PSScriptRoot '.venv\Lib\site-packages'
 
-if (Test-Path -LiteralPath $bundledPython) {
-    $developmentPython = $bundledPython
-    if (Test-Path -LiteralPath $localPackages) {
-        $env:PYTHONPATH = $localPackages + [IO.Path]::PathSeparator + $env:PYTHONPATH
-    }
-} elseif (Test-Path -LiteralPath $venvPython) {
+if (Test-Path -LiteralPath $venvPython) {
+    # Native image extensions must run with the Python that owns this environment.
     $developmentPython = $venvPython
+} elseif (Test-Path -LiteralPath $bundledPython) {
+    $developmentPython = $bundledPython
 } else {
     $developmentPython = (Get-Command python -ErrorAction Stop).Source
 }

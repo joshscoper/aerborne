@@ -146,13 +146,18 @@ plugin jar adds these endpoints:
 
 | Endpoint | Access | What it returns |
 |---|---|---|
-| `GET /api/v1/leaderboards` | public | Top 25 on each of the six boards, refreshed once a minute |
+| `GET /api/v1/leaderboards` | public | Top 25 on each of 16 boards (five overall and 11 skills), refreshed once a minute |
 | `GET /api/v1/players/<name>` | public | Adventurer level and rank, skill levels, board standings |
 | `GET /api/v1/expeditions` | public | Published expeditions with tiers, campaign seals, clear counts and best parties (`/expeditions`) |
 | `GET /api/v1/campaign` | public | The running season's goals, milestones, rewards, buffs and top contributors (`/campaign`) |
 | `GET /api/v1/links/<code>` | bearer token | Which player asked for a `/weblink` code (expires after 10 minutes) |
 
-Profiles only include what players already see in `/leaderboard` in game.
+Profiles only include what players already see in `/leaderboard` in game. Individual
+skill rankings use exact XP, not levels; total skills uses the sum of levels. The website
+and player profiles group overall progress separately from individual skills. Install the
+updated plugin and restart to publish the added categories. An older API remains usable,
+with unpublished categories clearly marked as awaiting rankings. The leaderboard document
+has a 64 KiB bound for 16 top-25 lists; other response and per-profile limits are unchanged.
 
 To switch it on:
 
@@ -401,6 +406,19 @@ On a newer Python than 3.6, install a current Pillow (`pip install Pillow`) inst
 8.4.0, which only has wheels for older Pythons.
 
 ## Notes
+
+Minecraft heads on leaderboards and game player pages are rendered on the website from
+Mojang's public profile and skin texture endpoints. Pillow (already in requirements.txt)
+must be installed for rendering. The website host needs outbound HTTPS access to
+`api.mojang.com`, `sessionserver.mojang.com` and `textures.minecraft.net`; no API key or
+additional environment variable is needed. Visitors load only same-origin head images.
+The renderer combines the face and hat layers of standard 64x64 and legacy 64x32 skins.
+It refreshes rendered heads after 15 minutes, with a five-minute browser cache. A previously
+loaded head can remain available during an outage for up to 24 hours in the running process.
+Unknown accounts, profiles without a published custom skin, or a first lookup that fails
+use the packaged Aerborne crest and retry after a minute. Forum avatar choices are separate.
+Use `run-local.ps1` for the development preview; it prefers the website's virtual environment
+so Pillow's native extensions use their matching Python version.
 
 - Fonts (Alegreya and Nunito) load from Google Fonts, which receives visitors' IP addresses.
   To avoid that, put the font files in `aerborne/static/fonts/` and replace the `<link>` in

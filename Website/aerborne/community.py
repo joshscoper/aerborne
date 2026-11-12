@@ -498,12 +498,14 @@ def member_profile(username):
     if stats:
         levels = stats.get("skills") or {}
         skills = sorted(((s, int(levels.get(s, 0) or 0)) for s in gameapi.SKILLS), key=lambda pair: -pair[1])
-        standings = [(key, label, long, (stats.get("boards") or {}).get(key)) for key, label, long in gameapi.BOARDS]
+        published_boards = stats.get("boards") or {}
+        standings = [(key, label, long, published_boards.get(key)) for key, label, long in gameapi.BOARDS if key in published_boards]
         ranked = [row for row in standings if row[3]]
         game = {"skills": [(s, level, min(100, int(round(100.0 * level / gameapi.MAX_SKILL_LEVEL)))) for s, level in skills],
                 "total": sum(level for _s, level in skills), "standings": standings,
                 "best": min(ranked, key=lambda row: row[3].get("rank", 10 ** 9)) if ranked else None,
-                "updated": stats.get("updatedAt") or "", "max_level": gameapi.MAX_SKILL_LEVEL}
+                "updated": stats.get("updatedAt") or "", "max_level": gameapi.MAX_SKILL_LEVEL,
+                "standing_groups": gameapi.board_groups(published_boards)}
     rel = None
     if g.member and g.member["id"] != member["id"]:
         from .social import relationship
@@ -524,13 +526,17 @@ def leaderboards():
         board = "adventurer"
     data, problem = gameapi.leaderboards()
     rows, players = [], 0
+    published_boards = (data.get("boards") or {}) if data else {}
     if data:
         entry = (data.get("boards") or {}).get(board) or {}
         rows = [r for r in entry.get("top", []) if isinstance(r, dict) and gameapi.NAME_RE.match(str(r.get("name", "")))]
         players = entry.get("players", 0)
     return render_template("community/leaderboards.html", boards=gameapi.BOARDS, board=board,
                            board_info=dict((b[0], b) for b in gameapi.BOARDS)[board], rows=rows,
-                           players=players, updated=data.get("updatedAt") if data else None, problem=problem)
+                           players=players, updated=data.get("updatedAt") if data else None, problem=problem,
+                           board_groups=gameapi.board_groups(), board_group="skill" if board in gameapi.SKILLS else "overall",
+                           board_description=gameapi.BOARD_DESCRIPTIONS[board], published_boards=published_boards,
+                           board_available=board in published_boards)
 
 
 @bp.route("/players")
@@ -557,7 +563,8 @@ def player_profile(name):
         levels = data.get("skills") or {}
         skills = [(s, int(levels.get(s, 0) or 0)) for s in gameapi.SKILLS]
     return render_template("community/player.html", name=name, data=data, problem=problem, skills=skills,
-                           max_level=gameapi.MAX_SKILL_LEVEL, boards=gameapi.BOARDS, member=member)
+                           max_level=gameapi.MAX_SKILL_LEVEL, boards=gameapi.BOARDS, member=member,
+                           board_groups=gameapi.board_groups((data.get("boards") or {}) if data else {}))
 
 
 # --- Forum ----------------------------------------------------------------------------------

@@ -38,6 +38,21 @@ class SiteTest(unittest.TestCase):
         self.client = self.app.test_client()
         status.clear_cache()
 
+    def test_world_page_shows_prices_calendar_and_council(self):
+        offline = self.client.get("/world")
+        self.assertEqual(offline.status_code, 200)
+        self.assertIn(b"Live data is offline", offline.data)
+        feed = {"apiVersion": 1, "ready": True, "sampledAt": "2026-11-12T20:00:00Z",
+                "bazaar": {"taxPercent": 1.25, "products": [{"id": "wheat", "name": "Wheat", "category": "Farming", "buy": 3, "sell": 2, "last": 3, "volume24h": 640}]},
+                "calendar": {"events": [{"kind": "boss", "title": "Thunderhide", "start": "2026-11-12T22:00:00Z", "live": False, "about": "The world boss."}]},
+                "council": {"voting": False, "changesAt": "2026-12-01T07:00:00Z", "seated": {"name": "Guildmistress Ada", "perk": "Bountiful Fields", "about": "Doubled."},
+                            "candidates": [{"name": "Tilly Miller", "perk": "Open Doors", "about": "Sooner.", "votes": 3}]}}
+        with mock.patch("aerborne.gameapi.world", return_value=(feed, None)):
+            page = self.client.get("/world")
+        self.assertEqual(page.status_code, 200)
+        for text in (b"Wheat", b"640", b"Thunderhide", b"Guildmistress Ada holds the seat", b"Open Doors"):
+            self.assertIn(text, page.data)
+
     def tearDown(self):
         os.environ.pop("AERBORNE_DATA_DIR", None)
         shutil.rmtree(self.data, ignore_errors=True)
@@ -167,7 +182,7 @@ Aerborne is still in private testing. We'll post here when that changes.
             row = conn.execute('SELECT body FROM guides WHERE slug = ?', (guide['slug'],)).fetchone()
             self.assertEqual(row['body'], guide['body'], guide['slug'])
         grave = self.client.get('/guide/graves').get_data(as_text=True)
-        for fact in ('250 Marks', '27 stacks', 'restart', 'payment immediately'):
+        for fact in ('/spirit return', 'Spirit Healer', '60 seconds', '25%'):
             self.assertIn(fact, grave)
         active = self.client.get('/codex?availability=released').get_data(as_text=True)
         self.assertIn('Keen Edge', active)

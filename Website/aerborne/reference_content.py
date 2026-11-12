@@ -24,7 +24,7 @@ Run `/island create`. Repeating it takes you to your existing island; it does no
 3. Run `/quickstart` for first-session goals.
 4. Open `/island journal` to see your next unlock.
 
-Use `/island home` to return and `/menu` for the main game menus. Falling into the island void returns you safely without losing your items. Ordinary deaths use the separate [grave system](/guide/graves).
+Use `/island home` to return and `/menu` for the main game menus. Falling into the island void returns you safely without losing your items. Death keeps inventory and XP; adventure worlds use [spirits and resurrection](/guide/graves).
 """, 'getting-started', 'Island resources | /guide/island-resources'),
     _guide('island-basics', 'Grow your island',
            'Understand resources, shared progress and co-op access.', """
@@ -303,8 +303,22 @@ Experience bottles hold what someone else already learned. Right-click a **Bottl
 
 Open `/skills` for levels, talent requirements and bonuses. Repeating placed-resource loops, cancelled actions and machine output do not provide unrestricted XP. Rates depend on the activity, equipment, talents and server tuning.
 
+## Build a connected talent tree
+Each of the 11 skills has four ranked paths, shared crossroads and a capstone. Reach rank II in either connected path to learn a shared talent; two shared talents open the level-50 capstone. Each profession keeps its own eight-point budget.
+
+Open `/adventurer` for a separate personal tree. Its eleven points unlock at Adventurer levels 5, 10, 20 and every ten levels through 100. Existing automatic rank perks remain active.
+
+`/island talents` has four branching co-op specializations across two pages. Either middle path can reach its capstone. Island points are shared and only the owner spends them. Talent purchases are seasonal; mastery respecs do not refund them.
+
 ## Keep the progress tracks separate
 **Personal skills and talents** belong to your account. **Adventurer Level** represents overall character progress, from 1 to 100. **Island XP and talents** belong to the island; `/island journal` separately certifies skill requirements for resource unlocks.
+
+## Equip your character
+Open `/equipment` (`/gear` or `/equip`), choose Equipment in the Character menu, or press Sneak + F. The screen has 16 slots: head, chest, legs, feet, shoulders, wrists, hands, belt, necklace, back, two rings, two trinkets, main hand and off hand. Your normal E inventory remains available for storage and crafting.
+
+Shift-click an accessory in your normal E inventory to equip it, just as you Shift-click armor. The character screen offers the same quick-equip controls, and single slots swap directly. If both rings or trinkets are occupied, choose which to replace after comparing build gains/losses, including sockets and set bonuses. Right-click cancels a replacement choice; closing it leaves your gear in place. Normal chest transfers keep working.
+
+The character screen updates armor, durability and your selected main hand automatically. F closes it. Right-click an equipped slot outside a replacement choice to unequip it; you need an empty bag slot. Rings and trinkets must have different item identities. All equipment, including armor, weapons and accessories, stays with you through death. Ten early accessories can be crafted at Smithing levels 5–10; staff can author more in the item editor.
 
 Use `/achievements` for milestones and `/leaderboard` for rankings. Enchanting XP does not pay job Marks by itself.
 """, 'skills', 'Fishing | /guide/fishing\nFarming | /guide/farming\nDaily goals | /guide/daily-goals'),
@@ -375,6 +389,12 @@ The cookbook does not produce food itself. Gather the listed ingredients and cra
 Successful eligible food crafts award Cooking XP. Default ordinary food recipes give **12 XP**; named meals can give more. Creative crafts and unsuccessful previews do not count as completed work.
 
 ## Improve your meals
+Hunger stays full in Survival and Adventure. After **8 seconds** without dealing or taking damage, health recovers at **5% of maximum health per second** by default. Food is optional preparation; recovery consumes no food, XP or Marks.
+
+Eat any food, even while full, for **Well Fed**: **25% faster rest recovery for 5 minutes**. The latest serving replaces the benefit instead of stacking it. Nourishment talents improve the recovery bonus on meals you prepare. The benefit expires while offline, clears on death or after drinking milk, and never enables passive recovery during combat. Your vitals show the remaining time.
+
+Prepared meals also retain their listed Cooking effects. Healing potions and Regeneration effects still work during combat; ordinary hunger regeneration is replaced. Poison and Wither prevent passive rest recovery. These rates can be tuned by staff.
+
 Cooking level affects meal quality. Island Stewardship talents can improve Cooking XP and extend meals prepared there. Read the actual meal's description for its effects and duration; not every recipe has the same benefit.
 
 Ordinary food and prepared named meals are not interchangeable ingredients. Keep special food out of unrelated vanilla recipes unless the recipe explicitly accepts it.
@@ -392,7 +412,7 @@ Ordinary food and prepared named meals are not interchangeable ingredients. Keep
 ## Choose a useful goal
 Pick a contract that matches your current tools and island stage. Read its reward and completion requirements before gathering; progress comes from eligible completed actions, not menu previews.
 
-Leaderboards cover Marks, Adventurer progress, total skills, island XP, achievements and Cooking. Updates are cached rather than instantaneous. Personal scores and co-op island progress are different tracks.
+Leaderboards cover Marks, Adventurer XP, total skill levels, island XP, achievement points and all 11 individual skills. Individual skill boards rank by exact XP, not level. Updates are cached rather than instantaneous. Personal scores and co-op island progress are different tracks.
 
 For a longer project, combine a daily goal with the next requirement in `/island journal`.
 """, 'skills', 'Milestone planning | /guide/milestone-planning'),
@@ -559,28 +579,30 @@ When enabled, Signatures use three-Aspect research, mastery requirements, compat
 ## Expeditions, the Nether and the End
 `/expedition` opens the expedition board: short adventures for a party of up to five, each in its own private copy of the map. The Nether and the End are reached this way. Vanilla portals stay sealed, and Nether and End expeditions run in real Nether and End dimensions. Some expeditions open only once the [season campaign](/guide/season-campaign) reaches a milestone. Read the [expedition guide](/guide/expeditions) before your first run.
 
-Check [Explore](/explore) for available features and previews, and read [grave recovery](/guide/graves) before risking valuable equipment.
+Check [Explore](/explore) for available features and previews, and read [spirits and resurrection](/guide/graves) before your next adventure.
 """, 'world', 'Expeditions | /guide/expeditions\nGraves | /guide/graves\nParties | /guide/parties'),
-    _guide('graves', 'Graves and item recovery',
-           'Know the recovery fee, storage limit and reasons to return promptly.', """
-## Read the death message
-When a grave can be created, it stores dropped items in an owner-only barrel and reports its location and protection time. Other players, co-op members and hoppers cannot collect from that container.
+    _guide('graves', 'Death, spirits and resurrection',
+           'Keep your equipment and XP, then choose how to return to life.', """
+## Your belongings stay with you
+Death keeps your **inventory and XP in every world**, including worn armor, weapons and accessories. New deaths create no item-storage graves and charge no recovery fee. Island deaths use a safe respawn; falling into the island void still triggers island rescue.
 
-Graves hold **27 stacks**. Overflow drops beside the barrel as ordinary unprotected items. If a grave cannot be placed, normal death drops remain. Do not treat the system as guaranteed protection for everything you carry.
+## Release your spirit in the adventure world
+After dying in the MMORPG adventure world, respawn to release your spirit at a nearby sanctuary. You are hidden from living players and cannot fight, loot, gather, craft, trade or use gameplay travel commands. A boss bar and your compass point toward your body. Ghost state survives logging out and server restarts.
 
-## Recover your belongings
-| Option | Cost and behaviour |
+Use `/spirit` to open your choices. Resurrection becomes available after **10 seconds** by default:
+
+| Choice | Result |
 |---|---|
-| Return to the barrel | Opening your own grave is free. |
-| `/grave locate` | Shows the latest indexed active grave's coordinates. |
-| `/grave recover` | Paid remote recovery; default **250 Marks**. The command starts the payment immediately. |
+| Return to your body, then `/spirit resurrect` | Stand on safe ground within **16 blocks**. Return with **50% health**, without resurrection sickness. |
+| Visit the Spirit Healer, then `/spirit healer` | Review and confirm a sanctuary resurrection with **full health** and **60 seconds** of resurrection sickness: **25% less damage dealt**. |
+| `/spirit return` | Return your ghost to its sanctuary, including when you become stuck. |
 
-Make inventory space and stand somewhere safe before remote recovery: items that do not fit can drop at your feet. Grave protection defaults to **24 hours**; use the time reported by the server. Expiry releases contents as ordinary drops.
+If your body is unreachable, the Spirit Healer waives sickness. Neither option costs Marks, items or durability. Five seconds of resurrection protection helps you move away from danger; attacking ends that protection. Staff support remains available with `/helpme`.
 
-## Return promptly
-A server restart can prevent older graves from appearing in locate/remote recovery, even while the physical barrel remains. Keep the coordinates from your death message and contact staff if needed.
+## Expeditions and old graves
+Expeditions keep their own checkpoint and shared-life rules; keyed runs retain their timer penalties. They keep your gear and do not start a separate open-world corpse run.
 
-Falling into the island void is different: island rescue returns you with your items instead of creating a grave.
+Old grave containers are still protected for their owners. `/grave locate` and `/grave recover` remain compatibility commands; remote recovery of an indexed old grave is free. Their old expiry/storage limits still apply, so collect remaining contents promptly. A restart can leave an old physical barrel unindexed; use its saved coordinates or contact staff. New deaths never put items into these containers.
 """, 'world', 'World travel | /guide/world-overview'),
     _guide('parties', 'Parties and expedition chat',
            'Group up, find a party and run expeditions together, without sharing your island.', """
@@ -810,9 +832,10 @@ For invitations and visitor permissions, use the [co-op guide](/guide/island-coo
 | `/trade <player>` | Request a confirmed item exchange. |
 | `/pay <player> <amount>` | Start a payment of whole Marks to an online player. Check the name and amount first. |
 | `/grave locate` | Show the latest indexed active grave's location. |
-| `/grave recover` | Start paid remote recovery. Default fee: **250 Marks**; make inventory space first. |
+| `/grave recover` | Recover an indexed legacy grave without a fee; make inventory space first. |
+| `/spirit` | Choose body recovery or a Spirit Healer resurrection after an adventure-world death. |
 
-Read the [trade guide](/guide/trading-safely) and [grave limits](/guide/graves) before moving valuables.
+Read the [trade guide](/guide/trading-safely) and [spirits and legacy graves](/guide/graves) before moving valuables.
 
 ## Expeditions and the campaign
 | Command | What it does |
@@ -861,7 +884,7 @@ A co-op holds six people including the owner. Members can build and use storage;
 ## Choose what comes next
 Gathering, crafting and other eligible skill work contribute to island progress. Machines process materials without replacing that work. The [resource guide](/guide/island-resources) explains the stages and land expansions.
 
-Island void rescue returns you safely with your items. Ordinary deaths still use the [grave system](/guide/graves).'''),
+Island void rescue returns you safely with your items. Death keeps inventory and XP; adventure worlds use [spirits and resurrection](/guide/graves).'''),
     'arcane-city': dict(summary='The shared hub and the planned city above the clouds. Public services and the finished build are separate.',
         requirements='/spawn travels to the configured hub. The finished city remains a preview.',
         activities='Travel to the current shared hub\nOpen remote merchants with /shops\nCheck /expedition for published destinations',

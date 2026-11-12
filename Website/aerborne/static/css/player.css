@@ -2,6 +2,7 @@
 .player-hero { padding: 2rem 0 0; background: linear-gradient(90deg,#142238f2,#142238b8),url('../img/forum/hero.png') center 45% / cover; border-bottom: 1px solid #afc7e630; }
 .player-hero .crumbs { margin-bottom: 1.5rem; }
 .player-identity { display: flex; align-items: center; gap: 1.8rem; padding-bottom: 2rem; }
+.player-minecraft-head { width:128px; height:128px; flex:none; object-fit:contain; image-rendering:pixelated; border:2px solid #f4c76b80; border-radius:16px; background:#111f34; box-shadow:0 10px 28px #07101c50; }
 .player-identity h1 { font-size: clamp(2.4rem,5vw,4rem); line-height: 1.1; margin: .25rem 0 .8rem; overflow-wrap: anywhere; }
 .player-identity .eyebrow { font-size: .72rem; margin: 0; }
 .player-rank { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-bottom: .65rem; color: #d0dff2; }
@@ -42,4 +43,9 @@
 .player-standings a:hover .standing-label { color: #8dcdf2; }
 .player-standings .fine { font-size: .72rem; margin: .8rem 0 0; }
 @media(max-width:850px) { .player-content { grid-template-columns: 1fr; } .player-standings ul { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 1.5rem; } .player-standings li { border-top: 1px solid #afc7e624; } }
-@media(max-width:500px) { .player-identity { gap: .8rem; } .player-identity .framed { width: 100px; } .player-crest { width: 70px; height: 70px; } .player-identity h1 { font-size: 2rem; } .player-identity .eyebrow { font-size: .6rem; } .player-rank,.player-forum { font-size: .75rem; } .player-overview dt { font-size: .7rem; } .player-overview > div { padding-right: .5rem; } .player-section-heading { align-items: center; } .player-section-heading .eyebrow { display: none; } .player-skills { gap: .6rem; } .player-skills li { padding: .8rem; } .player-skill-heading { flex-wrap: wrap; gap: .2rem; } .player-standings { padding: 1.1rem; } }
+@media(max-width:500px) { .player-identity { gap: .8rem; } .player-minecraft-head { width:80px; height:80px; border-radius:10px; } .player-identity h1 { font-size: 2rem; } .player-identity .eyebrow { font-size: .6rem; } .player-rank,.player-forum { font-size: .75rem; } .player-overview dt { font-size: .7rem; } .player-overview > div { padding-right: .5rem; } .player-section-heading { align-items: center; } .player-section-heading .eyebrow { display: none; } .player-skills { gap: .6rem; } .player-skills li { padding: .8rem; } .player-skill-heading { flex-wrap: wrap; gap: .2rem; } .player-standings { padding: 1.1rem; } }
+
+.player-standing-group { border-top:1px solid #afc7e62b; }
+.player-standing-group > summary { padding:.9rem 0; cursor:pointer; font-size:.85rem; font-weight:800; color:#d9e7f7; }
+.player-standing-group > summary span { color:#afc3dd; margin-left:.4rem; font-weight:400; font-size:.75rem; }
+.player-standing-group > summary::marker { color:#8dcdf2; }

@@ -27,8 +27,8 @@
 </article>
 {%- endmacro %}
 
-{% macro server_card(compact=False) -%}
-<div class="server-card{% if compact %} server-card-compact{% endif %}" data-status-url="{{ url_for('api.server_status') }}" data-state="checking">
+{% macro server_card(compact=False, illustrated=False) -%}
+<div class="server-card{% if compact %} server-card-compact{% endif %}{% if illustrated %} server-card-illustrated{% endif %}" data-status-url="{{ url_for('api.server_status') }}" data-state="checking">
   <div class="server-entry">
     <img class="server-icon" src="{{ url_for('static', filename='img/brand/minecraft-server-icon-64.png') }}" alt="" width="64" height="64" data-default-icon="{{ url_for('static', filename='img/brand/minecraft-server-icon-64.png') }}">
     <div class="server-text">
@@ -51,7 +51,9 @@
   </div>
   {% if server_address %}
   <div class="address-row">
+    {% if illustrated %}<div class="server-address">{% endif %}
     <code class="address" data-address>{{ server_address }}</code>
+    {% if illustrated %}<button class="server-address-copy" type="button" data-copy="{{ server_address }}"><span class="sr-only">Copy server address</span></button></div>{% endif %}
     <button type="button" class="btn btn-primary btn-copy" data-copy="{{ server_address }}">Copy address</button>
   </div>
   {% endif %}
