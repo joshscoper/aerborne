@@ -124,7 +124,7 @@ economy:
   market-listing-fee: 10
   # Percent taken from the seller when a market listing sells.
   market-sales-tax-percent: 5
-  # Marks for /grave recover. Walking back to the grave is always free.
+  # Legacy compatibility only. Current deaths keep inventory; old grave recovery is free.
   remote-grave-recovery-cost: 250
   # Marks per extra claim chunk (legacy mode).
   claim-expansion-cost: 500
@@ -180,12 +180,63 @@ repairs:
 # ---------------------------------------------------------------------------------------------
 
 # Skill masteries. Each season a player picks up to this many masteries once a skill reaches the level.
+# Health stays in real server health points; the client always shows ten scaled hearts.
+metrics:
+  enabled: true
+  retention-days: 180
+
+drops:
+  stacking:
+    enabled: true
+    radius: 2.5
+    items-per-pass: 128
+
+player-stats:
+  enabled: true
+  action-bar: true
+  base-health: 20
+  health-per-adventurer-level: 2
+  maximum-health: 512
+
+# Hunger stays full in Survival and Adventure, including islands and expeditions.
+# The vanilla client still draws its food bar. Food is optional preparation, never a healing fuel cost.
+food-and-recovery:
+  enabled: true
+  # Taking or dealing real damage pauses passive recovery. Login and respawn use the same delay.
+  combat-delay-seconds: 8
+  # Percent of actual maximum health per second, after the delay; never catches up offline or during lag.
+  health-percent-per-second: 5
+  # Any food grants one refreshed Well Fed benefit. Prepared meals retain their additional Cooking effects.
+  well-fed-seconds: 300
+  well-fed-recovery-percent: 25
+
 season:
   id: season-1
   masteries-per-player: 2
   mastery-level: 25
   mastery-respec-cooldown-days: 14
   mastery-respec-cost-marks: 10000
+
+events:
+  # Every week: x2 skill, adventurer and island XP for everyone. An XP booster used during it stacks on top.
+  # Days are MONDAY..SUNDAY; times are 24-hour HH:mm in the zone below.
+  double-xp-weekend:
+    enabled: true
+    zone: America/Denver
+    start-day: SATURDAY
+    start-time: "08:00"
+    end-day: SUNDAY
+    end-time: "23:59"
+    multiplier: 2.0
+  # Thunderhide comes to a Reach spot every interval (counted from midnight in the zone above), warned ahead,
+  # and leaves if not beaten in time. /worldboss start|stop for staff.
+  world-boss:
+    enabled: true
+    interval-minutes: 120
+    warning-minutes: 5
+    flee-minutes: 20
+    spot: stone_rings.place
+    mob: thunderhide
 
 progression:
   # Skill XP per action.
@@ -200,8 +251,19 @@ progression:
     farming-items: {}
     fishing-catch: 25
     hunting-base: 8
+    # Server-controlled zone/expedition/custom encounters only; ordinary farm mobs retain hunting-base.
+    # RPG skill XP, separate from vanilla orb drops. Candidate balanced pacing; validate in matched runs.
+    # A custom mob can override the final amount with hunting-experience (0 disables that reward).
+    hunting-managed:
+      base: 35
+      per-level: 5
+      elite-multiplier: 1.5
+      boss-multiplier: 3.0
     excavation-block: 3
     smithing-craft: 8
+    smithing-quality-upgrade: 20
+    smithing-expedition-forge: 40
+    cooking-smelt: 6
     smithing-smelt-iron: 4
     smithing-smelt-copper: 4
     smithing-smelt-gold: 6
@@ -524,6 +586,14 @@ travel:
   warmup-seconds: 3
   cooldown-seconds: 15
 
+# Inventory and XP are retained in every world. Existing grave containers stay accessible.
+death:
+  spirit-worlds: [MMORPG]
+  # Matching shipped adventure maps also use spirits, regardless of their folder name.
+  sanctuary-warps: [highcrown, druids_ward, sandmere]
+  resurrection-delay-seconds: 10
+  corpse-radius: 16
+  healer-sickness-seconds: 60
 graves:
   lifetime-hours: 24
 
@@ -532,14 +602,21 @@ graves:
 # ---------------------------------------------------------------------------------------------
 
 # Rotating chat tips. Players turn them off with /tips off.
+tutorial:
+  invite-on-first-login: true
+website:
+  # The website also remains available through /website and the Community menu.
+  promotion-in-tips: true
 tips:
+  # Append current tutorial, equipment, talent, and support tips to saved custom lists.
+  include-feature-updates: true
   # Timing applies in both modes.
   initial-delay-seconds: 120
   interval-seconds: 600
   # Tips for legacy mode. Skyblock mode uses skyblock.tips instead.
   messages:
     - '<gray>Choose two skill masteries after level 25. Open <white>/skills</white> to plan ahead.</gray>'
-    - '<gray>Physical grave recovery is free. <white>/grave recover</white> is the paid shortcut.</gray>'
+    - '<gray>Death keeps your inventory and XP. In adventure worlds, <white>/spirit</white> guides you back to your body or the Spirit Healer.</gray>'
     - '<gray>Geodes can hold socket gems. Hold matching gems and open <white>/forge</white> to merge them.</gray>'
     - '<gray>Local chat reaches players within 100 blocks. Switch with <white>/channel local</white>.</gray>'
     - '<gray>Claim the chunk beneath your base with <white>/claim create</white>.</gray>'
@@ -580,6 +657,9 @@ reach:
   pregen-in-flight: 24
 world-packs:
   enabled: true
+  # Recover matched adventure maps from Peaceful, including resets by world-loading plugins.
+  # Easy/Normal/Hard choices are preserved. Disable to intentionally keep an already-applied map Peaceful.
+  maintain-combat-difficulty: true
   # Worlds (by folder name) whose pack NPCs are always restored: on every start each pack NPC is put back at its
   # pack position, even one staff removed or moved, and a missing NPC body is respawned within 30 seconds.
   always-place-npcs: [MMORPG]
@@ -602,7 +682,7 @@ moderation:
 
 # Watchdog, the built-in anti-cheat. See docs/WATCHDOG_ANTICHEAT.md.
 anti-cheat:
-  mode: autonomous
+  mode: alerts-only
   # Suspicion score thresholds: alert staff, pull the player back, then kick. The score falls by
   # decay-per-second while the player plays cleanly.
   alert-score: 12
@@ -630,7 +710,7 @@ anti-cheat:
     enabled: true
     # Let the model kick, then ban, on its own. It only does so while its latest training run proved itself on
     # players it never saw: at least these labelled cases, and at least this precision and recall.
-    autonomous: true
+    autonomous: false
     target-precision: 0.995
     min-recall: 0.25
     min-cheat-windows: 100
@@ -640,6 +720,27 @@ anti-cheat:
     # Flagged combat windows within 10 minutes before a kick; a flagged window within 24 h of that kick bans.
     kick-after-windows: 2
     ban-minutes: 10080
+  # Companion-client integrity probe. The Aerborne mod answers a signed per-join challenge over a diagnostics
+  # channel and reports what only the client knows (its mod list, brightness, loader). Findings are scored by
+  # Watchdog like any other check. The server never trusts the client's word alone; a forged or missing answer is
+  # itself the signal. Players on the plain Vanilla/other clients are never challenged and never flagged here.
+  client-probe:
+    enabled: true
+    response-timeout-seconds: 10
+    # Mod ids that score a flag when a client reports them (substring match, case-insensitive). Leave empty to use
+    # the built-in list of common cheat clients, pathing tools and x-ray.
+    flagged-mods: []
+    weights:
+      # A reply whose signature does not verify: a forged or modified build.
+      forged: 30
+      # The probe channel is present but no valid answer arrived in time.
+      no-response: 15
+      # The mod is present (HUD channel) but the probe channel was stripped out.
+      stripped: 20
+      # Brightness forced past vanilla's limit (full-bright).
+      fullbright: 8
+      # Per flagged mod reported.
+      flagged-mod: 20
 
 # ---------------------------------------------------------------------------------------------
 # 9. Display
@@ -670,6 +771,10 @@ presentation:
     display-view-range: 0.75
     segments: 12
     maximum-overhead-bars: 64
+    # Names stay visible before combat in these worlds. The player's mob display setting hides both.
+    nameplate-worlds: [MMORPG]
+    nameplate-range: 24
+    nameplates-per-viewer: 24
 
 # ---------------------------------------------------------------------------------------------
 # 10. Legacy SMP mode only (gameplay.mode: smp)

@@ -89,8 +89,12 @@ public interface ProgressionService {
         }
 
         public double adventurerStat(String stat) {
-            return AdventurerProgression.rankStat(adventurer().level(), stat);
+            return AdventurerProgression.rankStat(adventurer().level(), stat) + net.nerdsmp.api.model.AdventurerTalents.stat(talents, stat);
         }
+
+        public int adventurerPointsEarned() { return net.nerdsmp.api.model.AdventurerTalents.earnedPoints(adventurer().level()); }
+        public int adventurerPointsSpent() { return net.nerdsmp.api.model.AdventurerTalents.spentPoints(talents); }
+        public int adventurerPointsAvailable() { return Math.max(0, adventurerPointsEarned() - adventurerPointsSpent()); }
 
         public static ProgressionSnapshot empty() {
             EnumMap<Skill, SkillProgress> skills = new EnumMap<>(Skill.class);

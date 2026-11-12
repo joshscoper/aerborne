@@ -233,34 +233,22 @@ public final class JdbcProgressionService implements ProgressionService {
 
     @Override
     public CompletionStage<TalentResult> unlockTalent(AccountId accountId, String talentId) {
-        SkillTreeCatalog.TalentNode node = SkillTreeCatalog.node(talentId).orElse(null);
-        if (node == null) {
-            return CompletableFuture.completedFuture(TalentResult.UNKNOWN_TALENT);
-        }
+        String canonical = net.nerdsmp.api.model.TalentRules.canonicalId(talentId);
+        if (canonical == null) return CompletableFuture.completedFuture(TalentResult.UNKNOWN_TALENT);
         return CompletableFuture.supplyAsync(() -> inTransaction(connection -> {
             ensureAccount(connection, accountId);
             lockAccount(connection, accountId);
             Set<String> talents = readTalents(connection, accountId);
-            if (talents.contains(node.id())) {
-                return TalentResult.ALREADY_UNLOCKED;
-            }
-            SkillProgress progress = readProgress(connection, accountId, node.skill(), false);
-            if (progress.level() < node.requiredLevel()) {
-                return TalentResult.LEVEL_TOO_LOW;
-            }
-            if (node.previousId() != null && !talents.contains(node.previousId())) {
-                return TalentResult.PREREQUISITE_MISSING;
-            }
-            int earned = SkillTreeCatalog.earnedPoints(progress.level());
-            if (SkillTreeCatalog.spentPoints(talents, node.skill()) >= earned) {
-                return TalentResult.NO_POINTS_AVAILABLE;
-            }
+            EnumMap<Skill, SkillProgress> skills = readSkills(connection, accountId);
+            var snapshot = new ProgressionSnapshot(skills, Set.of(), talents, Instant.EPOCH);
+            TalentResult eligibility = net.nerdsmp.api.model.TalentRules.check(snapshot, canonical);
+            if (eligibility != TalentResult.UNLOCKED) return eligibility;
             try (PreparedStatement insert = connection.prepareStatement(
                 "INSERT INTO skill_talents(account_id, season_id, talent_id) VALUES (?, ?, ?)"
             )) {
                 insert.setObject(1, accountId.value());
                 insert.setString(2, seasonId);
-                insert.setString(3, node.id());
+                insert.setString(3, canonical);
                 insert.executeUpdate();
             }
             return TalentResult.UNLOCKED;
@@ -335,6 +323,17 @@ public final class JdbcProgressionService implements ProgressionService {
         EnumMap<Skill, SkillProgress> skills = new EnumMap<>(Skill.class);
         for (Skill skill : Skill.values()) {
             skills.put(skill, new SkillProgress(0L, 0));
+        }
+        return skills;
+    }
+
+    private EnumMap<Skill, SkillProgress> readSkills(Connection connection, AccountId account) throws SQLException {
+        EnumMap<Skill, SkillProgress> skills = emptySkills();
+        try (PreparedStatement query = connection.prepareStatement("SELECT skill, experience, level FROM skill_progress WHERE account_id = ? AND season_id = ?")) {
+            query.setObject(1, account.value()); query.setString(2, seasonId);
+            try (ResultSet rows = query.executeQuery()) {
+                while (rows.next()) skills.put(Skill.valueOf(rows.getString("skill")),new SkillProgress(rows.getLong("experience"),rows.getInt("level")));
+            }
         }
         return skills;
     }

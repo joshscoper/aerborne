@@ -244,6 +244,13 @@ public final class ContentEditor implements Listener, AutoCloseable {
                 replace(draft, "lore", lore);
             });
         button(page, 20, Material.REDSTONE, "Stats", List.of(item.stats().size() + " active stats", "Choose the stats this item grants."), ignored -> stats(player, draft, 0));
+        button(page, 21, Material.CHEST, "Equipment Slot", List.of(readable(item.slot().name()), "Accessory slot or auto for ordinary equipment.", "Slot is fixed after publishing."), ignored -> {
+            if(draft.originalItem==null) ask(player,false,draft,"Enter neck, shoulders, back, wrists, hands, waist, ring, trinket, or auto.",value->{
+                var slot=value.strip().equalsIgnoreCase("auto")?net.nerdsmp.paper.item.EquipmentMaterials.slot(item.material())
+                    :net.nerdsmp.paper.item.PaperItemService.GearSlot.valueOf(value.strip().toUpperCase(Locale.ROOT));
+                replace(draft,"slot",slot);showDraft(player,draft);
+            });
+        });
         button(page, 22, Material.SPYGLASS, "Tooltip Preview", List.of("See the finished tooltip without creating an item."), ignored -> preview(player, draft));
         button(page, 24, Material.LIME_DYE, "Review & Publish", List.of("Save this definition and add it to the live catalog.", "Existing sockets and enchantments are preserved."), ignored -> confirm(player, draft, false));
         commonDraftButtons(page, player, draft); open(player, page);
@@ -256,7 +263,8 @@ public final class ContentEditor implements Listener, AutoCloseable {
             field.equals("material") ? (Material) value : old.material(), field.equals("rarity") ? (String) value : old.rarity(),
             field.equals("sockets") ? (Integer) value : old.sockets(), field.equals("level") ? (Integer) value : old.itemLevel(),
             field.equals("set") ? (String) value : old.setId(), field.equals("lore") ? (List<String>) value : old.lore(),
-            field.equals("stats") ? (Map<String, Double>) value : old.stats());
+            field.equals("stats") ? (Map<String, Double>) value : old.stats(), field.equals("slot") ? (net.nerdsmp.paper.item.PaperItemService.GearSlot)value
+                :field.equals("material")&&!old.slot().accessory()?net.nerdsmp.paper.item.EquipmentMaterials.slot((Material)value):old.slot());
         if (draft.originalItem != null && candidate.sockets() < draft.originalItem.sockets()) throw new IllegalArgumentException("Published socket capacity cannot shrink.");
         draft.item = candidate; draft.revision++;
     }
@@ -508,7 +516,7 @@ public final class ContentEditor implements Listener, AutoCloseable {
                     next.set = new ItemSetBlueprint(id, draft.set.name(), draft.set.pieceCount(), draft.set.bonuses());
                 }
                 else if (draft.mob) { next.encounter = draft.encounter.renamed(id); next.mobRevision = mobs.revision(); }
-                else { var old = draft.item; next.item = new ItemBlueprint(id, old.name(), old.material(), old.rarity(), old.sockets(), old.itemLevel(), old.setId(), old.lore(), old.stats()); }
+                else { var old = draft.item; next.item = new ItemBlueprint(id, old.name(), old.material(), old.rarity(), old.sockets(), old.itemLevel(), old.setId(), old.lore(), old.stats(), old.slot()); }
                 install(player, next); showDraft(player, next);
             }));
     }

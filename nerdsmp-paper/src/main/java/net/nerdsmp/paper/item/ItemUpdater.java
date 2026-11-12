@@ -21,12 +21,29 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
+import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.event.block.CrafterCraftEvent;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.CookingRecipe;
+import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.BlastingRecipe;
+import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.inventory.CampfireRecipe;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -34,6 +51,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * Brings every NerdSMP item made by an older version up to the current system, wherever a player can
@@ -51,6 +73,10 @@ public final class ItemUpdater implements Listener {
     private final PaperItemService items;
     private final ArcaneForgeService forge;
     private SkillLampService lamps;
+    private final Set<UUID> pending = new LinkedHashSet<>();
+    private BukkitTask task;
+    private boolean updating;
+    private final Map<NamespacedKey, Recipe> cookingOriginals = new LinkedHashMap<>();
 
     public ItemUpdater(PaperItemService items, ArcaneForgeService forge) {
         this.items = items;
@@ -66,8 +92,44 @@ public final class ItemUpdater implements Listener {
         ItemUpdater updater = active;
         return updater == null || item == null ? item : updater.items.withoutUpgradeNote(updater.upgrade(item).orElse(item));
     }
+    public void start(JavaPlugin plugin) {
+        // Native furnaces compare output components before firing smelt events. Their registered
+        // results must use the same template as the displayed stack, including on the second smelt.
+        Bukkit.getScheduler().runTask(plugin, this::cookingResults);
+        task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (int i = 0; i < 4 && !pending.isEmpty(); i++) {
+                UUID id = pending.iterator().next(); pending.remove(id); Player player = Bukkit.getPlayer(id);
+                if (player != null && player.isOnline()) update(player.getInventory());
+            }
+        }, 1, 1);
+    }
+    private void cookingResults() {
+        List<CookingRecipe<?>> recipes = new ArrayList<>();
+        Bukkit.recipeIterator().forEachRemaining(recipe -> { if (recipe instanceof CookingRecipe<?> cooking) recipes.add(cooking); });
+        for (CookingRecipe<?> recipe : recipes) {
+            ItemStack result = current(recipe.getResult());
+            if (result.isSimilar(recipe.getResult())) continue;
+            CookingRecipe<?> replacement;
+            if (recipe instanceof FurnaceRecipe) replacement = new FurnaceRecipe(recipe.getKey(), result, recipe.getInputChoice(), recipe.getExperience(), recipe.getCookingTime());
+            else if (recipe instanceof BlastingRecipe) replacement = new BlastingRecipe(recipe.getKey(), result, recipe.getInputChoice(), recipe.getExperience(), recipe.getCookingTime());
+            else if (recipe instanceof SmokingRecipe) replacement = new SmokingRecipe(recipe.getKey(), result, recipe.getInputChoice(), recipe.getExperience(), recipe.getCookingTime());
+            else if (recipe instanceof CampfireRecipe) replacement = new CampfireRecipe(recipe.getKey(), result, recipe.getInputChoice(), recipe.getExperience(), recipe.getCookingTime());
+            else continue;
+            replacement.setGroup(recipe.getGroup()); replacement.setCategory(recipe.getCategory());
+            if (!Bukkit.removeRecipe(recipe.getKey())) continue;
+            if (!Bukkit.addRecipe(replacement)) { Bukkit.addRecipe(recipe); throw new IllegalStateException("Could not update cooking result " + recipe.getKey()); }
+            cookingOriginals.put(recipe.getKey(), recipe);
+        }
+        for (var world : Bukkit.getWorlds()) for (var chunk : world.getLoadedChunks()) cookingStorage(chunk);
+    }
+    private void cookingStorage(org.bukkit.Chunk chunk) {
+        for (var state : chunk.getTileEntities()) if (state instanceof org.bukkit.block.Furnace furnace) update(furnace.getInventory());
+    }
+    @EventHandler public void loaded(ChunkLoadEvent event) { cookingStorage(event.getChunk()); }
 
     public void close() {
+        if (task != null) task.cancel(); pending.clear();
+        cookingOriginals.forEach((key, recipe) -> { Bukkit.removeRecipe(key); Bukkit.addRecipe(recipe); }); cookingOriginals.clear();
         if (active == this) active = null;
     }
 
@@ -75,16 +137,22 @@ public final class ItemUpdater implements Listener {
     public Optional<ItemStack> upgrade(ItemStack item) {
         if (item == null || item.getType().isAir()) return Optional.empty();
         if (lamps != null && item.getType() == org.bukkit.Material.EXPERIENCE_BOTTLE) return lamps.upgrade(item);
-        if (!item.hasItemMeta()) return Optional.empty();
+        Optional<ItemStack> food = FoodItems.upgrade(item);
+        if (food.isPresent()) item = food.get();
+        if (!item.hasItemMeta()) return ItemPresentation.upgrade(item).or(() -> food);
         Optional<ItemStack> forged = forge.upgrade(item);
         if (forged.isPresent()) return forged;
         Optional<ItemStack> catalog = items.upgrade(item);
         Optional<ItemStack> nested = nested(catalog.orElse(item));
-        return nested.isPresent() ? nested : catalog;
+        Optional<ItemStack> changed = nested.isPresent() ? nested : catalog.isPresent() ? catalog : food;
+        Optional<ItemStack> presented = ItemPresentation.upgrade(changed.orElse(item));
+        return presented.isPresent() ? presented : changed;
     }
 
     /** Updates every slot of an inventory in place; returns how many items changed. */
     public int update(Inventory inventory) {
+        boolean previous = updating; updating = true;
+        try {
         int changed = 0;
         ItemStack[] contents = inventory.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
@@ -94,7 +162,24 @@ public final class ItemUpdater implements Listener {
             changed++;
         }
         return changed;
+        } finally { updating = previous; }
     }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void changed(PlayerInventorySlotChangeEvent event) { if (!updating) pending.add(event.getPlayer().getUniqueId()); }
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void crafted(PrepareItemCraftEvent event) {
+        ItemStack item = event.getInventory().getResult(); if (item != null) event.getInventory().setResult(current(item));
+    }
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void smelted(FurnaceSmeltEvent event) {
+        event.setResult(current(event.getResult()));
+    }
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void automated(CrafterCraftEvent event) { event.setResult(current(event.getResult())); }
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void anvil(PrepareAnvilEvent event) { if (event.getResult() != null) event.setResult(current(event.getResult())); }
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void smithing(PrepareSmithingEvent event) { if (event.getResult() != null) event.setResult(current(event.getResult())); }
 
     private Optional<ItemStack> nested(ItemStack item) {
         ItemMeta meta = item.getItemMeta();

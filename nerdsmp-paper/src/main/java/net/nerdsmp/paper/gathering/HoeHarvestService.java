@@ -128,7 +128,7 @@ public final class HoeHarvestService implements Listener {
             if (drops.isEmpty()) return false;
             Seed seed = reserveSeed(spec.seed(), drops, player.getInventory().getStorageContents());
             if (seed == null) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text("Keep one " + spec.seed().name().toLowerCase(Locale.ROOT).replace('_', ' ')
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, net.kyori.adventure.text.Component.text("Keep one " + spec.seed().name().toLowerCase(Locale.ROOT).replace('_', ' ')
                     + " for replanting.", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
                 return false;
             }
@@ -164,7 +164,7 @@ public final class HoeHarvestService implements Listener {
             }
             harvest.commit();
             mutated = false;
-            for (ItemStack item : drops) if (item.getAmount() > 0)
+            for (ItemStack item : net.nerdsmp.paper.loot.DropStacks.compact(drops))
                 crop.getWorld().dropItemNaturally(crop.getLocation().add(.5, .5, .5), item);
             wearTool.accept(player, player.getInventory().getItemInMainHand());
             player.playSound(crop.getLocation(), Sound.BLOCK_CROP_BREAK, .45F, 1.1F);
@@ -238,7 +238,7 @@ public final class HoeHarvestService implements Listener {
     }
     private static HoeHarvestRules.SeedStack seedValue(ItemStack item) {
         return item == null ? new HoeHarvestRules.SeedStack("AIR", 0, false)
-            : new HoeHarvestRules.SeedStack(item.getType().name(), item.getAmount(), item.hasItemMeta());
+            : new HoeHarvestRules.SeedStack(item.getType().name(), item.getAmount(), !net.nerdsmp.paper.item.FoodItems.ordinary(item));
     }
     private static boolean seedAvailable(Seed seed, Material material, List<ItemStack> drops, ItemStack[] storage) {
         return seed.source() == HoeHarvestRules.SeedSource.NONE || (seed.source() == HoeHarvestRules.SeedSource.HARVEST
@@ -246,7 +246,7 @@ public final class HoeHarvestService implements Listener {
             : seed.index() < storage.length && plainSeed(storage[seed.index()], material));
     }
     private static boolean plainSeed(ItemStack item, Material material) {
-        return item != null && item.getType() == material && item.getAmount() > 0 && !item.hasItemMeta();
+        return item != null && item.getType() == material && item.getAmount() > 0 && net.nerdsmp.paper.item.FoodItems.ordinary(item);
     }
     private static Material berryProduce(Material crop) { return crop == Material.SWEET_BERRY_BUSH ? Material.SWEET_BERRIES : Material.GLOW_BERRIES; }
     private record Seed(HoeHarvestRules.SeedSource source, int index) { }

@@ -88,12 +88,14 @@ const S = {
   drawer: { uuid: null, name: '', tab: 'profile', detail: null, at: 0 },
   newestAlert: 0, timer: null,
   refreshing: false,
+  metricsDays: '30', metricsFocus: 'audience',
   chatPaused: false, chatFrozen: null, chatKey: null, chatSending: false,
 };
 
 const VIEWS = [
   { id: 'overview', label: 'Overview', sub: 'Server health, live alerts and everything waiting on staff.', icon: 'M4 4h6v8H4zM14 4h6v5h-6zM14 13h6v7h-6zM4 16h6v4H4z' },
   { id: 'players', label: 'Players', sub: 'Everyone online right now, plus every account that has joined.', icon: 'M15.5 19v-1.4a3.6 3.6 0 0 0-3.6-3.6H7.1a3.6 3.6 0 0 0-3.6 3.6V19M9.5 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20.5 19v-1.3a3.4 3.4 0 0 0-2.6-3.3M15.5 4.6a3 3 0 0 1 0 5.8' },
+  { id: 'metrics', label: 'Metrics', sub: 'Understand who returns, where players spend time and how your systems perform.', icon: 'M4 20V4M4 20h17M8 16v-5M13 16V7M18 16V3' },
   { id: 'chat', label: 'Chat', sub: 'Follow conversations, support players and manage public chat.', icon: 'M4 4h16v12H9l-5 4V4ZM8 8h8M8 12h5' },
   { id: 'locations', label: 'Locations', sub: 'Where players connect from, by each account\u2019s last-known country, region and city.', icon: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5' },
   { id: 'alerts', label: 'Watchdog', sub: 'Anti-cheat evidence, live suspicion scores and what Watchdog did about them.', icon: 'M12 3 5 5.8v5.4c0 4.4 3 7.9 7 9.3 4-1.4 7-4.9 7-9.3V5.8L12 3ZM8.5 12.5h2l1-2.5 1.7 4.5 1.1-2h1.7' },
@@ -215,7 +217,7 @@ function healthCell(health, max) {
 function pingCell(ping) {
   return h('span', { class: ping < 80 ? 'ping-good' : ping < 180 ? 'ping-ok' : 'ping-bad' }, `${fmt(ping)} ms`);
 }
-function sectionAsset(id = S.view) { return ({ alerts: 'watchdog', audit: 'audit-log', chat: 'reports' })[id] || id; }
+function sectionAsset(id = S.view) { return ({ alerts: 'watchdog', audit: 'audit-log', chat: 'reports', metrics: 'server' })[id] || id; }
 function empty(text) {
   return h('div', { class: 'empty-state' }, h('img', { src: `/assets/art-${sectionAsset()}.webp`, alt: '', width: '64', height: '64', loading: 'lazy' }), h('p', { class: 'empty' }, text));
 }
@@ -324,7 +326,7 @@ function buildNav() {
   for (const view of VIEWS) {
     if (groups[view.id]) nav.append(h('p', { class: 'nav-group-label' }, groups[view.id]));
     nav.append(h('button', { type: 'button', class: 'nav-item', 'data-view': view.id, on: { click: () => go(view.id) } },
-      view.id === 'chat' ? icon(view.icon) : h('img', { src: `/assets/nav-${sectionAsset(view.id)}.svg`, alt: '', width: '20', height: '20' }),
+      ['chat', 'metrics'].includes(view.id) ? icon(view.icon) : h('img', { src: `/assets/nav-${sectionAsset(view.id)}.svg`, alt: '', width: '20', height: '20' }),
       h('span', { class: 'label' }, view.label), h('span', { class: 'count', hidden: true })));
   }
 }
@@ -340,7 +342,7 @@ function go(id, push = true) {
   $('#view-title').textContent = view.label;
   $('#view-sub').textContent = view.sub;
   $('#view-header').dataset.section = view.id;
-  $('#view-area').textContent = ['overview', 'players', 'locations', 'chat'].includes(view.id) ? 'Live operations' : ['alerts', 'reports', 'sanctions'].includes(view.id) ? 'Trust & safety' : 'Administration';
+  $('#view-area').textContent = view.id === 'metrics' ? 'Game analytics' : ['overview', 'players', 'locations', 'chat'].includes(view.id) ? 'Live operations' : ['alerts', 'reports', 'sanctions'].includes(view.id) ? 'Trust & safety' : 'Administration';
   $('#view-art').src = `/assets/art-${sectionAsset(view.id)}.webp`;
   if (push && location.hash !== `#${view.id}`) history.replaceState(null, '', `#${view.id}`);
   renderView();
@@ -386,7 +388,7 @@ function renderAll() {
 function renderView() {
   if (!S.data) return;
   ({ overview: renderOverview, players: renderPlayers, chat: renderChat, locations: renderLocations, alerts: renderAlerts, reports: renderReports, sanctions: renderSanctions,
-    server: renderServer, audit: renderAudit, staff: renderStaff })[S.view]?.();
+    server: renderServer, metrics: renderMetrics, audit: renderAudit, staff: renderStaff })[S.view]?.();
 }
 
 /* ---------- Overview ---------- */
@@ -1031,7 +1033,7 @@ const REASON = { min: 3, max: 180, rule: 'Add a clear reason between 3 and 180 c
 const MUTE_TIMES = [['10 minutes', '10'], ['30 minutes', '30'], ['1 hour', '60'], ['6 hours', '360'], ['1 day', '1440'], ['7 days', '10080']];
 const BAN_TIMES = [['1 day', '1440'], ['3 days', '4320'], ['7 days', '10080'], ['30 days', '43200'], ['Permanent', 'perm']];
 const ACTIONS = {
-  'chat-policy': { title: () => 'Manage public chat', text: 'Pause or slow Global, Local and Trade. Staff are exempt. These controls reset on server restart; private channels are unchanged.', reason: 'Reason', confirm: 'Apply chat controls' },
+  'chat-policy': { title: () => 'Manage public chat', text: 'Pause or slow Global, Local and Trade. Staff are exempt. These controls reset on server restart; private channels are unchanged.', reason: 'Reason', staffOnly: true, confirm: 'Apply chat controls' },
   warn: { title: (n) => `Warn ${n}`, text: 'They see this in chat, and it is saved to their history.', reason: 'Warning', confirm: 'Send warning' },
   note: { title: (n) => `Add a note for ${n}`, text: 'Notes are visible to staff only.', reason: 'Note', staffOnly: true, confirm: 'Save note' },
   mute: { title: (n) => `Mute ${n}`, text: 'They cannot use chat until the mute ends.', reason: 'Reason', times: MUTE_TIMES, defaultTime: '30', confirm: 'Mute' },
@@ -1177,6 +1179,149 @@ function pick(row) {
   openDrawer(row.uuid, row.name);
 }
 
+/* ---------- Durable player & gameplay metrics ---------- */
+const metricDate = (day) => new Date(`${day}T12:00:00Z`).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' });
+const metricHours = (ms) => fmt((ms || 0) / 3600000, 1);
+const metricSum = (counters, prefix) => Object.entries(counters).filter(([key]) => key.startsWith(prefix)).reduce((sum, [, value]) => sum + value, 0);
+function metricPanel(title, note, ...children) {
+  return h('article', { class: 'panel metric-panel' }, h('header', null, h('h2', null, title)), note ? h('p', { class: 'hint metric-explainer' }, note) : null, children);
+}
+function metricBars(entries, format = fmt) {
+  if (!entries.length) return h('p', { class: 'empty' }, 'No observations in this date range yet.');
+  const max = Math.max(1, ...entries.map(([, value]) => value));
+  return h('div', { class: 'metric-bars' }, entries.map(([label, value]) => h('div', { class: 'metric-bar-row' },
+    h('div', { class: 'metric-bar-copy' }, h('span', null, label), h('strong', null, format(value))),
+    h('div', { class: 'metric-bar-track' }, h('span', { style: { width: `${Math.max(0, value / max * 100)}%` } })))));
+}
+function metricEntries(counters, prefix, limit = 12) {
+  return Object.entries(counters).filter(([key]) => key.startsWith(prefix)).map(([key, value]) => [pretty(key.slice(prefix.length).replace(/[:.]/g, ' ')), value]).sort((a, b) => b[1] - a[1]).slice(0, limit);
+}
+function dailyMetricChart(days) {
+  const host = h('div', { class: 'metric-daily-chart' });
+  if (!days.length) return h('p', { class: 'empty' }, 'Daily history begins when tracking is enabled.');
+  const readout = h('p', { class: 'metric-chart-readout' }, 'Focus or hover a day to inspect it. Today is still in progress.');
+  const W = 1000, H = 190, gutter = 38, width = (W - gutter) / days.length;
+  const max = Math.max(1, ...days.map((d) => d.players || 0));
+  const plot = svg('svg', { viewBox: `0 0 ${W} 220`, role: 'img', 'aria-label': 'Daily unique players, with new and returning players stacked. Missing observations are marked separately.' });
+  for (const fraction of [0, .5, 1]) {
+    const y = H - fraction * (H - 15);
+    plot.append(svg('line', { x1: gutter, x2: W, y1: y, y2: y, class: 'metric-grid' }));
+    const label = svg('text', { x: gutter - 8, y: y + 4, 'text-anchor': 'end', class: 'metric-axis' }); label.textContent = fmt(max * fraction); plot.append(label);
+  }
+  days.forEach((d, i) => {
+    const x = gutter + i * width + width * .14, w = width * .72;
+    const title = `${metricDate(d.day)} (UTC) · ${d.observed ? `${fmt(d.players)} players · ${fmt(d.newPlayers)} new · ${metricHours(d.activeMs)} active hours · ${fmt(d.mspt, 1)} ms/tick` : 'No performance sampling coverage; activity may be incomplete'}`;
+    const group = svg('g', { tabindex: '0', 'aria-label': title }); const tooltip = svg('title'); tooltip.textContent = title; group.append(tooltip);
+    group.append(svg('rect', { x, y: 8, width: Math.max(1, w), height: H - 8, fill: 'transparent' }));
+    if (d.observed) {
+      const returning = Math.max(0, (d.players || 0) - (d.newPlayers || 0));
+      const oldHeight = returning / max * (H - 15), newHeight = (d.newPlayers || 0) / max * (H - 15);
+      group.append(svg('rect', { x, y: H - oldHeight, width: w, height: oldHeight, class: 'metric-returning' }),
+        svg('rect', { x, y: H - oldHeight - newHeight, width: w, height: newHeight, class: 'metric-new' }));
+    } else group.append(svg('rect', { x, y: H - 4, width: w, height: 4, class: 'metric-missing' }));
+    const inspect = () => { readout.textContent = title; };
+    group.addEventListener('pointerenter', inspect); group.addEventListener('focus', inspect); plot.append(group);
+    if (i === 0 || i === days.length - 1 || i % Math.max(1, Math.floor(days.length / 5)) === 0) {
+      const label = svg('text', { x: i === days.length - 1 ? W - 2 : x + w / 2, y: 214, 'text-anchor': i === days.length - 1 ? 'end' : 'middle', class: 'metric-axis' }); label.textContent = metricDate(d.day); plot.append(label);
+    }
+  });
+  host.append(h('div', { class: 'metric-legend' }, h('span', { class: 'new' }, 'New players'), h('span', { class: 'returning' }, 'Returning players'), h('span', { class: 'missing' }, 'Not observed')), plot, readout);
+  return host;
+}
+function retentionValue(cell) {
+  if (cell.rate == null) return h('span', { class: 'hint' }, cell.pending ? 'Measuring' : cell.missing ? 'Not observed' : '—');
+  return h('span', { class: 'metric-retention-value' }, h('strong', null, pct(cell.rate, 1)), h('small', null, `${fmt(cell.returned)} / ${fmt(cell.eligible)}`));
+}
+function renderMetrics() {
+  const m = S.data?.metrics;
+  $('#metrics-export').disabled = !m?.ranges;
+  if (!m?.enabled || m.error || !m.ranges) {
+    fill('#metrics-kpis'); fill('#metrics-coverage', m?.error || (m?.enabled === false ? 'Metrics tracking is disabled in server configuration.' : 'Metrics history is not available from this server build yet.'));
+    fill('#metrics-content', empty('Player trends and return cohorts will appear once tracking is running. Historical visits are not inferred or fabricated.')); return;
+  }
+  const r = m.ranges[S.metricsDays], c = r.counters, days = m.days.filter((d) => d.day >= r.from);
+  const warnings = [m.saveError, m.lost ? `${fmt(m.lost)} observations exceeded tracking limits; affected totals may be incomplete.` : null,
+    m.sampleGapMs ? `${span(m.sampleGapMs)} of delayed sample time was excluded.` : null].filter(Boolean);
+  fill('#metrics-coverage', h('div', null, h('strong', null, `${metricDate(r.from)} – ${metricDate(r.through)} · UTC`),
+    h('span', null, `Tracking since ${new Date(m.started).toLocaleString(undefined, { timeZone: 'UTC' })} UTC. Today is partial. ${m.saved ? `Saved ${ago(m.saved)}.` : 'First save pending.'}`)),
+    warnings.length ? h('p', { class: 'metric-warning' }, warnings.join(' ')) : null);
+  if (S.metricsFocus === 'audience') {
+    fill('#metrics-kpis', kpi('Unique players', fmt(r.players), null, `Across ${S.metricsDays} calendar days`),
+      kpi('New players', fmt(r.newPlayers), null, 'First joins observed since tracking began'),
+      kpi('Returning players', fmt(r.returning), null, 'Established before this date range'),
+      kpi('Active player-hours', metricHours(r.activeMs), 'h', `${metricHours(r.onlineMs)} h connected · AFK excluded`),
+      kpi('Average session', r.averageSessionMs == null ? '—' : fmt(r.averageSessionMs / 60000, 1), 'min', `${plural(r.completedSessions, 'completed session')}`),
+      kpi('Peak online', fmt(r.peak), null, 'Sampled concurrent players'));
+    const retention = metricPanel('Do new players come back?', 'Exact UTC calendar-day returns. Today and dates with less than 90% tracking coverage are excluded from the denominator.',
+      h('div', { class: 'metric-retention-cards' }, r.retention.map((cell) => h('div', null, h('span', { class: 'eyebrow' }, `Day ${cell.day}`),
+        h('strong', { class: 'metric-rate' }, cell.rate == null ? '—' : pct(cell.rate, 1)), h('p', { class: 'hint' }, `${fmt(cell.returned)} returned / ${fmt(cell.eligible)} eligible`),
+        h('small', null, `${fmt(cell.pending)} still maturing · ${fmt(cell.missing)} without coverage`)))));
+    const sessions = metricPanel('Session depth', 'Completed player sessions only. Restarts, crashes and sessions already open when tracking started are excluded from length averages.',
+      metricBars(['Under 5 min', '5–15 min', '15–30 min', '30–60 min', 'Over 60 min'].map((label, i) => [label, r.sessionLengths[i]])),
+      h('p', { class: 'hint space-above' }, `${fmt(c['session.started'] || 0)} joins · ${fmt(c['session.interrupted'] || 0)} interrupted sessions recorded`));
+    fill('#metrics-content',
+      metricPanel('The daily picture', 'Unique players per UTC day. Returning players were first seen before that day; missing coverage is not shown as zero activity.', dailyMetricChart(days)),
+      h('div', { class: 'grid two metrics-section' }, retention, sessions),
+      h('div', { class: 'grid two metrics-section' },
+        metricPanel('New-player first steps', 'Players who first joined in this range and have ever reached each milestone while tracked. These are independent milestones, not an ordered conversion funnel.',
+          metricBars([['Joined', r.milestones.joined], ['Earned skill XP', r.milestones.xp], ['Completed a story quest', r.milestones.quest], ['Entered an expedition', r.milestones.expedition]])),
+        metricPanel('Where time goes', 'Active player-hours by world. Uses the same AFK timeout as playtime rewards; Creative and Spectator time is excluded.',
+          metricBars(metricEntries(c, 'world.').map(([label, value]) => [label.replace(/ ms$/i, ''), value]), (ms) => `${metricHours(ms)} h`))),
+      metricPanel('Return cohorts', 'Grouped by first observed new-player join date. Each percentage includes its returned / eligible denominator.',
+        table([{ label: 'First joined · UTC', cell: (row) => metricDate(row.day), sort: (row) => row.day }, { label: 'New players', cls: 'num', cell: (row) => fmt(row.players) },
+          ...[1, 7, 30].map((n) => ({ label: `Day ${n}`, cls: 'num', cell: (row) => retentionValue(row[`d${n}`]), sort: (row) => row[`d${n}`].rate ?? -1 }))], r.cohorts, { emptyText: 'No new-player cohorts have been observed in this range.', limit: 14 })),
+      metricPanel('Daily observations', 'Server availability and performance help explain changes in player activity. Today is partial; averages are sampled, not continuous profiling.', dailyMetricsTable(days)));
+  } else if (S.metricsFocus === 'gameplay') {
+    const xp = metricSum(c, 'xp.'), kills = metricSum(c, 'kills.'), resolved = (c['expedition.completed'] || 0) + (c['expedition.failed'] || 0);
+    fill('#metrics-kpis', kpi('Skill XP awarded', fmt(xp), null, 'Accepted awards · retries excluded'), kpi('XP awards', fmt(metricSum(c, 'activity.')), null, 'Includes quest and reward XP'),
+      kpi('Mob kills', fmt(kills), null, 'Player kills · mechanic objects excluded'), kpi('Player deaths', fmt(c['player.deaths'] || 0), null, 'Survival & Adventure'),
+      kpi('Story quests completed', fmt(c['quest.completed'] || 0), null, `${fmt(c['quest.accepted'] || 0)} accepted in this range`),
+      kpi('Resolved expeditions cleared', resolved ? pct((c['expedition.completed'] || 0) / resolved, 1) : '—', null, `${fmt(resolved)} resolved runs · excludes test runs`));
+    const skills = metricEntries(c, 'xp.', 32).map(([skill, xp]) => ({ skill, xp, awards: c[`activity.${skill.toUpperCase().replaceAll(' ', '_')}`] || 0 }));
+    fill('#metrics-content', h('div', { class: 'grid two' },
+      metricPanel('Progression balance', 'Accepted XP rewards before level caps. XP per active hour uses all active player-hours, not skill-specific time. Awards can cover bulk actions, quests or bonuses.',
+        table([{ label: 'Skill', cell: (row) => row.skill }, { label: 'XP', cls: 'num', cell: (row) => fmt(row.xp), sort: (row) => row.xp },
+          { label: 'Awards', cls: 'num', cell: (row) => fmt(row.awards), sort: (row) => row.awards }, { label: 'XP / active h', cls: 'num', cell: (row) => r.activeMs ? fmt(row.xp / (r.activeMs / 3600000), 1) : '—' }], skills)),
+      metricPanel('Where XP comes from', 'Source categories use operation prefixes only; individual operation IDs are not stored.', metricBars(metricEntries(c, 'xpSource.')))),
+      h('div', { class: 'grid two metrics-section' }, metricPanel('Combat encounters', 'Most frequently defeated mobs. Creative kills are excluded.', metricBars(metricEntries(c, 'kills.'))),
+        metricPanel('Death pressure', 'Use this alongside health, defense, travel and encounter changes.', metricBars(metricEntries(c, 'death.')))),
+      h('div', { class: 'grid two metrics-section' }, metricPanel('Story quest completions', 'Actual turn-ins; administrative completions are excluded. Repeated daily story quests count each completed turn-in.', metricBars(metricEntries(c, 'questComplete.'))),
+        metricPanel('Expedition outcomes', 'Starts and outcomes can fall in different date ranges. Clears / resolved uses completed + failed outcomes, not starts in the same window.',
+          metricBars([['Instances started', c['expedition.started'] || 0], ['Completed', c['expedition.completed'] || 0], ['Failed / abandoned', c['expedition.failed'] || 0]]),
+          h('p', { class: 'hint space-above' }, `Average clear time: ${c['expedition.completed'] ? span((c['expedition.seconds'] || 0) * 1000 / c['expedition.completed']) : '—'}. Test runs excluded; assisted runs included.`))));
+  } else {
+    const credit = metricSum(c, 'marks.credit.'), debit = metricSum(c, 'marks.debit.'), transfer = metricSum(c, 'marks.transfer.');
+    fill('#metrics-kpis', kpi('Marks credited', fmt(credit), null, 'Successful credits, including refunds'), kpi('Marks debited', fmt(debit), null, 'Successful debits, including escrow'),
+      kpi('Net balance flow', fmt(credit - debit), null, 'Credits minus debits · not a supply estimate'), kpi('Marks transferred', fmt(transfer), null, 'Player/account transfers · counted once'));
+    fill('#metrics-content', metricPanel('Follow the money', 'These are gross balance movements, not a claim about total currency supply. Bank movements, escrow and refunds are included. Failed and duplicate transactions are excluded.'),
+      h('div', { class: 'grid two metrics-section' }, metricPanel('Credits by system', 'What is putting Marks into balances?', metricBars(metricEntries(c, 'marks.credit.', 30))),
+        metricPanel('Debits by system', 'What is taking Marks out of balances?', metricBars(metricEntries(c, 'marks.debit.', 30)))),
+      metricPanel('Transfers by system', 'Transfers move balances between accounts and are kept separate from credits and debits.', metricBars(metricEntries(c, 'marks.transfer.', 30))));
+  }
+}
+function dailyMetricsTable(days) {
+  return table([{ label: 'Day · UTC', cell: (d) => metricDate(d.day), sort: (d) => d.day },
+    { label: 'Coverage', cell: (d) => d.observed ? `${metricHours(d.coverageMs)} h sampled` : 'Not observed' },
+    { label: 'Players', cls: 'num', cell: (d) => d.observed ? fmt(d.players) : '—' },
+    { label: 'Active hours', cls: 'num', cell: (d) => d.observed ? metricHours(d.activeMs) : '—' },
+    { label: 'Avg TPS', cls: 'num', cell: (d) => d.observed ? fmt(d.tps, 1) : '—' },
+    { label: 'Avg ms/tick', cls: 'num', cell: (d) => d.observed ? fmt(d.mspt, 1) : '—' },
+    { label: 'Peak entities', cls: 'num', cell: (d) => d.observed ? fmt(d.entities) : '—' }], [...days].reverse(), { limit: 10 });
+}
+function exportMetrics() {
+  const m = S.data?.metrics, r = m?.ranges?.[S.metricsDays]; if (!r) return;
+  const rows = [['section', 'date_utc', 'metric', 'value', 'eligible', 'returned']];
+  for (const d of m.days.filter((day) => day.day >= r.from)) {
+    rows.push(['daily', d.day, 'observed', d.observed, '', '']);
+    for (const key of ['players', 'newPlayers', 'activeMs', 'onlineMs', 'coverageMs', 'peak', 'tps', 'mspt', 'entities']) rows.push(['daily', d.day, key, d[key] ?? '', '', '']);
+  }
+  for (const [key, value] of Object.entries(r.counters)) rows.push(['counter', `${r.from}/${r.through}`, key, value, '', '']);
+  for (const row of r.cohorts) for (const day of [1, 7, 30]) { const cell = row[`d${day}`]; rows.push(['cohort', row.day, `day_${day}_retention`, cell.rate ?? '', cell.eligible, cell.returned]); }
+  const csv = rows.map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+  const link = h('a', { href: url, download: `aerborne-metrics-${r.from}-${r.through}.csv` }); link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 /* ---------- Theme ---------- */
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
@@ -1216,6 +1361,9 @@ function init() {
   });
   document.addEventListener('click', (event) => { if (!event.target.closest('#workspace-nav')) closeNav(); });
   segmented('#players-scope', (v) => { S.playersScope = v; renderView(); });
+  segmented('#metrics-focus', (v) => { S.metricsFocus = v; renderView(); });
+  $('#metrics-range').addEventListener('change', (event) => { S.metricsDays = event.target.value; resetTablePages(); renderView(); });
+  $('#metrics-export').addEventListener('click', exportMetrics);
   segmented('#reports-scope', (v) => { S.reportsScope = v; renderView(); });
   segmented('#sanctions-scope', (v) => { S.sanctionsScope = v; renderView(); });
   segmented('#geo-scope', (v) => { S.geoScope = v; renderView(); });

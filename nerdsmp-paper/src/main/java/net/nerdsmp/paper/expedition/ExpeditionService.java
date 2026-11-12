@@ -474,6 +474,11 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         return plugin.sessions().account(player.getUniqueId()).map(account -> records.cleared(account.toString(), definition.id(), tier)).orElse(false);
     }
 
+    /** How many times this account has cleared the expedition, on any tier; works offline. */
+    public long clears(net.nerdsmp.api.model.AccountId account, String expedition) {
+        return records.clears(account.toString(), expedition);
+    }
+
     public long clears(Player player, ExpeditionDefinition definition) {
         return plugin.sessions().account(player.getUniqueId()).map(account -> records.clears(account.toString(), definition.id())).orElse(0L);
     }
@@ -879,7 +884,18 @@ public final class ExpeditionService implements Listener, AutoCloseable {
             }
             runByWorld.put(world.getUID(), run);
             if (run.state == ExpeditionRun.State.CLOSED) { worlds.destroy(world); return; }
-            run.begin(world);
+            // The run's rooms and pack routes load on the chunk workers first; loading them on the main thread
+            // as tickets were added held the whole server for a second or more at every start.
+            run.preload(world).whenComplete((loaded, slow) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (slow != null) plugin.getLogger().log(Level.WARNING, "Expedition " + definition.id() + " chunks did not all preload", slow);
+                if (run.state == ExpeditionRun.State.CLOSED) { worlds.destroy(world); return; }
+                run.begin(world);
+            }));
+            if(!test) {
+                plugin.metrics().aggregate("expedition.started",1);
+                plugin.metrics().aggregate("expeditionStart."+definition.id(),1);
+                for(UUID member:online) { Player player=Bukkit.getPlayer(member); if(player!=null)plugin.metrics().event(player,"expedition.participated",1); }
+            }
         }));
     }
 
@@ -1303,6 +1319,14 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (runIn(event.getEntity().getWorld()) != null) event.getAffectedEntities().removeIf(entity -> !(entity instanceof Player));
     }
 
+    /** Claim protection delegates only the active member's authored puzzle controls. */
+    public boolean mayUsePuzzle(org.bukkit.event.player.PlayerInteractEvent event) {
+        if (event.getClickedBlock() == null || event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK
+            && event.getAction() != org.bukkit.event.block.Action.PHYSICAL) return false;
+        ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
+        return run != null && run.mayUsePuzzle(event.getPlayer(), event.getClickedBlock());
+    }
+
     /** A breeze's own wind charges throw people into the void, so in a run it only attacks with its abilities. */
     @EventHandler(ignoreCancelled = true)
     public void onLaunch(org.bukkit.event.entity.ProjectileLaunchEvent event) {
@@ -1326,7 +1350,7 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null
             || event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND) return;
         ExpeditionRun run = runByPlayer.get(event.getPlayer().getUniqueId());
-        if (run == null || run.world == null || !run.world.equals(event.getClickedBlock().getWorld())) return;
+        if (run == null || !run.memberPresent(event.getPlayer()) || !run.world.equals(event.getClickedBlock().getWorld())) return;
         var type = event.getClickedBlock().getType();
         // Food on a campfire or flint on it would change the rest point; the run handles campfires itself.
         if (type == org.bukkit.Material.CAMPFIRE || type == org.bukkit.Material.SOUL_CAMPFIRE) event.setCancelled(true);
@@ -1334,14 +1358,17 @@ public final class ExpeditionService implements Listener, AutoCloseable {
         if (type == org.bukkit.Material.CHEST || type == org.bukkit.Material.TRAPPED_CHEST || type == org.bukkit.Material.BARREL
             || type == org.bukkit.Material.ENDER_CHEST || type == org.bukkit.Material.DISPENSER) event.setCancelled(true);
         var block = event.getClickedBlock();
-        Bukkit.getScheduler().runTask(plugin, () -> run.interact(event.getPlayer(), block));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (runByPlayer.get(event.getPlayer().getUniqueId()) == run && run.memberPresent(event.getPlayer()))
+                run.interact(event.getPlayer(), block);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTargetHit(org.bukkit.event.entity.ProjectileHitEvent event) {
-        if (event.getHitBlock() == null || !(event.getEntity().getShooter() instanceof Player)) return;
-        ExpeditionRun run = runIn(event.getHitBlock().getWorld());
-        if (run != null) run.hitBlock(event.getHitBlock());
+        if (event.getHitBlock() == null || !(event.getEntity().getShooter() instanceof Player player)) return;
+        ExpeditionRun run = runByPlayer.get(player.getUniqueId());
+        if (run != null && run.memberPresent(player) && run.world.equals(event.getHitBlock().getWorld())) run.hitBlock(event.getHitBlock());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

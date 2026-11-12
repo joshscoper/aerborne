@@ -109,9 +109,54 @@ public final class SocialManager implements Listener, AutoCloseable {
                 Chat.info(friend, "Friend online: <white>" + Chat.escape(player.getName()) + "</white>");
         }
     }
-    public boolean handleSocial(CommandSender sender) {
-        if (sender instanceof Player player) plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.COMMUNITY);
-        else Chat.playersOnly(sender); return true;
+    public boolean handleSocial(CommandSender sender) { return handleSocial(sender, new String[0]); }
+
+    /** /social opens the Community menu, or the Aerborne client's Social screen; /social refresh updates that screen. */
+    public boolean handleSocial(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) { Chat.playersOnly(sender); return true; }
+        boolean refresh = args.length > 0 && args[0].equalsIgnoreCase("refresh");
+        if (sendSocial(player, !refresh)) return true;
+        if (!refresh) plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.COMMUNITY);
+        return true;
+    }
+
+    /**
+     * The Social screen for the Aerborne client ({@code aerborne:social}), version 1: open (boolean: show the screen
+     * rather than refresh it), party state (byte: 0 none, 1 member, 2 leader) and party size (int), friends (int count;
+     * name string and online boolean, online first), then incoming friend requests (int count; name strings).
+     * False when this player's client has no Social screen.
+     */
+    public boolean sendSocial(Player player, boolean open) {
+        if (!net.nerdsmp.paper.presentation.ClientFeeds.listens(player, net.nerdsmp.paper.presentation.ClientFeeds.SOCIAL)) return false;
+        try {
+            UUID actor = id(player);
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(512);
+            java.io.DataOutputStream out = new java.io.DataOutputStream(bytes);
+            out.writeInt(1);
+            out.writeBoolean(open);
+            var account = plugin.sessions().account(player.getUniqueId()).orElse(null);
+            var details = account == null || plugin.partyManager() == null ? null : plugin.partyManager().roster().details(account).orElse(null);
+            out.writeByte(details == null ? 0 : details.leader().equals(account) ? 2 : 1);
+            out.writeInt(details == null ? 0 : details.members().size());
+            var friends = graph.profile(actor).friends().stream()
+                .sorted(Comparator.<UUID, Boolean>comparing(f -> online(f) == null || !player.canSee(online(f)))
+                    .thenComparing(this::name, String.CASE_INSENSITIVE_ORDER))
+                .limit(200).toList();
+            out.writeInt(friends.size());
+            for (UUID friend : friends) {
+                Player target = online(friend);
+                net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, name(friend));
+                out.writeBoolean(target != null && player.canSee(target));
+            }
+            var requests = pending(actor);
+            out.writeInt(Math.min(50, requests.size()));
+            for (UUID source : requests.subList(0, Math.min(50, requests.size())))
+                net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, name(source));
+            out.flush();
+            return net.nerdsmp.paper.presentation.ClientFeeds.send(player, net.nerdsmp.paper.presentation.ClientFeeds.SOCIAL, bytes.toByteArray());
+        } catch (java.io.IOException | RuntimeException failure) {
+            return false;
+        }
     }
     public boolean handleFriends(CommandSender sender, String[] args) {
         Player player = player(sender); if (player == null) return true;

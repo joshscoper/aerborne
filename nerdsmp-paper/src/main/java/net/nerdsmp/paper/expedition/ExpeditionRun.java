@@ -491,11 +491,9 @@ final class ExpeditionRun {
             return;
         }
         if (state != State.ACTIVE) return;
-        away.entrySet().removeIf(entry -> {
-            if (now - entry.getValue() < service.rejoinWindow().toMillis()) return false;
-            service.detach(this, entry.getKey());
-            return true;
-        });
+        // detach calls left(), which also removes the member from away. Finish traversing the
+        // map before invoking it so one expired reconnect cannot close everyone else's run.
+        expireAbsent(away, now, service.rejoinWindow().toMillis(), member -> service.detach(this, member));
         if (progress.present().isEmpty() && away.isEmpty()) {
             apply(progress.abandon("Everyone left the expedition."), now);
             return;
@@ -524,6 +522,15 @@ final class ExpeditionRun {
         } else updateMinibossBar();
         tickAbilities(now);
         updateStatus(now);
+    }
+
+    static void expireAbsent(Map<UUID, Long> absent, long now, long window, java.util.function.Consumer<UUID> detach) {
+        List<UUID> expired = absent.entrySet().stream()
+            .filter(entry -> now - entry.getValue() >= window).map(Map.Entry::getKey).toList();
+        for (UUID member : expired) {
+            absent.remove(member);
+            detach.accept(member);
+        }
     }
 
     /** The boss bar's fill: one boss's health, or a council's average with fallen members at zero. */
@@ -985,6 +992,7 @@ final class ExpeditionRun {
                     + "The party will regroup here.</gray>");
             }
             case Effect.Fail fail -> {
+                if(!test)plugin.metrics().aggregate("expedition.failed",1);
                 state = State.ENDING;
                 closeAt = now + 10_000;
                 broadcast("<red><bold>Expedition failed.</bold></red> <gray>" + Chat.escape(fail.reason()) + " You'll be returned in 10 seconds.</gray>");
@@ -995,6 +1003,11 @@ final class ExpeditionRun {
     }
 
     private void complete(long seconds, boolean underPar, long now) {
+        if(!test) {
+            plugin.metrics().aggregate("expedition.completed",1);
+            plugin.metrics().aggregate("expeditionComplete."+expedition.id(),1);
+            plugin.metrics().aggregate("expedition.seconds",seconds);
+        }
         completed = true;
         state = State.ENDING;
         closeAt = now + service.lingerAfterFinish().toMillis();
@@ -1470,13 +1483,23 @@ final class ExpeditionRun {
         return null;
     }
 
-    /** A player right-clicked a block in the run: campfires, then puzzle blocks. */
     /** A right-clicked block: loot and reward chests (also after the finish), then campfires, crates and puzzles. */
     void interact(Player player, Block block) {
         if (state != State.ACTIVE && state != State.ENDING) return;
         if (loot.interact(player, block) || state != State.ACTIVE || flight.interact(player, block) || roomFight.interact(player, block) || stage.interact(player, block)) return;
         if (supplies(player, block)) return;
         puzzles.used(player, block);
+    }
+
+    boolean mayUsePuzzle(Player player, Block block) {
+        return state == State.ACTIVE && world != null && world.equals(block.getWorld())
+            && memberPresent(player) && !stage.inCutscene(player)
+            && puzzles.activeControl(block);
+    }
+
+    boolean memberPresent(Player player) {
+        return world != null && world.equals(player.getWorld()) && !player.isDead() && progress != null
+            && progress.present().contains(player.getUniqueId());
     }
 
     /** Gives items, keeping what doesn't fit until the player leaves. */
@@ -1752,7 +1775,7 @@ final class ExpeditionRun {
             mob.setCustomNameVisible(true);
             mob.setPersistent(true);
             mob.setRemoveWhenFarAway(false);
-            mob.setCanPickupItems(false);
+            net.nerdsmp.paper.mob.EncounterBehavior.apply(mob);
             var max = mob.getAttribute(Attribute.MAX_HEALTH);
             if (max != null) {
                 max.setBaseValue(slot.role.health() * tier.health());
@@ -1763,7 +1786,7 @@ final class ExpeditionRun {
                 if (slot.role == Allies.Role.BLADE) equipment.setItemInMainHand(new ItemStack(Material.IRON_AXE));
                 if (slot.role == Allies.Role.ARCHER) {
                     equipment.setItemInMainHand(new ItemStack(Material.BOW));
-                    equipment.setHelmet(new ItemStack(Material.IRON_HELMET)); // Keeps the archer out of any sunlight.
+                    equipment.setHelmet(new ItemStack(Material.IRON_HELMET));
                 }
                 equipment.setItemInMainHandDropChance(0);
                 equipment.setHelmetDropChance(0);
@@ -1899,8 +1922,31 @@ final class ExpeditionRun {
         return String.join(", ", modifiers.stream().map(Modifier::title).sorted().toList());
     }
 
+    /** Loads every chunk the run will ticket on the chunk workers, so {@link #begin} never waits on the main thread. */
+    java.util.concurrent.CompletableFuture<Void> preload(World created) {
+        List<java.util.concurrent.CompletableFuture<?>> loading = new ArrayList<>();
+        int added = 0;
+        for (long key : runChunks()) {
+            if (added++ >= MAX_TICKETS) break;
+            loading.add(created.getChunkAtAsync((int) (key >> 32), (int) key));
+        }
+        return java.util.concurrent.CompletableFuture.allOf(loading.toArray(java.util.concurrent.CompletableFuture[]::new))
+            .orTimeout(30, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    private static final int MAX_TICKETS = 400;
+
     private void ticketChunks() {
-        Set<Long> chunks = new HashSet<>();
+        int added = 0;
+        for (long key : runChunks()) {
+            if (added++ >= MAX_TICKETS) break;
+            world.addPluginChunkTicket((int) (key >> 32), (int) key, plugin);
+        }
+    }
+
+    /** The chunks a run keeps loaded: its spawn, every room, and each pack's ground and patrol. */
+    private Set<Long> runChunks() {
+        Set<Long> chunks = new java.util.LinkedHashSet<>();
         if (expedition.spawn() != null) chunks.add(chunkKey(expedition.spawn().x() >> 4, expedition.spawn().z() >> 4));
         for (Room room : expedition.roomList()) {
             if (room.region() == null) continue;
@@ -1912,11 +1958,7 @@ final class ExpeditionRun {
                 chunks.add(chunkKey((pack.at().x() >> 4) + dx, (pack.at().z() >> 4) + dz));
             for (Point stop : pack.patrol()) chunks.add(chunkKey(stop.x() >> 4, stop.z() >> 4));
         }
-        int added = 0;
-        for (long key : chunks) {
-            if (added++ >= 400) break;
-            world.addPluginChunkTicket((int) (key >> 32), (int) key, plugin);
-        }
+        return chunks;
     }
 
     private static long chunkKey(int x, int z) { return ((long) x << 32) | (z & 0xffffffffL); }

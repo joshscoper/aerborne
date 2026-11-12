@@ -12,7 +12,7 @@ match:
     - [777, 100, -36, oak_planks]       # Highcrown Keep gate, at the original world spawn
     - [775, 100, -75, stone_bricks]     # keep courtyard
     - [-480, 67, 365, coarse_dirt]      # Sunscorch Colosseum arena floor
-# The map was saved on Peaceful; zone creatures need at least Easy. Raised once, never overriding a later staff choice.
+# The map was saved on Peaceful; hostile zones need at least Easy. See world-packs.maintain-combat-difficulty.
 difficulty: normal
 # Monsters come only from the zones below; vanilla night spawns are switched off on this map.
 natural-monsters: false

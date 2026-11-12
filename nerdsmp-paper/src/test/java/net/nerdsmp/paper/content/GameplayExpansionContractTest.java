@@ -59,9 +59,10 @@ final class GameplayExpansionContractTest {
     }
 
     @Test
-    void autonomousThresholdsAndPlayerTipsAreExplicit() throws IOException {
+    void alertOnlyModeThresholdsAndPlayerTipsAreExplicit() throws IOException {
         String config = resource("/config.yml");
-        assertTrue(config.contains("mode: autonomous"));
+        assertTrue(config.contains("mode: alerts-only"));
+        assertTrue(config.contains("autonomous: false"));
         assertTrue(config.contains("alert-score: 12"));
         assertTrue(config.contains("setback-score: 24"));
         assertTrue(config.contains("kick-score: 50"));

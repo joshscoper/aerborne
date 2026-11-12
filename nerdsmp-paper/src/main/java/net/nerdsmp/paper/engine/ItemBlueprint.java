@@ -11,7 +11,11 @@ import java.util.Set;
 
 /** An editor draft is data, not a live item. Identity is stable once published. Text is literal player-facing text. */
 public record ItemBlueprint(String id, String name, Material material, String rarity, int sockets, int itemLevel,
-                            String setId, List<String> lore, Map<String, Double> stats) {
+                            String setId, List<String> lore, Map<String, Double> stats, GearSlot slot) {
+    public ItemBlueprint(String id, String name, Material material, String rarity, int sockets, int itemLevel,
+                         String setId, List<String> lore, Map<String,Double> stats) {
+        this(id,name,material,rarity,sockets,itemLevel,setId,lore,stats,EquipmentMaterials.slot(material));
+    }
     public static final Set<String> RARITIES = Set.of("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "CRAFTED");
     public ItemBlueprint {
         id = identifier(id);
@@ -28,7 +32,10 @@ public record ItemBlueprint(String id, String name, Material material, String ra
         if (lore == null || lore.size() > 8) throw new IllegalArgumentException("Use at most eight lore lines.");
         lore = lore.stream().map(line -> text(line, 160, "Lore")).toList();
         stats = ItemStats.validate(stats, false);
-        GearSlot slot = EquipmentMaterials.slot(material);
+        if(slot==null || !slot.accessory() && slot!=EquipmentMaterials.slot(material))
+            throw new IllegalArgumentException("The equipment slot must fit this material.");
+        if(slot.accessory() && EquipmentMaterials.isEquipment(material))
+            throw new IllegalArgumentException("Accessories need their own non-armor, non-weapon appearance.");
         if (slot == GearSlot.NONE && (sockets != 0 || setId != null || !stats.isEmpty()))
             throw new IllegalArgumentException("Only equipment can have sockets, stats or set membership.");
         if (!EquipmentMaterials.isMeleeWeapon(material) && !EquipmentMaterials.isTool(material) && stats.containsKey("damage"))
@@ -36,7 +43,6 @@ public record ItemBlueprint(String id, String name, Material material, String ra
         if (!EquipmentMaterials.isRangedWeapon(material) && stats.containsKey("projectile-damage"))
             throw new IllegalArgumentException("Projectile damage requires a bow, crossbow or trident.");
     }
-    public GearSlot slot() { return EquipmentMaterials.slot(material); }
     public static String identifier(String id) {
         if (id == null || !id.matches("[a-z0-9][a-z0-9_-]{0,47}"))
             throw new IllegalArgumentException("Use a lowercase ID with up to 48 letters, numbers, underscores or hyphens.");

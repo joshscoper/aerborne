@@ -21,7 +21,7 @@ public final class CropReplanting {
     public static int seedSlot(ItemStack[] storage,Material seed) {
         for(int index=0;index<storage.length;index++) {
             ItemStack stack=storage[index];
-            if(stack!=null&&stack.getType()==seed&&stack.getAmount()>0&&!stack.hasItemMeta()) return index;
+            if(stack!=null&&stack.getType()==seed&&stack.getAmount()>0&&net.nerdsmp.paper.item.FoodItems.ordinary(stack)) return index;
         }
         return -1;
     }

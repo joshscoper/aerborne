@@ -161,6 +161,7 @@ public final class TravelManager implements Listener, AutoCloseable {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
+        if (plugin.spirits() != null && plugin.spirits().ghost(event.getPlayer().getUniqueId())) return;
         Location spawn = spawnLocation();
         // Expedition runs respawn the party at their checkpoint instead.
         if (net.nerdsmp.paper.expedition.InstanceWorlds.isRunWorld(event.getPlayer().getWorld())) return;
@@ -173,6 +174,10 @@ public final class TravelManager implements Listener, AutoCloseable {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDeath(PlayerDeathEvent event) {
+        if (plugin.spirits() != null && plugin.spirits().ghost(event.getPlayer().getUniqueId())) {
+            lastLocations.remove(event.getPlayer().getUniqueId());
+            return;
+        }
         lastLocations.put(event.getPlayer().getUniqueId(), event.getPlayer().getLocation().clone());
     }
 

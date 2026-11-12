@@ -78,6 +78,8 @@ public final class GraveManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDeath(PlayerDeathEvent event) {
+        // Existing grave containers remain recoverable; new deaths retain their actual inventory.
+        if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin nerd && nerd.spirits() != null) return;
         if (event.getKeepInventory() || event.getDrops().isEmpty()) {
             return;
         }

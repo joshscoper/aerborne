@@ -19,6 +19,11 @@ public final class SocketRules {
 
     public static boolean validTier(int tier) { return tier >= 1 && tier <= MAXIMUM_TIER; }
 
+    /** Materials, currencies and consumables never inherit the catalog's default gear sockets. */
+    public static int capacity(PaperItemService.GearSlot slot, int configured) {
+        return slot == PaperItemService.GearSlot.NONE ? 0 : Math.clamp(configured, 0, 4);
+    }
+
     public static int dustCost(int tier) {
         if (!validTier(tier)) throw new IllegalArgumentException("Gem tier must be between 1 and " + MAXIMUM_TIER);
         return 4 + tier * 4;

@@ -15,6 +15,9 @@ import java.util.function.Consumer;
 public final class ObservedEconomyService implements EconomyService {
     private final EconomyService delegate;
     private volatile Consumer<AccountId> listener = account -> { };
+    public record Movement(String kind, long marks, String reason) { }
+    private volatile Consumer<Movement> movements = movement -> { };
+    public void onMovement(Consumer<Movement> listener) { movements = listener == null ? movement -> { } : listener; }
 
     public ObservedEconomyService(EconomyService delegate) {
         this.delegate = Objects.requireNonNull(delegate);
@@ -31,24 +34,25 @@ public final class ObservedEconomyService implements EconomyService {
 
     @Override
     public CompletionStage<TransactionResult> credit(AccountId accountId, long marks, TransactionReason reason, String idempotencyKey) {
-        return report(delegate.credit(accountId, marks, reason, idempotencyKey), accountId, null);
+        return report(delegate.credit(accountId, marks, reason, idempotencyKey), accountId, null, new Movement("credit",marks,reason.code()));
     }
 
     @Override
     public CompletionStage<TransactionResult> debit(AccountId accountId, long marks, TransactionReason reason, String idempotencyKey) {
-        return report(delegate.debit(accountId, marks, reason, idempotencyKey), accountId, null);
+        return report(delegate.debit(accountId, marks, reason, idempotencyKey), accountId, null, new Movement("debit",marks,reason.code()));
     }
 
     @Override
     public CompletionStage<TransactionResult> transfer(AccountId source, AccountId destination, long marks, TransactionReason reason, String idempotencyKey) {
-        return report(delegate.transfer(source, destination, marks, reason, idempotencyKey), source, destination);
+        return report(delegate.transfer(source, destination, marks, reason, idempotencyKey), source, destination, new Movement("transfer",marks,reason.code()));
     }
 
-    private CompletionStage<TransactionResult> report(CompletionStage<TransactionResult> stage, AccountId first, AccountId second) {
+    private CompletionStage<TransactionResult> report(CompletionStage<TransactionResult> stage, AccountId first, AccountId second, Movement movement) {
         return stage.whenComplete((result, error) -> {
             if (error != null || result == null || result.status() != TransactionResult.Status.APPLIED) return;
             notify(first);
             if (second != null) notify(second);
+            try { movements.accept(movement); } catch (RuntimeException ignored) { /* Telemetry cannot fail a transaction. */ }
         });
     }
 

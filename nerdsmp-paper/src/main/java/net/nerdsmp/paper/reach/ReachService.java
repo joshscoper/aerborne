@@ -44,6 +44,7 @@ public final class ReachService implements Listener {
     private final Map<UUID, Long> rescued = new ConcurrentHashMap<>();
     private volatile Pregen pregen;
     private ReachGameplay gameplay;
+    private WorldBossService worldBoss;
     private ReachFlights flights;
     private ReachEdits edits;
     private ReachEditor editor;
@@ -53,6 +54,7 @@ public final class ReachService implements Listener {
 
     public ReachTerrain terrain() { return terrain; }
     public ReachFeatures features() { return features; }
+    public WorldBossService worldBoss() { return worldBoss; }
     ReachClimate climate() { return climate; }
 
     public String worldName() {
@@ -76,6 +78,8 @@ public final class ReachService implements Listener {
         climate.start();
         gameplay = new ReachGameplay(plugin, this);
         gameplay.start();
+        worldBoss = new WorldBossService(plugin, this);
+        worldBoss.start();
         // The dig sites' nodes are registered once the world and the pack's zones are there, retried until they are.
         flights = new ReachFlights(plugin, this);
         flights.start();
@@ -135,7 +139,8 @@ public final class ReachService implements Listener {
                 ? plugin.travel().publicSpawn() : arrival();
             if (to == null) return;
             player.teleportAsync(to);
-            Chat.notice(player, "The old map has been retired. Welcome to the Wardens' Reach.");
+            // Only someone who knew the old map needs telling it's gone; a newcomer just arrives.
+            if (player.hasPlayedBefore()) Chat.notice(player, "The old map has been retired. Welcome to the Wardens' Reach.");
         });
     }
 

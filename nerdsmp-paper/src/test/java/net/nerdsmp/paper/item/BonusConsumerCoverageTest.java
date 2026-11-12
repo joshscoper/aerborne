@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BonusConsumerCoverageTest {
     @Test void everyEquipmentStatHasAnExplicitGameplayConsumer() throws Exception {
         Map<String,List<String>> consumers=Map.ofEntries(
+            Map.entry("item/PlayerStatsService.java",List.of("max-health","max-health-percent")),
             Map.entry("item/GearSetService.java",List.of("damage","projectile-damage","defense","damage-flat","damage-percent","projectile-damage-percent","execute-damage-percent","life-steal-percent")),
             Map.entry("listener/SkillPower.java",List.of("mining-power","fishing-power","gathering-power","excavation-power")),
             Map.entry("listener/ActivityBonuses.java",List.of("skill-xp-percent","job-marks-percent")),
@@ -37,7 +38,7 @@ class BonusConsumerCoverageTest {
             "expedition-geode-percent","equipment-preservation-percent","husbandry-quality-percent","fishing-luck-percent",
             "life-steal-percent","excavation-find-percent","poison-potency-percent","meal-nutrition-percent","treasure-find-percent",
             "imbue-dust-discount-percent","research-progress-percent","signature-cooldown-reduction-percent");
-        for(Skill skill:Skill.values()) for(var branch:SkillTreeCatalog.tree(skill).branches()) for(var node:branch.nodes())
+        for(Skill skill:Skill.values()) for(var node:SkillTreeCatalog.nodes(skill))
             assertTrue(consumed.contains(node.stat()),node.id()+" has no classified bonus consumer");
     }
     @Test void lifeStealCannotHealOverkillAndKeepsItsFourHealthCap() {

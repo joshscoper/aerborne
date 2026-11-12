@@ -205,7 +205,7 @@ public final class AlchemyService implements Listener {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (event.getPlayer().isOnline()) {
                     markActivePoison(event.getPlayer(), poison.type);
-                    event.getPlayer().sendActionBar(miniMessage.deserialize("<red>☠ "
+                    net.nerdsmp.paper.item.PlayerStatsService.message(event.getPlayer(), miniMessage.deserialize("<red>☠ "
                         + poison.type.displayName() + " " + roman(poison.potency) + "</red> <gray>consumed</gray>"));
                 }
             });
@@ -257,7 +257,7 @@ public final class AlchemyService implements Listener {
                 PoisonType type = PoisonType.fromId(coating.type());
                 if (type != null) {
                     poison = new Vial(type, coating.potency());
-                    player.sendActionBar(miniMessage.deserialize("<green>☠ " + type.displayName()
+                    net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<green>☠ " + type.displayName()
                         + " readied</green> <gray>• " + Math.max(0, coating.charges() - 1)
                         + " shots left</gray>"));
                 }
@@ -311,13 +311,13 @@ public final class AlchemyService implements Listener {
         poison.apply(target, potency, bonus);
         int remaining = poison.remainingDurationTicks(target);
         if (remaining <= 0) {
-            attacker.sendActionBar(miniMessage.deserialize("<gray>" + poison.displayName()
+            net.nerdsmp.paper.item.PlayerStatsService.message(attacker, miniMessage.deserialize("<gray>" + poison.displayName()
                 + " had no effect on that target.</gray>"));
             return;
         }
         markActivePoison(target, poison);
         String chargeText = charges == null ? "" : " <dark_gray>•</dark_gray> <gray>" + charges + " strikes left</gray>";
-        attacker.sendActionBar(miniMessage.deserialize("<green>☠ " + poison.displayName() + " " + roman(potency)
+        net.nerdsmp.paper.item.PlayerStatsService.message(attacker, miniMessage.deserialize("<green>☠ " + poison.displayName() + " " + roman(potency)
             + "</green> <dark_gray>•</dark_gray> <white>" + duration(remaining) + "</white>" + chargeText));
     }
 
@@ -434,7 +434,7 @@ public final class AlchemyService implements Listener {
         int index = 0; boolean all = true;
         for (var entry : quantities.entrySet()) {
             ItemStack plain = new ItemStack(entry.getKey());
-            int have = 0; for (ItemStack stack : player.getInventory().getStorageContents()) if (stack != null && stack.isSimilar(plain)) have += stack.getAmount();
+            int have = 0; for (ItemStack stack : player.getInventory().getStorageContents()) if (stack != null && stack.getType() == plain.getType() && net.nerdsmp.paper.item.CustomRecipeService.ordinaryIngredient(stack)) have += stack.getAmount();
             boolean enough = have >= entry.getValue(); all &= enough;
             set(holder, net.nerdsmp.paper.gui.StationLayout.ingredient(index++), icon(entry.getKey(), (enough ? "<green>" : "<red>") + pretty(entry.getKey()),
                 List.of("<gray>Need</gray> <white>" + entry.getValue() + "</white>", "<gray>In inventory</gray> <white>" + have + "</white>")), ignored -> { });
@@ -734,7 +734,7 @@ public final class AlchemyService implements Listener {
         data.set(scaleExpiresKey, PersistentDataType.LONG, expiresAt);
         installScale(player, brew.scaleModifier(), expiresAt);
         String change = brew.scaleModifier() > 0.0D ? "larger" : "smaller";
-        player.sendActionBar(miniMessage.deserialize("<light_purple>✦ " + brew.displayName()
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<light_purple>✦ " + brew.displayName()
             + "</light_purple> <gray>You feel " + change + ".</gray>"));
         player.getWorld().spawnParticle(Particle.WITCH, player.getLocation().add(0.0D, 1.0D, 0.0D),
             24, 0.45D, 0.7D, 0.45D, 0.02D);
@@ -792,7 +792,7 @@ public final class AlchemyService implements Listener {
         PoisonType.antidoteEffectTypes().forEach(player::removePotionEffect);
         player.setFreezeTicks(0);
         player.getPersistentDataContainer().remove(activePoisonTypesKey);
-        player.sendActionBar(miniMessage.deserialize("<gold>✦ Antidote</gold> <gray>All known toxins cleared.</gray>"));
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<gold>✦ Antidote</gold> <gray>All known toxins cleared.</gray>"));
         player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER,
             player.getLocation().add(0.0D, 1.0D, 0.0D), 18, 0.35D, 0.55D, 0.35D, 0.02D);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.65F, 1.55F);
@@ -861,14 +861,18 @@ public final class AlchemyService implements Listener {
         ItemStack[] next = new ItemStack[original.length];
         for (int slot = 0; slot < next.length; slot++) {
             var stack = prepared.get().get(slot);
-            if (stack != null) { next[slot] = stack.kind().clone(); next[slot].setAmount(stack.amount()); }
+            if (stack != null) { next[slot] = stack.kind().clone(); next[slot].setAmount(stack.amount()); next[slot] = net.nerdsmp.paper.item.ItemUpdater.current(next[slot]); }
         }
         player.getInventory().setStorageContents(next);
         if(saved!=null) Chat.info(player,"Careful Measure saved one "+pretty(saved)+".");
         return true;
     }
 
-    private static ItemStack one(ItemStack item) { ItemStack copy = item.clone(); copy.setAmount(1); return copy; }
+    private static ItemStack one(ItemStack item) {
+        ItemStack copy = net.nerdsmp.paper.item.CustomRecipeService.ordinaryIngredient(item)
+            ? new ItemStack(item.getType()) : net.nerdsmp.paper.item.ItemPresentation.original(item).clone();
+        copy.setAmount(1); return copy;
+    }
 
     private void missing(Player player, List<Material> ingredients) {
         player.sendRichMessage("<red>Missing ingredients:</red> <gray>" + String.join(", ", ingredients.stream()

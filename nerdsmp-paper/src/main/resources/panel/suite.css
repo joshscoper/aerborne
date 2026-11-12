@@ -1,5 +1,52 @@
 /* Aerborne management workspace. Shared rules cover every view and inspector. */
 :root { --r: 8px; --r-l: 12px; }
+
+/* Mechanics workspace: keep summaries, definitions and source detail visually distinct. */
+.metrics-toolbar { justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+.metrics-range-actions { display:flex; align-items:center; gap:10px; }
+.metrics-range-actions .field { margin:0; }
+.metrics-range-actions select { min-width:145px; }
+.metrics-coverage { border:1px solid var(--line-soft); border-left:3px solid var(--blue); border-radius:8px; padding:12px 16px; margin:0 0 20px; background:var(--sunken); font-size:12px; color:var(--muted); }
+.metrics-coverage>div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px 20px; }
+.metrics-coverage strong { color:var(--text); font-weight:600; }
+.metric-warning { color:var(--amber); margin:9px 0 0; }
+.metrics-kpis { grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); margin-bottom:22px; }
+.metrics-kpis:empty { display:none; }
+.metrics-section { margin:22px 0; }
+.metric-panel { min-width:0; margin-bottom:20px; }
+.metric-panel>header { margin-bottom:8px; }
+.metric-explainer { line-height:1.65; max-width:100ch; margin:0 0 18px; }
+.metric-panel .data-table { margin:0 -4px; }
+.metric-bars { display:flex; flex-direction:column; gap:15px; }
+.metric-bar-copy { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:6px; font-size:12px; }
+.metric-bar-copy span { color:var(--muted); overflow-wrap:anywhere; }
+.metric-bar-copy strong { color:var(--text); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.metric-bar-track { height:6px; background:var(--line-soft); border-radius:9px; overflow:hidden; }
+.metric-bar-track>span { display:block; height:100%; background:var(--blue); border-radius:9px; }
+.metric-retention-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; padding:8px 0; }
+.metric-retention-cards>div+div { border-left:1px solid var(--line-soft); padding-left:14px; }
+.metric-retention-cards .eyebrow { color:var(--faint); font-size:10px; }
+.metric-rate { display:block; font-size:clamp(24px,2.8vw,38px); line-height:1.3; font-weight:600; letter-spacing:-.04em; margin:6px 0 10px; font-variant-numeric:tabular-nums; }
+.metric-retention-cards small { display:block; color:var(--faint); font-size:11px; margin-top:8px; }
+.metric-retention-value { display:inline-grid; gap:3px; }
+.metric-retention-value strong { font-weight:600; color:var(--green); }
+.metric-retention-value small { color:var(--faint); font-size:11px; }
+.metric-daily-chart { min-width:0; overflow-x:auto; }
+.metric-daily-chart>svg { display:block; width:100%; min-width:540px; height:auto; }
+.metric-legend { display:flex; flex-wrap:wrap; gap:18px; margin:4px 0 18px; font-size:11px; color:var(--muted); }
+.metric-legend span::before { content:''; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:2px; background:var(--blue); }
+.metric-legend .new::before { background:var(--green); }
+.metric-legend .missing::before { background:var(--line); }
+.metric-new { fill:var(--green); }
+.metric-returning { fill:var(--blue); }
+.metric-missing { fill:var(--faint); opacity:.5; }
+.metric-axis { fill:var(--faint); font-size:11px; font-family:var(--font); }
+.metric-grid { stroke:var(--line-soft); stroke-width:1; }
+.metric-daily-chart g:focus { outline:2px solid var(--blue); outline-offset:2px; }
+.metric-daily-chart g:hover { opacity:.8; }
+.metric-chart-readout { color:var(--muted); font-size:12px; min-height:20px; margin:12px 0 0; }
+@media(max-width:1100px) { .metrics-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:700px) { .metrics-toolbar { align-items:stretch; } .metrics-range-actions { justify-content:space-between; width:100%; } .metrics-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .metric-retention-cards { gap:8px; } .metric-retention-cards>div+div { padding-left:8px; } }
 :root[data-theme="dark"] {
   --bg:#101722; --surface:#182230; --raised:#223044; --sunken:#121c2a;
   --line:#3b4c62; --line-soft:#2a384a; --text:#edf3fc; --muted:#b7c5d8; --faint:#95a9c3;

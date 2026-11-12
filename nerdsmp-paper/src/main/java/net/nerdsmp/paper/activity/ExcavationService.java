@@ -138,7 +138,7 @@ public final class ExcavationService implements Listener {
         double chance = ExcavationRolls.findChance(level(player), findBonus(player), state.chain);
         if (ThreadLocalRandom.current().nextDouble() >= chance) {
             if (state.chain > 0 && state.chain % 10 == 0) {
-                player.sendActionBar(miniMessage.deserialize("<yellow>Survey chain " + state.chain + "</yellow> "
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<yellow>Survey chain " + state.chain + "</yellow> "
                     + "<dark_gray>• soil is looking promising</dark_gray>"));
             }
             return;
@@ -166,7 +166,7 @@ public final class ExcavationService implements Listener {
         ItemMeta rewardMeta = reward.getItemMeta();
         Component rewardName = rewardMeta.hasItemName()
             ? rewardMeta.itemName() : Component.translatable(reward.translationKey());
-        player.sendActionBar(miniMessage.deserialize("<" + color + ">" + rarity.name() + " FIND</" + color
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<" + color + ">" + rarity.name() + " FIND</" + color
                 + "> <dark_gray>•</dark_gray> ")
             .append(rewardName)
             .append(miniMessage.deserialize(" <dark_gray>•</dark_gray> <white>Chain " + state.chain + "</white>")));

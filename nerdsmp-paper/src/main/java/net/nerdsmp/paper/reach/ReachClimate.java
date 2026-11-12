@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.WeatherType;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
@@ -59,11 +60,24 @@ final class ReachClimate implements Listener {
     private static final List<Local> LOCALS = List.of(
         new Local("goldenreach.windmill_ridge", 70, new Climate("windmill_ridge", 17800, false, Ambience.NIGHT_FIELDS)));
 
+    /** Each cue belongs to a physical place. Nearby players hear the same beat from the same direction. */
+    private record Source(String spot, Sound sound, int interval, float volume, float pitch) { }
+    private static final List<Source> SOURCES = List.of(
+        new Source("highcrown.fane", Sound.BLOCK_BELL_RESONATE, 240, 0.55F, 0.83F),
+        new Source("highcrown.npc_kestrel_way", Sound.BLOCK_AMETHYST_BLOCK_CHIME, 130, 0.38F, 0.83F),
+        new Source("goldenreach.smithy", Sound.BLOCK_ANVIL_LAND, 90, 0.26F, 1.22F),
+        new Source("goldenreach.cellars_entrance", Sound.BLOCK_RESPAWN_ANCHOR_AMBIENT, 180, 0.36F, 0.66F),
+        new Source("great_aqueduct.place", Sound.BLOCK_WATER_AMBIENT, 70, 0.65F, 0.86F),
+        new Source("headframe.place", Sound.BLOCK_CHAIN_HIT, 110, 0.5F, 0.77F),
+        new Source("heart_tree.place", Sound.BLOCK_ROOTS_STEP, 150, 0.34F, 0.70F),
+        new Source("seal_spire.place", Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 170, 0.40F, 0.64F));
+
     /** How far the shown hour moves toward the zone's in one update (twice a second): a walk across a border takes a few seconds. */
     private static final long EASE = 450;
 
     private final NerdSmpPlugin plugin;
     private final ReachService reach;
+    private final Map<String, ReachFeatures.Spot> spots;
     private final Map<UUID, Double> shown = new HashMap<>();
     private final Map<UUID, Boolean> raining = new HashMap<>();
     private final SplittableRandom random = new SplittableRandom(8128);
@@ -72,6 +86,7 @@ final class ReachClimate implements Listener {
     ReachClimate(NerdSmpPlugin plugin, ReachService reach) {
         this.plugin = plugin;
         this.reach = reach;
+        this.spots = reach.features().spots();
     }
 
     void start() {
@@ -82,7 +97,7 @@ final class ReachClimate implements Listener {
     /** The climate at a point: a place's own, else its zone's. Open sky takes the zone nearest under it. */
     Climate at(double x, double z) {
         for (Local local : LOCALS) {
-            ReachFeatures.Spot s = reach.features().spots().get(local.spot());
+            ReachFeatures.Spot s = spots.get(local.spot());
             if (s != null && Math.hypot(x - s.x(), z - s.z()) < local.radius()) return local.climate();
         }
         Zone zone = reach.terrain().zoneAt(x, z);
@@ -92,7 +107,7 @@ final class ReachClimate implements Listener {
 
     /** The climate at a named spot, for things that keep hours (night-only encounters). */
     Climate atSpot(String spot) {
-        ReachFeatures.Spot s = reach.features().spots().get(spot);
+        ReachFeatures.Spot s = spots.get(spot);
         return s == null ? ZONES.get(Zone.HIGHCROWN) : at(s.x(), s.z());
     }
 
@@ -114,7 +129,20 @@ final class ReachClimate implements Listener {
                     raining.put(player.getUniqueId(), target.rain());
                 }
                 ambience(player, at, target.ambience());
+                soundAtLandmark(player, at, world.getGameTime() / 10);
             }
+        }
+    }
+
+    private void soundAtLandmark(Player player, Location at, long beat) {
+        for (Source source : SOURCES) {
+            if (Math.floorMod(beat + source.spot().hashCode(), source.interval() / 10) != 0) continue;
+            ReachFeatures.Spot spot = spots.get(source.spot());
+            if (spot == null) continue;
+            double dx = at.getX() - spot.x(), dy = at.getY() - spot.y(), dz = at.getZ() - spot.z();
+            if (dx * dx + dy * dy + dz * dz > 16 * 16) continue;
+            Location origin = new Location(at.getWorld(), spot.x(), spot.y() + 1, spot.z());
+            player.playSound(origin, source.sound(), SoundCategory.AMBIENT, source.volume(), source.pitch());
         }
     }
 
@@ -128,12 +156,9 @@ final class ReachClimate implements Listener {
 
     /** A few particles drifting round the player, and now and then a sound of the place. Only that player sees or hears them. */
     private void ambience(Player player, Location at, Ambience ambience) {
-        World w = at.getWorld();
         double x = at.getX(), y = at.getY(), z = at.getZ();
         switch (ambience) {
-            case CITY -> {
-                if (random.nextInt(90) == 0) player.playSound(at, Sound.BLOCK_BELL_RESONATE, 0.25F, 0.8F);
-            }
+            case CITY -> { /* The Fane and waystone supply the sound in their own streets. */ }
             case MEADOW -> {
                 spray(player, Particle.SPORE_BLOSSOM_AIR, x, y + 2, z, 2, 10);
                 if (random.nextInt(60) == 0) player.playSound(at, Sound.ENTITY_BEE_LOOP, 0.2F, 1.2F);

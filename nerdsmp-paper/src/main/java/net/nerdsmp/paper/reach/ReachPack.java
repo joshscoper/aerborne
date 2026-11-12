@@ -15,9 +15,11 @@ import java.util.Set;
  * for the old map's YAML pack.
  */
 public final class ReachPack {
-    public static final int VERSION = 9;
+    public static final int VERSION = 12;
     /** Zones are capped at 16.7 million blocks, so they span only the heights that matter. */
     private static final int SKY_Y = 230, LOW_Y = 70;
+    /** How long a spawn spot rests after its creature dies, and how near a player must be for it to fill. */
+    static final int RESPAWN_SECONDS = 15, ACTIVATION_RADIUS = 64;
     /** Separates fallback spots in an anchor: "a|b" stands at a, or at b when a wasn't built. */
     private static final String OR = "|";
 
@@ -89,22 +91,22 @@ public final class ReachPack {
                 Math.min(fx + 28, -30), Math.min(fz + 30, 599), LOW_Y, SKY_Y, true, List.of(), 1));
         }
         specs.add(new ZoneSpec("reach_kingsgate_fields", "Kingsgate Fields", "1-2", -20, 626, 105, 759, LOW_Y, SKY_Y, false,
-            List.of(mob("field_gnawer", 5, 1), mob("bristle_boar", 2, 2)), 10));
+            List.of(mob("field_gnawer", 5, 1), mob("bristle_boar", 2, 2)), 18));
         specs.add(new ZoneSpec("reach_brindle_orchards", "Brindle Orchards", "2-4", -230, 600, -26, 759, LOW_Y, SKY_Y, false,
-            List.of(mob("bristle_boar", 5, 3), mob("field_gnawer", 2, 2)), 10));
+            List.of(mob("bristle_boar", 5, 3), mob("field_gnawer", 2, 2)), 18));
         specs.add(new ZoneSpec("reach_goldwater_terraces", "Goldwater Terraces", "2-4", 106, 380, 330, 759, LOW_Y, SKY_Y, false,
-            List.of(mob("straw_scarecrow", 5, 3), mob("field_gnawer", 3, 2)), 12));
+            List.of(mob("straw_scarecrow", 5, 3), mob("field_gnawer", 3, 2)), 22));
         specs.add(new ZoneSpec("reach_windmill_ridge", "Windmill Ridge", "3-5", -100, 330, 105, 470, LOW_Y, SKY_Y, false,
-            List.of(mob("straw_scarecrow", 4, 4), mob("choir_initiate", 1, 5)), 10));
+            List.of(mob("straw_scarecrow", 4, 4), mob("choir_initiate", 1, 5)), 18));
         specs.add(new ZoneSpec("reach_black_granary", "The Black Granary", "5-7", -260, 330, -101, 470, cellarFloor + 16, SKY_Y, false,
-            List.of(mob("choir_initiate", 5, 6), mob("choir_cantor", 2, 6)), 10));
+            List.of(mob("choir_initiate", 5, 6), mob("choir_cantor", 2, 6)), 16));
         specs.add(new ZoneSpec("reach_tollroad", "The Tollroad", "4-6", -340, 360, -261, 520, LOW_Y, SKY_Y, false,
-            List.of(mob("tollkeeper_cutthroat", 5, 5), mob("tollkeeper_bowman", 3, 5)), 10));
+            List.of(mob("tollkeeper_cutthroat", 5, 5), mob("tollkeeper_bowman", 3, 5)), 16));
         specs.add(new ZoneSpec("reach_hollow_road", "The Hollow Road", "6-7", -445, 380, -341, 520, LOW_Y, SKY_Y, false,
-            List.of(mob("tollkeeper_cutthroat", 2, 6), mob("bristle_boar", 3, 6)), 8));
+            List.of(mob("tollkeeper_cutthroat", 2, 6), mob("bristle_boar", 3, 6)), 14));
         specs.add(new ZoneSpec("reach_granary_cellars", "The Old Granary Cellars", "6-7", gx - 16, gz - 120, gx + 16, gz + 2,
             cellarFloor - 2, cellarFloor + 15, false,
-            List.of(mob("choir_initiate", 3, 7), mob("choir_cantor", 1, 7), mob("ember_scarecrow", 4, 7)), 9));
+            List.of(mob("choir_initiate", 3, 7), mob("choir_cantor", 1, 7), mob("ember_scarecrow", 4, 7)), 12));
 
         // Each dig site is its own small safe zone, so its nodes have a zone to belong to (ReachDigSites).
         for (ReachDigSites.Spec dig : ReachDigSites.SITES) {
@@ -123,7 +125,9 @@ public final class ReachPack {
             List<WorldPack.Point> points = s.safe ? List.of()
                 : s.id.equals("reach_granary_cellars") ? cellarPoints(spots, box) : groundPoints(terrain, features, box, 60);
             if (!s.safe && points.isEmpty()) continue;
-            zones.put(s.id, new WorldPack.Zone(s.id, s.title, box, s.safe, s.levels, s.cap, 30, 48, s.mobs, points));
+            // Creatures come back quickly and wake from further off, so the wilds feel lived in (each spot still waits
+            // for its own creature to die before refilling).
+            zones.put(s.id, new WorldPack.Zone(s.id, s.title, box, s.safe, s.levels, s.cap, RESPAWN_SECONDS, ACTIVATION_RADIUS, s.mobs, points));
         }
 
         Map<String, WorldPack.Anchor> npcs = new LinkedHashMap<>();

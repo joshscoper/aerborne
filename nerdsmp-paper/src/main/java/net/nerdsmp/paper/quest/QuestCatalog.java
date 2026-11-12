@@ -35,6 +35,12 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
         return quests.values().stream().filter(quest -> quest.giver().equals(npc) || quest.turnIn().equals(npc)).toList();
     }
 
+    public List<QuestDefinition> involving(String npc) {
+        return quests.values().stream().filter(quest -> quest.giver().equals(npc) || quest.turnIn().equals(npc)
+            || quest.objectives().stream().anyMatch(objective -> objective.type() == QuestDefinition.Type.TALK
+                && objective.matches(npc))).toList();
+    }
+
     public static QuestCatalog parse(String text) {
         LoaderOptions options = new LoaderOptions();
         options.setAllowDuplicateKeys(false);
@@ -94,7 +100,7 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
     }
 
     private static QuestDefinition.Objective objective(Map<?, ?> node) {
-        keys(node, Set.of("type", "targets", "zone", "count", "description"), Set.of("type", "description"), "objective");
+        keys(node, Set.of("type", "targets", "zone", "count", "description", "dialogue"), Set.of("type", "description"), "objective");
         QuestDefinition.Type type;
         try { type = QuestDefinition.Type.valueOf(string(node.get("type"), "type").toUpperCase(Locale.ROOT)); }
         catch (IllegalArgumentException invalid) { throw new IllegalArgumentException("Unknown objective type " + node.get("type")); }
@@ -103,7 +109,8 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
             targets.add(type == QuestDefinition.Type.KILL || type == QuestDefinition.Type.TALK || type == QuestDefinition.Type.CLEAR
                 ? target : target.toUpperCase(Locale.ROOT));
         return new QuestDefinition.Objective(type, targets, node.containsKey("zone") ? string(node.get("zone"), "zone") : null,
-            node.containsKey("count") ? integer(node.get("count"), "count") : 1, string(node.get("description"), "description"));
+            node.containsKey("count") ? integer(node.get("count"), "count") : 1, string(node.get("description"), "description"),
+            node.containsKey("dialogue") ? lines(node.get("dialogue"), "dialogue") : List.of());
     }
 
     private static QuestDefinition.Rewards rewards(Map<?, ?> node) {
@@ -118,12 +125,17 @@ public record QuestCatalog(int schemaVersion, Map<String, QuestDefinition> quest
         if (node.containsKey("reputation")) for (Map.Entry<?, ?> entry : map(node.get("reputation"), "reputation").entrySet())
             reputation.put(String.valueOf(entry.getKey()), integer(entry.getValue(), "reputation"));
         List<QuestDefinition.ItemReward> items = new ArrayList<>();
-        if (node.containsKey("items")) for (String raw : strings(node.get("items"), "items")) {
+        if (node.containsKey("items")) for (Object value : list(node.get("items"), "items")) {
+            Map<?, ?> details = value instanceof Map<?, ?> map ? map : Map.of();
+            if (!details.isEmpty()) keys(details, Set.of("item", "name", "lore"), Set.of("item"), "reward item");
+            String raw = string(value instanceof Map<?, ?> ? details.get("item") : value, "reward item");
             // "material:bread 4" or "item:skill_lamp"
             String[] parts = raw.trim().split("\\s+");
             if (parts.length > 2 || !parts[0].contains(":")) throw new IllegalArgumentException("Reward items look like material:bread 4");
             String[] kind = parts[0].split(":", 2);
-            items.add(new QuestDefinition.ItemReward(kind[0], kind[1], parts.length == 2 ? Integer.parseInt(parts[1]) : 1));
+            items.add(new QuestDefinition.ItemReward(kind[0], kind[1], parts.length == 2 ? Integer.parseInt(parts[1]) : 1,
+                details.containsKey("name") ? string(details.get("name"), "name") : null,
+                details.containsKey("lore") ? lines(details.get("lore"), "lore") : List.of()));
         }
         return new QuestDefinition.Rewards(node.containsKey("marks") ? integer(node.get("marks"), "marks") : 0, experience, reputation, items);
     }

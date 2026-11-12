@@ -241,6 +241,7 @@ public final class ReachFlights implements Listener {
         final Entity mount;
         final boolean wasInvulnerable;
         double travelled;
+        int ticks;
         boolean ending, moving;
         BukkitTask task;
 
@@ -285,6 +286,15 @@ public final class ReachFlights implements Listener {
         player.showTitle(Title.title(Component.empty(), Component.text("Flying to " + to.name(), NamedTextColor.AQUA),
             Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofSeconds(2), java.time.Duration.ofMillis(600))));
         flight.task = Bukkit.getScheduler().runTaskTimer(plugin, () -> tick(flight), 1L, 1L);
+        reportFlight(flight);
+    }
+
+    /** The Aerborne client's flight timer: where to, how far along, and about how long is left. */
+    private void reportFlight(Flight f) {
+        double total = f.along[f.along.length - 1], left = Math.max(0, total - f.travelled);
+        // The last stretch is flown at reduced speed (see tick), so the estimate adds that back.
+        double seconds = (left + Math.min(left, 24) * 0.8) / SPEED / 20;
+        net.nerdsmp.paper.presentation.ClientFeeds.flight(f.player, f.to.name(), f.travelled, total, seconds);
     }
 
     /**
@@ -329,6 +339,7 @@ public final class ReachFlights implements Listener {
         try { f.mount.teleport(to, TeleportFlag.EntityState.RETAIN_PASSENGERS); } finally { f.moving = false; }
         if (!f.mount.getPassengers().contains(f.player)) f.mount.addPassenger(f.player);
         f.player.setFallDistance(0);
+        if (++f.ticks % 20 == 0) reportFlight(f);
         if (((int) f.travelled) % 40 == 0) f.mount.getWorld().playSound(to, Sound.ENTITY_PHANTOM_FLAP, SoundCategory.NEUTRAL, 0.4F, 0.6F);
     }
 
@@ -346,6 +357,7 @@ public final class ReachFlights implements Listener {
         f.ending = true;
         if (f.task != null) f.task.cancel();
         flights.remove(f.player.getUniqueId());
+        net.nerdsmp.paper.presentation.ClientFeeds.flight(f.player, null, 0, 0, 0);
         f.mount.eject();
         f.mount.remove();
         f.player.setInvulnerable(f.wasInvulnerable);

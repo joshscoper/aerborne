@@ -108,7 +108,9 @@ public final class ReachTreeGen {
             if (d > edge) continue;
             int x = cx + dx, y = cy + dy, z = cz + dz;
             if (!w.air(x, y, z)) continue;
-            boolean tone = second != leaf && ((ReachFlora.hash((cx + dx) >> 1, (cz + dz) >> 1) ^ ((cy + dy) >> 1)) & 7) < 3;
+            // Carry one vein of color across the lobe, widening toward its underside.
+            double vein = ax * Math.cos(p1) + az * Math.sin(p1) - ay * 0.55;
+            boolean tone = second != leaf && vein + lumps * 2 > 0.45;
             w.set(x, y, z, tone ? second : leaf, "persistent=true");
         }
     }
@@ -292,11 +294,15 @@ public final class ReachTreeGen {
         roots(w, x, y, z, 4, 2, Material.OAK_LOG, r);
         int[] top = limb(w, x + 0.5, y, z + 0.5, Math.cos(lean) * 0.3, 1, Math.sin(lean) * 0.3, h, Material.OAK_LOG, false);
         cluster(w, top[0], top[1] + 1, top[2], 4.5, 2.2, 4.5, Material.OAK_LEAVES, Material.MANGROVE_LEAVES, r);
-        for (int k = 0; k < 14; k++) {
-            double a = r.nextDouble() * Math.PI * 2, d = 3 + r.nextDouble() * 1.5;
-            int vx = top[0] + (int) Math.round(Math.cos(a) * d), vz = top[2] + (int) Math.round(Math.sin(a) * d);
+        // The skirts hang from boughs. Unequal lengths leave windows through to the water.
+        for (int k = 0; k < 7; k++) {
+            double a = lean + k * Math.PI * 2 / 7 + r.nextDouble(-0.22, 0.22);
+            int[] tip = limb(w, top[0] + 0.5, top[1], top[2] + 0.5,
+                Math.cos(a), -0.32, Math.sin(a), 3 + r.nextInt(2), Material.OAK_LOG, false);
+            cluster(w, tip[0], tip[1], tip[2], 1.8, 1.4, 1.8, Material.OAK_LEAVES, Material.MANGROVE_LEAVES, r);
             int len = 2 + r.nextInt(4);
-            for (int i = 0; i < len; i++) if (w.air(vx, top[1] - i, vz)) w.set(vx, top[1] - i, vz, Material.OAK_LEAVES, "persistent=true");
+            for (int i = 1; i <= len; i++) if (w.air(tip[0], tip[1] - i, tip[2]))
+                w.set(tip[0], tip[1] - i, tip[2], Material.OAK_LEAVES, "persistent=true");
         }
     }
 

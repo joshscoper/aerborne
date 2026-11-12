@@ -78,11 +78,13 @@ final class ResourceProvenanceServiceTest {
         var skill = fixture.service.claim(event, SKILLS).orElseThrow();
         var excavation = fixture.service.claim(event, EXCAVATION).orElseThrow();
         var quests = fixture.service.claim(event, QUESTS).orElseThrow();
+        var storyQuests = fixture.service.claim(event, HarvestClaims.Channel.STORY_QUESTS).orElseThrow();
         var signatures = fixture.service.claim(event, SIGNATURES).orElseThrow();
         var campaign = fixture.service.claim(event, CAMPAIGN).orElseThrow();
         assertSame(skill, campaign);
         assertSame(skill, excavation);
         assertSame(skill, quests);
+        assertSame(skill, storyQuests);
         assertSame(skill, signatures);
         assertEquals(1, block.chunk().writes);
         assertArrayEquals(new long[] {1, (64L << 8) | (3L << 4) | 5}, block.stored());

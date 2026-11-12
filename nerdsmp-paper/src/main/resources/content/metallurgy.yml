@@ -1,0 +1,109 @@
+# Refine expedition materials in a furnace or blast furnace. Blasting takes half the listed time.
+# Craft alloys and equipment at a crafting table; item: ingredients require that exact custom item.
+schema-version: 2
+smelting:
+  gloomsteel:
+    input: gloomsteel_ore
+    smithing-xp: 10
+    result: gloomsteel_ingot
+    ticks: 200
+    experience: 0.7
+  bindingsteel:
+    input: sovereign_ash
+    smithing-xp: 24
+    result: bindingsteel_ingot
+    ticks: 320
+    experience: 1.5
+  cindersteel:
+    input: cinder_shard
+    smithing-xp: 16
+    result: cindersteel_ingot
+    ticks: 240
+    experience: 1.0
+  tideglass:
+    input: tidepearl
+    smithing-xp: 8
+    result: tideglass
+    ticks: 200
+    experience: 0.7
+  tempered_sigil:
+    input: sigil_shard
+    smithing-xp: 12
+    result: tempered_sigil
+    ticks: 240
+    experience: 1.0
+  briar_resin:
+    input: thornheart_sap
+    smithing-xp: 6
+    result: briar_resin
+    ticks: 160
+    experience: 0.5
+crafting:
+  gloomsteel_alloy:
+    result: gloomsteel_alloy
+    level: 24
+    shape: ["GIG", " P "]
+    ingredients: {G: "item:gloomsteel_ingot", I: iron_ingot, P: "item:blasting_powder"}
+  tideforged_alloy:
+    result: tideforged_alloy
+    level: 26
+    shape: ["TGT", " C "]
+    ingredients: {T: "item:tideglass", G: "item:gloomsteel_ingot", C: "item:sluice_cog"}
+  warded_alloy:
+    result: warded_alloy
+    level: 30
+    shape: ["TGT", " W "]
+    ingredients: {T: "item:tempered_sigil", G: "item:gloomsteel_alloy", W: "item:wardens_seal"}
+  cindersteel_alloy:
+    result: cindersteel_alloy
+    level: 36
+    shape: ["CGC", " S "]
+    ingredients: {C: "item:cindersteel_ingot", G: "item:gloomsteel_ingot", S: "item:smoldering_core"}
+  gloomsteel_mattock:
+    result: gloomsteel_mattock
+    skill: mining
+    level: 24
+    shape: ["GGG", " S ", " L "]
+    ingredients: {G: "item:gloomsteel_alloy", S: stick, L: "item:foremans_lamp"}
+  gloomsteel_hauberk:
+    result: gloomsteel_hauberk
+    level: 26
+    shape: ["G G", "GPG", "GGG"]
+    ingredients: {G: "item:gloomsteel_alloy", P: "item:blasting_powder"}
+  tideforged_rod:
+    result: tideforged_rod
+    skill: fishing
+    level: 28
+    shape: ["  T", " TR", "TBS"]
+    ingredients: {T: "item:tideforged_alloy", R: "item:briar_resin", B: "item:briar_silk", S: "item:tidewardens_scale"}
+  warded_buckler:
+    result: warded_buckler
+    level: 32
+    shape: [" W ", "WKW", " O "]
+    ingredients: {W: "item:warded_alloy", K: "item:archive_key", O: oak_planks}
+  the_binding:
+    result: the_binding
+    level: 45
+    shape: ["BLB", "BLB", " H "]
+    ingredients: {B: "item:bindingsteel_ingot", L: "item:warden_chain_link", H: "item:heart_of_the_mountain"}
+  crown_of_the_accord:
+    result: crown_of_the_accord
+    level: 45
+    shape: ["BHB", "L L"]
+    ingredients: {B: "item:bindingsteel_ingot", L: "item:warden_chain_link", H: "item:heart_of_the_mountain"}
+  sovereignbane_plate:
+    result: sovereignbane_plate
+    level: 45
+    shape: ["L L", "BHB", "BBB"]
+    ingredients: {B: "item:bindingsteel_ingot", L: "item:warden_chain_link", H: "item:heart_of_the_mountain"}
+  cindersteel_cleaver:
+    result: cindersteel_cleaver
+    level: 38
+    shape: ["CC ", "CE ", " S "]
+    ingredients: {C: "item:cindersteel_alloy", E: "item:sovereigns_ember", S: stick}
+  briarbound_hoe:
+    result: briarbound_hoe
+    skill: farming
+    level: 20
+    shape: ["RRF", " B ", " B "]
+    ingredients: {R: "item:briar_resin", F: "item:matrons_fang", B: "item:briar_silk"}

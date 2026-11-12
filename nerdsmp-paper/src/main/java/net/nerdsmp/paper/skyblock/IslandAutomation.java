@@ -154,7 +154,7 @@ public final class IslandAutomation implements Listener, AutoCloseable {
     }
     private boolean automationRecipe(Recipe recipe) { return recipe instanceof Keyed keyed && recipes.contains(keyed.getKey()); }
     static boolean ordinaryIngredients(ItemStack[] matrix) {
-        for (ItemStack item : matrix) if (item != null && !item.getType().isAir() && item.hasItemMeta()) return false;
+        for (ItemStack item : matrix) if (item != null && !item.getType().isAir() && !net.nerdsmp.paper.item.FoodItems.ordinary(item)) return false;
         return true;
     }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -570,9 +570,9 @@ public final class IslandAutomation implements Listener, AutoCloseable {
         // Ordinary skeleton bows and zombified piglin swords are their attack mechanisms.
         return gear.getItemInOffHand().getType().isAir() && (gear.getItemInMainHand().getType().isAir()
             || (entity.getType() == EntityType.SKELETON || entity.getType() == EntityType.STRAY)
-                && gear.getItemInMainHand().getType() == Material.BOW && !gear.getItemInMainHand().hasItemMeta()
+                && gear.getItemInMainHand().getType() == Material.BOW && net.nerdsmp.paper.item.FoodItems.ordinary(gear.getItemInMainHand())
             || entity.getType() == EntityType.ZOMBIFIED_PIGLIN && gear.getItemInMainHand().getType() == Material.GOLDEN_SWORD
-                && !gear.getItemInMainHand().hasItemMeta());
+                && net.nerdsmp.paper.item.FoodItems.ordinary(gear.getItemInMainHand()));
     }
     private IslandMobStackPolicy.Signature signature(LivingEntity entity) {
         Map<String, Double> attributes = new HashMap<>();

@@ -102,7 +102,7 @@ public final class RecipeEngine implements AutoCloseable {
     }
     private Set<Material> materials(RecipeChoice choice){
         if(choice instanceof RecipeChoice.MaterialChoice material)return Set.copyOf(material.getChoices());
-        if(choice instanceof RecipeChoice.ExactChoice exact)return exact.getChoices().stream().filter(item->!item.hasItemMeta()).map(ItemStack::getType).collect(java.util.stream.Collectors.toUnmodifiableSet());
+        if(choice instanceof RecipeChoice.ExactChoice exact)return exact.getChoices().stream().filter(net.nerdsmp.paper.item.FoodItems::ordinary).map(ItemStack::getType).collect(java.util.stream.Collectors.toUnmodifiableSet());
         return Set.of();
     }
     @Override public void close(){crafting.installAuthored(List.of());started=false;}

@@ -279,7 +279,7 @@ public final class FishingService implements Listener {
         ItemMeta rewardMeta = reward.item.getItemMeta();
         Component rewardName = rewardMeta.hasItemName()
             ? rewardMeta.itemName() : Component.translatable(reward.item.translationKey());
-        player.sendActionBar(miniMessage.deserialize("<" + color + ">" + rarity.name() + " CATCH</" + color
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<" + color + ">" + rarity.name() + " CATCH</" + color
                 + "> <dark_gray>•</dark_gray> ")
             .append(rewardName)
             .append(miniMessage.deserialize(" <dark_gray>•</dark_gray> <white>Streak " + state.streak + "</white>")));

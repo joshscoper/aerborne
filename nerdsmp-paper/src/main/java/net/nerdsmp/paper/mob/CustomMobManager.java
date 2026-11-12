@@ -269,10 +269,38 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     private void track(LivingEntity entity) {
         if (closed || entity instanceof Player) return;
+        if (managedEncounter(entity)) EncounterBehavior.apply(entity);
         var data = entity.getPersistentDataContainer();
         String tier = data.get(mobTierKey, PersistentDataType.STRING);
         if (data.has(mobIdKey, PersistentDataType.STRING) || tier != null && !tier.equals(MobTier.STANDARD.name())
             || tier == null && isVanillaBoss(entity.getType())) active.put(entity.getUniqueId(), entity);
+    }
+
+    private boolean managedEncounter(LivingEntity entity) {
+        var data = entity.getPersistentDataContainer();
+        return data.has(mobIdKey, PersistentDataType.STRING) || data.has(zoneLevelKey, PersistentDataType.INTEGER)
+            || data.getOrDefault(EncounterBehavior.MARKER, PersistentDataType.BYTE, (byte)0) == 1;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEncounterSunlight(org.bukkit.event.entity.EntityCombustEvent event) {
+        // Paper 26.2's tag-based Mob.burnUndead path can bypass Zombie.shouldBurnInDay.
+        // Sun ignition uses the base event; block/lava and combat ignition use its subclasses.
+        if (event.getClass() == org.bukkit.event.entity.EntityCombustEvent.class
+            && event.getEntity() instanceof LivingEntity living && managedEncounter(living)
+            && org.bukkit.Tag.ENTITY_TYPES_BURN_IN_DAYLIGHT.isTagged(living.getType())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEncounterTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && managedEncounter(living)
+            && EncounterBehavior.changesIdentity(event.getTransformReason())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEncounterBlockChange(org.bukkit.event.entity.EntityChangeBlockEvent event) {
+        if ((event.getEntity() instanceof org.bukkit.entity.Silverfish || event.getEntity() instanceof org.bukkit.entity.Enderman)
+            && event.getEntity() instanceof LivingEntity living && managedEncounter(living)) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -362,12 +390,28 @@ public final class CustomMobManager implements Listener, AutoCloseable {
                 }
             }
             if (definition==null) applyVanilla(entity,isVanillaBoss(type) ? MobTier.BOSS : MobTier.STANDARD); else apply(entity,definition);
+            EncounterBehavior.apply(entity);
             beforeSpawn.accept(entity);
         });
     }
 
     public boolean isCustomMob(LivingEntity entity) {
         return definition(entity) != null;
+    }
+
+    /** Empty for ordinary natural/farmed mobs: only the server's controlled encounters scale. */
+    public java.util.OptionalLong huntingExperience(LivingEntity entity) {
+        MobDefinition definition = definition(entity);
+        var data = entity.getPersistentDataContainer();
+        if (definition == null && !data.has(zoneLevelKey, PersistentDataType.INTEGER)) return java.util.OptionalLong.empty();
+        int level = data.getOrDefault(zoneLevelKey, PersistentDataType.INTEGER, definition == null ? 1 : definition.defaultLevel);
+        long explicit = definition == null ? -1 : definition.huntingExperience;
+        var config = plugin.getConfig();
+        return java.util.OptionalLong.of(HuntingRewards.experience(level, explicit, tier(entity) == MobTier.ELITE,
+            tier(entity) == MobTier.BOSS, config.getLong("progression.xp.hunting-managed.base", 35),
+            config.getLong("progression.xp.hunting-managed.per-level", 5),
+            config.getDouble("progression.xp.hunting-managed.elite-multiplier", 1.5),
+            config.getDouble("progression.xp.hunting-managed.boss-multiplier", 3)));
     }
 
     /** Base stats for guides. Health and damage are before level, tier and party scaling. */
@@ -448,6 +492,9 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         return entity.getPersistentDataContainer().has(bossObjectiveKey, PersistentDataType.BYTE);
     }
 
+    /** Far from spawn, at most one natural spawn in this many becomes an elite (was one in four). */
+    static final double MAX_NATURAL_ELITE_CHANCE = 0.08D;
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onNaturalSpawn(CreatureSpawnEvent event) {
         LivingEntity entity = event.getEntity();
@@ -460,7 +507,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
             return;
         }
         boolean natural = event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL;
-        double eliteChance = Math.min(0.25D,
+        double eliteChance = Math.min(MAX_NATURAL_ELITE_CHANCE,
             ambientConversionChance + distanceScale(entity.getLocation(), MobTier.ELITE, 1).level() * eliteChancePerLevel);
         if (natural && ThreadLocalRandom.current().nextDouble() < eliteChance) {
             List<MobDefinition> candidates = definitions.values().stream()
@@ -730,6 +777,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
 
     private void apply(LivingEntity entity, MobDefinition definition) {
         entity.getPersistentDataContainer().set(mobIdKey, PersistentDataType.STRING, definition.id);
+        EncounterBehavior.apply(entity);
         if (definition.authored) {
             var data = entity.getPersistentDataContainer();
             if (!data.has(zoneLevelKey, PersistentDataType.INTEGER)) data.set(zoneLevelKey, PersistentDataType.INTEGER, definition.defaultLevel);
@@ -803,7 +851,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         roster.entrySet().removeIf(entry -> {
             Player player = Bukkit.getPlayer(entry.getKey());
             return now - entry.getValue() > combatTimeoutMillis || player == null || !player.isOnline()
-                || player.isDead() || !player.getWorld().equals(entity.getWorld())
+                || player.isDead() || plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core && core.spirits()!=null && core.spirits().ghost(player.getUniqueId()) || !player.getWorld().equals(entity.getWorld())
                 || player.getLocation().distanceSquared(entity.getLocation()) > combatRadiusSquared;
         });
         int groupSize = Math.max(1, roster.size());
@@ -922,6 +970,7 @@ public final class CustomMobManager implements Listener, AutoCloseable {
     }
 
     private void engage(LivingEntity mob, Player player) {
+        if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core && core.spirits()!=null && core.spirits().ghost(player.getUniqueId())) return;
         if (!mob.isValid() || mob.isDead() || player.getGameMode().isInvulnerable()) {
             return;
         }
@@ -1047,10 +1096,15 @@ public final class CustomMobManager implements Listener, AutoCloseable {
                 section.getLong("mark-reward", 1L),
                 section.getString("relic-drop"),
                 section.getDouble("relic-chance", 0.0D),
-                false, MobBlueprint.Rank.ELITE, 1, section.getDouble("speed", 0.0D), builtInAbility(section, id, file), -1, "",
-                equipment(section, id, file), section.getDouble("scale", 1.0D)
+                false, legacyRank(section, id, file), 1, section.getDouble("speed", 0.0D), builtInAbility(section, id, file), -1, "",
+                equipment(section, id, file), section.getDouble("scale", 1.0D), section.getLong("hunting-experience", -1)
             ));
         }
+    }
+
+    private static MobBlueprint.Rank legacyRank(ConfigurationSection section, String id, String file) {
+        try { return MobBlueprint.Rank.valueOf(section.getString("rank", "elite").toUpperCase(Locale.ROOT)); }
+        catch (IllegalArgumentException invalid) { throw new IllegalStateException(file + ": mob " + id + " rank must be normal or elite", invalid); }
     }
 
     /** {@code ability: pulse} (the default), {@code heal_self} or {@code none} for mobs driven by expedition abilities. */
@@ -1106,8 +1160,18 @@ public final class CustomMobManager implements Listener, AutoCloseable {
         int experienceReward,
         String lootProfile,
         Map<org.bukkit.inventory.EquipmentSlot, org.bukkit.Material> equipment,
-        double scale
+        double scale,
+        long huntingExperience
     ) {
+        MobDefinition(String id, String name, EntityType type, boolean boss, double health, double attackDamage,
+                      double abilityRadius, double abilityDamage, long abilityCooldownSeconds, long markReward,
+                      String relicDrop, double relicChance, boolean authored, MobBlueprint.Rank rank, int defaultLevel,
+                      double movementSpeed, MobBlueprint.Ability ability, int experienceReward, String lootProfile,
+                      Map<org.bukkit.inventory.EquipmentSlot, org.bukkit.Material> equipment, double scale) {
+            this(id, name, type, boss, health, attackDamage, abilityRadius, abilityDamage, abilityCooldownSeconds,
+                markReward, relicDrop, relicChance, authored, rank, defaultLevel, movementSpeed, ability, experienceReward,
+                lootProfile, equipment, scale, -1);
+        }
         MobDefinition {
             equipment = equipment == null ? Map.of() : Map.copyOf(equipment);
             scale = scale <= 0 ? 1 : scale;

@@ -51,6 +51,10 @@ public final class IslandService {
         return memberIndex.getOrDefault(account, Set.of()).stream().map(islands::get)
             .sorted(Comparator.comparingInt(Island::slot)).toList();
     }
+    /** Every island, open or closed, by slot: for season rankings. */
+    public synchronized List<Island> all() {
+        return islands.values().stream().sorted(Comparator.comparingInt(Island::slot)).toList();
+    }
     public synchronized List<Island> directory() {
         if (directoryCache == null) directoryCache = islands.values().stream().filter(Island::visitors)
             .sorted(Comparator.comparingInt(Island::slot)).toList();
@@ -117,9 +121,17 @@ public final class IslandService {
         if (i.visitors() == enabled) return;
         commit(new Island(i.owner(), i.id(), i.slot(), i.tier(), i.name(), enabled, i.members(), i.invites(), i.proofs(), i.showcase()));
     }
-    public synchronized void showcase(AccountId owner, IslandShowcase showcase) {
+    public synchronized void showcase(AccountId owner, IslandShowcase showcase) { showcase(owner, showcase, 1, 0); }
+    /** Level and stage come from IslandDevelopment and IslandResourceProgression; neither ever goes down in a season. */
+    public synchronized void showcase(AccountId owner, IslandShowcase showcase, int islandLevel, int resourceStage) {
+        showcase(owner, showcase, IslandShowcase.Context.basic(require(owner).tier(), islandLevel, resourceStage));
+    }
+    /** The context's chapter is ignored: this island's own saved chapter always decides chapter showcases. */
+    public synchronized void showcase(AccountId owner, IslandShowcase showcase, IslandShowcase.Context context) {
         Island i = require(owner);
-        if (!showcase.unlocked(i.tier())) throw new IllegalArgumentException("Complete chapter " + showcase.chapter() + " to unlock this display.");
+        var checked = new IslandShowcase.Context(i.tier(), context.islandLevel(), context.resourceStage(), context.achievementPoints(),
+            context.questChains(), context.expeditions(), context.guestsServed(), context.workerUnlocks(), context.bossKills(), context.stars());
+        if (!showcase.unlocked(checked)) throw new IllegalArgumentException(showcase.requirement() + " to unlock this display.");
         if (i.showcase() == showcase) return;
         commit(new Island(i.owner(), i.id(), i.slot(), i.tier(), i.name(), i.visitors(), i.members(), i.invites(), i.proofs(), showcase));
     }
@@ -251,7 +263,7 @@ public final class IslandService {
                 || invites.containsKey(owner) || members.stream().anyMatch(invites::containsKey)) throw new IllegalArgumentException("Invalid island team");
             if (s.contains("showcase") && !s.isString("showcase")) throw new IllegalArgumentException("Invalid showcase");
             IslandShowcase showcase = IslandShowcase.parse(s.getString("showcase", "hearth"));
-            if (!showcase.unlocked(tier)) throw new IllegalArgumentException("Locked showcase in island save");
+            if (showcase.kind() == IslandShowcase.Kind.CHAPTER && !showcase.unlocked(tier)) throw new IllegalArgumentException("Locked showcase in island save");
             return new Island(owner, UUID.fromString(s.getString("id", "")), slot, tier, name, s.getBoolean("visitors"), members, invites, proofs, showcase);
         } catch (RuntimeException error) { throw new IllegalStateException("Cannot load island for " + owner + "; refusing to replace it", error); }
     }

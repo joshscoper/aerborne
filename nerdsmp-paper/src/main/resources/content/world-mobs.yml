@@ -3,10 +3,12 @@
 # into content/mobs.yml: an entry there with the same id overrides this file.
 #
 # Same keys as content/expedition-mobs.yml. Zone spawners only accept ordinary ground creatures, so none of
-# these is a boss; tougher foes are elites with more health, gear and size.
+# these is a boss. Rank is explicit: the Overseer and Champion are elites; ordinary foes are normal.
+# hunting-experience optionally overrides RPG skill XP only; vanilla orb drops remain independent.
 mobs:
   # Goldenreach Fields (levels 1-4)
   field_gnawer:
+    rank: normal
     name: "<gray>Field Gnawer</gray>"
     type: silverfish
     health: 8
@@ -15,6 +17,7 @@ mobs:
     ability: none
     mark-reward: 1
   straw_scarecrow:
+    rank: normal
     name: "<gold>Straw Scarecrow</gold>"
     type: zombie
     health: 18
@@ -24,6 +27,7 @@ mobs:
     mark-reward: 1
     equipment: {head: carved_pumpkin, chest: leather_chestplate, hand: wooden_hoe}
   bristle_boar:
+    rank: normal
     name: "<#c08457>Bristle Boar</#c08457>"
     type: pig
     health: 16
@@ -34,6 +38,7 @@ mobs:
 
   # Wildwood Vale and Kingsroad (levels 3-10)
   vale_brigand:
+    rank: normal
     name: "<#b33939>Kingsroad Brigand</#b33939>"
     type: vindicator
     health: 26
@@ -42,6 +47,7 @@ mobs:
     mark-reward: 2
     equipment: {head: leather_helmet, hand: stone_axe}
   brigand_crossbow:
+    rank: normal
     name: "<#b33939>Brigand Crossbow</#b33939>"
     type: pillager
     health: 22
@@ -52,6 +58,7 @@ mobs:
 
   # Gloomroot Taiga (levels 8-13); the Mire Weaver and Thorn Sentinel come from content/mobs.yml
   gloom_wolfhound:
+    rank: normal
     name: "<dark_gray>Gloomroot Wolfhound</dark_gray>"
     type: wolf
     health: 26
@@ -64,6 +71,7 @@ mobs:
 
   # Mossfall Ruins (levels 10-15)
   ruin_revenant:
+    rank: normal
     name: "<#7bed9f>Mossfall Revenant</#7bed9f>"
     type: zombie_villager
     health: 32
@@ -76,6 +84,7 @@ mobs:
 
   # Sunscar Canyons and the Gilded Hollow (levels 14-20)
   canyon_skulker:
+    rank: normal
     name: "<#e17055>Canyon Skulker</#e17055>"
     type: spider
     health: 30
@@ -86,6 +95,7 @@ mobs:
     ability-cooldown-seconds: 14
     mark-reward: 3
   dust_raider:
+    rank: normal
     name: "<#fdcb6e>Dust Raider</#fdcb6e>"
     type: husk
     health: 34
@@ -96,6 +106,7 @@ mobs:
     mark-reward: 3
     equipment: {head: leather_helmet, chest: leather_chestplate, hand: iron_sword}
   tunnel_lurker:
+    rank: normal
     name: "<#636e72>Tunnel Lurker</#636e72>"
     type: cave_spider
     health: 22
@@ -104,6 +115,7 @@ mobs:
     ability: none
     mark-reward: 3
   gilded_overseer:
+    rank: elite
     name: "<gradient:#f9ca24:#f0932b>Gilded Overseer</gradient>"
     type: vindicator
     health: 90
@@ -117,6 +129,7 @@ mobs:
 
   # Amberdune Wastes (levels 17-24)
   dune_scorpion:
+    rank: normal
     name: "<#e1b12c>Dune Scorpion</#e1b12c>"
     type: spider
     health: 34
@@ -127,6 +140,7 @@ mobs:
     ability-cooldown-seconds: 13
     mark-reward: 4
   sandwraith:
+    rank: normal
     name: "<#f5cd79>Sandwraith</#f5cd79>"
     type: husk
     health: 40
@@ -140,6 +154,7 @@ mobs:
 
   # The Sunscorch Colosseum (levels 22-26)
   arena_gladiator:
+    rank: normal
     name: "<#eb4d4b>Pit Gladiator</#eb4d4b>"
     type: zombie
     health: 48
@@ -150,6 +165,7 @@ mobs:
     mark-reward: 5
     equipment: {head: iron_helmet, chest: chainmail_chestplate, hand: iron_sword, off-hand: shield}
   arena_retiarius:
+    rank: normal
     name: "<#eb4d4b>Net-Caster</#eb4d4b>"
     type: skeleton
     health: 40
@@ -160,6 +176,7 @@ mobs:
     mark-reward: 5
     equipment: {head: chainmail_helmet, legs: chainmail_leggings}
   arena_champion:
+    rank: elite
     name: "<gradient:#ff7979:#eb4d4b>Champion of the Sands</gradient>"
     type: vindicator
     health: 160
@@ -173,6 +190,7 @@ mobs:
 
   # Frostveil Glacier and Stormcrag Peaks (levels 24-34); Frostmarked comes from content/mobs.yml
   rime_wolf:
+    rank: normal
     name: "<aqua>Rime Wolf</aqua>"
     type: wolf
     health: 44
@@ -183,6 +201,7 @@ mobs:
     ability-cooldown-seconds: 14
     mark-reward: 5
   crag_ram:
+    rank: normal
     name: "<#dfe6e9>Stormcrag Ram</#dfe6e9>"
     type: goat
     health: 50
@@ -193,6 +212,7 @@ mobs:
     ability-cooldown-seconds: 15
     mark-reward: 5
   crag_stormcaller:
+    rank: normal
     name: "<#74b9ff>Stormcaller Shade</#74b9ff>"
     type: stray
     health: 56

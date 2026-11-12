@@ -159,7 +159,7 @@ public final class RecipeStudio implements Listener,AutoCloseable {
     private boolean current(Player player,GridPage page){return allowed(player)&&page.owner==player&&views.get(player.getUniqueId())==page&&player.getOpenInventory().getTopInventory()==page.inventory&&plugin.sessions().account(player.getUniqueId()).filter(page.account::equals).isPresent();}
     private boolean allowed(Player player){return !closed&&ui.allowed(player,PERMISSION);}
     private static int gridIndex(int slot){for(int i=0;i<GRID.length;i++)if(GRID[i]==slot)return i;return-1;}
-    private static Material sample(ItemStack item){return item==null||item.getType().isAir()||item.hasItemMeta()?null:item.getType();}
+    private static Material sample(ItemStack item){return item==null||item.getType().isAir()||!net.nerdsmp.paper.item.FoodItems.ordinary(item)?null:item.getType();}
     private void control(GridPage page,int slot,Material icon,String title,List<String> lore,Consumer<Player> action){page.inventory.setItem(slot,StudioUi.card(icon,title,lore));page.actions.put(slot,action);}
     private void failure(Player player,Exception failed){if(failed instanceof IOException)plugin.getLogger().log(Level.WARNING,"Authored recipe edit could not be saved",failed);Chat.error(player,failed.getMessage()==null?"The recipe edit could not be completed. Check the server log.":Chat.escape(failed.getMessage()));}
     private static String label(Material material){return material.name().toLowerCase(Locale.ROOT).replace('_',' ');}

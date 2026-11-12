@@ -1481,6 +1481,150 @@ relics:
     stats: {damage: 9, projectile-damage: 9, life-steal-percent: 2}
     lore:
       - "<gray>The Tidewarden's crown-spear. The cistern answers when it is raised.</gray>"
+  gloomsteel_ingot:
+    material: iron_ingot
+    name: "<green>Gloomsteel Ingot</green>"
+    category: refined material
+    slot: none
+    rarity: uncommon
+    sockets: 0
+    lore:
+      - "<gray>Gloomsteel Ore refined in a furnace or blast furnace.</gray>"
+      - "<gray>Combine into alloys at a crafting table. See /recipes.</gray>"
+  cindersteel_ingot:
+    material: copper_ingot
+    name: "<aqua>Cindersteel Ingot</aqua>"
+    category: refined material
+    slot: none
+    rarity: rare
+    sockets: 0
+    lore:
+      - "<gray>Cinder Shards refined in a furnace or blast furnace.</gray>"
+      - "<gray>Combine with Gloomsteel and a Smoldering Core. See /recipes.</gray>"
+  tideglass:
+    material: prismarine_shard
+    name: "<green>Tideglass</green>"
+    category: refined material
+    slot: none
+    rarity: uncommon
+    sockets: 0
+    lore:
+      - "<gray>A Tidepearl fused into glass in a furnace.</gray>"
+      - "<gray>Used in Tideforged Alloy. See /recipes.</gray>"
+  tempered_sigil:
+    material: echo_shard
+    name: "<aqua>Tempered Sigil</aqua>"
+    category: refined material
+    slot: none
+    rarity: rare
+    sockets: 0
+    lore:
+      - "<gray>A Sigil Shard hardened in a furnace.</gray>"
+      - "<gray>Used in Warded Alloy. See /recipes.</gray>"
+  briar_resin:
+    material: resin_brick
+    name: "<green>Briar Resin</green>"
+    category: refined material
+    slot: none
+    rarity: uncommon
+    sockets: 0
+    lore:
+      - "<gray>Thornheart Sap cured in a furnace.</gray>"
+      - "<gray>Binds Briarbound tools and Tideforged rods. See /recipes.</gray>"
+  gloomsteel_alloy:
+    material: netherite_scrap
+    name: "<aqua>Gloomsteel Alloy</aqua>"
+    category: alloy
+    slot: none
+    rarity: rare
+    sockets: 0
+    lore:
+      - "<gray>Gloomsteel, iron and Blasting Powder bound at a crafting table.</gray>"
+      - "<gray>Forge a mattock, a hauberk or a warded alloy. See /recipes.</gray>"
+  tideforged_alloy:
+    material: iron_ingot
+    name: "<aqua>Tideforged Alloy</aqua>"
+    category: alloy
+    slot: none
+    rarity: rare
+    sockets: 0
+    lore:
+      - "<gray>Tideglass and Gloomsteel folded around a Sluice Cog.</gray>"
+      - "<gray>Used in the Tideforged Rod. See /recipes.</gray>"
+  warded_alloy:
+    material: netherite_ingot
+    name: "<light_purple>Warded Alloy</light_purple>"
+    category: alloy
+    slot: none
+    rarity: epic
+    sockets: 0
+    lore:
+      - "<gray>Gloomsteel Alloy sealed between Tempered Sigils.</gray>"
+      - "<gray>Used in the Warded Buckler. See /recipes.</gray>"
+  cindersteel_alloy:
+    material: gold_ingot
+    name: "<light_purple>Cindersteel Alloy</light_purple>"
+    category: alloy
+    slot: none
+    rarity: epic
+    sockets: 0
+    lore:
+      - "<gray>Gloomsteel and Cindersteel fused around a Smoldering Core.</gray>"
+      - "<gray>Used in the Cindersteel Cleaver. See /recipes.</gray>"
+  gloomsteel_mattock:
+    material: diamond_pickaxe
+    name: "<light_purple>Gloomsteel Mattock</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 24
+    sockets: 2
+    stats: {damage: 6, mining-power: 3, geode-find-percent: 4}
+    lore: ["<gray>A deep-gallery edge guided by the Foreman's last light.</gray>"]
+  gloomsteel_hauberk:
+    material: diamond_chestplate
+    name: "<light_purple>Gloomsteel Hauberk</light_purple>"
+    slot: chest
+    rarity: epic
+    item-level: 26
+    sockets: 2
+    stats: {defense: 5, durability-save-percent: 10}
+    lore: ["<gray>Flexible links of steel that swallow the lantern glow.</gray>"]
+  tideforged_rod:
+    material: fishing_rod
+    name: "<light_purple>Tideforged Rod</light_purple>"
+    slot: main_hand
+    rarity: epic
+    item-level: 28
+    sockets: 2
+    stats: {fishing-power: 4, fishing-luck-percent: 6, durability-save-percent: 4}
+    lore: ["<gray>A tideglass tip feels every shift of the current.</gray>"]
+  warded_buckler:
+    material: shield
+    name: "<light_purple>Warded Buckler</light_purple>"
+    slot: off_hand
+    rarity: epic
+    item-level: 32
+    sockets: 2
+    stats: {defense: 5, durability-save-percent: 8, skill-xp-percent: 3}
+    lore: ["<gray>The archive's wards hold firm against another blow.</gray>"]
+  cindersteel_cleaver:
+    material: netherite_axe
+    name: "<gold>Cindersteel Cleaver</gold>"
+    slot: main_hand
+    rarity: legendary
+    item-level: 38
+    sockets: 3
+    stats: {damage: 9, execute-damage-percent: 4, durability-save-percent: 6}
+    lore: ["<gray>A sovereign's ember runs along the folded edge.</gray>"]
+  briarbound_hoe:
+    material: diamond_hoe
+    name: "<aqua>Briarbound Hoe</aqua>"
+    slot: main_hand
+    rarity: rare
+    item-level: 20
+    sockets: 2
+    stats: {damage: 3, gathering-power: 3, harvest-extra-percent: 5}
+    lore: ["<gray>Cured sap and spider silk hold the harvest edge true.</gray>"]
   gloomsteel_ore:
     material: raw_iron
     name: "<white>Gloomsteel Ore</white>"
@@ -1827,3 +1971,103 @@ relics:
     stats: {defense: 9, damage-percent: 4}
     lore:
       - "<gray>The Steward served his lord in this. It served him poorly.</gray>"
+
+  travelers_pendant:
+    name: "<green>Traveler's Pendant</green>"
+    material: GOLD_NUGGET
+    slot: NECK
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {max-health: 2}
+
+  trail_shoulders:
+    name: "<green>Trail Shoulders</green>"
+    material: LEATHER
+    slot: SHOULDERS
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {defense: 1}
+
+  trail_cloak:
+    name: "<green>Trail Cloak</green>"
+    material: PHANTOM_MEMBRANE
+    slot: BACK
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {max-health: 2}
+
+  copper_bracers:
+    name: "<green>Copper Bracers</green>"
+    material: COPPER_INGOT
+    slot: WRISTS
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {defense: 1}
+
+  leather_handguards:
+    name: "<green>Leather Handguards</green>"
+    material: RABBIT_HIDE
+    slot: HANDS
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {defense: 1}
+
+  trail_belt:
+    name: "<green>Trail Belt</green>"
+    material: LEAD
+    slot: WAIST
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {defense: 1}
+
+  copper_band:
+    name: "<green>Copper Band</green>"
+    material: GOLD_NUGGET
+    slot: RING
+    rarity: UNCOMMON
+    item-level: 5
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {defense: 1}
+
+  amethyst_band:
+    name: "<green>Amethyst Band</green>"
+    material: AMETHYST_SHARD
+    slot: RING
+    rarity: UNCOMMON
+    item-level: 10
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {max-health: 2}
+
+  surveyors_charm:
+    name: "<green>Surveyor's Charm</green>"
+    material: FLINT
+    slot: TRINKET
+    rarity: UNCOMMON
+    item-level: 10
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {geode-find-percent: 2}
+
+  tide_charm:
+    name: "<green>Tide Charm</green>"
+    material: NAUTILUS_SHELL
+    slot: TRINKET
+    rarity: UNCOMMON
+    item-level: 10
+    sockets: 1
+    lore: ["<gray>Equip through /equipment.</gray>"]
+    stats: {fishing-luck-percent: 1}

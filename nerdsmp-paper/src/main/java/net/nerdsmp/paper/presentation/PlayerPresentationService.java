@@ -422,6 +422,11 @@ public final class PlayerPresentationService implements Listener, AutoCloseable 
      * else their campaign and its points.
      */
     public List<String> progressFor(Player player, PlayerView view) {
+        // A new player sees their next First Step here instead of a campaign at "Progress 0".
+        var steps = plugin.firstSteps() == null ? null : plugin.firstSteps().state(player).filter(s -> s.active()).orElse(null);
+        if (steps != null && steps.next() != null)
+            return List.of("<gold>First Steps</gold> <gray>" + steps.done().size() + "/" + net.nerdsmp.paper.player.FirstStepsService.Step.values().length + "</gray>",
+                "<yellow>▸ " + escape(steps.next().title()) + "</yellow>");
         var island = plugin.skyblock() == null ? null : plugin.skyblock().islands()
             .at(player.getLocation().getBlockX() >> 4, player.getLocation().getBlockZ() >> 4)
             .filter(i -> plugin.skyblock().isIslandWorld(player.getWorld())).orElse(null);

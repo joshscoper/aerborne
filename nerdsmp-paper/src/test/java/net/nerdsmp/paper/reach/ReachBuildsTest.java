@@ -13,6 +13,33 @@ class ReachBuildsTest {
     private static final ReachTerrain TERRAIN = new ReachTerrain();
     private static final ReachFeatures FEATURES = new ReachFeatures(TERRAIN, ReachBuilds.all(TERRAIN));
 
+    @Test
+    void wayfindingMarksLeadToClearInteractionPoints() {
+        var spots = FEATURES.spots();
+        var city = FEATURES.plan(FEATURES.feature("highcrown").orElseThrow());
+        var kestrel = spots.get("highcrown.npc_kestrel_way");
+        int dialX = (int) Math.floor(kestrel.x()) - 2, dialZ = (int) Math.floor(kestrel.z()) - 2;
+        int plaza = (int) kestrel.y();
+        assertTrue(blockAt(city, dialX, plaza + 5, dialZ).contains("air"), "Open sightline through the dial");
+        assertTrue(blockAt(city, dialX, plaza + 10, dialZ).contains("sea_lantern"), "Lit north mark");
+
+        var vale = FEATURES.plan(FEATURES.feature("goldenreach").orElseThrow());
+        var grain = spots.get("goldenreach.granary");
+        int gx = (int) Math.floor(grain.x()), gz = (int) Math.floor(grain.z());
+        int lastFloor = (int) grain.y() - 1;
+        for (int step = 0; step <= 3; step++) {
+            int z = gz - step;
+            int floor = (int) grain.y() - 1;
+            while (floor < grain.y() + 2 && !passable(blockAt(vale, gx, floor + 1, z))) floor++;
+            assertTrue(Math.abs(floor - lastFloor) <= 1, "A player can climb under the loading beam");
+            for (int x = gx - 1; x <= gx + 1; x++) {
+                assertTrue(solid(blockAt(vale, x, floor, z)), "Continuous loading lane");
+                assertTrue(passable(blockAt(vale, x, floor + 1, z)) && passable(blockAt(vale, x, floor + 2, z)));
+            }
+            lastFloor = floor;
+        }
+    }
+
     /** The block at a spot as the generator would leave it: the feature's own block, else the terrain's. */
     static String blockAt(ReachCanvas.Frozen plan, int x, int y, int z) {
         ReachCanvas.Spec spec = plan.get(x, y, z);

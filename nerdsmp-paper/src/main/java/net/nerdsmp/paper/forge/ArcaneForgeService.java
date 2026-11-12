@@ -442,6 +442,11 @@ public final class ArcaneForgeService implements Listener {
         gearSets.refreshInventory(player);
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0F,
             1.0F + requirement.quality().tier() * 0.08F);
+        if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core && core.skills() != null) {
+            long experience = Math.clamp(plugin.getConfig().getLong("progression.xp.smithing-quality-upgrade", 20), 1, 1000)
+                * requirement.quality().tier();
+            core.skills().awardActivity(player, Skill.SMITHING, experience, "quality-upgrade:" + java.util.UUID.randomUUID());
+        }
         return QualityResult.APPLIED;
     }
 
@@ -563,7 +568,7 @@ public final class ArcaneForgeService implements Listener {
         }
         GeodeGrade grade = rollGrade(event.getBlock());
         event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), createGeode(grade));
-        player.sendActionBar(miniMessage.deserialize(grade.color() + "Found a " + grade.displayName() + "."));
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize(grade.color() + "Found a " + grade.displayName() + "."));
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.8F, 1.2F);
     }
 

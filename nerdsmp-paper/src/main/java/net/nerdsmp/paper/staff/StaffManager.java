@@ -154,6 +154,7 @@ public final class StaffManager implements Listener, AutoCloseable {
             return true;
         }
         String action = args[0].toLowerCase(Locale.ROOT);
+        if (action.equals("support")) return plugin.support().handle(sender, "support", args.length == 1 ? new String[]{"queue"} : java.util.Arrays.copyOfRange(args, 1, args.length));
         if (action.equals("help")) {
             help(sender);
             return true;
@@ -637,7 +638,7 @@ public final class StaffManager implements Listener, AutoCloseable {
         long now = System.currentTimeMillis();
         if (freezeNotices.getOrDefault(event.getPlayer().getUniqueId(), 0L) <= now) {
             freezeNotices.put(event.getPlayer().getUniqueId(), now + 2_000L);
-            event.getPlayer().sendActionBar(message("<red>You are frozen. Wait for staff.</red>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(event.getPlayer(), message("<red>You are frozen. Wait for staff.</red>"));
         }
     }
 
@@ -710,6 +711,7 @@ public final class StaffManager implements Listener, AutoCloseable {
             showAudit(viewer);
         });
         button(menu, 50, Material.SLIME_BALL, "<green>Refresh</green>", List.of(), this::openDashboard);
+        if (staff.hasPermission("nerdsmp.support.staff")) button(menu, 52, Material.BELL, "<aqua>Player Support</aqua>", List.of("<gray>Private help requests and conversations.</gray>", "<white>" + plugin.support().store().queue().size() + " open</white>"), viewer -> { viewer.closeInventory(); viewer.performCommand("support queue"); });
         button(menu, 53, Material.BARRIER, "<red>Close</red>", List.of(), Player::closeInventory);
         staff.openInventory(menu.inventory());
     }

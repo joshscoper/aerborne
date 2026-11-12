@@ -31,7 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class CustomRecipeService implements Listener, AutoCloseable {
-    private static final int SCHEMA_VERSION = 4;
+    private static final int SCHEMA_VERSION = 5;
 
     private final NerdSmpPlugin plugin;
     private final PaperItemService items;
@@ -39,10 +39,13 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
     private final Map<NamespacedKey, RecipeDefinition> builtIn;
     private Map<NamespacedKey, AuthoredRecipe> authored = Map.of();
     private final KitchenService kitchen;
+    private final MetallurgyCatalog metallurgy;
+    private final Map<NamespacedKey, MetallurgyCatalog.Smelting> smelting = new LinkedHashMap<>();
 
     public CustomRecipeService(NerdSmpPlugin plugin, PaperItemService items) {
         this.plugin = plugin;
         this.items = items;
+        metallurgy = MetallurgyCatalog.load(plugin, items);
         definitions = load();
         builtIn = definitions;
         kitchen = new KitchenService(plugin, items, this);
@@ -54,13 +57,82 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
             plugin.getServer().removeRecipe(key);
             ShapedRecipe recipe = new ShapedRecipe(key, items.create(definition.result()));
             recipe.shape(definition.shape().toArray(String[]::new));
-            definition.ingredients().forEach((symbol, material) ->
-                recipe.setIngredient(symbol, new RecipeChoice.MaterialChoice(material)));
+            definition.ingredients().forEach((symbol, material) -> recipe.setIngredient(symbol,
+                definition.customIngredients().isEmpty() ? new RecipeChoice.MaterialChoice(material)
+                    : definition.ingredient(symbol).choice(items)));
             if (!plugin.getServer().addRecipe(recipe)) {
                 throw new IllegalStateException("Could not register custom recipe " + key);
             }
         });
-        plugin.getServer().getPluginManager().registerEvents(new CraftingGuard(), plugin);
+        for (var definition : metallurgy.smelting()) {
+            RecipeIngredient input = new RecipeIngredient(items.itemMaterial(definition.input()).orElseThrow(), definition.input());
+            for (boolean blasting : new boolean[]{false, true}) {
+                NamespacedKey key = new NamespacedKey(plugin, "metallurgy_" + definition.id() + (blasting ? "_blasting" : "_smelting"));
+                plugin.getServer().removeRecipe(key);
+                Recipe recipe = blasting
+                    ? new org.bukkit.inventory.BlastingRecipe(key, items.create(definition.result()), input.choice(items), definition.experience(), Math.max(1, definition.ticks() / 2))
+                    : new org.bukkit.inventory.FurnaceRecipe(key, items.create(definition.result()), input.choice(items), definition.experience(), definition.ticks());
+                if (!plugin.getServer().addRecipe(recipe)) throw new IllegalStateException("Could not register metallurgy recipe " + key);
+                smelting.put(key, definition);
+            }
+        }
+        plugin.getServer().getPluginManager().registerEvents(new CraftingGuard(this), plugin);
+    }
+
+    List<MetallurgyCatalog.Smelting> smeltingRecipes() { return metallurgy.smelting(); }
+
+    public java.util.Optional<RefiningWork> refiningWork(ItemStack source, ItemStack result) {
+        return refiningOutput(result).filter(work -> new RecipeIngredient(
+            items.itemMaterial(work.input()).orElseThrow(), work.input()).matches(source, items));
+    }
+
+    public java.util.Optional<RefiningWork> refiningOutput(ItemStack result) {
+        return metallurgy.smelting().stream().filter(recipe -> new RecipeIngredient(
+            items.itemMaterial(recipe.result()).orElseThrow(), recipe.result()).matches(result, items))
+            .map(recipe -> new RefiningWork(recipe.input(), recipe.result(), recipe.smithingExperience())).findFirst();
+    }
+
+    public record RefiningWork(ItemId input, ItemId result, long experience) { }
+
+    /** Unlock skills describe who can make the recipe; making workshop equipment trains Smithing. */
+    public java.util.Optional<Skill> craftingExperienceSkill(Recipe recipe) {
+        RecipeDefinition definition = definition(recipe);
+        return definition == null ? java.util.Optional.empty() : java.util.Optional.of(
+            definition.skill() == Skill.ALCHEMY || definition.skill() == Skill.COOKING ? definition.skill() : Skill.SMITHING);
+    }
+    public boolean cookingRecipe(Recipe recipe) { return kitchen.owns(recipe); }
+
+    /** Only this registered recipe and its complete, authenticated pattern can bypass the vanilla guard. */
+    boolean acceptsCustomCraft(Recipe recipe, ItemStack[] matrix) {
+        RecipeDefinition definition = definition(recipe);
+        return definition != null && !definition.customIngredients().isEmpty() && matchesIngredients(definition, matrix);
+    }
+
+    private boolean matchesIngredients(RecipeDefinition definition, ItemStack[] matrix) {
+        return RecipePattern.matches(definition.shape(), java.util.Arrays.asList(matrix),
+            stack -> stack == null || stack.getType().isAir(), (symbol, stack) -> definition.ingredient(symbol).matches(stack, items));
+    }
+
+    /** A recognized custom smelt is fully validated here; other protected items stay blocked. */
+    boolean handleSmelt(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
+        var definition = event.getRecipe() == null ? null : smelting.get(event.getRecipe().getKey());
+        // A custom ore built on a vanilla material (gloomsteel ore is raw iron) is caught by the vanilla recipe first,
+        // which would make an iron ingot and so be cancelled: the metallurgy recipe for that exact item takes over.
+        if (definition == null && event.getSource() != null) definition = metallurgy.smelting().stream()
+            .filter(candidate -> new RecipeIngredient(items.itemMaterial(candidate.input()).orElseThrow(), candidate.input()).matches(event.getSource(), items))
+            .findFirst().orElse(null);
+        if (definition == null) return false;
+        RecipeIngredient input = new RecipeIngredient(items.itemMaterial(definition.input()).orElseThrow(), definition.input());
+        if (!input.matches(event.getSource(), items)) { event.setCancelled(true); return true; }
+        ItemStack result = items.create(definition.result());
+        if (!(event.getBlock().getState() instanceof org.bukkit.block.Furnace furnace)) { event.setCancelled(true); return true; }
+        ItemStack before = furnace.getInventory().getResult();
+        if (before != null && !before.getType().isAir()
+            && (!before.isSimilar(result) || before.getAmount() >= before.getMaxStackSize())) {
+            event.setCancelled(true); return true;
+        }
+        event.setResult(result);
+        return true;
     }
 
     public List<RecipeDefinition> recipes() {
@@ -131,13 +203,14 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
         RecipeDefinition definition = definition(event.getRecipe());
         if (definition == null && authoredKey(event.getRecipe())) { event.getInventory().setResult(null); return; }
         if (definition != null && event.getView().getPlayer() instanceof Player player
-            && (!unlocked(player, definition) || !ordinaryIngredients(event.getInventory().getMatrix()))) {
+            && (!unlocked(player, definition) || !matchesIngredients(definition, event.getInventory().getMatrix()))) {
             event.getInventory().setResult(null);
             return;
         }
-        if (definition != null && event.getRecipe() instanceof Keyed keyed && authored.containsKey(keyed.getKey())) {
+        if (definition != null) {
             ItemStack fresh = items.create(definition.result());
-            fresh.setAmount(authored.get(keyed.getKey()).result().getAmount());
+            if (event.getRecipe() instanceof Keyed keyed && authored.containsKey(keyed.getKey()))
+                fresh.setAmount(authored.get(keyed.getKey()).result().getAmount());
             event.getInventory().setResult(fresh);
         }
         if (definition == null && !event.isRepair()) {
@@ -155,12 +228,12 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
         RecipeDefinition definition = definition(event.getRecipe());
         if (definition == null && authoredKey(event.getRecipe())) { event.setCancelled(true); return; }
         if (definition == null || !(event.getWhoClicked() instanceof Player player)
-            || unlocked(player, definition) && ordinaryIngredients(event.getInventory().getMatrix())) {
+            || unlocked(player, definition) && matchesIngredients(definition, event.getInventory().getMatrix())) {
             return;
         }
         event.setCancelled(true);
         player.sendRichMessage("<red>This recipe requires " + definition.skill().displayName()
-            + " level " + definition.requiredLevel() + ".</red>");
+            + " level " + definition.requiredLevel() + " and the exact ingredients shown in /recipes.</red>");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -173,6 +246,7 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
     }
 
     private void discoverUnlocked(Player player) {
+        smelting.keySet().forEach(player::discoverRecipe);
         definitions.forEach((key, definition) -> {
             if (unlocked(player, definition)) {
                 player.discoverRecipe(key);
@@ -196,8 +270,11 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
     }
 
     static boolean ordinaryIngredients(ItemStack[] matrix) {
-        for (ItemStack item : matrix) if (item != null && !item.getType().isAir() && item.hasItemMeta() && !KitchenService.isStaple(item)) return false;
+        for (ItemStack item : matrix) if (item != null && !item.getType().isAir() && !FoodItems.ordinary(item) && !KitchenService.isStaple(item)) return false;
         return true;
+    }
+    public static boolean ordinaryIngredient(ItemStack item) {
+        return item != null && !item.getType().isAir() && (FoodItems.ordinary(item) || KitchenService.isStaple(item));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -212,6 +289,10 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
         for (var entry : loadCatalog(expansion).entrySet()) {
             if (loaded.putIfAbsent(entry.getKey(), entry.getValue()) != null)
                 throw new IllegalStateException("Expansion recipe collides with an existing recipe: " + entry.getKey());
+        }
+        for (var definition : metallurgy.crafting()) {
+            NamespacedKey key = new NamespacedKey(plugin, "crafted_" + definition.id());
+            if (loaded.putIfAbsent(key, definition) != null) throw new IllegalStateException("Duplicate metallurgy recipe " + key);
         }
         return Map.copyOf(loaded);
     }
@@ -280,6 +361,7 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
     public void close() {
         kitchen.close();
         definitions.keySet().forEach(plugin.getServer()::removeRecipe);
+        smelting.keySet().forEach(plugin.getServer()::removeRecipe);
     }
 
     public record RecipeDefinition(
@@ -288,13 +370,21 @@ public final class CustomRecipeService implements Listener, AutoCloseable {
         Skill skill,
         int requiredLevel,
         List<String> shape,
-        Map<Character, Material> ingredients
+        Map<Character, Material> ingredients,
+        Map<Character, ItemId> customIngredients
     ) {
+        public RecipeDefinition(String id, ItemId result, Skill skill, int requiredLevel,
+                                List<String> shape, Map<Character, Material> ingredients) {
+            this(id, result, skill, requiredLevel, shape, ingredients, Map.of());
+        }
         public RecipeDefinition {
             if (requiredLevel < 1 || requiredLevel > 50) throw new IllegalArgumentException("Recipe level must be 1–50");
             HarvestDish.validateShape(shape, ingredients);
             shape = List.copyOf(shape);
             ingredients = Map.copyOf(ingredients);
+            customIngredients = Map.copyOf(customIngredients);
+            if (!ingredients.keySet().containsAll(customIngredients.keySet())) throw new IllegalArgumentException("Unknown custom ingredient symbol");
         }
+        RecipeIngredient ingredient(char symbol) { return new RecipeIngredient(ingredients.get(symbol), customIngredients.get(symbol)); }
     }
 }

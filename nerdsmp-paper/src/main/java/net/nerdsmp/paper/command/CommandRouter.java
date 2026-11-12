@@ -80,7 +80,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "leaderboard" -> plugin.leaderboards().command(sender, args);
             case "weblink" -> net.nerdsmp.paper.webapi.WebLinkCommand.run(plugin, sender);
             case "cooking" -> { if (player(sender) instanceof Player player) plugin.recipes().showCooking(player); yield true; }
-            case "skills" -> skills(sender);
+            case "skills" -> skills(sender, args);
             case "adventurer" -> adventurer(sender);
             case "mastery" -> mastery(sender, args);
             case "jobs" -> jobs(sender, args);
@@ -94,6 +94,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "relics" -> relics(sender, args);
             case "campaign" -> campaign(sender, args);
             case "grave" -> grave(sender, args);
+            case "spirit" -> plugin.spirits().handle(sender, args);
             case "duel" -> duel(sender, args);
             case "cosmetics" -> cosmetics(sender, args);
             case "booster" -> {
@@ -109,8 +110,20 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "emote" -> emote(sender, args);
             case "menu" -> menu(sender);
             case "profile" -> profile(sender);
+            case "stats" -> { if (player(sender) instanceof Player player) plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.STATS); yield true; }
+            case "equipment" -> { if (player(sender) instanceof Player player) plugin.equipment().open(player); yield true; }
             case "hud" -> hud(sender);
             case "forge" -> forge(sender);
+            case "whatsnew" -> { if (player(sender) instanceof Player player) plugin.whatsNew().open(player); yield true; }
+            case "calendar" -> { if (player(sender) instanceof Player player) plugin.calendar().open(player); yield true; }
+            case "council" -> { if (player(sender) instanceof Player player) plugin.council().open(player); yield true; }
+            case "collections" -> { if (player(sender) instanceof Player player) plugin.itemCollections().open(player); yield true; }
+            case "bazaar" -> {
+                if (player(sender) instanceof Player player) {
+                    if (args.length > 0 && args[0].equalsIgnoreCase("orders")) plugin.bazaar().openOrders(player); else plugin.bazaar().open(player);
+                }
+                yield true;
+            }
             case "enchants" -> enchants(sender);
             case "recipes" -> recipes(sender);
             case "daily" -> daily(sender);
@@ -120,7 +133,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "staff" -> plugin.staff().handleStaffCommand(sender, args);
             case "report" -> plugin.staff().handleReportCommand(sender, args);
             case "settings" -> plugin.guide().handleSettings(sender, args);
-            case "social" -> plugin.social().handleSocial(sender);
+            case "social" -> plugin.social().handleSocial(sender, args);
             case "friends" -> plugin.social().handleFriends(sender, args);
             case "ignore" -> plugin.social().handleIgnore(sender, args, false);
             case "unignore" -> plugin.social().handleIgnore(sender, args, true);
@@ -134,7 +147,14 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "trade" -> plugin.trade().handle(sender, args);
             case "spawn", "warp", "warps", "setwarp", "delwarp", "setspawn", "tpa", "tpahere",
                 "tpaccept", "tpdeny", "tpcancel", "back" -> plugin.travel().handle(command.getName(), sender, args);
-            case "quickstart" -> plugin.guide().handleQuickstart(sender);
+            case "quickstart" -> plugin.guide().handleQuickstart(sender, args);
+            case "worldboss" -> {
+                if (plugin.reach() == null || plugin.reach().worldBoss() == null) { net.nerdsmp.paper.presentation.Chat.error(sender, "The world boss isn't running on this server."); yield true; }
+                yield plugin.reach().worldBoss().command(sender, args);
+            }
+            case "tutorial" -> plugin.tutorial().handle(sender, args);
+            case "website" -> plugin.guide().handleWebsite(sender);
+            case "support", "helpme" -> plugin.support().handle(sender, command.getName().toLowerCase(Locale.ROOT), args);
             case "tips" -> plugin.guide().handleTips(sender, args);
             case "alchemy" -> openAlchemy(sender);
             case "fishing" -> openFishing(sender);
@@ -176,10 +196,19 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         return true;
     }
 
-    private boolean skills(CommandSender sender) {
+    private boolean skills(CommandSender sender, String[] args) {
         Player player = player(sender);
         if (player == null) {
             return true;
+        }
+        // /skills <skill> opens that skill's talent tree (the Aerborne client's Skills screen uses it).
+        if (args.length >= 1) {
+            for (net.nerdsmp.api.model.Skill skill : net.nerdsmp.api.model.Skill.values()) {
+                if (skill.name().equalsIgnoreCase(args[0])) {
+                    plugin.menus().openSkillTree(player, skill);
+                    return true;
+                }
+            }
         }
         plugin.menus().open(player, net.nerdsmp.paper.gui.MenuManager.View.SKILLS);
         return true;
@@ -238,7 +267,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
     private boolean adventurer(CommandSender sender) {
         Player player = player(sender);
         if (player != null) {
-            plugin.menus().openAdventurerRanks(player);
+            plugin.menus().openAdventurerTree(player);
         }
         return true;
     }
@@ -515,6 +544,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
         if (account == null) {
             return true;
         }
+        if (plugin.spirits().ghost(player.getUniqueId()) || plugin.graves().latestLocation(account).isEmpty())
+            return plugin.spirits().handle(sender, args.length == 1 && args[0].equalsIgnoreCase("locate") ? new String[]{"locate"} : new String[0]);
         if (args.length != 1) {
             Chat.usage(player, "/grave <locate|recover>");
             return true;
@@ -527,26 +558,9 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             return true;
         }
         if (args[0].equalsIgnoreCase("recover")) {
-            long cost = plugin.getConfig().getLong("economy.remote-grave-recovery-cost", 250L);
-            if (plugin.graves().latestLocation(account).isEmpty()) {
-                player.sendRichMessage("<gray>No active grave found.</gray>");
-                return true;
-            }
-            plugin.economy().debit(account, cost,
-                new EconomyService.TransactionReason("grave.remote_recovery", player.getName()),
-                "grave-recovery:" + UUID.randomUUID()).thenAccept(result -> sync(() -> {
-                if (result.status() != EconomyService.TransactionResult.Status.APPLIED) {
-                    player.sendRichMessage("<red>Remote grave recovery costs " + Chat.marks(cost) + ".</red>");
-                    return;
-                }
-                GraveManager.RecoveryResult recovery = plugin.graves().recoverLatest(account, player);
-                if (recovery == GraveManager.RecoveryResult.RECOVERED) {
-                    player.sendRichMessage("<green>Your grave was recovered.</green>");
-                } else {
-                    refund(account, cost, "grave.recovery_refund");
-                    player.sendRichMessage("<red>Grave was unavailable; recovery fee refunded.</red>");
-                }
-            }));
+            GraveManager.RecoveryResult recovery = plugin.graves().recoverLatest(account, player);
+            player.sendRichMessage(recovery == GraveManager.RecoveryResult.RECOVERED
+                ? "<green>Your legacy grave was recovered without a fee.</green>" : "<red>That legacy grave is unavailable.</red>");
             return true;
         }
         Chat.usage(player, "/grave <locate|recover>");
@@ -625,6 +639,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             cosmetics.dismiss(player);
             return true;
         }
+        if (cosmetics.bond().command(player, args, cosmetics)) return true;
         cosmetics.summon(player, args[0]);
         return true;
     }
@@ -1050,7 +1065,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "marks" -> List.of();
             case "pay" -> args.length == 1 ? java.util.stream.Stream.concat(onlinePlayers(sender).stream(), java.util.stream.Stream.of("status")).toList()
                 : args.length == 2 ? List.of("10", "100", "1000") : List.of();
-            case "leaderboard" -> args.length == 1 ? List.of("marks", "adventurer", "skills", "island", "achievements", "cooking") : List.of();
+            case "leaderboard" -> args.length == 1 ? net.nerdsmp.paper.leaderboard.LeaderboardService.Board.keys() : List.of();
             case "identify" -> args.length == 1 ? net.nerdsmp.paper.item.IdentificationService.SUBCOMMANDS : List.of();
             case "mastery" -> args.length == 1 ? List.of("select", "remove")
                 : args.length == 2 ? Arrays.stream(Skill.values()).map(skill -> skill.name().toLowerCase(Locale.ROOT)).toList()
@@ -1066,6 +1081,7 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
             case "party" -> plugin.partyManager().complete(sender, args);
             case "campaign" -> plugin.campaign().complete(sender, args);
             case "grave" -> args.length == 1 ? List.of("locate", "recover") : List.of();
+            case "spirit" -> plugin.spirits().complete(sender,args);
             case "companion" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
                 java.util.stream.Stream.of("list", "dismiss"), plugin.cosmetics().ownership(player).companions().stream()).toList() : List.of();
             case "trail" -> args.length == 1 && sender instanceof Player player ? java.util.stream.Stream.concat(
@@ -1089,6 +1105,8 @@ public final class CommandRouter implements CommandExecutor, TabCompleter, Liste
                 : List.of();
             case "staff", "report" -> plugin.staff().tabComplete(command.getName(), args);
             case "settings", "tips" -> plugin.guide().tabComplete(command.getName(), args);
+            case "tutorial" -> args.length == 1 ? List.of("resume", "pause", "restart", "1", "2", "3", "4", "5", "6", "7", "8") : List.of();
+            case "support" -> plugin.support().complete(sender, args);
             case "friends", "ignore", "unignore", "msg", "reply" ->
                 plugin.social().tabComplete(command.getName(), sender, args);
             case "channel", "globalchat", "localchat", "tradechat", "staffchat", "partychat" ->

@@ -27,6 +27,11 @@ public final class SkillTreeCatalog {
         return Optional.ofNullable(id == null ? null : NODES.get(id.toLowerCase(Locale.ROOT)));
     }
 
+    public static List<TalentNode> nodes(Skill skill) {
+        SkillTree tree = tree(skill);
+        return java.util.stream.Stream.concat(tree.branches().stream().flatMap(branch -> branch.nodes().stream()), tree.junctions().stream()).toList();
+    }
+
     public static int earnedPoints(int skillLevel) {
         int points = 0;
         for (int required : POINT_LEVELS) {
@@ -128,14 +133,43 @@ public final class SkillTreeCatalog {
                 case SMITHING -> special("lasting_work", "Lasting Work", "equipment-preservation-percent", new double[]{3, 4, 5}, "equipment durability preservation");
                 case ALCHEMY -> special("concentrates", "Concentrates", "poison-potency-percent", new double[]{4, 6, 10}, "weapon poison potency");
                 case BUILDING -> special("workshop_care", "Workshop Care", "equipment-preservation-percent", new double[]{3, 4, 5}, "equipment durability preservation");
-                case COOKING -> special("nourishment", "Nourishment", "meal-nutrition-percent", new double[]{5, 10, 15}, "extra saturation from meals you prepare");
+                case COOKING -> special("nourishment", "Nourishment", "meal-nutrition-percent", new double[]{5, 10, 15}, "extra Well Fed recovery from meals you prepare");
                 case ENCHANTING -> special("signature_focus", "Signature Focus", "signature-cooldown-reduction-percent", new double[]{4, 6, 10}, "shorter Arcane Signature cooldowns");
             };
             List<TalentBranch> branches = new ArrayList<>(trees.get(skill).branches());
             branches.add(tree(skill, seed).branches().getFirst());
-            trees.put(skill, new SkillTree(skill, branches));
+            trees.put(skill, new SkillTree(skill, branches, junctions(skill, branches)));
         }
         return Map.copyOf(trees);
+    }
+
+    private static List<TalentNode> junctions(Skill skill, List<TalentBranch> branches) {
+        String prefix = skill.name().toLowerCase(Locale.ROOT) + ".crossroads.";
+        String[] names = switch (skill) {
+            case MINING -> new String[]{"Surveyor's Insight", "Guild Cartography", "Crystal Resonance", "Heart of the Mountain"};
+            case FORESTRY -> new String[]{"Forest Wisdom", "Lumber Exchange", "Living Canopy", "Ancient Grove"};
+            case FARMING -> new String[]{"Seasonal Wisdom", "Harvest Exchange", "Fields of Plenty", "Keeper of the Fields"};
+            case FISHING -> new String[]{"Reading the Tides", "Dockside Exchange", "Hidden Shoals", "Voice of the Ocean"};
+            case HUNTING -> new String[]{"Know Your Quarry", "Hunter's Guild", "Predator's Focus", "Unbroken Hunter"};
+            case EXCAVATION -> new String[]{"Buried Knowledge", "Relic Exchange", "Echoes Below", "Keeper of Lost Things"};
+            case SMITHING -> new String[]{"Forge Wisdom", "Master's Commission", "Perfect Temper", "Anvil Eternal"};
+            case ALCHEMY -> new String[]{"Shared Research", "Apothecary Network", "Precise Formula", "Master of Venoms"};
+            case BUILDING -> new String[]{"Master's Blueprint", "Builder's Guild", "Steady Foundations", "Architect's Legacy"};
+            case COOKING -> new String[]{"Family Recipes", "Banquet Commission", "Lasting Flavors", "Feast of the Isles"};
+            case ENCHANTING -> new String[]{"Arcane Thesis", "Dust Reclamation", "Deep Research", "Signature of the Archmage"};
+        };
+        List<TalentNode> result = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            TalentNode source = branches.get(i).nodes().getFirst();
+            double value = i == 0 || i == 1 ? 3 : i == 2 ? source.value() : branches.get(3).nodes().get(1).value();
+            TalentRequirement requirement = i < 3 ? TalentRequirement.any(branches.get(i).nodes().get(1).id(), branches.get(i + 1).nodes().get(1).id())
+                : new TalentRequirement(List.of(prefix + "1", prefix + "2", prefix + "3"), 2);
+            String effect = "+" + (value == Math.rint(value) ? Long.toString((long)value) : Double.toString(value))
+                + source.effect().substring(source.effect().indexOf('%'));
+            result.add(new TalentNode(prefix + (i < 3 ? i + 1 : "capstone"), skill, "crossroads", "Crossroads", names[i], 1,
+                i < 3 ? 30 : 50, null, source.stat(), value, effect, requirement));
+        }
+        return List.copyOf(result);
     }
 
     private static BranchSeed xp(String id, String name) {
@@ -192,8 +226,7 @@ public final class SkillTreeCatalog {
 
     private static Map<String, TalentNode> indexNodes() {
         Map<String, TalentNode> nodes = new HashMap<>();
-        TREES.values().stream().flatMap(tree -> tree.branches().stream())
-            .flatMap(branch -> branch.nodes().stream()).forEach(node -> nodes.put(node.id(), node));
+        for (Skill skill : Skill.values()) nodes(skill).forEach(node -> nodes.put(node.id(), node));
         return Map.copyOf(nodes);
     }
 
@@ -206,10 +239,12 @@ public final class SkillTreeCatalog {
         };
     }
 
-    public record SkillTree(Skill skill, List<TalentBranch> branches) {
+    public record SkillTree(Skill skill, List<TalentBranch> branches, List<TalentNode> junctions) {
         public SkillTree {
             branches = List.copyOf(branches);
+            junctions = List.copyOf(junctions);
         }
+        public SkillTree(Skill skill, List<TalentBranch> branches) { this(skill, branches, List.of()); }
     }
 
     public record TalentBranch(String id, String name, String description, List<TalentNode> nodes) {
@@ -231,8 +266,14 @@ public final class SkillTreeCatalog {
         String previousId,
         String stat,
         double value,
-        String effect
+        String effect,
+        TalentRequirement requirement
     ) {
+        public TalentNode(String id, Skill skill, String branchId, String branchName, String name, int tier, int requiredLevel,
+                          String previousId, String stat, double value, String effect) {
+            this(id, skill, branchId, branchName, name, tier, requiredLevel, previousId, stat, value, effect,
+                previousId == null ? TalentRequirement.NONE : TalentRequirement.any(previousId));
+        }
     }
 
     private record BranchSeed(

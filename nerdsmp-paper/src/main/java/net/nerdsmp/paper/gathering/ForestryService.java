@@ -56,7 +56,7 @@ public final class ForestryService implements Listener, AutoCloseable {
         String family=ForestryRules.family(root.getType().name());
         var plan=ForestryRules.plan(point(root),position->cell(root.getWorld(),position,family),ForestryRules.capacity(level));
         if(plan.state()!=ForestryRules.State.READY) {
-            if(plan.state()==ForestryRules.State.TOO_LARGE) player.sendActionBar(Chat.render("<gray>Tree felling: up to "+ForestryRules.capacity(level)+" logs. Sneak to cut individual logs.</gray>"));
+            if(plan.state()==ForestryRules.State.TOO_LARGE) net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gray>Tree felling: up to "+ForestryRules.capacity(level)+" logs. Sneak to cut individual logs.</gray>"));
             return;
         }
         Job job=new Job(player,context,event,plan,normalize(player.getInventory().getItemInMainHand()));
@@ -145,10 +145,10 @@ public final class ForestryService implements Listener, AutoCloseable {
             .map(item->item==null?null:item.clone()).toArray(ItemStack[]::new);
         int needed=before.size();
         for(int slot=0;slot<next.length&&needed>0;slot++) {
-            ItemStack stack=next[slot];if(stack==null||stack.getType()!=seed||stack.hasItemMeta()) continue;
+            ItemStack stack=next[slot];if(stack==null||stack.getType()!=seed||!net.nerdsmp.paper.item.FoodItems.ordinary(stack)) continue;
             int used=Math.min(needed,stack.getAmount());needed-=used;stack.setAmount(stack.getAmount()-used);if(stack.getAmount()==0) next[slot]=null;
         }
-        if(needed>0) {job.player.sendActionBar(Chat.render("<gray>Keep "+before.size()+" plain "+seed.name().toLowerCase(Locale.ROOT).replace('_',' ')+" for replanting.</gray>"));return;}
+        if(needed>0) {net.nerdsmp.paper.item.PlayerStatsService.message(job.player, Chat.render("<gray>Keep "+before.size()+" plain "+seed.name().toLowerCase(Locale.ROOT).replace('_',' ')+" for replanting.</gray>"));return;}
         boolean committed=false;
         try {
             for(BlockState state:before) state.getBlock().setBlockData(seed.createBlockData(),false);

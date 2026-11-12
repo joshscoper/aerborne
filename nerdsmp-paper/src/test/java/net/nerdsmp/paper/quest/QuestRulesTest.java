@@ -62,12 +62,27 @@ final class QuestRulesTest {
         assertEquals(QuestProgress.Status.ACTIVE, log.status(first, 1));
         assertTrue(log.advance(first, 0, 5));
         assertEquals(3, log.counts(first)[0], "progress never overshoots the target");
-        // Deliveries are checked against the inventory at turn-in, so they never block readiness.
+        assertEquals(QuestProgress.Status.ACTIVE, log.status(first, 1), "missing delivery items block readiness");
+        log.counts(first)[1] = 2; // The inventory reconciliation supplies the current delivery count.
         assertEquals(QuestProgress.Status.READY, log.status(first, 1));
         log.complete(first);
         assertEquals(QuestProgress.Status.COMPLETED, log.status(first, 1));
         assertEquals(QuestProgress.Status.LOCKED, log.status(second, 2), "level 3 is required");
         assertEquals(QuestProgress.Status.AVAILABLE, log.status(second, 3));
+    }
+
+    @Test
+    void deliveryReadinessCanGoBackwardsWhenItemsLeaveInventory() {
+        QuestDefinition quest = QuestCatalog.parse(CHAIN).quests().get("first");
+        QuestProgress log = new QuestProgress();
+        log.accept(quest);
+        log.advance(quest, 0, 3);
+        log.counts(quest)[1] = 2;
+        assertEquals(QuestProgress.Status.READY, log.status(quest, 1));
+        log.counts(quest)[1] = 1;
+        assertEquals(QuestProgress.Status.ACTIVE, log.status(quest, 1));
+        assertFalse(QuestProgress.done(quest, null));
+        assertFalse(QuestProgress.done(quest, new int[] {3}));
     }
 
     @Test

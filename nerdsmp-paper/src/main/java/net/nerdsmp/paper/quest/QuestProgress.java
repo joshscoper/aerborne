@@ -58,7 +58,7 @@ public final class QuestProgress {
         return counts;
     }
 
-    /** Adds progress and reports whether the objective just finished. Deliver objectives are checked at turn-in. */
+    /** Adds progress and reports whether the objective just finished. */
     public boolean advance(QuestDefinition quest, int objective, int amount) {
         int[] counts = counts(quest);
         if (counts == null || amount <= 0) return false;
@@ -70,8 +70,7 @@ public final class QuestProgress {
 
     public static boolean done(QuestDefinition quest, int[] counts) {
         for (int i = 0; i < quest.objectives().size(); i++) {
-            if (quest.objectives().get(i).type() == QuestDefinition.Type.DELIVER) continue;
-            if (i >= counts.length || counts[i] < quest.objectives().get(i).count()) return false;
+            if (counts == null || i >= counts.length || counts[i] < quest.objectives().get(i).count()) return false;
         }
         return true;
     }

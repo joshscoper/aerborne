@@ -51,7 +51,8 @@ public final class InMemoryProgressionService implements ProgressionService {
         ensureLoaded(accountId);
         PlayerProgress player = progress.computeIfAbsent(accountId, ignored -> new PlayerProgress());
         SkillProgress current = player.skills.get(skill);
-        if (experience <= 0L || !appliedActivities.add(accountId + ":" + skill + ":" + activityFingerprint)) {
+        String activity = accountId + ":" + skill + ":" + activityFingerprint;
+        if (experience <= 0L || appliedActivities.contains(activity)) {
             return CompletableFuture.completedFuture(new AwardResult(false, current, false));
         }
 
@@ -59,19 +60,23 @@ public final class InMemoryProgressionService implements ProgressionService {
         long nextExperience = Math.min(capExperience, Math.addExact(current.experience(), experience));
         int nextLevel = levelForExperience(nextExperience);
         SkillProgress next = new SkillProgress(nextExperience, nextLevel);
-        player.skills.put(skill, next);
-        persist(accountId, player);
+        PlayerProgress updated = new PlayerProgress(player);
+        updated.skills.put(skill, next);
+        persist(accountId, updated, activity);
+        progress.put(accountId, updated);
+        appliedActivities.add(activity);
         return CompletableFuture.completedFuture(new AwardResult(true, next, nextLevel > current.level()));
     }
 
     @Override
     public synchronized CompletionStage<SkillProgress> setExperience(AccountId accountId, Skill skill, long experience) {
         ensureLoaded(accountId);
-        PlayerProgress player = progress.computeIfAbsent(accountId, ignored -> new PlayerProgress());
+        PlayerProgress updated = new PlayerProgress(progress.computeIfAbsent(accountId, ignored -> new PlayerProgress()));
         long capped = Math.clamp(experience, 0L, experienceForLevel(MAX_LEVEL));
         SkillProgress next = new SkillProgress(capped, levelForExperience(capped));
-        player.skills.put(skill, next);
-        persist(accountId, player);
+        updated.skills.put(skill, next);
+        persist(accountId, updated, accountId + ":" + skill + ":set:" + java.util.UUID.randomUUID());
+        progress.put(accountId, updated);
         return CompletableFuture.completedFuture(next);
     }
 
@@ -88,8 +93,10 @@ public final class InMemoryProgressionService implements ProgressionService {
         if (player.masteries.size() >= MAX_MASTERIES) {
             return CompletableFuture.completedFuture(MasteryResult.LIMIT_REACHED);
         }
-        player.masteries.add(skill);
-        persist(accountId, player);
+        PlayerProgress updated = new PlayerProgress(player);
+        updated.masteries.add(skill);
+        persist(accountId, updated, null);
+        progress.put(accountId, updated);
         return CompletableFuture.completedFuture(MasteryResult.SELECTED);
     }
 
@@ -103,35 +110,25 @@ public final class InMemoryProgressionService implements ProgressionService {
         if (player.nextRespecAt.isAfter(now)) {
             return CompletableFuture.completedFuture(MasteryResult.RESPEC_ON_COOLDOWN);
         }
-        player.masteries.remove(skill);
-        player.nextRespecAt = now.plus(RESPEC_COOLDOWN);
-        persist(accountId, player);
+        PlayerProgress updated = new PlayerProgress(player);
+        updated.masteries.remove(skill);
+        updated.nextRespecAt = now.plus(RESPEC_COOLDOWN);
+        persist(accountId, updated, null);
+        progress.put(accountId, updated);
         return CompletableFuture.completedFuture(MasteryResult.REMOVED);
     }
 
     @Override
     public synchronized CompletionStage<TalentResult> unlockTalent(AccountId accountId, String talentId) {
         ensureLoaded(accountId);
-        SkillTreeCatalog.TalentNode node = SkillTreeCatalog.node(talentId).orElse(null);
-        if (node == null) {
-            return CompletableFuture.completedFuture(TalentResult.UNKNOWN_TALENT);
-        }
         PlayerProgress player = progress.computeIfAbsent(accountId, ignored -> new PlayerProgress());
-        if (player.talents.contains(node.id())) {
-            return CompletableFuture.completedFuture(TalentResult.ALREADY_UNLOCKED);
-        }
-        if (player.skills.get(node.skill()).level() < node.requiredLevel()) {
-            return CompletableFuture.completedFuture(TalentResult.LEVEL_TOO_LOW);
-        }
-        if (node.previousId() != null && !player.talents.contains(node.previousId())) {
-            return CompletableFuture.completedFuture(TalentResult.PREREQUISITE_MISSING);
-        }
-        int earned = SkillTreeCatalog.earnedPoints(player.skills.get(node.skill()).level());
-        if (SkillTreeCatalog.spentPoints(player.talents, node.skill()) >= earned) {
-            return CompletableFuture.completedFuture(TalentResult.NO_POINTS_AVAILABLE);
-        }
-        player.talents.add(node.id());
-        persist(accountId, player);
+        TalentResult eligibility = net.nerdsmp.api.model.TalentRules.check(toSnapshot(player), talentId);
+        if (eligibility != TalentResult.UNLOCKED) return CompletableFuture.completedFuture(eligibility);
+        String canonical = net.nerdsmp.api.model.TalentRules.canonicalId(talentId);
+        PlayerProgress updated = new PlayerProgress(player);
+        updated.talents.add(canonical);
+        persist(accountId, updated, null);
+        progress.put(accountId, updated);
         return CompletableFuture.completedFuture(TalentResult.UNLOCKED);
     }
 
@@ -148,7 +145,7 @@ public final class InMemoryProgressionService implements ProgressionService {
     }
 
     private void ensureLoaded(AccountId accountId) {
-        if (persistence == null || !loadedAccounts.add(accountId)) {
+        if (persistence == null || loadedAccounts.contains(accountId)) {
             return;
         }
         PlayerProgress loaded = new PlayerProgress();
@@ -176,9 +173,10 @@ public final class InMemoryProgressionService implements ProgressionService {
             return null;
         });
         progress.put(accountId, loaded);
+        loadedAccounts.add(accountId);
     }
 
-    private void persist(AccountId accountId, PlayerProgress player) {
+    private void persist(AccountId accountId, PlayerProgress player, String newActivity) {
         if (persistence == null) {
             return;
         }
@@ -191,8 +189,9 @@ public final class InMemoryProgressionService implements ProgressionService {
             yaml.set(persistenceRoot + ".masteries", player.masteries.stream().map(Enum::name).sorted().toList());
             yaml.set(persistenceRoot + ".talents", player.talents.stream().sorted().toList());
             yaml.set(persistenceRoot + ".next-respec-at", player.nextRespecAt.toString());
-            yaml.set(persistenceRoot + ".applied-activities", appliedActivities.stream()
-                .filter(key -> key.startsWith(prefix)).sorted().toList());
+            yaml.set(persistenceRoot + ".applied-activities", java.util.stream.Stream.concat(
+                appliedActivities.stream().filter(key -> key.startsWith(prefix)),
+                newActivity == null ? java.util.stream.Stream.empty() : java.util.stream.Stream.of(newActivity)).sorted().toList());
         });
     }
 
@@ -206,6 +205,13 @@ public final class InMemoryProgressionService implements ProgressionService {
             for (Skill skill : Skill.values()) {
                 skills.put(skill, new SkillProgress(0L, 0));
             }
+        }
+
+        private PlayerProgress(PlayerProgress source) {
+            skills.putAll(source.skills);
+            masteries.addAll(source.masteries);
+            talents.addAll(source.talents);
+            nextRespecAt = source.nextRespecAt;
         }
     }
 }

@@ -117,6 +117,7 @@ public final class ClaimProtectionListener implements Listener {
     private final GraveManager graves;
     private final java.util.function.Predicate<BlockBreakEvent> managedHarvest;
     private final java.util.function.Predicate<EntityDamageEvent> managedCombat;
+    private final java.util.function.Predicate<PlayerInteractEvent> managedInteraction;
 
     public ClaimProtectionListener(ClaimService claims, SessionRegistry sessions, GraveManager graves) {
         this(claims, sessions, graves, event -> false);
@@ -128,11 +129,18 @@ public final class ClaimProtectionListener implements Listener {
     public ClaimProtectionListener(ClaimService claims, SessionRegistry sessions, GraveManager graves,
                                    java.util.function.Predicate<BlockBreakEvent> managedHarvest,
                                    java.util.function.Predicate<EntityDamageEvent> managedCombat) {
+        this(claims, sessions, graves, managedHarvest, managedCombat, event -> false);
+    }
+    public ClaimProtectionListener(ClaimService claims, SessionRegistry sessions, GraveManager graves,
+                                   java.util.function.Predicate<BlockBreakEvent> managedHarvest,
+                                   java.util.function.Predicate<EntityDamageEvent> managedCombat,
+                                   java.util.function.Predicate<PlayerInteractEvent> managedInteraction) {
         this.claims = claims;
         this.sessions = sessions;
         this.graves = graves;
         this.managedHarvest = managedHarvest;
         this.managedCombat = managedCombat;
+        this.managedInteraction = managedInteraction;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -180,6 +188,7 @@ public final class ClaimProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
+        if (managedInteraction.test(event)) return;
         Block block = event.getClickedBlock();
         if (block == null) {
             return;
@@ -831,7 +840,7 @@ public final class ClaimProtectionListener implements Listener {
         ItemStack seed = event.getItemInHand();
         List<BlockState> replaced = event.getReplacedBlockStates();
         if (event.getHand() != EquipmentSlot.HAND || seed == null || seed.getType() != Material.PITCHER_POD
-            || seed.getAmount() < 1 || seed.hasItemMeta() || replaced.size() != 2) return false;
+            || seed.getAmount() < 1 || !net.nerdsmp.paper.item.FoodItems.ordinary(seed) || replaced.size() != 2) return false;
         BlockState lower = null, upper = null;
         for (BlockState previous : replaced) {
             if (previous.getType() != Material.PITCHER_CROP
@@ -870,7 +879,7 @@ public final class ClaimProtectionListener implements Listener {
     }
 
     private void denied(Player player) {
-        player.sendActionBar(net.kyori.adventure.text.Component.text(
+        net.nerdsmp.paper.item.PlayerStatsService.message(player, net.kyori.adventure.text.Component.text(
             "This territory has not granted you that permission.", net.kyori.adventure.text.format.NamedTextColor.RED));
     }
 }

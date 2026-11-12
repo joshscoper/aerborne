@@ -210,6 +210,7 @@ final class PanelData implements PanelBackend {
             root.add("desk", plugin.staff().panelSnapshot());
             root.add("staff", staff());
             root.add("chat", plugin.chat().console().snapshot());
+            root.add("metrics", plugin.metrics().snapshot());
             snapshot = PanelBackend.json(root);
         } catch (RuntimeException failure) {
             plugin.getLogger().log(java.util.logging.Level.WARNING, "Web console snapshot failed", failure);

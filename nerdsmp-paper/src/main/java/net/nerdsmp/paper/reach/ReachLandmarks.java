@@ -744,7 +744,7 @@ final class ReachLandmarks {
         for (int[] f : feet) for (int y = 0; y <= h; y++) {
             double t = y / (double) h;
             int x = cx + (int) Math.round(f[0] * (1 - t * 0.7)), z = cz + (int) Math.round(f[1] * (1 - t * 0.7));
-            s.footing(x, g + y, z, Material.POLISHED_BLACKSTONE);
+            if (y == 0) s.footing(x, g, z, Material.POLISHED_BLACKSTONE);
             s.set(x, g + y, z, Material.STRIPPED_DARK_OAK_WOOD, "axis=y");
             s.set(x + (f[0] > 0 ? -1 : 1), g + y, z, Material.DARK_OAK_WOOD, "axis=y");
         }
@@ -756,8 +756,25 @@ final class ReachLandmarks {
                 s.set(cx + side, g + y, cz + k, Material.DARK_OAK_PLANKS);
             }
         }
-        // The head: a platform and the sheave wheel standing on it, cables down the shaft.
+        // Alternating timber diagonals tie the shrinking frames together without filling the view through them.
+        int prev = 0;
+        for (int y = 0; y < h - 4; y++) {
+            int panel = y / 6, rise = y % 6;
+            int edge = (int) Math.round(6 * (1 - 0.7 * y / h));
+            int across = (int) Math.round(edge * (2 * rise / 6.0 - 1));
+            if (panel % 2 == 1) across = -across;
+            // Each course runs on from the one below, so the brace is one unbroken timber rather than loose blocks.
+            int from = rise == 0 ? across : prev;
+            for (int k = Math.min(from, across); k <= Math.max(from, across); k++) for (int side : new int[] {-edge, edge}) {
+                s.set(cx + k, g + y, cz + side, Material.DARK_OAK_WOOD, "axis=x");
+                s.set(cx + side, g + y, cz + k, Material.DARK_OAK_WOOD, "axis=z");
+            }
+            prev = across;
+        }
+        // The head: a platform and two bearing stands carry the wheel's axle.
         for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) s.set(cx + dx, g + h, cz + dz, Material.DARK_OAK_PLANKS);
+        for (int dz : new int[] {-1, 1}) for (int y = 1; y <= 7; y++)
+            s.set(cx, g + h + y, cz + dz, y == 7 ? Material.IRON_BLOCK : Material.STRIPPED_DARK_OAK_LOG, y == 7 ? "" : "axis=y");
         for (int dx = -6; dx <= 6; dx++) for (int dy = -6; dy <= 6; dy++) {
             double d = Math.hypot(dx, dy);
             if (d > 6.4 || d < 4.9 && !(dx == 0 || dy == 0 || Math.abs(dx) == Math.abs(dy))) continue;
@@ -786,6 +803,8 @@ final class ReachLandmarks {
         for (int dz = 2; dz <= 4; dz++) s.set(wx + 4, g + 1, wz + dz, Material.STRIPPED_SPRUCE_LOG, "axis=z");
         for (int dz : new int[] {2, 4}) s.set(wx + 4, g, wz + dz, Material.DARK_OAK_FENCE);
         s.set(wx + 2, g + 3, wz + 3, Material.LANTERN, "hanging=true");
+        s.set(wx - 1, g + 2, wz + 1, Material.SPRUCE_WALL_SIGN, "facing=west");
+        s.canvas.text(wx - 1, g + 2, wz + 1, "NIGHT SHIFT", "Six lamps out", "None returned", "Hold the cage");
         s.chest(3, "headframe", wx + 6, g, wz + 2, "west");
         // Spoil heaps.
         for (int[] heap : new int[][] {{-14, 6}, {-10, -12}, {8, 12}}) for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {

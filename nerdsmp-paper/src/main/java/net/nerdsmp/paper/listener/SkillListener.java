@@ -78,6 +78,7 @@ public final class SkillListener implements Listener {
     private final NamespacedKey bossObjectiveKey;
     private final GatheringRhythm gatheringRhythm = new GatheringRhythm();
     private final Map<String, UUID> pendingReplants = new HashMap<>();
+    private final java.util.Set<Object> craftingEvents = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
     public SkillListener(
         JavaPlugin plugin,
@@ -192,24 +193,35 @@ public final class SkillListener implements Listener {
         if (killer == null) {
             return;
         }
-        award(killer, Skill.HUNTING, Math.max(xp("hunting-base", 8L), Math.round(event.getDroppedExp() * 1.5D)),
+        long experience = plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core
+            ? core.mobs().huntingExperience(event.getEntity()).orElseGet(() -> Math.max(xp("hunting-base", 8L), Math.round(event.getDroppedExp() * 1.5D)))
+            : Math.max(xp("hunting-base", 8L), Math.round(event.getDroppedExp() * 1.5D));
+        award(killer, Skill.HUNTING, experience,
             "mob:" + event.getEntity().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        ItemStack result = event.getRecipe().getResult();
-        Skill skill = isAlchemy(result.getType()) ? Skill.ALCHEMY
-            : isSmithing(result.getType()) ? Skill.SMITHING : null;
-        if (skill == null) {
-            return;
-        }
-        int crafted = Math.max(1, result.getAmount());
-        long perItem = skill == Skill.ALCHEMY ? xp("alchemy-craft", 6L) : xp("smithing-craft", 8L);
-        award(player, skill, Math.min(150L, crafted * perItem), "craft:" + UUID.randomUUID());
+        if (!craftingEvents.add(event) || !(event.getWhoClicked() instanceof Player player)
+            || player.getGameMode() != GameMode.SURVIVAL || event.getCurrentItem() == null) return;
+        var account = sessions.account(player.getUniqueId()).orElse(null);
+        if (account == null) return;
+        var recipes = plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core ? core.recipes() : null;
+        if (recipes != null && recipes.cookingRecipe(event.getRecipe())) return; // Kitchen owns its confirmed receipt.
+        Skill skill = recipes == null ? null : recipes.craftingExperienceSkill(event.getRecipe()).orElse(null);
+        if (skill == null) skill = net.nerdsmp.paper.item.CraftingExperienceRules.vanillaSkill(event.getCurrentItem().getType());
+        if (skill == null) return;
+        Skill awardedSkill = skill;
+        long perCraft = xp(skill == Skill.ALCHEMY ? "alchemy-craft" : skill == Skill.COOKING ? "cooking-craft" : "smithing-craft",
+            skill == Skill.ALCHEMY ? 6 : skill == Skill.COOKING ? 12 : 8);
+        var receipt = new net.nerdsmp.paper.item.CraftingReceipt(event.getInventory(), player, event.getCurrentItem(), event.isShiftClick());
+        String operation = "craft:" + UUID.randomUUID();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (event.isCancelled() || !player.isOnline() || player.getGameMode() != GameMode.SURVIVAL
+                || Bukkit.getPlayer(player.getUniqueId()) != player || !sessions.account(player.getUniqueId()).filter(account::equals).isPresent()) return;
+            int crafts = receipt.crafts(event.getInventory(), player);
+            if (crafts > 0) award(player, awardedSkill, net.nerdsmp.paper.item.CraftingExperienceRules.experience(perCraft, crafts), operation);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -259,6 +271,7 @@ public final class SkillListener implements Listener {
 
     private void award(Player player, Skill skill, long experience, String fingerprint, boolean recordJobWork,
                        GatheringRhythm.Result rhythm, AccountId islandOwner, boolean explicitIsland) {
+        if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core && core.spirits() != null && core.spirits().ghost(player.getUniqueId())) return;
         if (recordJobWork && player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
         AccountId accountId = sessions.account(player.getUniqueId()).orElse(null);
         if (accountId == null) {
@@ -271,7 +284,7 @@ public final class SkillListener implements Listener {
         ProgressionService.ProgressionSnapshot snapshot = presentation.progression(player);
         AccountId bonusIsland = skyblock == null ? null : explicitIsland ? islandOwner : skyblock.activityIsland(player);
         ActivityBonuses bonuses=ActivityBonuses.resolve(skill,profile.stats(),snapshot,
-            bonusIsland==null?0:skyblock.development().progress(bonusIsland).skillBonus(skill),rhythm.bonusPercent());
+            bonusIsland==null?0:skyblock.development().skillBonus(bonusIsland,skill),rhythm.bonusPercent());
         long adjustedExperience = adjustedExperience(accountId, skill, experience, bonuses.experiencePercent());
         double marksBonus = bonuses.marksPercent() + seasonBoost(net.nerdsmp.paper.campaign.season.SeasonDefinition.BoostKind.JOB_MARKS);
         if (recordJobWork) {
@@ -325,7 +338,7 @@ public final class SkillListener implements Listener {
         var skyblock = plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core ? core.skyblock() : null;
         AccountId island = skyblock == null ? null : skyblock.activityIsland(player);
         var bonuses = ActivityBonuses.resolve(Skill.SMITHING, profile.stats(), progress,
-            island == null ? 0 : skyblock.development().progress(island).skillBonus(Skill.SMITHING), 0);
+            island == null ? 0 : skyblock.development().skillBonus(island, Skill.SMITHING), 0);
         return new ProcessingContext(account, player.getUniqueId(), player.getWorld().getUID(), bonuses.experiencePercent());
     }
 
@@ -421,7 +434,7 @@ public final class SkillListener implements Listener {
         net.nerdsmp.paper.skyblock.SkyblockController skyblock=plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core?core.skyblock():null;
         AccountId island=skyblock==null?null:skyblock.activityIsland(player);
         ActivityBonuses bonuses=ActivityBonuses.resolve(Skill.FORESTRY,profile.stats(),progress,
-            island==null?0:skyblock.development().progress(island).skillBonus(Skill.FORESTRY),0);
+            island==null?0:skyblock.development().skillBonus(island,Skill.FORESTRY),0);
         return new ForestryContext(account,player.getUniqueId(),player.getWorld().getUID(),bonuses.experiencePercent(),bonuses.marksPercent(),island);
     }
 
@@ -549,7 +562,7 @@ public final class SkillListener implements Listener {
                 player.getInventory().addItem(saved).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
             }
-            player.sendActionBar(miniMessage.deserialize("<light_purple>You saved a brewing reagent.</light_purple>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<light_purple>You saved a brewing reagent.</light_purple>"));
         });
     }
 

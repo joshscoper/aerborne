@@ -212,7 +212,7 @@ public final class AuctionController implements Listener, AutoCloseable {
         if (index > 0) button(page, MenuKit.previousSlot(54), MenuKit.previous(index, pages), () -> browse(player, mine, index - 1));
         if (index + 1 < pages) button(page, MenuKit.nextSlot(54), MenuKit.next(index, pages), () -> browse(player, mine, index + 1));
         if (entries.isEmpty()) page.inventory.setItem(22, MenuKit.item(Material.GLASS_BOTTLE, "<gray>No auctions here</gray>",
-            List.of("<gray>Hold an item and choose Auction Held Item.</gray>")));
+            List.of("<gray>Click any item in your inventory, or hold one</gray>", "<gray>and choose Auction Held Item.</gray>")));
         button(page, 46, tile(Material.WRITABLE_BOOK, "<gold>Auction Help</gold>", List.of(), "show the auction commands"), () -> { player.closeInventory(); help(player); });
         button(page, MenuKit.backSlot(54), MenuKit.back("World & Trade"), () -> plugin.menus().open(player, MenuManager.View.WORLD));
         button(page, MenuKit.closeSlot(54), MenuKit.close(), player::closeInventory); show(player, page);
@@ -354,6 +354,12 @@ public final class AuctionController implements Listener, AutoCloseable {
     public void click(InventoryClickEvent event) {
         if (!(event.getView().getTopInventory().getHolder(false) instanceof Page page)) return;
         boolean denied = event.isCancelled(); event.setCancelled(true);
+        if (!denied && !closed && event.getWhoClicked() instanceof Player player && page.viewer.equals(player.getUniqueId())
+            && !page.busy && event.getRawSlot() >= 54 && event.getClickedInventory() == player.getInventory()
+            && (event.getClick() == ClickType.LEFT || event.getClick() == ClickType.RIGHT) && current(player, page.account)) {
+            chooseFromBag(player, page, event.getSlot());
+            return;
+        }
         if (denied || closed || !(event.getWhoClicked() instanceof Player player) || !page.viewer.equals(player.getUniqueId()) || !current(player, page.account)
             || page.busy || event.getRawSlot() < 0 || event.getRawSlot() >= 54 || event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
         Runnable action = page.actions.get(event.getRawSlot()); if (action == null) return; page.busy = true;
@@ -364,6 +370,35 @@ public final class AuctionController implements Listener, AutoCloseable {
             finally { page.busy = false; }
         });
     }
+    /**
+     * A click on a stack in the player's own inventory while the Auction House is open starts an auction for that
+     * stack. Listing works on the held item, so the stack is brought to hand first: a hotbar stack by selecting its
+     * slot, any other by swapping it with the held slot. Nothing leaves the inventory until the auction is confirmed.
+     */
+    private void chooseFromBag(Player player, Page page, int slot) {
+        var inventory = player.getInventory();
+        if (slot < 0 || slot > 35) return;
+        ItemStack chosen = inventory.getItem(slot);
+        if (chosen == null || chosen.getType().isAir()) return;
+        page.busy = true;
+        MenuKit.clickSound(player);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                if (!current(player, page.account) || player.getOpenInventory().getTopInventory() != page.inventory) return;
+                ItemStack now = inventory.getItem(slot);
+                if (now == null || !now.isSimilar(chosen) || now.getAmount() != chosen.getAmount()) return;
+                if (slot < 9) inventory.setHeldItemSlot(slot);
+                else {
+                    int held = inventory.getHeldItemSlot();
+                    ItemStack inHand = inventory.getItem(held);
+                    inventory.setItem(held, now);
+                    inventory.setItem(slot, inHand);
+                }
+                guarded(player, () -> sellMenu(player, 100, null, 24, now.getAmount()));
+            } finally { page.busy = false; }
+        });
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void drag(InventoryDragEvent event) { if (event.getView().getTopInventory().getHolder(false) instanceof Page) event.setCancelled(true); }
     private Page page(Player player, String title) {

@@ -30,9 +30,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
@@ -140,7 +138,7 @@ public final class QuestService implements Listener, AutoCloseable {
         record(player, QuestDefinition.Type.CLEAR, expedition, null, 1);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent event) {
         LivingEntity dead = event.getEntity();
         Player killer = dead.getKiller();
@@ -153,18 +151,22 @@ public final class QuestService implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (player.getGameMode() != GameMode.SURVIVAL || !event.isDropItems()) return;
+        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (event.getBlock().getBlockData() instanceof org.bukkit.block.data.Ageable age
+            && age.getAge() < age.getMaximumAge()) return;
+        if (plugin.resources().claim(event, net.nerdsmp.paper.resource.HarvestClaims.Channel.STORY_QUESTS).isEmpty()) return;
         String material = event.getBlock().getType().name();
+        String original = event.getBlock().getBlockData().getAsString();
+        AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
         String zone = zoneAt(event.getBlock().getLocation().add(0.5, 0.5, 0.5));
-        record(player, QuestDefinition.Type.HARVEST, material, zone, 1);
-        if (ResourceMaterials.excavation(material)) record(player, QuestDefinition.Type.DIG, material, zone, 1);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onTalk(PlayerInteractEntityEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        plugin.npcs().definitionId(event.getRightClicked())
-            .ifPresent(npc -> record(event.getPlayer(), QuestDefinition.Type.TALK, npc, null, 1));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (event.isCancelled() || !event.isDropItems() || !player.isOnline()
+                || Bukkit.getPlayer(player.getUniqueId()) != player || account == null
+                || !plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent()
+                || event.getBlock().getBlockData().getAsString().equals(original)) return;
+            record(player, QuestDefinition.Type.HARVEST, material, zone, 1);
+            if (ResourceMaterials.excavation(material)) record(player, QuestDefinition.Type.DIG, material, zone, 1);
+        });
     }
 
     @EventHandler
@@ -181,16 +183,29 @@ public final class QuestService implements Listener, AutoCloseable {
 
     /** Adventurer levels gate quests; markers need them without opening a board first. */
     private void refreshLevel(Player player) {
+        refreshLevel(player, () -> { });
+    }
+
+    private void refreshLevel(Player player, Runnable refreshed) {
         AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
         if (account == null) return;
         plugin.progression().snapshot(account).whenComplete((snapshot, error) -> {
             if (error != null || snapshot == null) return;
             int level = Math.max(1, AdventurerProgression.fromSkills(snapshot.skills()).level());
-            Bukkit.getScheduler().runTask(plugin, () -> { if (player.isOnline()) levels.put(player.getUniqueId(), level); });
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player.isOnline() && plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent()) {
+                    levels.put(player.getUniqueId(), level);
+                    publish(player);
+                    refreshed.run();
+                }
+            });
         });
     }
 
-    int level(Player player) { return levels.getOrDefault(player.getUniqueId(), 1); }
+    int level(Player player) {
+        return plugin.presentation() == null ? levels.getOrDefault(player.getUniqueId(), 1)
+            : Math.max(levels.getOrDefault(player.getUniqueId(), 1), plugin.presentation().view(player).adventurerLevel());
+    }
 
     public record Counts(int available, int ready) { }
 
@@ -198,9 +213,9 @@ public final class QuestService implements Listener, AutoCloseable {
     public Counts counts(Player player, String npc) {
         QuestProgress log = log(player);
         if (log == null) return new Counts(0, 0);
-        int available = 0, ready = 0, level = level(player);
+        int available = 0, ready = 0;
         for (QuestDefinition quest : catalog.offeredBy(npc)) {
-            QuestProgress.Status status = log.status(quest, level);
+            QuestProgress.Status status = status(player, log, quest);
             if (status == QuestProgress.Status.READY && quest.turnIn().equals(npc)) ready++;
             else if (status == QuestProgress.Status.AVAILABLE && quest.giver().equals(npc)) available++;
         }
@@ -211,15 +226,21 @@ public final class QuestService implements Listener, AutoCloseable {
     QuestGuide.Mark mark(Player player, String npc) {
         QuestProgress log = log(player);
         if (log == null) return QuestGuide.Mark.NONE;
-        int level = level(player);
         boolean ready = false, dailyReady = false, available = false, dailyAvailable = false, active = false, locked = false;
-        for (QuestDefinition quest : catalog.offeredBy(npc)) {
-            QuestProgress.Status status = log.status(quest, level);
+        for (QuestDefinition quest : catalog.involving(npc)) {
+            QuestProgress.Status status = status(player, log, quest);
             boolean turnIn = quest.turnIn().equals(npc), giver = quest.giver().equals(npc);
             switch (status) {
                 case READY -> { if (turnIn) { if (quest.daily()) dailyReady = true; else ready = true; } }
                 case AVAILABLE -> { if (giver) { if (quest.daily()) dailyAvailable = true; else available = true; } }
-                case ACTIVE -> { if (turnIn) active = true; }
+                case ACTIVE -> {
+                    if (turnIn) active = true;
+                    int[] counts = counts(player, quest);
+                    for (int i = 0; i < quest.objectives().size(); i++) {
+                        var objective = quest.objectives().get(i);
+                        if (objective.type() == QuestDefinition.Type.TALK && objective.matches(npc) && counts[i] < objective.count()) active = true;
+                    }
+                }
                 case LOCKED -> { if (giver) locked = true; }
                 default -> { }
             }
@@ -246,12 +267,51 @@ public final class QuestService implements Listener, AutoCloseable {
 
     int[] counts(Player player, QuestDefinition quest) {
         QuestProgress log = log(player);
-        return log == null ? null : log.counts(quest);
+        if (log == null || !log.active().containsKey(quest.id())) return null;
+        int[] result = log.counts(quest).clone();
+        if (quest.objectives().stream().noneMatch(objective -> objective.type() == QuestDefinition.Type.DELIVER)) return result;
+        int[] deliveries = deliveryAllocation(player, quest).counts();
+        for (int i = 0; i < result.length; i++)
+            if (quest.objectives().get(i).type() == QuestDefinition.Type.DELIVER) result[i] = deliveries[i];
+        return result;
     }
 
-    int heldFor(Player player, QuestDefinition.Objective objective) { return held(player, objective); }
+    private QuestProgress.Status status(Player player, QuestProgress log, QuestDefinition quest) {
+        return log.active().containsKey(quest.id())
+            ? QuestProgress.done(quest, counts(player, quest)) ? QuestProgress.Status.READY : QuestProgress.Status.ACTIVE
+            : log.status(quest, level(player));
+    }
+
+    private void publish(Player player) {
+        guide.refresh(player);
+        QuestProgress log = log(player);
+        if (log != null) sendBook(player, log, false);
+    }
 
     String npcTitle(String npc) { return npcName(npc); }
+
+    /** How many quests this player has under way. */
+    int activeCount(Player player) { QuestProgress log = log(player); return log == null ? 0 : log.active().size(); }
+
+    /** Whether the player has taken on any quest, now or before. */
+    public boolean started(Player player) { QuestProgress log = log(player); return log != null && (!log.active().isEmpty() || !log.completed().isEmpty()); }
+
+    /** The quest chains this account has finished: every non-daily quest of the chain completed. */
+    public Set<String> completedChains(AccountId account) {
+        QuestProgress log = progress.get(account);
+        if (log == null) return Set.of();
+        Map<String, Boolean> chains = new HashMap<>();
+        for (QuestDefinition quest : catalog.quests().values()) {
+            if (quest.daily()) continue;
+            chains.merge(quest.chain(), log.completed().contains(quest.id()), Boolean::logicalAnd);
+        }
+        Set<String> done = new java.util.TreeSet<>();
+        chains.forEach((chain, complete) -> { if (complete) done.add(chain); });
+        return done;
+    }
+
+    /** Whether the player has finished this quest. */
+    public boolean completed(Player player, String quest) { QuestProgress log = log(player); return log != null && log.completed().contains(quest); }
 
     String zoneName(String zone) { return zoneTitle(zone); }
 
@@ -260,26 +320,51 @@ public final class QuestService implements Listener, AutoCloseable {
             if (quest == null) tracked.remove(account); else tracked.put(account, quest);
         });
         guide.show(player);
-        guide.refresh(player);
+        save();
+        publish(player);
     }
 
     private void checkVisits() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             QuestProgress log = log(player);
             if (log == null || log.active().isEmpty()) continue;
+            boolean changed = false;
+            for (String id : List.copyOf(log.active().keySet())) {
+                QuestDefinition quest = catalog.quests().get(id);
+                if (quest == null) continue;
+                int[] stored = log.counts(quest), current = counts(player, quest);
+                boolean wasDone = QuestProgress.done(quest, stored);
+                if (!java.util.Arrays.equals(stored, current)) {
+                    System.arraycopy(current, 0, stored, 0, current.length);
+                    changed = true;
+                    if (!wasDone && QuestProgress.done(quest, current)) readyMessage(player, quest);
+                }
+            }
+            if (changed) { save(); publish(player); }
             String zone = zoneAt(player.getLocation());
             if (zone != null) record(player, QuestDefinition.Type.VISIT, zone, zone, 1);
         }
     }
 
     private void record(Player player, QuestDefinition.Type type, String target, String zone, int amount) {
+        record(player, type, target, zone, amount, null);
+    }
+
+    private void record(Player player, QuestDefinition.Type type, String target, String zone, int amount, String onlyQuest) {
+        if (plugin.spirits()!=null && plugin.spirits().ghost(player.getUniqueId())) return;
         QuestProgress log = log(player);
         if (log == null || log.active().isEmpty()) return;
         boolean changed = false;
         for (String id : List.copyOf(log.active().keySet())) {
+            if (onlyQuest != null && !onlyQuest.equals(id)) continue;
             QuestDefinition quest = catalog.quests().get(id);
             if (quest == null) continue;
             boolean wasDone = QuestProgress.done(quest, log.counts(quest));
+            int[] current = counts(player, quest);
+            if (!java.util.Arrays.equals(log.counts(quest), current)) {
+                System.arraycopy(current, 0, log.counts(quest), 0, current.length);
+                changed = true;
+            }
             for (int index = 0; index < quest.objectives().size(); index++) {
                 QuestDefinition.Objective objective = quest.objectives().get(index);
                 if (objective.type() != type || !objective.matches(target)
@@ -291,16 +376,18 @@ public final class QuestService implements Listener, AutoCloseable {
                 int now = log.counts(quest)[index];
                 if (finished) player.sendRichMessage("<green>✔</green> <white>" + Chat.escape(objective.description())
                     + "</white> <gray>(" + Chat.escape(quest.title()) + ")</gray>");
-                else if (objective.count() > 1) player.sendActionBar(Chat.render("<gold>" + Chat.escape(quest.title()) + "</gold> <gray>·</gray> <white>"
+                else if (objective.count() > 1) net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gold>" + Chat.escape(quest.title()) + "</gold> <gray>·</gray> <white>"
                     + Chat.escape(objective.description()) + "</white> <yellow>" + now + "/" + objective.count() + "</yellow>"));
             }
-            if (!wasDone && QuestProgress.done(quest, log.counts(quest))) {
-                player.sendRichMessage("<gold><bold>Quest ready:</bold></gold> <white>" + Chat.escape(quest.title())
-                    + "</white> <gray>Return to " + Chat.escape(npcName(quest.turnIn())) + ".</gray>");
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.6F, 1.4F);
-            }
+            if (!wasDone && QuestProgress.done(quest, counts(player, quest))) readyMessage(player, quest);
         }
-        if (changed) { save(); guide.refresh(player); }
+        if (changed) { save(); publish(player); }
+    }
+
+    private void readyMessage(Player player, QuestDefinition quest) {
+        player.sendRichMessage("<gold><bold>Quest ready:</bold></gold> <white>" + Chat.escape(quest.title())
+            + "</white> <gray>Return to " + Chat.escape(npcName(quest.turnIn())) + ".</gray>");
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.6F, 1.4F);
     }
 
     private String zoneAt(Location location) {
@@ -310,6 +397,102 @@ public final class QuestService implements Listener, AutoCloseable {
     }
 
     // ---------------------------------------------------------------- quest board
+
+    public List<QuestDialogue.Topic> dialogueTopics(Player player, String npc) {
+        QuestProgress log = log(player);
+        if (log == null) return List.of();
+        List<QuestDialogue.Topic> topics = new ArrayList<>();
+        for (QuestDefinition quest : catalog.involving(npc)) {
+            boolean giver = quest.giver().equals(npc), turnIn = quest.turnIn().equals(npc);
+            QuestProgress.Status state = status(player, log, quest);
+            int[] counts = counts(player, quest);
+            boolean talk = false, contact = false;
+            List<String> report = new ArrayList<>();
+            for (int i = 0; i < quest.objectives().size(); i++) {
+                var objective = quest.objectives().get(i);
+                if (objective.type() != QuestDefinition.Type.TALK || !objective.matches(npc)) continue;
+                contact = true;
+                report.addAll(objective.dialogue());
+                if (counts != null && counts[i] < objective.count()
+                    && (objective.zone() == null || objective.zone().equals(zoneAt(player.getLocation())))) talk = true;
+            }
+            if (state == QuestProgress.Status.LOCKED || state == QuestProgress.Status.AVAILABLE && !giver
+                || state == QuestProgress.Status.COMPLETED && (!turnIn || quest.daily())
+                || !giver && !turnIn && !(contact && counts != null)) continue;
+            List<String> body = new ArrayList<>();
+            body.add("<gold>" + Chat.escape(quest.title()) + "</gold>");
+            if (state == QuestProgress.Status.COMPLETED) {
+                quest.complete().forEach(line -> body.add(questLine(player, line)));
+            } else {
+                if (giver) quest.offer().forEach(line -> body.add(questLine(player, line)));
+                else body.add(talk ? "You wanted to ask me about this?" : "Let's see how you're getting on.");
+                for (int i = 0; i < quest.objectives().size(); i++) {
+                    var objective = quest.objectives().get(i);
+                    body.add("<white>" + Chat.escape(objective.description()) + "</white> <yellow>"
+                        + (counts == null ? 0 : counts[i]) + "/" + objective.count() + "</yellow>"
+                        + (objective.zone() == null ? "" : " <gray>(" + Chat.escape(zoneTitle(objective.zone())) + ")</gray>"));
+                }
+                if (!turnIn) body.add("<gray>Report to " + Chat.escape(npcName(quest.turnIn())) + " when finished.</gray>");
+                // Keep the page inside the client's 24-line limit; rewards remain visible before acceptance.
+                body.addAll(rewardLore(quest.rewards()).stream().limit(Math.max(0, 24 - body.size())).toList());
+            }
+            if (report.isEmpty()) report.add("Your message has reached me. See the remaining objectives in your journal, then report to "
+                + npcName(quest.turnIn()) + ".");
+            topics.add(new QuestDialogue.Topic(quest.id(), quest.title(), state, giver, turnIn, talk,
+                QuestDialogue.plain(body.stream().limit(24).toList()),
+                QuestDialogue.plain(report.stream().map(line -> questLine(player, line)).toList())));
+        }
+        topics.sort(java.util.Comparator.comparingInt(topic -> switch (topic.status()) {
+            case READY -> topic.turnIn() ? 0 : 3;
+            case ACTIVE -> topic.talk() ? 1 : 3;
+            case AVAILABLE -> 2;
+            default -> 4;
+        }));
+        return List.copyOf(topics);
+    }
+
+    private String questLine(Player player, String text) {
+        return Chat.escape(text.replace("{player}", player.getName()));
+    }
+
+    /** Called only from the NPC's validated, single-use conversation response. Rechecks live quest state. */
+    public String dialogueAction(Player player, String npc, String action, String id) {
+        QuestDefinition quest = catalog.quests().get(id);
+        QuestProgress log = log(player);
+        if (quest == null || log == null) return null;
+        QuestDialogue.Topic topic = dialogueTopics(player, npc).stream().filter(value -> value.id().equals(id)).findFirst().orElse(null);
+        if (topic == null) return null;
+        switch (action) {
+            case "accept" -> {
+                if (topic.status() != QuestProgress.Status.AVAILABLE || !topic.giver()) break;
+                accept(player, quest, log);
+                return QuestDialogue.DETAIL + id;
+            }
+            case "talk" -> {
+                if (!topic.talk()) break;
+                recordTalk(player, quest, npc);
+                return QuestDialogue.REPORT + id;
+            }
+            case "complete" -> {
+                if (topic.status() != QuestProgress.Status.READY || !topic.turnIn()) break;
+                turnIn(player, quest, log, npc);
+                return quest.daily() ? null : QuestDialogue.DETAIL + id;
+            }
+            case "track" -> {
+                if (!log.active().containsKey(id)) break;
+                track(player, id);
+                return QuestDialogue.DETAIL + id;
+            }
+            default -> { }
+        }
+        Chat.notice(player, "That quest has changed. Here's your current progress.");
+        return QuestDialogue.DETAIL + id;
+    }
+
+    private void recordTalk(Player player, QuestDefinition quest, String npc) {
+        // A quest-specific reply must not silently finish every other conversation with this NPC.
+        record(player, QuestDefinition.Type.TALK, npc, zoneAt(player.getLocation()), 1, quest.id());
+    }
 
     /** Opens an NPC's quest board once the player's adventurer level is known. */
     public void open(Player player, String npc) {
@@ -324,24 +507,33 @@ public final class QuestService implements Listener, AutoCloseable {
     }
 
     private void render(Player player, String npc) {
+        render(player, npc, 0);
+    }
+
+    private void render(Player player, String npc, int requestedPage) {
         QuestProgress log = log(player);
         if (log == null) return;
-        int level = levels.getOrDefault(player.getUniqueId(), 1);
+        int level = level(player);
         List<QuestDefinition> quests = catalog.offeredBy(npc);
-        Board board = new Board(npc);
-        Inventory inventory = Bukkit.createInventory(board, 27, Chat.render("<dark_gray>" + Chat.escape(npcName(npc)) + " · Quests</dark_gray>"));
+        int pages = Math.max(1, (quests.size() + 27) / 28);
+        int page = Math.clamp(requestedPage, 0, pages - 1);
+        Board board = new Board(npc, page, pages);
+        Inventory inventory = Bukkit.createInventory(board, 54, Chat.render("<dark_gray>" + Chat.escape(npcName(npc)) + " · Quests</dark_gray>"));
         board.inventory = inventory;
         ItemStack pane = icon(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
-        for (int slot = 0; slot < 27; slot++) inventory.setItem(slot, pane);
-        int slot = 10;
+        for (int slot = 0; slot < 54; slot++) inventory.setItem(slot, pane);
+        int index = 0;
         if (quests.isEmpty()) inventory.setItem(13, icon(Material.BOOK, "<gray>No quests here yet</gray>", List.of()));
-        for (QuestDefinition quest : quests) {
-            if (slot > 16) break;
-            QuestProgress.Status status = log.status(quest, level);
+        for (QuestDefinition quest : quests.stream().skip(page * 28L).limit(28).toList()) {
+            int slot = 10 + (index / 7) * 9 + index % 7;
+            QuestProgress.Status status = status(player, log, quest);
             inventory.setItem(slot, questIcon(player, quest, status, npc, log, level));
-            board.slots.put(slot++, quest.id());
+            board.slots.put(slot, quest.id());
+            index++;
         }
-        inventory.setItem(22, icon(Material.WRITABLE_BOOK, "<gold>Quest journal</gold>", List.of("<gray>Your active quests: <white>/journal</white></gray>")));
+        if (page > 0) inventory.setItem(45, icon(Material.ARROW, "<gold>Previous quests</gold>", List.of()));
+        if (page + 1 < pages) inventory.setItem(53, icon(Material.ARROW, "<gold>More quests</gold>", List.of()));
+        inventory.setItem(49, icon(Material.WRITABLE_BOOK, "<gold>Quest journal</gold>", List.of("<gray>Your active quests: <white>/journal</white></gray>")));
         player.openInventory(inventory);
     }
 
@@ -350,11 +542,12 @@ public final class QuestService implements Listener, AutoCloseable {
         lore.add(quest.daily() ? "<blue>Daily quest · resets at midnight UTC</blue>"
             : "<dark_gray>" + Chat.escape(chainTitle(quest)) + " · Level " + quest.minimumLevel() + "+</dark_gray>");
         lore.add("");
-        int[] counts = log.counts(quest);
+        quest.offer().forEach(line -> lore.add("<white>" + questLine(player, line) + "</white>"));
+        lore.add("");
+        int[] counts = counts(player, quest);
         for (int i = 0; i < quest.objectives().size(); i++) {
             QuestDefinition.Objective objective = quest.objectives().get(i);
-            int have = objective.type() == QuestDefinition.Type.DELIVER ? Math.min(objective.count(), held(player, objective))
-                : counts == null ? 0 : counts[i];
+            int have = counts == null ? 0 : counts[i];
             boolean met = counts != null && have >= objective.count();
             lore.add((met ? "<green>✔ " : "<gray>• ") + Chat.escape(objective.description())
                 + (objective.count() > 1 && counts != null ? " <yellow>" + have + "/" + objective.count() + "</yellow>" : "")
@@ -401,18 +594,30 @@ public final class QuestService implements Listener, AutoCloseable {
         if (!(event.getInventory().getHolder() instanceof Board board)) return;
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player) || event.getClickedInventory() != event.getView().getTopInventory()) return;
-        if (event.getRawSlot() == 22) { player.closeInventory(); journal(player); return; }
+        if (event.getRawSlot() == 49 || event.getRawSlot() == 45 || event.getRawSlot() == 53) {
+            int slot = event.getRawSlot();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline() || player.getOpenInventory().getTopInventory() != board.inventory) return;
+                if (slot == 49) { player.closeInventory(); journal(player); }
+                else if (slot == 45 && board.page > 0) render(player, board.npc, board.page - 1);
+                else if (slot == 53 && board.page + 1 < board.pages) render(player, board.npc, board.page + 1);
+            });
+            return;
+        }
         String id = board.slots.get(event.getRawSlot());
         QuestDefinition quest = id == null ? null : catalog.quests().get(id);
         QuestProgress log = log(player);
         if (quest == null || log == null) return;
-        QuestProgress.Status status = log.status(quest, levels.getOrDefault(player.getUniqueId(), 1));
-        if (status == QuestProgress.Status.AVAILABLE && quest.giver().equals(board.npc)) {
-            accept(player, quest, log);
-            render(player, board.npc);
-        } else if (status == QuestProgress.Status.READY && quest.turnIn().equals(board.npc)) {
-            turnIn(player, quest, log, board.npc);
-        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline() || player.getOpenInventory().getTopInventory() != board.inventory || log(player) != log) return;
+            QuestProgress.Status status = status(player, log, quest);
+            if (status == QuestProgress.Status.AVAILABLE && quest.giver().equals(board.npc)) {
+                accept(player, quest, log);
+                render(player, board.npc, board.page);
+            } else if (status == QuestProgress.Status.READY && quest.turnIn().equals(board.npc)) {
+                turnIn(player, quest, log, board.npc);
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -423,10 +628,11 @@ public final class QuestService implements Listener, AutoCloseable {
     private void accept(Player player, QuestDefinition quest, QuestProgress log) {
         if (!log.accept(quest)) return;
         save();
+        plugin.metrics().event(player,"quest.accepted",1);
         track(player, quest.id());
         String speaker = npcName(quest.giver());
         player.sendMessage(Component.empty());
-        for (String line : quest.offer()) player.sendRichMessage("<gold>" + Chat.escape(speaker) + ":</gold> <white>" + Chat.escape(line) + "</white>");
+        for (String line : quest.offer()) player.sendRichMessage("<gold>" + Chat.escape(speaker) + ":</gold> <white>" + Chat.escape(line.replace("{player}", player.getName())) + "</white>");
         player.sendRichMessage("<yellow>Quest accepted:</yellow> <white>" + Chat.escape(quest.title()) + "</white>");
         for (QuestDefinition.Objective objective : quest.objectives())
             player.sendRichMessage(" <gray>•</gray> <white>" + Chat.escape(objective.description()) + "</white>"
@@ -437,21 +643,23 @@ public final class QuestService implements Listener, AutoCloseable {
     private void turnIn(Player player, QuestDefinition quest, QuestProgress log, String npc) {
         AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
         if (account == null) { Chat.accountLoading(player); return; }
-        for (QuestDefinition.Objective objective : quest.objectives())
-            if (objective.type() == QuestDefinition.Type.DELIVER && held(player, objective) < objective.count()) {
-                Chat.error(player, "Bring " + objective.count() + " for: " + Chat.escape(objective.description()));
-                return;
-            }
+        if (!quest.turnIn().equals(npc) || status(player, log, quest) != QuestProgress.Status.READY) {
+            Chat.error(player, "Finish the objectives and bring the requested items before turning this quest in.");
+            publish(player);
+            return;
+        }
+        QuestDeliveries.Allocation delivery = deliveryAllocation(player, quest);
         String operation = "story-quest:" + account + ":" + quest.id() + (quest.daily() ? ":" + QuestProgress.today() : "");
         if (!paying.add(operation)) return;
-        for (QuestDefinition.Objective objective : quest.objectives())
-            if (objective.type() == QuestDefinition.Type.DELIVER) take(player, objective);
+        take(player, delivery.consumed());
         log.complete(quest);
         save();
-        guide.refresh(player);
+        plugin.metrics().event(player,"quest.completed",1);
+        plugin.metrics().event(player,"questComplete."+net.nerdsmp.paper.metrics.MetricsLedger.dimension(quest.id()),1);
+        publish(player);
         player.closeInventory();
         player.sendMessage(Component.empty());
-        for (String line : quest.complete()) player.sendRichMessage("<gold>" + Chat.escape(npcName(npc)) + ":</gold> <white>" + Chat.escape(line) + "</white>");
+        for (String line : quest.complete()) player.sendRichMessage("<gold>" + Chat.escape(npcName(npc)) + ":</gold> <white>" + Chat.escape(line.replace("{player}", player.getName())) + "</white>");
         player.sendRichMessage("<green><bold>Quest complete:</bold></green> <white>" + Chat.escape(quest.title()) + "</white>");
         net.nerdsmp.paper.presentation.ClientFeeds.toast(player, "quest", Chat.render("<green>Quest complete</green>"),
             Chat.render("<white>" + Chat.escape(quest.title()) + "</white>"));
@@ -464,16 +672,26 @@ public final class QuestService implements Listener, AutoCloseable {
             }
             if (player.isOnline()) {
                 plugin.presentation().refresh(player);
-                List<QuestDefinition> next = catalog.quests().values().stream()
-                    .filter(candidate -> candidate.requires().contains(quest.id()) && !log.completed().contains(candidate.id())).toList();
-                for (QuestDefinition follow : next) player.sendRichMessage("<yellow>New quest:</yellow> <white>" + Chat.escape(follow.title())
-                    + "</white> <gray>from " + Chat.escape(npcName(follow.giver())) + "</gray>");
+                refreshLevel(player, () -> {
+                    for (QuestDefinition follow : catalog.quests().values()) {
+                        if (!follow.requires().contains(quest.id()) || status(player, log, follow) != QuestProgress.Status.AVAILABLE) continue;
+                        player.sendRichMessage("<yellow>New quest:</yellow> <white>" + Chat.escape(follow.title())
+                            + "</white> <gray>from " + Chat.escape(npcName(follow.giver())) + "</gray>");
+                    }
+                });
             }
         }));
         for (QuestDefinition.ItemReward reward : quest.rewards().items()) {
             ItemStack stack = rewardStack(reward);
             if (stack == null) continue;
-            player.getInventory().addItem(stack).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+            player.sendRichMessage(" <white>+" + reward.amount() + "× " + Chat.escape(rewardName(reward)) + "</white>");
+            for (int remaining = reward.amount(); remaining > 0;) {
+                ItemStack portion = stack.clone();
+                int amount = Math.min(remaining, portion.getMaxStackSize());
+                portion.setAmount(amount);
+                player.getInventory().addItem(portion).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+                remaining -= amount;
+            }
         }
     }
 
@@ -506,7 +724,18 @@ public final class QuestService implements Listener, AutoCloseable {
         try {
             if (reward.kind().equals("material")) {
                 Material material = Material.matchMaterial(reward.id());
-                return material == null || !material.isItem() ? null : new ItemStack(material, reward.amount());
+                if (material == null || !material.isItem()) return null;
+                ItemStack stack = material == Material.EXPERIENCE_BOTTLE && plugin.skillLamps() != null
+                    ? plugin.skillLamps().bottle(net.nerdsmp.paper.item.SkillLamps.Grade.PLAIN, reward.amount())
+                    : new ItemStack(material, Math.min(material.getMaxStackSize(), reward.amount()));
+                if (reward.name() != null || !reward.lore().isEmpty()) {
+                    ItemMeta meta = stack.getItemMeta();
+                    if (reward.name() != null) meta.displayName(Chat.render("<aqua>" + Chat.escape(reward.name()) + "</aqua>").decoration(TextDecoration.ITALIC, false));
+                    if (!reward.lore().isEmpty()) meta.lore(reward.lore().stream().map(line ->
+                        Chat.render("<gray>" + Chat.escape(line) + "</gray>").decoration(TextDecoration.ITALIC, false)).toList());
+                    stack.setItemMeta(meta);
+                }
+                return stack;
             }
             ItemStack stack = plugin.items().create(new ItemId(reward.id()));
             stack.setAmount(Math.min(stack.getMaxStackSize(), reward.amount()));
@@ -517,22 +746,24 @@ public final class QuestService implements Listener, AutoCloseable {
         }
     }
 
-    private int held(Player player, QuestDefinition.Objective objective) {
-        int total = 0;
+    private QuestDeliveries.Allocation deliveryAllocation(Player player, QuestDefinition quest) {
+        Map<String, Integer> inventory = new HashMap<>();
         for (ItemStack stack : player.getInventory().getStorageContents())
-            if (stack != null && objective.matches(stack.getType().name()) && !stack.hasItemMeta()) total += stack.getAmount();
-        return total;
+            if (stack != null && net.nerdsmp.paper.item.FoodItems.ordinary(stack))
+                inventory.merge(stack.getType().name(), stack.getAmount(), Integer::sum);
+        return QuestDeliveries.allocate(quest, inventory);
     }
 
-    private void take(Player player, QuestDefinition.Objective objective) {
-        int remaining = objective.count();
+    private void take(Player player, Map<String, Integer> allocated) {
+        Map<String, Integer> remaining = new HashMap<>(allocated);
         ItemStack[] contents = player.getInventory().getStorageContents();
-        for (int i = 0; i < contents.length && remaining > 0; i++) {
+        for (int i = 0; i < contents.length; i++) {
             ItemStack stack = contents[i];
-            if (stack == null || !objective.matches(stack.getType().name()) || stack.hasItemMeta()) continue;
-            int used = Math.min(remaining, stack.getAmount());
+            if (stack == null || !net.nerdsmp.paper.item.FoodItems.ordinary(stack)) continue;
+            String material = stack.getType().name();
+            int used = Math.min(remaining.getOrDefault(material, 0), stack.getAmount());
             stack.setAmount(stack.getAmount() - used);
-            remaining -= used;
+            remaining.computeIfPresent(material, (key, count) -> count - used);
             contents[i] = stack.getAmount() <= 0 ? null : stack;
         }
         player.getInventory().setStorageContents(contents);
@@ -599,7 +830,7 @@ public final class QuestService implements Listener, AutoCloseable {
             default -> { Chat.usage(sender, "/journal admin <online player> info|complete <quest>|reset [quest]"); return true; }
         }
         save();
-        guide.refresh(target);
+        publish(target);
         Chat.success(sender, "Updated " + Chat.escape(target.getName()) + "'s quest journal.");
         return true;
     }
@@ -637,14 +868,14 @@ public final class QuestService implements Listener, AutoCloseable {
         for (String id : log.active().keySet()) {
             QuestDefinition quest = catalog.quests().get(id);
             if (quest == null) continue;
-            int[] counts = log.counts(quest);
+            int[] counts = counts(player, quest);
             boolean ready = QuestProgress.done(quest, counts);
             boolean following = tracked(player).map(QuestDefinition::id).filter(id::equals).isPresent();
             player.sendRichMessage((following ? "<gold>➤ </gold>" : "") + (ready ? "<green>? " : "<yellow>! ") + Chat.escape(quest.title()) + (ready ? "</green>" : "</yellow>")
                 + " <dark_gray>· " + (ready ? "return to " : "from ") + Chat.escape(npcName(ready ? quest.turnIn() : quest.giver())) + "</dark_gray>");
             for (int i = 0; i < quest.objectives().size(); i++) {
                 QuestDefinition.Objective objective = quest.objectives().get(i);
-                int have = objective.type() == QuestDefinition.Type.DELIVER ? Math.min(objective.count(), held(player, objective)) : counts[i];
+                int have = counts[i];
                 player.sendRichMessage("  " + (have >= objective.count() ? "<green>✔" : "<gray>•") + " " + Chat.escape(objective.description())
                     + (objective.count() > 1 ? " " + have + "/" + objective.count() : "")
                     + (objective.zone() != null ? " <dark_gray>(" + Chat.escape(zoneTitle(objective.zone())) + ")</dark_gray>" : "")
@@ -664,7 +895,7 @@ public final class QuestService implements Listener, AutoCloseable {
     public boolean sendBook(Player player, QuestProgress log, boolean open) {
         if (!net.nerdsmp.paper.presentation.ClientFeeds.listens(player, net.nerdsmp.paper.presentation.ClientFeeds.QUESTS)) return false;
         try {
-            int level = plugin.presentation() == null ? 1 : plugin.presentation().view(player).adventurerLevel();
+            int level = level(player);
             List<QuestDefinition> shown = new java.util.ArrayList<>();
             for (String id : log.active().keySet()) if (catalog.quests().containsKey(id)) shown.add(catalog.quests().get(id));
             for (QuestDefinition quest : catalog.quests().values())
@@ -680,7 +911,7 @@ public final class QuestService implements Listener, AutoCloseable {
             out.writeInt(shown.size());
             for (QuestDefinition quest : shown) {
                 boolean active = log.active().containsKey(quest.id());
-                int[] counts = active ? log.counts(quest) : new int[quest.objectives().size()];
+                int[] counts = active ? counts(player, quest) : new int[quest.objectives().size()];
                 boolean ready = active && QuestProgress.done(quest, counts);
                 int status = active ? (ready ? 2 : 1) : log.completed().contains(quest.id()) && !quest.daily() ? 3 : 0;
                 str(out, quest.id()); str(out, quest.title()); str(out, chainTitle(quest));
@@ -695,7 +926,7 @@ public final class QuestService implements Listener, AutoCloseable {
                 for (int i = 0; i < quest.objectives().size(); i++) {
                     QuestDefinition.Objective objective = quest.objectives().get(i);
                     int have = !active ? (status == 3 ? objective.count() : 0)
-                        : objective.type() == QuestDefinition.Type.DELIVER ? Math.min(objective.count(), held(player, objective)) : counts[i];
+                        : counts[i];
                     str(out, objective.description());
                     out.writeInt(have);
                     out.writeInt(objective.count());
@@ -705,7 +936,7 @@ public final class QuestService implements Listener, AutoCloseable {
                 out.writeInt(quest.rewards().experience().size());
                 for (var xp : quest.rewards().experience().entrySet()) { str(out, xp.getKey()); out.writeLong(xp.getValue()); }
                 out.writeInt(quest.rewards().items().size());
-                for (var item : quest.rewards().items()) str(out, item.amount() + "x " + item.id().replace('_', ' '));
+                for (var item : quest.rewards().items()) str(out, item.amount() + "x " + rewardName(item));
             }
             out.flush();
             return net.nerdsmp.paper.presentation.ClientFeeds.questBook(player, bytes.toByteArray());
@@ -759,13 +990,21 @@ public final class QuestService implements Listener, AutoCloseable {
             lore.add(" <light_purple>" + (points > 0 ? "+" : "") + points + " " + Chat.escape(name) + "</light_purple>");
         });
         for (QuestDefinition.ItemReward item : rewards.items()) {
-            ItemStack stack = rewardStack(item);
-            String label = stack == null ? item.id() : stack.hasItemMeta() && stack.getItemMeta().hasDisplayName()
-                ? net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(stack.getItemMeta().displayName())
-                : item.id().replace('_', ' ');
-            lore.add(" <white>" + item.amount() + "× " + Chat.escape(label) + "</white>");
+            lore.add(" <white>" + item.amount() + "× " + Chat.escape(rewardName(item)) + "</white>");
         }
         return lore;
+    }
+
+    private String rewardName(QuestDefinition.ItemReward item) {
+        if (item.name() != null) return item.name();
+        if (item.kind().equals("material") && item.id().equals("experience_bottle")) return "Skill Lamp";
+        ItemStack stack = rewardStack(item);
+        if (stack != null && stack.hasItemMeta()) {
+            ItemMeta meta = stack.getItemMeta();
+            Component name = meta.hasDisplayName() ? meta.displayName() : meta.hasItemName() ? meta.itemName() : null;
+            if (name != null) return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(name);
+        }
+        return item.id().replace('_', ' ');
     }
 
     private ItemStack icon(Material material, String name, List<String> lore) {
@@ -822,9 +1061,11 @@ public final class QuestService implements Listener, AutoCloseable {
 
     private static final class Board implements InventoryHolder {
         private final String npc;
+        private final int page;
+        private final int pages;
         private final Map<Integer, String> slots = new HashMap<>();
         private Inventory inventory;
-        private Board(String npc) { this.npc = npc; }
+        private Board(String npc, int page, int pages) { this.npc = npc; this.page = page; this.pages = pages; }
         @Override public Inventory getInventory() { return inventory; }
     }
 }

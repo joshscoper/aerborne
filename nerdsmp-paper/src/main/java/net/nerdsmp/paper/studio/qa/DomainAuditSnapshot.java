@@ -119,6 +119,7 @@ public final class DomainAuditSnapshot {
             product.customItemId().ifPresent(id -> link(dependencies, ref(SHOP, shop.id()), ITEM, id.value(), "Shop product " + product.id()));
         for (var recipe : plugin.recipes().recipes()) {
             known.add(ref(RECIPE, recipe.id())); link(dependencies, ref(RECIPE, recipe.id()), ITEM, recipe.result().value(), "Recipe result");
+            recipe.customIngredients().values().forEach(id -> link(dependencies, ref(RECIPE, recipe.id()), ITEM, id.value(), "Custom recipe ingredient"));
         }
         if (plugin.recipeEngine() != null) for (var recipe : plugin.recipeEngine().all()) {
             ContentRef source = ref(RECIPE, recipe.id()); known.add(source);

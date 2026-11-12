@@ -136,17 +136,18 @@ final class ApiSnapshots implements AutoCloseable {
             players = profileJson(boards.rankings(), boards.profiles(), boardsUpdated);
             leaderboardsFrom = boardsUpdated;
         }
-        String expeditions = ApiSnapshot.NO_EXPEDITIONS, campaign = ApiSnapshot.NO_CAMPAIGN;
+        String expeditions = ApiSnapshot.NO_EXPEDITIONS, campaign = ApiSnapshot.NO_CAMPAIGN, world = ApiSnapshot.NO_WORLD;
         try {
             if (plugin.expeditions() != null) expeditions = PublicGameJson.expeditions(plugin, sampled);
             if (plugin.campaign() != null) campaign = PublicGameJson.campaign(plugin, sampled);
+            world = WorldJson.build(plugin, sampled);
             snapshotFault = null;
         } catch (RuntimeException failure) {
             // This runs every few seconds, so a standing fault is only reported once.
             if (!failure.getClass().equals(snapshotFault)) plugin.getLogger().log(java.util.logging.Level.WARNING, "Web API expedition/campaign snapshot failed", failure);
             snapshotFault = failure.getClass();
         }
-        publish.accept(new ApiSnapshot(now, status.toString(), telemetry.toString(), catalog, leaderboards, players, expeditions, campaign));
+        publish.accept(new ApiSnapshot(now, status.toString(), telemetry.toString(), catalog, leaderboards, players, expeditions, campaign, world));
     }
 
     static String key(LeaderboardService.Board board) { return board.name().toLowerCase(Locale.ROOT); }

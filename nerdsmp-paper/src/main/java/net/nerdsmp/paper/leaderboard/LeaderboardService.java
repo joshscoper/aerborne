@@ -2,6 +2,7 @@ package net.nerdsmp.paper.leaderboard;
 
 import net.nerdsmp.api.model.AccountId;
 import net.nerdsmp.api.model.Skill;
+import net.nerdsmp.api.service.ProgressionService;
 import net.nerdsmp.paper.NerdSmpPlugin;
 import net.nerdsmp.paper.gui.MenuKit;
 import net.nerdsmp.paper.gui.MenuManager;
@@ -21,9 +22,32 @@ public final class LeaderboardService implements Listener, AutoCloseable {
     public enum Board {
         MARKS("Marks", Material.GOLD_INGOT), ADVENTURER("Adventurer XP", Material.NETHER_STAR),
         SKILLS("Total skill levels", Material.EXPERIENCE_BOTTLE), ISLAND("Island XP", Material.GRASS_BLOCK),
-        ACHIEVEMENTS("Achievement points", Material.BOOK), COOKING("Cooking XP", Material.COOKED_CHICKEN);
-        final String title; final Material icon;
-        Board(String title, Material icon) { this.title = title; this.icon = icon; }
+        ACHIEVEMENTS("Achievement points", Material.BOOK), COOKING("Cooking XP", Material.COOKED_CHICKEN, Skill.COOKING),
+        MINING("Mining XP", Material.IRON_PICKAXE, Skill.MINING),
+        FORESTRY("Forestry XP", Material.IRON_AXE, Skill.FORESTRY),
+        FARMING("Farming XP", Material.WHEAT, Skill.FARMING),
+        FISHING("Fishing XP", Material.FISHING_ROD, Skill.FISHING),
+        HUNTING("Hunting XP", Material.BOW, Skill.HUNTING),
+        EXCAVATION("Excavation XP", Material.IRON_SHOVEL, Skill.EXCAVATION),
+        SMITHING("Smithing XP", Material.ANVIL, Skill.SMITHING),
+        ALCHEMY("Alchemy XP", Material.BREWING_STAND, Skill.ALCHEMY),
+        BUILDING("Building XP", Material.BRICKS, Skill.BUILDING),
+        ENCHANTING("Enchanting XP", Material.ENCHANTING_TABLE, Skill.ENCHANTING);
+        final String title; final Material icon; final Skill skill;
+        Board(String title, Material icon) { this(title, icon, null); }
+        Board(String title, Material icon, Skill skill) { this.title = title; this.icon = icon; this.skill = skill; }
+        public Optional<Skill> skill() { return Optional.ofNullable(skill); }
+        public static List<String> keys() { return Arrays.stream(values()).map(board -> board.name().toLowerCase(Locale.ROOT)).toList(); }
+    }
+    private static final List<Board> QUICK_BOARDS = List.of(Board.MARKS, Board.ADVENTURER, Board.SKILLS, Board.ISLAND, Board.ACHIEVEMENTS, Board.COOKING);
+    /** Read skill XP from the authoritative progression snapshot, never inferred from rounded levels. */
+    static EnumMap<Board, Long> progressionScores(ProgressionService.ProgressionSnapshot progress) {
+        EnumMap<Board, Long> scores = new EnumMap<>(Board.class);
+        scores.put(Board.ADVENTURER, progress.adventurer().experience());
+        scores.put(Board.SKILLS, progress.skills().values().stream().mapToLong(p -> p.level()).sum());
+        for (Board board : Board.values()) if (board.skill != null)
+            scores.put(board, progress.skills().getOrDefault(board.skill, new ProgressionService.SkillProgress(0, 0)).experience());
+        return scores;
     }
     public record Entry(AccountId account, String name, Map<Board, Long> scores) {
         public Entry { Objects.requireNonNull(account); Objects.requireNonNull(name); scores = Map.copyOf(scores); if (scores.values().stream().anyMatch(v -> v < 0)) throw new IllegalArgumentException("Negative leaderboard score"); }
@@ -65,10 +89,8 @@ public final class LeaderboardService implements Listener, AutoCloseable {
             AccountId account = queue.remove(); inFlight++;
             try {
                 plugin.progression().snapshot(account).thenCombine(plugin.economy().balance(account), (progress, marks) -> {
-                    EnumMap<Board, Long> scores = new EnumMap<>(Board.class);
-                    scores.put(Board.MARKS, marks); scores.put(Board.ADVENTURER, progress.adventurer().experience());
-                    scores.put(Board.SKILLS, progress.skills().values().stream().mapToLong(p -> p.level()).sum());
-                    scores.put(Board.COOKING, progress.skills().getOrDefault(Skill.COOKING, new net.nerdsmp.api.service.ProgressionService.SkillProgress(0, 0)).experience());
+                    EnumMap<Board, Long> scores = progressionScores(progress);
+                    scores.put(Board.MARKS, marks);
                     EnumMap<Skill, Integer> levels = new EnumMap<>(Skill.class);
                     progress.skills().forEach((skill, skillProgress) -> levels.put(skill, skillProgress.level()));
                     var adventurer = progress.adventurer();
@@ -108,7 +130,7 @@ public final class LeaderboardService implements Listener, AutoCloseable {
         if (!(sender instanceof Player player)) { Chat.playersOnly(sender); return true; }
         Board board;
         try { board = args.length == 0 ? Board.MARKS : Board.valueOf(args[0].toUpperCase(Locale.ROOT)); }
-        catch (IllegalArgumentException invalid) { Chat.usage(player, "/leaderboard [marks|adventurer|skills|island|achievements|cooking]"); return true; }
+        catch (IllegalArgumentException invalid) { Chat.usage(player, "/leaderboard [category]"); Chat.info(player, "Categories: " + String.join(", ", Board.keys())); return true; }
         open(player, board, 0); return true;
     }
     private void open(Player player, Board board, int requested) {
@@ -118,12 +140,13 @@ public final class LeaderboardService implements Listener, AutoCloseable {
         View view = new View(player.getUniqueId()); view.inventory = Bukkit.createInventory(view, 54, Chat.render("<gold><bold>Leaderboards</bold></gold> <gray>" + board.title + "</gray>"));
         MenuKit.frame(view.inventory);
         int[] tabs = {0, 2, 3, 5, 6, 8};
-        for (Board option : Board.values()) {
+        for (Board option : QUICK_BOARDS) {
             if (option == board) view.inventory.setItem(tabs[option.ordinal()], MenuKit.item(option.icon, "<green>" + option.title + "</green>", List.of("<green>Showing now.</green>")));
             else button(view, tabs[option.ordinal()], MenuKit.item(option.icon, "<aqua>" + option.title + "</aqua>", List.of(MenuKit.hint("view this ranking"))), () -> open(player, option, 0));
         }
-        view.inventory.setItem(4, MenuKit.item(Material.CLOCK, "<gold>Server Records</gold>", List.of(updated == null
-            ? "<gray>Preparing the first snapshot...</gray>" : "<gray>Includes offline players. Refreshes once a minute.</gray>", MenuKit.pageLine(page, pages))));
+        button(view, 4, MenuKit.item(Material.BOOK, "<gold>All " + Board.values().length + " categories</gold>", List.of(
+            "<gray>Current: " + board.title + "</gray>", "<gray>Overall progress and every individual skill.</gray>", updated == null
+            ? "<gray>Preparing the first snapshot...</gray>" : "<gray>Includes offline players. Refreshes once a minute.</gray>", MenuKit.pageLine(page, pages), MenuKit.hint("choose a category"))), () -> categories(player, board));
         for (int i = 0; i < 21 && page * 21 + i < entries.size(); i++) {
             int position = page * 21 + i; Entry entry = entries.get(position);
             view.inventory.setItem(10 + i / 7 * 9 + i % 7, MenuKit.item(board.icon, "<aqua>#" + (position + 1) + "</aqua> <white>" + Chat.escape(entry.name()) + "</white>",
@@ -137,6 +160,21 @@ public final class LeaderboardService implements Listener, AutoCloseable {
         button(view, MenuKit.backSlot(54), MenuKit.back("Character"), () -> plugin.menus().open(player, MenuManager.View.CHARACTER));
         button(view, MenuKit.closeSlot(54), MenuKit.close(), player::closeInventory);
         if ((page + 1) * 21 < entries.size()) button(view, MenuKit.nextSlot(54), MenuKit.next(page, pages), () -> open(player, board, page + 1));
+        player.openInventory(view.inventory);
+    }
+    private void categories(Player player, Board selected) {
+        View view = new View(player.getUniqueId());
+        view.inventory = Bukkit.createInventory(view, 54, Chat.render("<gold><bold>Leaderboard categories</bold></gold>"));
+        MenuKit.frame(view.inventory);
+        int index = 0;
+        for (Board board : Board.values()) {
+            int slot = 10 + index / 7 * 9 + index % 7;
+            button(view, slot, MenuKit.item(board.icon, (board == selected ? "<green>" : "<aqua>") + board.title + (board == selected ? "</green>" : "</aqua>"),
+                List.of(board.skill != null ? "<gray>Ranks by total skill XP, not skill level.</gray>" : "<gray>Account-wide progress, including offline players.</gray>", MenuKit.hint("view this ranking"))), () -> open(player, board, 0));
+            index++;
+        }
+        button(view, MenuKit.backSlot(54), MenuKit.back("Rankings"), () -> open(player, selected, 0));
+        button(view, MenuKit.closeSlot(54), MenuKit.close(), player::closeInventory);
         player.openInventory(view.inventory);
     }
     private static String score(Board board, long score) {

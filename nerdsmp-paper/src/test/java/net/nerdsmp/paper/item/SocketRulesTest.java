@@ -8,6 +8,17 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class SocketRulesTest {
+    @Test void onlyEquipmentCanHaveSocketsRegardlessOfConfiguredCapacity() {
+        for (int configured : List.of(-1, 0, 1, 2, 3, 4, 20))
+            assertEquals(0, SocketRules.capacity(PaperItemService.GearSlot.NONE, configured));
+        for (var slot : PaperItemService.GearSlot.values()) {
+            if (slot == PaperItemService.GearSlot.NONE) continue;
+            assertEquals(2, SocketRules.capacity(slot, 2));
+            assertEquals(0, SocketRules.capacity(slot, -1));
+            assertEquals(4, SocketRules.capacity(slot, 20));
+        }
+    }
+
     @Test void RemovingMiddleGemPreservesOtherSocketsAndExactRecoveredTier() {
         var ruby = new PaperItemService.SocketedGem(GemType.RUBY, 1);
         var prism = new PaperItemService.SocketedGem(GemType.PRISMATIC, 4);

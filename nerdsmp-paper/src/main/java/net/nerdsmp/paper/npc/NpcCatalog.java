@@ -162,7 +162,8 @@ public final class NpcCatalog {
             case "campaign" -> "Campaigns";
             case "quickstart", "menu" -> "Getting started";
             case "warps" -> "Travel destinations";
-            case "grave" -> "Grave recovery";
+            case "grave" -> "Legacy grave recovery";
+            case "spirit" -> "Spirits and resurrection";
             case "claim" -> "Land management";
             case "market" -> "Player market";
             case "adventurer", "profile" -> "Adventurer progression";

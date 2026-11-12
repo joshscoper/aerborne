@@ -61,7 +61,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         "bleed-percent", "poison-potency-percent"
     );
     private static final List<String> STAT_ORDER = List.of(
-        "damage", "projectile-damage", "defense", "damage-flat", "damage-percent",
+        "damage", "projectile-damage", "max-health", "max-health-percent", "defense", "damage-flat", "damage-percent",
         "projectile-damage-percent", "execute-damage-percent", "life-steal-percent", "mining-power",
         "gathering-power", "fishing-power", "excavation-power", "skill-xp-percent", "job-marks-percent",
         "durability-save-percent", "poison-potency-percent", "harvest-extra-percent", "geode-find-percent",
@@ -282,6 +282,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
             .append('|').append(definition.model()).append('|').append(definition.sockets())
             .append('|').append(definition.lore()).append('|').append(new TreeMap<>(definition.stats()))
             .append('|').append(definition.itemLevel()).append('|').append(VanillaTextures.customModels(plugin));
+        if(definition.slot().accessory()) key.append("|quick-equip-v1");
         SignatureAffix signature = definition.signatureAffix();
         if (signature != null) key.append('|').append(signature.name()).append(signature.displayName())
             .append(signature.description()).append(new TreeMap<>(signature.stats()));
@@ -311,6 +312,11 @@ public final class PaperItemService implements ItemService<ItemStack> {
         ));
     }
 
+    /** Slot identity is visible even while a legitimate item is sealed; its stats remain inactive. */
+    public Optional<GearSlot> equipmentType(ItemStack item) {
+        return isAuthentic(item)?describe(item).map(d->catalog.items().get(d.itemId()).slot()):Optional.empty();
+    }
+
     /** Each socket's type, in order, for a piece of catalog gear (empty for anything else). */
     public List<SocketRules.SlotType> slotTypes(ItemStack item) {
         Optional<ItemDescriptor> descriptor = describe(item);
@@ -320,7 +326,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
     }
 
     private static List<SocketRules.SlotType> slotTypes(Definition definition, int capacity) {
-        boolean armour = EquipmentMaterials.isArmor(definition.material()) || definition.material() == Material.SHIELD;
+        boolean armour = EquipmentMaterials.isArmor(definition.material()) || definition.material() == Material.SHIELD
+            || definition.slot().accessory() && definition.stats().keySet().stream().noneMatch(OFFENSIVE_STATS::contains);
         List<SocketRules.SlotType> types = new ArrayList<>();
         for (int index = 0; index < capacity; index++)
             types.add(SocketRules.slot(definition.stats(), armour, definition.rarity(), index, capacity));
@@ -788,6 +795,11 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return Optional.of(new GearSheet(definition.name(), definition.slot(), definition.rarity(), definition.itemLevel(), List.copyOf(lines), definition.abilities()));
     }
 
+    public Optional<Material> itemMaterial(ItemId itemId) {
+        Definition definition = catalog.items().get(itemId);
+        return definition == null ? Optional.empty() : Optional.of(definition.material());
+    }
+
     public List<ItemId> itemIds() {
         return catalog.items().keySet().stream().sorted((left, right) -> left.value().compareTo(right.value())).toList();
     }
@@ -840,7 +852,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         definition.stats().forEach((id, value) -> { if (net.nerdsmp.paper.engine.ItemStats.allowed().contains(id)) stats.put(id, value); });
         return new ItemBlueprint(newId, plain.serialize(miniMessage.deserialize(definition.name())), definition.material(), rarity,
             definition.slot() == GearSlot.NONE ? 0 : definition.sockets(), Math.max(1, definition.itemLevel()), definition.setId(),
-            definition.lore().stream().map(line -> plain.serialize(miniMessage.deserialize(line))).limit(8).toList(), stats);
+            definition.lore().stream().map(line -> plain.serialize(miniMessage.deserialize(line))).limit(8).toList(), stats, definition.slot());
     }
 
     private Definition engineDefinition(ItemBlueprint item) {
@@ -887,6 +899,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
         else meta.getPersistentDataContainer().set(signatureAffixKey, PersistentDataType.STRING, definition.signatureAffix().id());
         meta.removeEnchantments();
         meta.setAttributeModifiers(HashMultimap.create());
+        if (definition.slot().accessory()) meta.setMaxStackSize(1);
         meta.addItemFlags(ItemFlag.values());
         meta.setHideTooltip(false);
         if (isUnidentified(meta)) {
@@ -921,6 +934,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
         } else {
             meta.setItemModel(null);
         }
+        // A nickname given at the forge shows in place of the name, with the real name kept underneath.
+        net.nerdsmp.paper.naming.Nicknames.dress(plugin, meta);
         item.setItemMeta(meta);
     }
 
@@ -1090,6 +1105,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
         }
         appendDivider(tooltip);
         tooltip.add(tooltipLine(rarityFooter(definition.rarity(), classification(definition))));
+        if(definition.slot().accessory()) {
+            tooltip.add(tooltipLine("<yellow>Shift-click in your inventory to equip.</yellow>"));
+            tooltip.add(tooltipLine("<gray>Sneak + F opens all equipment slots.</gray>"));
+        }
         return List.copyOf(tooltip);
     }
 
@@ -1276,6 +1295,14 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 || definition.stats().containsKey("excavation-power") ? "Tool" : "Weapon";
             case HEAD, CHEST, LEGS, FEET -> "Armor";
             case OFF_HAND -> "Focus";
+            case NECK -> "Necklace";
+            case SHOULDERS -> "Shoulders";
+            case BACK -> "Back";
+            case WRISTS -> "Wrists";
+            case HANDS -> "Hands";
+            case WAIST -> "Belt";
+            case RING -> "Ring";
+            case TRINKET -> "Trinket";
             case NONE -> "Item";
         };
     }
@@ -1300,6 +1327,8 @@ public final class PaperItemService implements ItemService<ItemStack> {
         return switch (stat) {
             case "damage" -> "Damage";
             case "defense" -> "Defense";
+            case "max-health" -> "Health";
+            case "max-health-percent" -> "Health Bonus";
             case "damage-flat" -> "Bonus Damage";
             case "damage-percent" -> "Damage Bonus";
             case "mining-power" -> "Mining Power";
@@ -1629,7 +1658,10 @@ public final class PaperItemService implements ItemService<ItemStack> {
         CHEST,
         LEGS,
         FEET,
+        NECK, SHOULDERS, BACK, WRISTS, HANDS, WAIST, RING, TRINKET,
         NONE;
+
+        public boolean accessory() { return ordinal() > FEET.ordinal() && this != NONE; }
 
         public boolean matches(EquipmentSlot equipmentSlot) {
             return switch (this) {
@@ -1639,7 +1671,7 @@ public final class PaperItemService implements ItemService<ItemStack> {
                 case CHEST -> equipmentSlot == EquipmentSlot.CHEST;
                 case LEGS -> equipmentSlot == EquipmentSlot.LEGS;
                 case FEET -> equipmentSlot == EquipmentSlot.FEET;
-                case NONE -> false;
+                default -> false;
             };
         }
     }
@@ -1717,9 +1749,13 @@ public final class PaperItemService implements ItemService<ItemStack> {
             this(material, name, setId, slot, category, rarity, model, sockets, lore, stats, itemLevel, null, List.of());
         }
         private Definition {
-            sockets = Math.max(0, Math.min(4, sockets));
+            sockets = SocketRules.capacity(slot, sockets);
             lore = List.copyOf(lore);
             abilities = List.copyOf(abilities);
+            double vitality = PlayerStatRules.armorHealth(slot, itemLevel);
+            if (vitality > 0 && !stats.containsKey("max-health")) {
+                stats = new HashMap<>(stats); stats.put("max-health", vitality);
+            }
             stats = Map.copyOf(stats);
             if (signatureAffix != null && !signatureAffix.supports(material, slot, rarity))
                 throw new IllegalArgumentException("Incompatible signature affix");

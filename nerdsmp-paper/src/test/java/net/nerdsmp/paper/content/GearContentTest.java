@@ -41,7 +41,7 @@ final class GearContentTest {
             assertEquals(set.equals("ironroot") ? 7L : 6L, Pattern.compile("(?m)^    set: " + set + "$").matcher(content).results().count());
         }
         assertEquals(19L, Pattern.compile("(?m)^    rarity: crafted$").matcher(content).results().count());
-        assertEquals(52L, Pattern.compile("(?m)^    result: ").matcher(recipes).results().count());
+        assertEquals(62L, Pattern.compile("(?m)^    result: ").matcher(recipes).results().count());
         assertTrue(recipes.contains("level: 10"));
         assertTrue(recipes.contains("level: 20"));
         assertTrue(recipes.contains("level: 30"));

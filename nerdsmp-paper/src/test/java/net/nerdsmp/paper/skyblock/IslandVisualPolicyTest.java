@@ -23,12 +23,24 @@ class IslandVisualPolicyTest {
         }
     }
     @Test void everyChapterUnlocksOneDistinctShowcaseAndNeverRequiresCurrency() {
-        assertEquals(4, IslandShowcase.values().length);
-        for (IslandShowcase showcase : IslandShowcase.values()) {
-            assertSame(showcase, IslandShowcase.parse(showcase.id()));
+        var chapters = java.util.Arrays.stream(IslandShowcase.values()).filter(s -> s.kind() == IslandShowcase.Kind.CHAPTER).toList();
+        assertEquals(4, chapters.size());
+        for (IslandShowcase showcase : chapters) {
             assertTrue(showcase.unlocked(showcase.chapter()));
             assertFalse(showcase.unlocked(showcase.chapter() - 1));
         }
+        for (IslandShowcase showcase : IslandShowcase.values()) assertSame(showcase, IslandShowcase.parse(showcase.id()));
         assertThrows(IllegalArgumentException.class, () -> IslandShowcase.parse("unknown"));
+    }
+    @Test void levelAndStageShowcasesFollowIslandProgress() {
+        assertEquals(43, IslandShowcase.values().length);
+        assertFalse(IslandShowcase.WYRM_EGG.unlocked(3, 49, 5));
+        assertTrue(IslandShowcase.WYRM_EGG.unlocked(0, 50, 0));
+        assertFalse(IslandShowcase.WYRM_EGG.unlocked(3), "chapters alone never unlock a level showcase");
+        assertTrue(IslandShowcase.LODESTONE.unlocked(0, 1, IslandResourceStage.FOUNDRY.index()));
+        assertFalse(IslandShowcase.AETHER_CRYSTAL.unlocked(3, 50, IslandResourceStage.FOUNDRY.index()));
+        // Every level reward brings one showcase.
+        for (IslandMilestone milestone : IslandMilestone.values())
+            assertEquals(milestone.level(), SkyblockController.showcaseFor(milestone).need());
     }
 }

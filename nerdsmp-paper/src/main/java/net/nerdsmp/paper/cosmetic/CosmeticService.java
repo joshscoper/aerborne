@@ -109,7 +109,12 @@ public final class CosmeticService implements Listener, AutoCloseable {
         this.companionKey = new NamespacedKey(plugin, "companion_owner");
         this.keepsakeKey = new NamespacedKey(plugin, "keepsake_owner");
         this.models = loadModels(plugin);
+        this.bond = new CompanionBond(plugin);
     }
+
+    /** Companion bonds: looks that unlock with time together, never stats. */
+    private final CompanionBond bond;
+    public CompanionBond bond() { return bond; }
 
     /** One companion out in the world: its block displays, in the same order as the model's parts. */
     private record Sculpture(SculptureModel model, CosmeticCatalog.Companion companion, List<BlockDisplay> parts) {
@@ -510,7 +515,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
     }
 
     private boolean hidden(Player player) {
-        return player.isDead() || player.getGameMode() == GameMode.SPECTATOR || player.isInvisible()
+        return player.isDead() || plugin.spirits()!=null && plugin.spirits().ghost(player.getUniqueId()) || player.getGameMode() == GameMode.SPECTATOR || player.isInvisible()
             || player.hasPotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
     }
 
@@ -546,7 +551,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
         boolean moving = dx * dx + dz * dz > 0.0004D;
         double lift = companion.flying() ? 0.0D : SculptureMath.bounce(sculpture.model().bounce(), tick, moving, companion.scale());
         lastBounce.put(id, lift);
-        Location to = new Location(at.getWorld(), next.x(), next.y() + lift, next.z(), next.yaw(), 0);
+        Location to = bond.pose(player, new Location(at.getWorld(), next.x(), next.y() + lift, next.z(), next.yaw(), 0), tick);
         List<SculptureModel.Part> parts = sculpture.model().parts();
         for (int index = 0; index < parts.size(); index++) {
             BlockDisplay display = sculpture.parts().get(index);
@@ -557,6 +562,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
                 display.setTransformation(transformation(sculpture.model(), parts.get(index), moving, companion));
             }
         }
+        bond.decorate(player, companion, sculpture.parts(), to, viewers(player), tick);
         if (!companion.particle().isEmpty() && tick % 10 == 0) {
             Particle particle = particle(companion.particle(), null);
             if (particle != null) {
@@ -629,6 +635,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
     }
 
     private void despawn(UUID owner) {
+        bond.despawn(owner);
         Sculpture sculpture = active.remove(owner);
         lastBounce.remove(owner);
         if (sculpture != null) sculpture.parts().forEach(part -> { if (part.isValid()) part.remove(); });
@@ -748,6 +755,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
         lastSeen.remove(id);
         lastEmote.remove(id);
         respawnAt.remove(id);
+        bond.forget(id);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -763,6 +771,7 @@ public final class CosmeticService implements Listener, AutoCloseable {
     public void close() {
         if (task != null) task.cancel();
         new ArrayList<>(active.keySet()).forEach(this::despawn);
+        bond.close();
         // Companions are never saved, but sweep any left by a crash in loaded worlds just in case.
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) if (isCompanion(entity)) entity.remove();

@@ -115,11 +115,17 @@ public final class ExpeditionForge implements Listener {
             }
         Optional<AccountId> account = plugin.sessions().account(player.getUniqueId());
         if (account.isEmpty()) { Chat.accountLoading(player); return; }
+        String operation = "expedition-forge:" + UUID.randomUUID();
         plugin.economy().debit(account.get(), cost.marks(), new EconomyService.TransactionReason("expedition.forge", piece),
-            "expedition-forge:" + UUID.randomUUID()).thenAccept(result -> Bukkit.getScheduler().runTask(plugin, () -> {
+            operation).thenAccept(result -> Bukkit.getScheduler().runTask(plugin, () -> {
                 if (result.status() != EconomyService.TransactionResult.Status.APPLIED) {
                     Chat.error(player, result.status() == EconomyService.TransactionResult.Status.INSUFFICIENT_FUNDS
                         ? "You need " + cost.marks() + " Marks to forge this." : "The forge couldn't take your Marks. Try again.");
+                    return;
+                }
+                if (!player.isOnline() || !plugin.sessions().account(player.getUniqueId()).filter(account.get()::equals).isPresent()) {
+                    plugin.economy().credit(account.get(), cost.marks(), new EconomyService.TransactionReason("expedition.forge-refund", piece),
+                        operation + ":refund");
                     return;
                 }
                 // The materials may have moved while the payment went through: check again, refund if so.
@@ -133,6 +139,8 @@ public final class ExpeditionForge implements Listener {
                 cost.items().forEach((item, amount) -> take(player, item, amount));
                 ItemStack made = plugin.items().createLoot(new ItemId(piece), 2, true, java.util.concurrent.ThreadLocalRandom.current().nextLong());
                 player.getInventory().addItem(made).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+                plugin.skills().awardActivity(player, net.nerdsmp.api.model.Skill.SMITHING,
+                    Math.clamp(plugin.getConfig().getLong("progression.xp.smithing-expedition-forge", 40), 1, 1000), operation + ":xp");
                 player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 1F, 1F);
                 Chat.success(player, "The forge hands you a sealed " + name(piece) + ". Identify it to reveal its affixes.");
                 openSet(player, definition);

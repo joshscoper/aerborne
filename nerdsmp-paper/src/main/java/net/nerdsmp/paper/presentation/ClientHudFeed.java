@@ -185,7 +185,8 @@ public final class ClientHudFeed implements Listener, AutoCloseable {
             : holder.getClass().getName().startsWith("net.nerdsmp.");
         if (!ours) return;
         String title = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getView().title());
-        ClientFeeds.menu(player, holder == null ? "menu" : holder.getClass().getSimpleName(), title);
+        // The full class name: holders are often generic inner classes (Page, Board), so the outer class says whose menu it is.
+        ClientFeeds.menu(player, holder == null ? "menu" : holder.getClass().getName(), title);
     }
 
     @EventHandler public void onQuit(PlayerQuitEvent event) {

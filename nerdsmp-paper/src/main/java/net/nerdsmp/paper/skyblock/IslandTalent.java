@@ -51,6 +51,23 @@ public enum IslandTalent {
     public String description() { return description; }
     public Material icon() { return icon; }
     public IslandTalent prerequisite() { return prerequisite; }
+    /** The middle two talents fork from the root; the capstone accepts either middle path. */
+    public java.util.List<IslandTalent> prerequisiteOptions() {
+        return switch(this) {
+            case MINING_GUILD -> java.util.List.of(PROSPECTING);
+            case BOUNTIFUL -> java.util.List.of(CULTIVATION);
+            case WORKSHOP -> java.util.List.of(STACKING);
+            case ANGLING -> java.util.List.of(FISHERY);
+            case ORE_MASTERY -> java.util.List.of(RICH_SEAMS,MINING_GUILD);
+            case TIMBERLAND -> java.util.List.of(NURSERY,BOUNTIFUL);
+            case STORAGE_NETWORK -> java.util.List.of(LOGISTICS,WORKSHOP);
+            case HEARTH -> java.util.List.of(LINEAGE,ANGLING);
+            default -> prerequisite==null?java.util.List.of():java.util.List.of(prerequisite);
+        };
+    }
+    public boolean requirementsMet(java.util.Map<IslandTalent,Integer> talents) {
+        return prerequisiteOptions().isEmpty() || prerequisiteOptions().stream().anyMatch(talent->talents.getOrDefault(talent,0)>=2);
+    }
     public int depth() { return prerequisite == null ? 0 : prerequisite.depth() + 1; }
     public int column() { return switch (branch) { case "Industry" -> 0; case "Nature" -> 1; case "Automation" -> 2; case "Stewardship" -> 3; default -> throw new IllegalStateException("Unknown island branch"); }; }
     public int requiredLevel() { return switch (depth()) { case 0 -> 2; case 1 -> 6; case 2 -> 14; default -> 26; }; }

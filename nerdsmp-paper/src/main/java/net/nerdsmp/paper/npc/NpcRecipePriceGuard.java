@@ -59,7 +59,7 @@ final class NpcRecipePriceGuard {
             if (!(recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe
                 || recipe instanceof CookingRecipe<?> || recipe instanceof StonecuttingRecipe)) continue;
             var result = recipe.getResult();
-            if (isAir(result.getType()) || result.hasItemMeta() || result.getAmount() < 1 || result.getAmount() > 64) continue;
+            if (isAir(result.getType()) || !net.nerdsmp.paper.item.FoodItems.ordinary(result) || result.getAmount() < 1 || result.getAmount() > 64) continue;
             List<RecipeChoice> choices = new ArrayList<>();
             if (recipe instanceof ShapedRecipe shaped) {
                 var ingredients = shaped.getChoiceMap();

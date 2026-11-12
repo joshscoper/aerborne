@@ -66,4 +66,14 @@ class PlayerSettingsServiceTest {
         legacy.save(directory.resolve("player-settings.yml").toFile());
         assertFalse(settings().enabled(player, PlayerSettingsService.Setting.ISLAND_EFFECTS));
     }
+    @Test void mobNameplateOptOutPersistsPerPlayerUsingTheExistingHealthBarPreference() {
+        var settings=settings(); UUID other=UUID.randomUUID();
+        assertTrue(settings.enabled(player,PlayerSettingsService.Setting.MOB_HEALTH_BARS));
+        settings.set(player,PlayerSettingsService.Setting.MOB_HEALTH_BARS,false);
+        settings.close();var restored=settings();
+        assertFalse(restored.enabled(player,PlayerSettingsService.Setting.MOB_HEALTH_BARS));
+        assertTrue(restored.enabled(other,PlayerSettingsService.Setting.MOB_HEALTH_BARS));
+        assertTrue(restored.toggle(player,PlayerSettingsService.Setting.MOB_HEALTH_BARS));
+        assertTrue(settings().enabled(player,PlayerSettingsService.Setting.MOB_HEALTH_BARS));
+    }
 }

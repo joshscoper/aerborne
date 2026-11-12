@@ -49,7 +49,7 @@ public final class ContentLibrary {
                 "Daily rotation; account progress is not changed by inspection."))).sorted(java.util.Comparator.comparing(Entry::id)).toList();
             case "recipes" -> plugin.recipes().recipes().stream().map(recipe->{
                 var lines=new ArrayList<String>(); lines.add("Output: "+recipe.result().value()); lines.add("Requirement: "+recipe.skill().displayName()+" "+recipe.requiredLevel());
-                recipe.shape().forEach(row->lines.add("Pattern: "+row)); recipe.ingredients().forEach((symbol,material)->lines.add(symbol+" = "+material.name()));
+                recipe.shape().forEach(row->lines.add("Pattern: "+row)); recipe.ingredients().forEach((symbol,material)->lines.add(symbol+" = "+(recipe.customIngredients().containsKey(symbol)?"item:"+recipe.customIngredients().get(symbol).value():material.name())));
                 return new Entry(recipe.id(),title(recipe.id()),Material.CRAFTING_TABLE,lines);
             }).sorted(java.util.Comparator.comparing(Entry::id)).toList();
             case "shops" -> content.shops().values().stream().map(shop->{

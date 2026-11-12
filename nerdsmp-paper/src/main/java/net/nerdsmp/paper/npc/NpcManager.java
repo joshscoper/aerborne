@@ -1,5 +1,7 @@
 package net.nerdsmp.paper.npc;
 
+import net.nerdsmp.paper.quest.QuestDialogue;
+
 import com.google.common.collect.HashMultimap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -118,6 +120,7 @@ public final class NpcManager implements Listener, AutoCloseable {
     private volatile NpcContent content;
     private BukkitTask gazeTask;
     private BukkitTask patrolTask;
+    private long respawnGeneration;
     private final Map<UUID, Patrol> patrols = new HashMap<>();
 
     public NpcManager(
@@ -247,9 +250,8 @@ public final class NpcManager implements Listener, AutoCloseable {
                 sender.sendRichMessage("<red>Use a unique nearby NPC id.</red>");
                 return true;
             }
-            Location location = instance.location();
-            if (!player.getWorld().getUID().equals(instance.worldId())
-                || player.getLocation().distanceSquared(location) > 100.0D) {
+            AccountId account = sessions.account(player.getUniqueId()).orElse(null);
+            if (account == null || !currentChatLocation(player, account, instance)) {
                 sender.sendRichMessage("<red>Move closer to that NPC.</red>");
                 return true;
             }
@@ -268,7 +270,7 @@ public final class NpcManager implements Listener, AutoCloseable {
             case "list" -> listCommand(sender);
             case "respawn" -> {
                 respawnAll();
-                sender.sendRichMessage("<green>NPC bodies respawned from saved anchors.</green>");
+                sender.sendRichMessage("<green>NPC bodies are respawning from saved anchors; progress is logged.</green>");
                 yield true;
             }
             case "reload" -> {
@@ -476,6 +478,15 @@ public final class NpcManager implements Listener, AutoCloseable {
         NpcContent.NpcDefinition npc = source.npcs().get(instance.definitionId());
         NpcContent.DialogueNode authored = source.dialogues().get(nodeId);
         AccountId account = account(player);
+        if (npc != null && account != null && plugin.quests() != null) {
+            var topics = plugin.quests().dialogueTopics(player, npc.id());
+            if (nodeId.equals(QuestDialogue.SERVICES)) {
+                var root = source.dialogues().get(npc.rootDialogue());
+                if (root != null) authored = new NpcContent.DialogueNode(nodeId, root.text(), root.choices());
+            } else if (authored == null) {
+                authored = QuestDialogue.page(nodeId, npc.rootDialogue(), topics);
+            }
+        }
         if (npc == null || authored == null || account == null) {
             return;
         }
@@ -526,7 +537,9 @@ public final class NpcManager implements Listener, AutoCloseable {
                 if (choice.once()) hints.add("One-time response");
                 else if (!choice.cooldown().isZero()) hints.add("Cooldown: " + shortDuration(choice.cooldown()));
                 responses.add(new ChatDialogueRenderer.Choice(resolveDialogue(choice.text(), player, context),
-                    access.available(), hints, access.reasons(), choice.id().equals(QUEST_REPLY) && questReplyLit(player, npc)));
+                    access.available(), hints, access.reasons(), choice.id().startsWith(QuestDialogue.DETAIL)
+                        || choice.id().startsWith(QuestDialogue.ACTION)
+                        || choice.id().equals(QUEST_REPLY) && questReplyLit(player, npc)));
             }
             List<String> body = node.text().stream().map(line -> resolveDialogue(line, player, context)).toList();
             // The Aerborne client shows the page in its own dialogue panel; everyone else reads it in chat.
@@ -539,23 +552,12 @@ public final class NpcManager implements Listener, AutoCloseable {
     static final String QUEST_REPLY = "quest_board";
 
     /**
-     * Every quest giver's greeting opens with a quest reply, so no NPC's quests depend on hand-written dialogue.
-     * Authored open_quests replies are folded into it.
+     * Named offers, objective conversations and hand-ins lead the greeting.
+     * Authored services remain reachable on their own page.
      */
     private NpcContent.DialogueNode withQuestReply(Player player, NpcContent.NpcDefinition npc, NpcContent.DialogueNode node) {
-        if (plugin.quests() == null || plugin.quests().catalog().offeredBy(npc.id()).isEmpty()) return node;
-        var counts = plugin.quests().counts(player, npc.id());
-        String label = counts.ready() > 0 ? "? " + (counts.ready() == 1 ? "I've finished what you asked." : "I've finished " + counts.ready() + " of your tasks.")
-            : counts.available() > 0 ? "! " + (counts.available() == 1 ? "Do you have work for me?" : "Do you have work for me? (" + counts.available() + " quests)")
-            : "Quests";
-        List<NpcContent.DialogueChoice> choices = new ArrayList<>();
-        choices.add(new NpcContent.DialogueChoice(QUEST_REPLY, label, null, false, false, java.time.Duration.ZERO,
-            NpcContent.Requirements.none(), List.of(new NpcContent.DialogueEffect(NpcContent.EffectType.OPEN_QUESTS, null, 0, null, true, null, null))));
-        for (NpcContent.DialogueChoice choice : node.choices()) {
-            if (choice.effects().stream().anyMatch(effect -> effect.type() == NpcContent.EffectType.OPEN_QUESTS)) continue;
-            if (choices.size() < 5) choices.add(choice);
-        }
-        return new NpcContent.DialogueNode(node.id(), node.text(), choices);
+        return plugin.quests() == null ? node
+            : QuestDialogue.root(node, plugin.quests().dialogueTopics(player, npc.id()));
     }
 
     private boolean questReplyLit(Player player, NpcContent.NpcDefinition npc) {
@@ -847,6 +849,15 @@ public final class NpcManager implements Listener, AutoCloseable {
         if (!currentChatConversation(player, conversation)) {
             return;
         }
+        if (choice.id().startsWith(QuestDialogue.ACTION) && plugin.quests() != null) {
+            String[] action = choice.id().substring(QuestDialogue.ACTION.length()).split(":", 2);
+            endChat(player.getUniqueId());
+            if (action.length == 2) {
+                String next = plugin.quests().dialogueAction(player, npc.id(), action[0], action[1]);
+                openDialogue(player, instance, next == null ? npc.rootDialogue() : next);
+            }
+            return;
+        }
         if (!dialoguePending.add(account)) {
             player.sendRichMessage("<yellow>Wait for this response to finish.</yellow>");
             return;
@@ -952,12 +963,16 @@ public final class NpcManager implements Listener, AutoCloseable {
     }
 
     private boolean currentNpcContext(Player player, AccountId account, NpcInstance instance) {
-        return player.isOnline() && plugin.isEnabled()
+        LivingEntity body = liveByInstance.get(instance.id());
+        return player.isOnline() && !player.isDead() && plugin.isEnabled()
             && Bukkit.getPlayer(player.getUniqueId()) == player
             && sessions.account(player.getUniqueId()).filter(account::equals).isPresent()
             && instance.equals(instances.get(instance.id()))
-            && player.getWorld().getUID().equals(instance.worldId())
-            && player.getLocation().distanceSquared(instance.location()) <= 100.0D;
+            && body != null && body.isValid() && !body.isDead()
+            && instance.id().equals(instanceByEntity.get(body.getUniqueId()))
+            && instance.id().toString().equals(body.getPersistentDataContainer().get(npcInstanceKey, PersistentDataType.STRING))
+            && player.getWorld().getUID().equals(instance.worldId()) && body.getWorld().equals(player.getWorld())
+            && player.getLocation().distanceSquared(body.getLocation()) <= 100.0D && player.hasLineOfSight(body);
     }
 
     private CompletionStage<ChoiceOutcome> applyChoice(
@@ -1179,12 +1194,12 @@ public final class NpcManager implements Listener, AutoCloseable {
             return;
         }
         if (view.status() == ReputationContractService.ContractStatus.ACTIVE) {
-            player.sendActionBar(message("<aqua>" + escape(contract.title()) + "</aqua> <gray>"
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, message("<aqua>" + escape(contract.title()) + "</aqua> <gray>"
                 + view.progress() + "/" + contract.target() + "</gray>"));
         } else if (view.status() == ReputationContractService.ContractStatus.CLAIMED) {
-            player.sendActionBar(message("<gray>Already claimed. New work arrives after the reset.</gray>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, message("<gray>Already claimed. New work arrives after the reset.</gray>"));
         } else {
-            player.sendActionBar(message("<red>Requires Adventurer Level "
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, message("<red>Requires Adventurer Level "
                 + contract.minimumAdventurerLevel() + ".</red>"));
         }
     }
@@ -2334,9 +2349,10 @@ public final class NpcManager implements Listener, AutoCloseable {
     private void nearby(Player player) {
         List<NpcInstance> found = instances.values().stream()
             .filter(instance -> instance.worldId().equals(player.getWorld().getUID()))
-            .filter(instance -> instance.location().distanceSquared(player.getLocation()) <= 1024.0D)
+            .filter(instance -> liveLocation(instance) != null && liveLocation(instance).getWorld().equals(player.getWorld()))
+            .filter(instance -> liveLocation(instance).distanceSquared(player.getLocation()) <= 1024.0D)
             .sorted(java.util.Comparator.comparingDouble(instance ->
-                instance.location().distanceSquared(player.getLocation())))
+                liveLocation(instance).distanceSquared(player.getLocation())))
             .limit(10)
             .toList();
         if (found.isEmpty()) {
@@ -2349,9 +2365,14 @@ public final class NpcManager implements Listener, AutoCloseable {
             if (definition != null) {
                 player.sendRichMessage("<yellow>" + instance.id().toString().substring(0, 8) + "</yellow> "
                     + "<white>" + escape(definition.name()) + "</white> <gray>"
-                    + Math.round(Math.sqrt(instance.location().distanceSquared(player.getLocation()))) + "m</gray>");
+                    + Math.round(Math.sqrt(liveLocation(instance).distanceSquared(player.getLocation()))) + "m</gray>");
             }
         });
+    }
+
+    private Location liveLocation(NpcInstance instance) {
+        LivingEntity body = liveByInstance.get(instance.id());
+        return body != null && body.isValid() && !body.isDead() ? body.getLocation() : null;
     }
 
     private NpcInstance createInstance(String definitionId, Location location) {
@@ -2440,6 +2461,16 @@ public final class NpcManager implements Listener, AutoCloseable {
     public java.util.Optional<String> definitionId(Entity entity) {
         NpcInstance instance = instance(entity);
         return instance == null ? java.util.Optional.empty() : java.util.Optional.of(instance.definitionId());
+    }
+
+    /** "Captain Wren · Skyfarers' Guild": the NPC's name and title for this body, for the companion's target frame. */
+    public java.util.Optional<String> label(Entity entity) {
+        NpcInstance instance = instance(entity);
+        if (instance == null) return java.util.Optional.empty();
+        var definition = content.npcs().get(instance.definitionId());
+        if (definition == null) return java.util.Optional.empty();
+        String title = definition.title();
+        return java.util.Optional.of(title == null || title.isBlank() ? definition.name() : definition.name() + " · " + title);
     }
 
     /** A placed body, for features that decorate NPCs (such as quest markers). */
@@ -2582,18 +2613,45 @@ public final class NpcManager implements Listener, AutoCloseable {
 
     public void respawnAll() {
         removeAllLive();
-        int missingWorld = 0, failed = 0;
-        for (NpcInstance instance : instances.values()) {
-            if (Bukkit.getWorld(instance.worldId()) == null) { missingWorld++; continue; }
-            try { if (!spawnLive(instance)) failed++; }
-            catch (RuntimeException failure) { failed++; }
+        respawnNext(new java.util.ArrayDeque<>(instances.values()), ++respawnGeneration, 0);
+    }
+
+    public boolean usesChunk(Chunk chunk) { return ticketedChunks.contains(chunk); }
+
+    /** Never synchronously load every saved NPC chunk in a single enable/reload tick. */
+    private void respawnNext(java.util.ArrayDeque<NpcInstance> queue, long generation, int failed) {
+        if (!plugin.isEnabled() || generation != respawnGeneration) return;
+        NpcInstance instance = queue.poll();
+        if (instance == null) {
+            plugin.getLogger().info("NPC respawn complete: " + liveByInstance.size() + " live bodies, " + failed + " unavailable anchors.");
+            return;
         }
-        if (missingWorld > 0) plugin.getLogger().warning(missingWorld + " NPC anchors belong to a world that is not loaded"
-            + " (npc-instances.yml lists its world id); they stay hidden until that world loads or /worldpack apply force moves them.");
-        if (failed > 0) plugin.getLogger().warning(failed + " NPC bodies could not be spawned; another plugin may be cancelling their spawn.");
+        World world = Bukkit.getWorld(instance.worldId());
+        if (world == null) {
+            Bukkit.getScheduler().runTask(plugin, () -> respawnNext(queue, generation, failed + 1));
+            return;
+        }
+        world.getChunkAtAsync((int) Math.floor(instance.x()) >> 4, (int) Math.floor(instance.z()) >> 4, true)
+            .whenComplete((chunk, failure) -> {
+                if (!plugin.isEnabled()) return;
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (generation != respawnGeneration) return;
+                    int errors = failed;
+                    if (instance.equals(instances.get(instance.id()))) {
+                        try { if (failure != null || !spawnLive(instance)) errors++; }
+                        catch (RuntimeException spawnFailure) {
+                            errors++;
+                            plugin.getLogger().log(java.util.logging.Level.WARNING, "Could not respawn NPC " + instance.definitionId(), spawnFailure);
+                        }
+                    }
+                    respawnNext(queue, generation, errors);
+                });
+            });
     }
 
     private boolean spawnLive(NpcInstance instance) {
+        LivingEntity existing = liveByInstance.get(instance.id());
+        if (existing != null && existing.isValid() && !existing.isDead()) return true;
         NpcContent.NpcDefinition definition = content.npcs().get(instance.definitionId());
         World world = Bukkit.getWorld(instance.worldId());
         if (definition == null || world == null) {
@@ -3093,6 +3151,7 @@ public final class NpcManager implements Listener, AutoCloseable {
 
     @Override
     public void close() {
+        respawnGeneration++;
         if (gazeTask != null) {
             gazeTask.cancel();
             gazeTask = null;

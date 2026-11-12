@@ -6,15 +6,24 @@ import java.util.Objects;
 
 /** Only immutable, bounded JSON crosses from the game thread into HTTP event loops. */
 public record ApiSnapshot(long sampledAtMillis, String status, String telemetry, String catalog,
-                          String leaderboards, Map<String, String> players, String expeditions, String campaign) {
+                          String leaderboards, Map<String, String> players, String expeditions, String campaign, String world) {
     static final int MAX_RESPONSE_BYTES = 32_768;
     /** The expedition list carries guides and bestiaries; the website reads up to 64 KB. */
     static final int MAX_EXPEDITIONS_BYTES = 120_000;
+    static final int MAX_LEADERBOARD_BYTES = 65_536;
     static final int MAX_PROFILE_BYTES = 4_096;
     static final int MAX_PROFILES = 20_000;
     static final String NO_LEADERBOARDS = "{\"apiVersion\":1,\"ready\":false,\"boards\":{}}";
     static final String NO_EXPEDITIONS = "{\"apiVersion\":1,\"ready\":false,\"expeditions\":[]}";
     static final String NO_CAMPAIGN = "{\"apiVersion\":1,\"ready\":false}";
+    static final String NO_WORLD = "{\"apiVersion\":1,\"ready\":false}";
+    /** Bazaar prices, the calendar and the council: the website's world page. */
+    static final int MAX_WORLD_BYTES = 65_536;
+
+    public ApiSnapshot(long sampledAtMillis, String status, String telemetry, String catalog,
+                       String leaderboards, Map<String, String> players, String expeditions, String campaign) {
+        this(sampledAtMillis, status, telemetry, catalog, leaderboards, players, expeditions, campaign, NO_WORLD);
+    }
 
     public ApiSnapshot(long sampledAtMillis, String status, String telemetry, String catalog) {
         this(sampledAtMillis, status, telemetry, catalog, NO_LEADERBOARDS, Map.of());
@@ -34,9 +43,14 @@ public record ApiSnapshot(long sampledAtMillis, String status, String telemetry,
                 throw new IllegalArgumentException("Web API profile exceeded its size budget");
             }
         }
+        if (Objects.requireNonNull(leaderboards).getBytes(StandardCharsets.UTF_8).length > MAX_LEADERBOARD_BYTES) {
+            throw new IllegalArgumentException("Web API leaderboards exceeded their size budget");
+        }
+        if (Objects.requireNonNull(world).getBytes(StandardCharsets.UTF_8).length > MAX_WORLD_BYTES)
+            throw new IllegalArgumentException("Web API world feed exceeded its size budget");
         if (Objects.requireNonNull(expeditions).getBytes(StandardCharsets.UTF_8).length > MAX_EXPEDITIONS_BYTES)
             throw new IllegalArgumentException("Web API expeditions exceeded their size budget");
-        for (String value : new String[]{status, telemetry, catalog, leaderboards, campaign}) {
+        for (String value : new String[]{status, telemetry, catalog, campaign}) {
             if (Objects.requireNonNull(value).getBytes(StandardCharsets.UTF_8).length > MAX_RESPONSE_BYTES) {
                 throw new IllegalArgumentException("Web API snapshot exceeded its size budget");
             }

@@ -157,7 +157,8 @@ final class AerborneCompatibilityTest {
         branding.welcome();
         branding.tabHeaderMarkup();
         assertEquals(before, configuration.saveToString(), "Legacy display adaptation must be read-only");
-        assertEquals("autonomous", configuration.getString("anti-cheat.mode"));
+        assertEquals("alerts-only", configuration.getString("anti-cheat.mode"));
+        assertFalse(configuration.getBoolean("anti-cheat.ml.autonomous"));
         assertEquals(12.0D, configuration.getDouble("anti-cheat.alert-score"));
         assertEquals(24.0D, configuration.getDouble("anti-cheat.setback-score"));
         assertEquals(50.0D, configuration.getDouble("anti-cheat.kick-score"));

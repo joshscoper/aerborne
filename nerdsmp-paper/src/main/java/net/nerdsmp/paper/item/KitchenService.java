@@ -29,6 +29,7 @@ final class KitchenService implements Listener, AutoCloseable {
     private final CustomRecipeService recipes;
     private final Map<NamespacedKey, HarvestDish> dishes;
     private final NamespacedKey dishKey, schemaKey, levelKey, durationKey, nutritionKey;
+    private final Set<Object> cookingEvents = Collections.newSetFromMap(new WeakHashMap<>());
 
     KitchenService(NerdSmpPlugin plugin, PaperItemService items, CustomRecipeService recipes) {
         this.plugin = plugin; this.items = items; this.recipes = recipes;
@@ -40,6 +41,7 @@ final class KitchenService implements Listener, AutoCloseable {
         dishes = Map.copyOf(loaded);
     }
     int mealCount() { return dishes.size(); }
+    boolean owns(Recipe recipe) { return dish(recipe) != null; }
     void start() {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         dishes.forEach((key, dish) -> {
@@ -56,6 +58,9 @@ final class KitchenService implements Listener, AutoCloseable {
         Menu menu = menu(player, "<gold><bold>" + title(cooking) + "</bold></gold>");
         menu.inventory.setItem(2, icon(Material.ANVIL, "<gold>Workshop Recipes</gold>", tab(!cooking, "<gray>Tools, weapons and armor.</gray>")));
         menu.inventory.setItem(6, icon(Material.BREAD, "<gold>Harvest Kitchen</gold>", tab(cooking, "<gray>Meals made from your harvest.</gray>")));
+        menu.inventory.setItem(8, icon(Material.FURNACE, "<gold>Smelting & Refining</gold>", List.of(
+            "<gray>Refine expedition materials into ingots,</gray>", "<gray>resin, tideglass and tempered sigils.</gray>", MenuKit.hint("see smelting recipes"))));
+        menu.actions.put(8, this::openSmelting);
         if (cooking) menu.actions.put(2, p -> open(p, false, 0)); else menu.actions.put(6, p -> open(p, true, 0));
         for (int i = 0; i < 28 && page * 28 + i < entries.size(); i++) {
             Entry entry = entries.get(page * 28 + i); ItemStack display = entry.result().clone(); var meta = display.getItemMeta();
@@ -82,12 +87,12 @@ final class KitchenService implements Listener, AutoCloseable {
     private void pattern(Player player, Entry entry, boolean cooking, int page) {
         Menu menu = menu(player, "<gold><bold>Crafting Pattern</bold></gold>");
         for (int row = 0; row < entry.shape().size(); row++) for (int col = 0; col < entry.shape().get(row).length(); col++) {
-            Material material = entry.ingredients().get(entry.shape().get(row).charAt(col));
-            if (material != null) menu.inventory.setItem(10 + row * 9 + col, new ItemStack(material));
+            ItemStack ingredient = entry.ingredients().get(entry.shape().get(row).charAt(col));
+            if (ingredient != null) menu.inventory.setItem(10 + row * 9 + col, ingredient.clone());
         }
         menu.inventory.setItem(24, entry.result().clone());
         menu.inventory.setItem(40, icon(Material.CRAFTING_TABLE, "<gold>" + entry.skill().displayName() + " " + entry.level() + "</gold>", List.of(
-            "<gray>Use ordinary, unmodified ingredients.</gray>", "<gray>Arrange them as shown at a crafting table.</gray>",
+            entry.custom() ? "<gray>Use the exact custom materials shown.</gray>" : "<gray>Use ordinary, unmodified ingredients.</gray>", "<gray>Arrange them as shown at a crafting table.</gray>",
             "<gray>Skill-gated recipes cannot be automated.</gray>")));
         menu.inventory.setItem(MenuKit.backSlot(54), MenuKit.back(title(cooking))); menu.actions.put(MenuKit.backSlot(54), p -> open(p, cooking, page));
         menu.inventory.setItem(MenuKit.closeSlot(54), MenuKit.close()); menu.actions.put(MenuKit.closeSlot(54), Player::closeInventory);
@@ -95,8 +100,52 @@ final class KitchenService implements Listener, AutoCloseable {
     }
     private List<Entry> entries(boolean cooking, Player player) {
         if (cooking) return dishes.values().stream().sorted(Comparator.comparingInt(HarvestDish::level).thenComparing(HarvestDish::id))
-            .map(d -> new Entry(create(d, player), Skill.COOKING, d.level(), d.shape(), d.ingredients())).toList();
-        return recipes.recipes().stream().map(d -> new Entry(items.create(d.result()), d.skill(), d.requiredLevel(), d.shape(), d.ingredients())).toList();
+            .map(d -> new Entry(create(d, player), Skill.COOKING, d.level(), d.shape(), displayIngredients(d.ingredients()), false)).toList();
+        return recipes.recipes().stream().map(d -> {
+            Map<Character, ItemStack> ingredients = new HashMap<>();
+            d.ingredients().keySet().forEach(symbol -> ingredients.put(symbol, d.ingredient(symbol).display(items)));
+            return new Entry(items.create(d.result()), d.skill(), d.requiredLevel(), d.shape(), ingredients, !d.customIngredients().isEmpty());
+        }).toList();
+    }
+    private Map<Character, ItemStack> displayIngredients(Map<Character, Material> ingredients) {
+        Map<Character, ItemStack> display = new HashMap<>();
+        ingredients.forEach((symbol, material) -> display.put(symbol, new ItemStack(material)));
+        return display;
+    }
+    private void openSmelting(Player player) {
+        Menu menu = menu(player, "<gold><bold>Smelting & Refining</bold></gold>");
+        menu.inventory.setItem(4, icon(Material.FURNACE, "<gold>Refine your expedition materials</gold>", List.of(
+            "<gray>Use a furnace or blast furnace with ordinary fuel.</gray>",
+            "<gray>Blast furnaces refine twice as fast.</gray>", "<gray>Alloys and equipment are crafted at a table.</gray>")));
+        int index = 0;
+        for (var recipe : recipes.smeltingRecipes()) {
+            if (index >= 28) break;
+            int slot = 10 + index / 7 * 9 + index % 7; index++;
+            ItemStack display = items.create(recipe.result()); var meta = display.getItemMeta();
+            List<Component> lore = new ArrayList<>(Optional.ofNullable(meta.lore()).orElse(List.of()));
+            lore.add(Component.empty()); lore.add(Chat.render(MenuKit.hint("see the smelting recipe"))); meta.lore(lore); display.setItemMeta(meta);
+            menu.inventory.setItem(slot, display); menu.actions.put(slot, p -> smeltingPattern(p, recipe));
+        }
+        menu.inventory.setItem(MenuKit.backSlot(54), MenuKit.back("Workshop Recipes")); menu.actions.put(MenuKit.backSlot(54), p -> open(p, false, 0));
+        menu.inventory.setItem(MenuKit.closeSlot(54), MenuKit.close()); menu.actions.put(MenuKit.closeSlot(54), Player::closeInventory);
+        player.openInventory(menu.inventory);
+    }
+    private void smeltingPattern(Player player, MetallurgyCatalog.Smelting recipe) {
+        Menu menu = menu(player, "<gold><bold>Smelting Recipe</bold></gold>");
+        menu.inventory.setItem(20, items.create(recipe.input()));
+        menu.inventory.setItem(22, icon(Material.FURNACE, "<gold>Furnace or Blast Furnace</gold>", List.of(
+            "<gray>One input makes one output.</gray>", "<gray>Furnace: " + recipe.ticks() / 20.0 + " seconds</gray>",
+            "<gray>Blast furnace: " + recipe.ticks() / 40.0 + " seconds</gray>",
+            "<aqua>+" + recipe.smithingExperience() + " Smithing XP per item</aqua>",
+            "<gray>Collect the output yourself to earn skill XP.</gray>")));
+        menu.inventory.setItem(24, items.create(recipe.result()));
+        menu.inventory.setItem(31, icon(Material.COAL, "<gold>Ordinary furnace fuel</gold>", List.of("<gray>Special materials cannot be used as fuel.</gray>")));
+        menu.inventory.setItem(40, icon(Material.BOOK, "<gold>Continue in Workshop Recipes</gold>", List.of(
+            "<gray>Combine refined materials into alloys,</gray>", "<gray>then craft tools, weapons and armor.</gray>")));
+        menu.actions.put(40, p -> open(p, false, 0));
+        menu.inventory.setItem(MenuKit.backSlot(54), MenuKit.back("Smelting & Refining")); menu.actions.put(MenuKit.backSlot(54), this::openSmelting);
+        menu.inventory.setItem(MenuKit.closeSlot(54), MenuKit.close()); menu.actions.put(MenuKit.closeSlot(54), Player::closeInventory);
+        player.openInventory(menu.inventory);
     }
     @EventHandler(priority = EventPriority.HIGHEST)
     public void prepare(PrepareItemCraftEvent event) {
@@ -117,6 +166,7 @@ final class KitchenService implements Listener, AutoCloseable {
     }
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void cooked(CraftItemEvent event) {
+        if (!cookingEvents.add(event)) return;
         HarvestDish dish = dish(event.getRecipe());
         if (dish == null || !(event.getWhoClicked() instanceof Player player) || player.getGameMode() != GameMode.SURVIVAL
             || !unlocked(player, Skill.COOKING, dish.level()) || event.getCurrentItem() == null) return;
@@ -133,11 +183,6 @@ final class KitchenService implements Listener, AutoCloseable {
             plugin.skills().awardActivity(player, Skill.COOKING, Math.min(5_000, crafts * perCraft), operation);
             plugin.achievements().record(player, net.nerdsmp.paper.achievement.AchievementMetric.MEALS_PREPARED, crafts);
         });
-    }
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void extract(FurnaceExtractEvent event) {
-        if (event.getItemAmount() <= 0 || !COOKED_STAPLES.contains(event.getItemType()) || event.getPlayer().getGameMode() != GameMode.SURVIVAL) return;
-        plugin.skills().awardActivity(event.getPlayer(), Skill.COOKING, Math.min(768, 6L * event.getItemAmount()), "cooked-extract:" + UUID.randomUUID());
     }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void automate(CrafterCraftEvent event) {
@@ -161,7 +206,7 @@ final class KitchenService implements Listener, AutoCloseable {
     }
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void consume(PlayerItemConsumeEvent event) {
-        ItemStack item = event.getItem(); if (!item.hasItemMeta() || event.getPlayer().getGameMode() != GameMode.SURVIVAL) return;
+        ItemStack item = event.getItem(); if (!item.hasItemMeta() || !canEat(event.getPlayer())) return;
         var data = item.getItemMeta().getPersistentDataContainer();
         int schema = data.getOrDefault(schemaKey, PersistentDataType.INTEGER, 0); if (schema != 1 && schema != 2) return;
         String id = data.get(dishKey, PersistentDataType.STRING);
@@ -176,12 +221,17 @@ final class KitchenService implements Listener, AutoCloseable {
         float saturationBefore = event.getPlayer().getSaturation();
         Bukkit.getScheduler().runTask(plugin, () -> {
             Player player = event.getPlayer();
-            if (event.isCancelled() || !player.isOnline() || player.isDead() || player.getGameMode() != GameMode.SURVIVAL
+            if (event.isCancelled() || !player.isOnline() || player.isDead() || !canEat(player)
                 || Bukkit.getPlayer(player.getUniqueId()) != player || plugin.sessions().account(player.getUniqueId()).filter(account::equals).isEmpty()) return;
             PotionEffectType effect = PotionEffectType.getByName(meal.effect().toUpperCase(Locale.ROOT));
             if (effect != null) player.addPotionEffect(new PotionEffect(effect, seconds * 20, MealRules.amplifier(meal.effect(), chef)));
-            if (nutrition > 0) player.setSaturation(Math.min(player.getFoodLevel(), player.getSaturation() + Math.max(0, player.getSaturation() - saturationBefore) * nutrition / 100f));
+            if (nutrition > 0 && (plugin.recovery() == null || !plugin.recovery().enabled()))
+                player.setSaturation(Math.min(player.getFoodLevel(), player.getSaturation() + Math.max(0, player.getSaturation() - saturationBefore) * nutrition / 100f));
         });
+    }
+    private boolean canEat(Player player) {
+        return (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE)
+            && (plugin.spirits() == null || !plugin.spirits().ghost(player.getUniqueId()));
     }
     @EventHandler(priority = EventPriority.MONITOR) public void join(PlayerJoinEvent event) {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -213,21 +263,24 @@ final class KitchenService implements Listener, AutoCloseable {
             if (owner != null) island = 10 * plugin.skyblock().development().progress(owner).rank(net.nerdsmp.paper.skyblock.IslandTalent.HEARTH);
         }
         int seconds = MealRules.seconds(dish.seconds(), level, training, island);
-        ItemStack item = base.clone(); var meta = item.getItemMeta();
+        ItemStack item = FoodItems.withoutTemplate(base); var meta = item.getItemMeta();
         meta.itemName(line(dish.name(), NamedTextColor.GOLD)); meta.displayName(line(dish.name(), NamedTextColor.GOLD));
         meta.lore(List.of(line("------------------------", NamedTextColor.DARK_GRAY), line("HARVEST MEAL", NamedTextColor.GREEN),
             line(dish.effect().replace('_', ' ') + (MealRules.amplifier(dish.effect(), level) == 1 ? " II | " : " I | ") + seconds + "s", NamedTextColor.WHITE),
             line("Prepared at Cooking " + level + ". Same effects do not stack.", NamedTextColor.GRAY),
-            line("Higher Cooking makes longer-lasting meals.", NamedTextColor.GRAY), line("------------------------", NamedTextColor.DARK_GRAY)));
+            line("Higher Cooking makes longer-lasting meals.", NamedTextColor.GRAY),
+            line(plugin.getConfig().getBoolean("food-and-recovery.enabled", true)
+                ? "Well Fed: +" + PlayerStatsService.number(plugin.getConfig().getDouble("food-and-recovery.well-fed-recovery-percent", 25) + Math.clamp(nutrition, 0, 30))
+                    + "% rest recovery for " + plugin.getConfig().getInt("food-and-recovery.well-fed-seconds", 300) + "s."
+                : "Nourishment improves restored saturation.", NamedTextColor.GOLD),
+            line("------------------------", NamedTextColor.DARK_GRAY)));
         meta.getPersistentDataContainer().set(dishKey, PersistentDataType.STRING, dish.id());
         meta.getPersistentDataContainer().set(schemaKey, PersistentDataType.INTEGER, 2);
         meta.getPersistentDataContainer().set(levelKey, PersistentDataType.INTEGER, level);
         meta.getPersistentDataContainer().set(durationKey, PersistentDataType.INTEGER, seconds);
         meta.getPersistentDataContainer().set(nutritionKey, PersistentDataType.INTEGER, nutrition);
-        item.setItemMeta(meta); return item;
+        item.setItemMeta(meta); return FoodItems.upgrade(item).orElse(item);
     }
-    private static final Set<Material> COOKED_STAPLES = Set.of(Material.COOKED_BEEF, Material.COOKED_PORKCHOP, Material.COOKED_CHICKEN,
-        Material.COOKED_RABBIT, Material.COOKED_MUTTON, Material.COOKED_COD, Material.COOKED_SALMON, Material.BAKED_POTATO, Material.DRIED_KELP);
     private static final Set<Material> STAPLE_WORK = Set.of(Material.BREAD, Material.COOKIE, Material.PUMPKIN_PIE, Material.MUSHROOM_STEW,
         Material.RABBIT_STEW, Material.BEETROOT_SOUP, Material.SUSPICIOUS_STEW, Material.GOLDEN_CARROT, Material.GOLDEN_APPLE, Material.ENCHANTED_GOLDEN_APPLE);
     private static HarvestDish staple(Material material) {
@@ -256,7 +309,7 @@ final class KitchenService implements Listener, AutoCloseable {
     }
     private static Component line(String text, NamedTextColor color) { return Component.text(text, color).decoration(TextDecoration.ITALIC, false); }
     @Override public void close() { HandlerList.unregisterAll(this); dishes.keySet().forEach(plugin.getServer()::removeRecipe); }
-    private record Entry(ItemStack result, Skill skill, int level, List<String> shape, Map<Character, Material> ingredients) { }
+    private record Entry(ItemStack result, Skill skill, int level, List<String> shape, Map<Character, ItemStack> ingredients, boolean custom) { }
     private static final class Menu implements InventoryHolder {
         private final UUID owner; private final Map<Integer, java.util.function.Consumer<Player>> actions = new HashMap<>(); private Inventory inventory;
         private Menu(UUID owner) { this.owner = owner; }

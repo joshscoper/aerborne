@@ -866,22 +866,31 @@ final class HighcrownCity {
     }
 
     /**
-     * The waystone arch on the plaza: a ring of carved stone and amethyst round a shimmer of glass, where the portal
-     * master opens the ways to the islands and expeditions.
+     * Kestrel's waystone is an upright navigator's dial on two bearings, visible edge-on from the gate
+     * and as a full ring on the plaza. Its open center frames the far side of the square.
      */
     private void waystone(int x, int cz) {
-        for (int dz = -3; dz <= 3; dz++) for (int dy = 0; dy <= 7; dy++) {
-            double r = Math.hypot(dz, (dy - 3) * 0.85);
-            if (r > 3.6) continue;
-            boolean ring = r > 2.6;
-            canvas.set(x, CROWN + dy, cz + dz, ring ? ((dy + dz) % 3 == 0 ? Material.AMETHYST_BLOCK : Material.CHISELED_STONE_BRICKS)
-                : Material.PURPLE_STAINED_GLASS_PANE, ring ? "" : "north=true,south=true");
+        for (int dz = -5; dz <= 5; dz++) for (int dy = 0; dy <= 10; dy++) {
+            double radius = Math.hypot(dz, dy - 5);
+            if (radius < 3.8 || radius > 5.15) continue;
+            boolean cardinal = dz == 0 || dy == 5;
+            canvas.set(x, CROWN + dy, cz + dz, cardinal ? Material.SEA_LANTERN : Material.WAXED_CUT_COPPER);
+            if (cardinal) canvas.set(x + 1, CROWN + dy, cz + dz, Material.WAXED_CHISELED_COPPER);
         }
-        for (int dz : new int[] {-4, 4}) {
-            canvas.set(x, CROWN, cz + dz, Material.STONE_BRICKS);
-            canvas.set(x, CROWN + 1, cz + dz, Material.AMETHYST_CLUSTER, "facing=up");
+        for (int side : new int[] {-1, 1}) {
+            int foot = cz + side * 5;
+            for (int h = 0; h <= 4; h++) for (int dx = -1; dx <= 1; dx++)
+                canvas.set(x + dx, CROWN + h, foot, h == 1 ? Material.CHISELED_STONE_BRICKS : Material.POLISHED_ANDESITE);
+            canvas.set(x + 1, CROWN + 5, foot, Material.LODESTONE);
         }
-        for (int dz = -3; dz <= 3; dz++) canvas.set(x, CROWN - 1, cz + dz, Material.POLISHED_BLACKSTONE_BRICKS);
+        // A flush compass in the paving leads from the avenue to Kestrel's standing spot.
+        for (int dx = 1; dx <= 9; dx++) for (int dz = -3; dz <= 3; dz++) {
+            int chevron = dx - 5;
+            if (dz == 0 || chevron >= 0 && chevron <= 3 && Math.abs(dz) == chevron)
+                canvas.set(x + dx, CROWN - 1, cz + dz, dz == 0 ? Material.WAXED_CUT_COPPER : Material.POLISHED_ANDESITE);
+        }
+        canvas.set(x + 2, CROWN + 2, cz - 5, Material.DARK_OAK_WALL_SIGN, "facing=east");
+        canvas.text(x + 2, CROWN + 2, cz - 5, "WAYSTONE", "Public routes", "Portal Master", "Kestrel Way");
         marks.add(new Mark("npc_kestrel_way", x + 2, CROWN, cz + 2, 90F));
     }
 
@@ -1520,6 +1529,7 @@ final class HighcrownCity {
         }
         kit.tower(new ReachBrush(canvas, -48, DOCK, lip - 18, 0), 9, 36, ReachKit.Style.HARBOUR, 41);
         kit.tower(new ReachBrush(canvas, 40, DOCK, lip - 18, 0), 9, 32, ReachKit.Style.HARBOUR, 42);
+        flightPorch(44, lip - 18);
         marks.add(new Mark("dockmaster", -44, DOCK, lip - 21, 180F));
         marks.add(new Mark("guildhall", 44, DOCK, lip - 21, 180F));
         marks.add(new Mark("npc_dockmaster_ebb", -44, DOCK, lip - 15, 180F));
@@ -1541,6 +1551,24 @@ final class HighcrownCity {
         // A third galleon coming in to moor, high over the cloud sea east of the piers, turned toward the city.
         ReachAirship.build(new ReachBrush(canvas, 78, DOCK + 22, lip + 64, 2), 30, 9, Material.BLUE_TERRACOTTA, 703);
         for (int x = -60; x <= 60; x++) for (int z = lip - 24; z <= end + 10; z++) reserve(x, z);
+    }
+
+    /** A pair of signal pennants and a lit boarding porch identify Wren's tower from the other harbor towers. */
+    private void flightPorch(int x, int wallZ) {
+        for (int side : new int[] {-1, 1}) {
+            int mast = x + side * 3;
+            for (int out = 1; out <= 4; out++)
+                canvas.set(mast, DOCK + 9, wallZ - out, Material.STRIPPED_SPRUCE_LOG, "axis=z");
+            for (int out = 1; out <= 3; out++) for (int drop = 1; drop <= 5 - out; drop++) {
+                canvas.set(mast, DOCK + 9 - drop, wallZ - out,
+                    drop == 2 ? Material.WHITE_WOOL : Material.RED_WOOL);
+            }
+            canvas.set(mast, DOCK + 8, wallZ - 4, Material.LANTERN, "hanging=true");
+        }
+        for (int dx = -2; dx <= 2; dx++)
+            canvas.set(x + dx, DOCK + 3, wallZ - 1, Material.STRIPPED_DARK_OAK_LOG, "axis=x");
+        canvas.set(x, DOCK + 3, wallZ - 2, Material.DARK_OAK_WALL_SIGN, "facing=north");
+        canvas.text(x, DOCK + 3, wallZ - 2, "SKYFARERS", "First Flight", "Report inside", "Captain Wren");
     }
 
     /** True where a pier's railing opens onto a gangway out to a moored ship. */

@@ -2815,11 +2815,16 @@ dialogues:
   # ------------------------------------------------------------------ Tamsin Wake, Grave Tender
   tamsin_start:
     text:
-      - "Your grave holds for twenty-four hours. Walking back is free. The shortcut is not."
+      - "Death keeps your gear and experience. Return to your body as a spirit, or ask the Spirit Healer at your sanctuary to bring you back."
       - "I tend the living's mistakes and the dead's leftovers. Lately the dead at Mossfall won't stay where they're put."
     choices:
       graves:
-        text: "Show me my grave record."
+        text: "Explain spirits and resurrection."
+        effects:
+          - type: open_command
+            command: spirit
+      legacy_graves:
+        text: "Recover an old grave."
         effects:
           - type: open_command
             command: grave

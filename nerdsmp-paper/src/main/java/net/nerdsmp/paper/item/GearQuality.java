@@ -15,7 +15,7 @@ public enum GearQuality {
     PEERLESS(4, "Peerless", "<gold>", 1.27D, 45, Material.NETHERITE_INGOT, 2);
 
     private static final Set<String> SCALABLE_STATS = Set.of(
-        "damage", "projectile-damage", "defense", "mining-power", "fishing-power", "gathering-power", "excavation-power"
+        "damage", "projectile-damage", "defense", "mining-power", "fishing-power", "gathering-power", "excavation-power", "max-health"
     );
 
     private final int tier;

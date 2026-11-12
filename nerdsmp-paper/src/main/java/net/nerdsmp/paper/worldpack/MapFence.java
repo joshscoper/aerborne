@@ -113,7 +113,7 @@ public final class MapFence implements Listener {
         }
         if (now - lastNotice.getOrDefault(player.getUniqueId(), 0L) > 8_000L) {
             lastNotice.put(player.getUniqueId(), now);
-            player.sendActionBar(Chat.render("<gray>The sea mist thickens. The Highcrown Isles end just ahead.</gray>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gray>The sea mist thickens. The Highcrown Isles end just ahead.</gray>"));
         }
     }
 

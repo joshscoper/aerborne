@@ -68,7 +68,7 @@ final class OreSmeltCreditsTest {
             "1|00000000-0000-0000-0000-000000000000|0|IRON_INGOT|65|65",
             "1|00000000-0000-0000-0000-000000000000|0|IRON_INGOT|2|1",
             "1|00000000-0000-0000-0000-000000000000|-1|IRON_INGOT|1|1",
-            "1|00000000-0000-0000-0000-000000000000|0|COOKED_BEEF|1|1"})
+            "1|00000000-0000-0000-0000-000000000000|0|DIAMOND|1|1"})
             assertThrows(IllegalArgumentException.class, () -> OreSmeltCredits.decode(bad));
     }
     @Test void onlyEligibleOreInputsProduceMetalReceipts() {
@@ -83,5 +83,23 @@ final class OreSmeltCreditsTest {
     }
     private static OreSmeltCredits credits(int credits, int observed) {
         return new OreSmeltCredits(new UUID(0, 1), 0, "IRON_INGOT", credits, observed);
+    }
+
+    @Test void refinedCustomMaterialsKeepTheirOwnIdentityAndCannotBorrowOrdinaryMetalCredits() {
+        var custom = OreSmeltCredits.fresh("item:gloomsteel_ingot", 0).smelt("item:gloomsteel_ingot", 0, 1);
+        assertEquals(1, OreSmeltCredits.decode(custom.encode()).extract("item:gloomsteel_ingot", 1, 0).creditedItems());
+        assertEquals(0, custom.extract("IRON_INGOT", 1, 0).creditedItems());
+        assertEquals(0, custom.extract("item:tideforged_alloy", 1, 0).creditedItems());
+        assertEquals(0, custom.reconcile("item:gloomsteel_ingot", 2).credits());
+    }
+    @Test void cookingCreditsRequireActualSmeltingAndAreRetiredByHoppers() {
+        var inserted = OreSmeltCredits.fresh("COOKED_BEEF", 4);
+        assertEquals(0, inserted.extract("COOKED_BEEF", 4, 0).creditedItems());
+        var cooked = OreSmeltCredits.fresh("COOKED_BEEF", 0).smelt("COOKED_BEEF", 0, 1);
+        assertEquals(1, cooked.extract("COOKED_BEEF", 1, 0).creditedItems());
+        assertEquals(0, cooked.reconcile("COOKED_BEEF", 0).reconcile("COOKED_BEEF", 1).extract("COOKED_BEEF", 1, 0).creditedItems());
+        assertEquals(Material.COOKED_BEEF, OreSmeltingService.cookedOutputFor(Material.BEEF));
+        assertEquals(Material.DRIED_KELP, OreSmeltingService.cookedOutputFor(Material.KELP));
+        assertNull(OreSmeltingService.cookedOutputFor(Material.COOKED_BEEF));
     }
 }

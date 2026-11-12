@@ -296,7 +296,7 @@ public final class RewardDropService implements Listener {
                 dropped.remove();
             }
             if (player.isOnline() && result.status() == EconomyService.TransactionResult.Status.APPLIED) {
-                player.sendActionBar(miniMessage.deserialize("<gold>+" + marks + " Marks</gold>"));
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<gold>+" + marks + " Marks</gold>"));
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.65F, 1.35F);
             }
         }));

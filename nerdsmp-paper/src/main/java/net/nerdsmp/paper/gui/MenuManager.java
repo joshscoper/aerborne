@@ -97,6 +97,7 @@ public final class MenuManager implements Listener, AutoCloseable {
         if (plugin.skyblockEnabled()) commandButton(menu, 22, Material.GRASS_BLOCK, "<aqua>My Island</aqua>",
             List.of("<gray>Home, co-op, island levels, and talents.</gray>"), "island");
         rawButton(menu, MenuKit.closeSlot(45), MenuKit.close(), Player::closeInventory);
+        commandButton(menu, 36, Material.BOOK, "<aqua>Tutorial & Help</aqua>", List.of("<gray>Eight lessons, saved at your pace.</gray>", "<gray>Staff help: /helpme [description]</gray>"), "tutorial");
         if (player.hasPermission("nerdsmp.staff")) {
             commandButton(menu, 44, Material.SPYGLASS, "<red>Staff Desk</red>", List.of(
                 "<gray>Reports, player records, and moderation tools.</gray>"
@@ -107,12 +108,13 @@ public final class MenuManager implements Listener, AutoCloseable {
 
     private void openCharacter(Player player) {
         MenuInventory menu = detailMenu(View.CHARACTER, 45, "<aqua><bold>Character</bold></aqua>");
+        button(menu, 25, Material.IRON_CHESTPLATE, "<gold>Equipment</gold>", List.of("<gray>Armor, weapons, jewelry and trinkets.</gray>","<gray>Sneak + F also opens your equipment.</gray>"), target -> plugin.equipment().open(target));
         navigate(menu, 11, Material.PLAYER_HEAD, "<aqua>Profile</aqua>",
             List.of(plugin.skyblockEnabled() ? "<gray>Balance, island, and equipped stats.</gray>" : "<gray>Balance, claims, and equipped stats.</gray>"), View.PROFILE);
         navigate(menu, 13, Material.EXPERIENCE_BOTTLE, "<green>Skills & Talents</green>",
             List.of("<gray>Train skills and shape their talent trees.</gray>"), View.SKILLS);
-        navigate(menu, 15, Material.NETHER_STAR, "<light_purple>Adventurer Ranks</light_purple>",
-            List.of("<gray>Your long-term journey and rank perks.</gray>"), View.ADVENTURER_RANKS);
+        navigate(menu, 15, Material.NETHER_STAR, "<light_purple>Adventurer Tree</light_purple>",
+            List.of("<gray>Choose talents for your whole journey.</gray>"), View.ADVENTURER_TREE);
         navigate(menu, 29, Material.AMETHYST_SHARD, "<light_purple>Relic Collections</light_purple>",
             List.of("<gray>Sets, sockets, and equipped bonuses.</gray>"), View.RELICS);
         navigate(menu, 31, Material.ARMOR_STAND, "<gold>Cosmetic Wardrobe</gold>",
@@ -120,6 +122,7 @@ public final class MenuManager implements Listener, AutoCloseable {
         navigate(menu, 33, Material.COMPARATOR, "<white>Player Settings</white>",
             List.of("<gray>Privacy, chat and personal displays.</gray>"), View.SETTINGS);
         commandButton(menu, 22, Material.GOLD_INGOT, "<gold>Leaderboards</gold>", List.of("<gray>Compare skills, islands, achievements and Marks.</gray>"), "leaderboard");
+        navigate(menu, 24, Material.APPLE, "<red>Player Stats</red>", List.of("<gray>Your health, defense and active equipment bonuses.</gray>"), View.STATS);
         open(player, menu.inventory());
     }
 
@@ -204,8 +207,10 @@ public final class MenuManager implements Listener, AutoCloseable {
                 "<gray>Items move only after you both confirm.</gray>"), "trade");
         navigate(menu, 31, Material.COMPARATOR, "<white>Player Settings</white>",
             List.of("<gray>Control requests, notices, and messages.</gray>"), View.SETTINGS);
-        commandButton(menu, 33, Material.BOOK, "<white>Help</white>",
-            List.of("<gray>See useful commands and next steps.</gray>"), "quickstart");
+        commandButton(menu, 33, Material.BOOK, "<white>Tutorial</white>",
+            List.of("<gray>Learn equipment, talents, and your next steps.</gray>"), "tutorial");
+        commandButton(menu, 22, Material.BELL, "<aqua>Staff Support</aqua>", List.of("<gray>Private help requests and saved replies.</gray>"), "support help");
+        commandButton(menu, 24, Material.PAPER, "<gold>Aerborne Website</gold>", List.of("<gray>www.aerborne.net</gray>", "<gray>Click for a link in chat.</gray>"), "website");
         open(player, menu.inventory());
     }
 
@@ -233,9 +238,11 @@ public final class MenuManager implements Listener, AutoCloseable {
             case WORLD -> openWorld(player);
             case COMMUNITY -> openCommunity(player);
             case PROFILE -> openProfile(player);
+            case STATS -> openStats(player);
             case SKILLS -> openSkills(player);
             case SKILL_TREE -> openSelectedSkillTree(player);
             case ADVENTURER_RANKS -> openAdventurerRanks(player);
+            case ADVENTURER_TREE -> openAdventurerTree(player);
             case JOBS -> openJobs(player);
             case ORDERS -> openOrders(player);
             case RELICS -> openRelics(player);
@@ -357,13 +364,90 @@ public final class MenuManager implements Listener, AutoCloseable {
                         + snapshot.adventurerStat("damage-percent")) + "%</white>"
                 ), ignored -> { });
                 navigate(menu, 20, Material.EXPERIENCE_BOTTLE, "<green>Skills</green>", List.of(), View.SKILLS);
-                navigate(menu, 22, Material.NETHER_STAR, "<light_purple>Adventurer Ranks</light_purple>", List.of(),
-                    View.ADVENTURER_RANKS);
+                navigate(menu, 29, Material.APPLE, "<red>Player Stats</red>", List.of("<gray>Health, defense, damage and gathering bonuses.</gray>"), View.STATS);
+                navigate(menu, 22, Material.NETHER_STAR, "<light_purple>Adventurer Tree</light_purple>", List.of(),
+                    View.ADVENTURER_TREE);
                 navigate(menu, 24, Material.AMETHYST_SHARD, "<light_purple>Gear</light_purple>", List.of(), View.RELICS);
                 if (plugin.skyblockEnabled()) commandButton(menu, 31, Material.GRASS_BLOCK, "<aqua>My Island</aqua>", List.of(), "island");
                 else navigate(menu, 31, Material.GOLDEN_SHOVEL, "<yellow>Homestead</yellow>", List.of(), View.CLAIMS);
                 open(player, menu.inventory());
             }));
+    }
+
+    private void openStats(Player player) {
+        plugin.playerStats().refresh(player);
+        var stats = plugin.playerStats().snapshot(player);
+        var gear = stats.gear();
+        var training = plugin.presentation().progression(player);
+        var health = stats.health();
+        java.util.function.DoubleFunction<String> number = net.nerdsmp.paper.item.PlayerStatsService::number;
+        MenuInventory menu = detailMenu(View.STATS, 54, "<aqua><bold>Player Stats</bold></aqua>");
+        button(menu, 4, Material.PLAYER_HEAD, "<white>" + escape(player.getName()) + "</white>", List.of(
+            "<gray>Adventurer</gray> <aqua>" + stats.adventurerLevel() + "</aqua>",
+            "<gray>Stats reflect your currently equipped gear.</gray>", "<gray>Reopen this page after changing your build.</gray>"), ignored -> { });
+        button(menu, 10, Material.APPLE, "<red>Vitality</red>", List.of(
+            "<gray>Health</gray> <red>" + number.apply(player.getHealth()) + " / " + number.apply(stats.maximumHealth()) + "</red>",
+            "<gray>Absorption</gray> <gold>" + number.apply(player.getAbsorptionAmount()) + "</gold>", "",
+            "<gray>Base health</gray> <white>" + number.apply(health.base()) + "</white>",
+            "<gray>Adventurer levels</gray> <green>+" + number.apply(health.progression()) + "</green>",
+            "<gray>Equipment and sets</gray> <green>+" + number.apply(health.equipment()) + "</green>",
+            "<gray>Health bonus</gray> <green>+" + number.apply(health.percent()) + "%</green>",
+            "<dark_gray>Potions and other health modifiers also apply.</dark_gray>",
+            "<gray>The heart display stays at ten hearts.</gray>"), ignored -> { });
+        button(menu, 12, Material.IRON_CHESTPLATE, "<green>Defense</green>", List.of(
+            "<gray>Equipment and talents</gray> <white>" + number.apply(gear.stat("defense")) + "</white>",
+            "<gray>Adventurer perks</gray> <green>+" + number.apply(training.adventurerStat("defense")) + "</green>",
+            "<gray>Total defense</gray> <green>" + number.apply(stats.defense()) + "</green>",
+            "<gray>Attack damage reduction</gray> <white>" + number.apply(stats.reduction()) + "%</white>",
+            "<gray>Effective health against attacks</gray> <white>" + number.apply(stats.effectiveHealth()) + "</white>", "",
+            "<dark_gray>Vanilla armor and resistance apply separately.</dark_gray>",
+            "<dark_gray>Defense does not reduce falls, fire or hunger.</dark_gray>"), ignored -> { });
+        var offense = new ArrayList<String>();
+        plugin.gearSets().fullChargeDamage(player).ifPresentOrElse(damage -> {
+            offense.add("<gray>Weapon base</gray> <red>" + number.apply(damage.baseDamage()) + "</red>");
+            offense.add("<gray>Damage at full charge</gray> <red>" + number.apply(damage.finalDamage()) + "</red>");
+        }, () -> offense.add("<gray>Hold a custom melee weapon to see its damage.</gray>"));
+        offense.addAll(List.of("<gray>Flat damage</gray> <red>+" + number.apply(gear.stat("damage-flat")) + "</red>",
+            "<gray>Damage bonus</gray> <red>+" + number.apply(gear.stat("damage-percent") + training.adventurerStat("damage-percent")) + "%</red>",
+            "<gray>Projectile damage bonus</gray> <red>+" + number.apply(gear.stat("projectile-damage-percent")) + "%</red>",
+            "<gray>Execute bonus</gray> <red>+" + number.apply(gear.stat("execute-damage-percent")) + "%</red>",
+            "<dark_gray>Criticals and situational bonuses apply on hit.</dark_gray>"));
+        button(menu, 14, Material.IRON_SWORD, "<red>Offense</red>", offense, ignored -> { });
+        button(menu, 16, Material.SHIELD, "<gold>Utility</gold>", List.of(
+            "<gray>Life steal</gray> <green>" + number.apply(gear.stat("life-steal-percent")) + "%</green>",
+            "<gray>Durability protection</gray> <green>" + number.apply(gear.stat("durability-save-percent")) + "%</green>",
+            "<gray>Poison potency</gray> <green>" + number.apply(gear.stat("poison-potency-percent")) + "%</green>",
+            "<gray>Bleed</gray> <green>" + number.apply(gear.stat("bleed-percent")) + "%</green>",
+            "<gray>Vein size</gray> <white>+" + number.apply(gear.stat("vein-size")) + "</white>",
+            "<gray>Chain harvest</gray> <white>+" + number.apply(gear.stat("chain-harvest")) + "</white>"), ignored -> { });
+        button(menu, 28, Material.DIAMOND_PICKAXE, "<aqua>Gathering</aqua>", List.of(
+            "<gray>Mining power</gray> <white>" + number.apply(gear.stat("mining-power")) + "</white>",
+            "<gray>Gathering power</gray> <white>" + number.apply(gear.stat("gathering-power")) + "</white>",
+            "<gray>Fishing power</gray> <white>" + number.apply(gear.stat("fishing-power")) + "</white>",
+            "<gray>Excavation power</gray> <white>" + number.apply(gear.stat("excavation-power")) + "</white>",
+            "<gray>Extra harvest chance</gray> <green>+" + number.apply(gear.stat("harvest-extra-percent")) + "%</green>",
+            "<gray>Geode discovery</gray> <green>+" + number.apply(gear.stat("geode-find-percent")) + "%</green>",
+            "<gray>Fishing luck</gray> <green>+" + number.apply(gear.stat("fishing-luck-percent")) + "%</green>",
+            "<gray>Treasure discovery</gray> <green>+" + number.apply(gear.stat("treasure-find-percent")) + "%</green>",
+            "<gray>Excavation discoveries</gray> <green>+" + number.apply(gear.stat("excavation-find-percent")) + "%</green>",
+            "<dark_gray>Skill trees and activity bonuses also apply.</dark_gray>"), ignored -> { });
+        button(menu, 30, Material.EXPERIENCE_BOTTLE, "<aqua>Progression</aqua>", List.of(
+            "<gray>Global skill XP bonus</gray> <aqua>+" + number.apply(gear.stat("skill-xp-percent") + training.adventurerStat("skill-xp-percent")) + "%</aqua>",
+            "<gray>Global work Marks bonus</gray> <gold>+" + number.apply(gear.stat("job-marks-percent") + training.adventurerStat("job-marks-percent")) + "%</gold>",
+            "<gray>Skill training, mastery and island bonuses</gray>", "<gray>are added for the activity you perform.</gray>", "<yellow>Open your skill trees →</yellow>"), target -> open(target, View.SKILLS));
+        var sets = new ArrayList<String>();
+        gear.activeBonuses().forEach(bonus -> sets.add("<gold>" + escape(bonus.setName()) + " " + bonus.requiredPieces() + "pc</gold> <gray>" + escape(bonus.description()) + "</gray>"));
+        if (sets.isEmpty()) sets.add("<gray>No equipment set bonuses are active.</gray>");
+        sets.add("<yellow>Open relic collections →</yellow>");
+        button(menu, 32, Material.AMETHYST_SHARD, "<light_purple>Active Sets</light_purple>", sets, target -> open(target, View.RELICS));
+        button(menu, 34, Material.BOOK, "<white>Building your vitality</white>", List.of(
+            "<gray>Adventurer levels raise maximum health.</gray>",
+            "<gray>Leveled armor grants one health per four item levels.</gray>",
+            "<gray>Quality improves flat armor health.</gray>",
+            "<gray>Authored gear and set bonuses can also</gray>",
+            "<gray>grant flat health or a health percentage bonus.</gray>",
+            "<dark_gray>Swapping gear does not heal you.</dark_gray>"), ignored -> { });
+        open(player, menu.inventory());
     }
 
     private void openSkills(Player player) {
@@ -375,6 +459,7 @@ public final class MenuManager implements Listener, AutoCloseable {
             if (!player.isOnline()) {
                 return;
             }
+            if (sendSkills(player, snapshot)) return;
             MenuInventory menu = detailMenu(View.SKILLS, 54, "<green><bold>Skills</bold></green>");
             AdventurerProgression.Progress adventurer = snapshot.adventurer();
             button(menu, 4, Material.NETHER_STAR, "<light_purple><bold>Adventurer " + adventurer.level()
@@ -415,61 +500,93 @@ public final class MenuManager implements Listener, AutoCloseable {
                 "<gray>Skill levels award points for that skill tree.</gray>",
                 "<gray>At level 25, a skill can become a mastery.</gray>"
             ), ignored -> { });
-            button(menu, 50, Material.NETHER_STAR, "<light_purple>Adventurer Rank Path</light_purple>", List.of(
+            button(menu, 50, Material.NETHER_STAR, "<light_purple>Adventurer Talent Tree</light_purple>", List.of(
                 "<gray>See every rank and its permanent perk.</gray>",
                 "<yellow>Click to view.</yellow>"
-            ), this::openAdventurerRanks);
+            ), this::openAdventurerTree);
             open(player, menu.inventory());
         }));
     }
 
-    public void openSkillTree(Player player, Skill skill) {
-        selectedSkills.put(player.getUniqueId(), skill);
-        var account = account(player);
-        if (account == null) {
-            return;
+    /**
+     * The Skills screen for the Aerborne client ({@code aerborne:skills}), version 1: Adventurer level (int), rank
+     * (string), XP into the level and XP for the level (longs); then per skill (int count): id and name (strings),
+     * level and maximum level (ints), XP into the level and XP for the level (longs), mastered (boolean), talent
+     * points ready and spent (ints) and how to train it (string). False when the client has no Skills screen.
+     */
+    private boolean sendSkills(Player player, ProgressionService.ProgressionSnapshot snapshot) {
+        if (!net.nerdsmp.paper.presentation.ClientFeeds.listens(player, net.nerdsmp.paper.presentation.ClientFeeds.SKILLS)) return false;
+        try {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(1024);
+            java.io.DataOutputStream out = new java.io.DataOutputStream(bytes);
+            AdventurerProgression.Progress adventurer = snapshot.adventurer();
+            out.writeInt(1);
+            out.writeInt(adventurer.level());
+            net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, adventurer.rank().displayName());
+            out.writeLong(adventurer.experienceIntoLevel());
+            out.writeLong(adventurer.experienceNeeded());
+            Skill[] skills = Skill.values();
+            out.writeInt(skills.length);
+            for (Skill skill : skills) {
+                ProgressionService.SkillProgress progress = snapshot.skills().get(skill);
+                long floor = ProgressionService.experienceForLevel(progress.level());
+                long ceiling = progress.level() >= ProgressionService.MAX_LEVEL ? floor : ProgressionService.experienceForLevel(progress.level() + 1);
+                net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, skill.name().toLowerCase(java.util.Locale.ROOT));
+                net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, skill.displayName());
+                out.writeInt(progress.level());
+                out.writeInt(ProgressionService.MAX_LEVEL);
+                out.writeLong(Math.max(0L, progress.experience() - floor));
+                out.writeLong(Math.max(0L, ceiling - floor));
+                out.writeBoolean(snapshot.masteries().contains(skill));
+                out.writeInt(snapshot.talentPointsAvailable(skill));
+                out.writeInt(snapshot.talentPointsSpent(skill));
+                net.nerdsmp.paper.presentation.ClientFeeds.writeString(out, skillTrainingHint(skill));
+            }
+            out.flush();
+            return net.nerdsmp.paper.presentation.ClientFeeds.send(player, net.nerdsmp.paper.presentation.ClientFeeds.SKILLS, bytes.toByteArray());
+        } catch (java.io.IOException | RuntimeException failure) {
+            return false;
         }
-        plugin.progression().snapshot(account).thenAccept(snapshot -> sync(() -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            ProgressionService.SkillProgress progress = snapshot.skills().get(skill);
-            MenuInventory menu = menu(View.SKILL_TREE, 54,
-                "<aqua><bold>" + skill.displayName() + " Tree</bold></aqua>");
-            decorate(menu.inventory());
-            button(menu, 0, skillMaterial(skill), "<aqua>" + skill.displayName() + " " + progress.level() + "</aqua>",
-                SkillTreePresentation.overview(snapshot, skill), ignored -> { });
-            addMasteryButton(menu, player, skill, snapshot, progress);
+    }
 
-            SkillTreeCatalog.SkillTree tree = SkillTreeCatalog.tree(skill);
-            for (SkillTreeCatalog.TalentBranch branch : tree.branches()) {
-                int branchIndex = tree.branches().indexOf(branch);
-                button(menu, SkillTreePresentation.branchSlot(branchIndex), branchMaterial(branchIndex),
-                    "<white><bold>" + branch.name() + "</bold></white>",
-                    SkillTreePresentation.branch(snapshot, skill, branch), ignored -> { });
-                for (int nodeIndex = 0; nodeIndex < branch.nodes().size(); nodeIndex++) {
-                    SkillTreeCatalog.TalentNode node = branch.nodes().get(nodeIndex);
-                    SkillTreePresentation.NodeView preview = SkillTreePresentation.node(snapshot, node);
-                    TalentState state = TalentState.valueOf(preview.state().name());
-                    Consumer<Player> action = state == TalentState.AVAILABLE
-                        ? target -> {
-                            pendingTalents.put(target.getUniqueId(), node.id());
-                            open(target, View.CONFIRM_TALENT);
-                        }
-                        : ignored -> { };
-                    button(menu, SkillTreePresentation.nodeSlot(branchIndex, node.tier()), talentMaterial(state),
-                        talentColor(state) + node.name(), preview.lore(), action);
-                    if (nodeIndex < 2) {
-                        boolean linked = snapshot.talents().contains(node.id());
-                        button(menu, SkillTreePresentation.linkSlot(branchIndex, node.tier()), linked
-                            ? Material.LIME_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
-                            "<dark_gray>│</dark_gray>", List.of(), ignored -> { });
-                    }
-                }
+    public void openSkillTree(Player player, Skill skill) {
+        selectedSkills.put(player.getUniqueId(), skill); openTalentGraph(player, skill);
+    }
+    public void openAdventurerTree(Player player) { openTalentGraph(player, null); }
+    private void openTalentGraph(Player player, Skill skill) {
+        var account=account(player); if(account==null) return;
+        plugin.progression().snapshot(account).thenAccept(snapshot->sync(()->{
+            if(!player.isOnline() || !plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent()) return;
+            boolean adventurer=skill==null; View view=adventurer?View.ADVENTURER_TREE:View.SKILL_TREE;
+            MenuInventory menu=menu(view,54,"<gold><bold>"+(adventurer?"Adventurer":skill.displayName())+" Talent Tree</bold></gold>");
+            decorate(menu.inventory());
+            button(menu,0,adventurer?Material.NETHER_STAR:skillMaterial(skill),"<gold>"+(adventurer?"Adventurer":skill.displayName())+" Progress</gold>",TalentTreePresentation.overview(snapshot,skill),ignored->{});
+            if(adventurer) button(menu,8,Material.COMPASS,"<light_purple>Adventurer Ranks</light_purple>",List.of("<gray>View automatic rank perks.</gray>"),this::openAdventurerRanks);
+            else addMasteryButton(menu,player,skill,snapshot,snapshot.skills().get(skill));
+            var cards=TalentTreePresentation.cards(snapshot,skill);
+            for(var edge:TalentTreeLayout.edges()) {
+                var from=cards.get(edge.from()); boolean linked=from.rank()>=(edge.from()<4?2:1);
+                for(int slot:edge.slots()) button(menu,slot,linked?Material.YELLOW_STAINED_GLASS_PANE:Material.GRAY_STAINED_GLASS_PANE,
+                    linked?"<gold>↘ Connected path ↙</gold>":"<dark_gray>↘ Connected path ↙</dark_gray>",List.of("<gray>"+from.name()+" → "+cards.get(edge.to()).name()+"</gray>"),ignored->{});
             }
-            backButton(menu, StationLayout.BACK, View.SKILL_TREE);
-            rawButton(menu, StationLayout.CLOSE, MenuKit.close(), Player::closeInventory);
-            open(player, menu.inventory());
+            for(int i=0;i<cards.size();i++) {
+                var card=cards.get(i); String color=card.state()==SkillTreePresentation.State.AVAILABLE?"green":card.rank()>0?"gold":"gray";
+                Material icon=i==7?Material.NETHER_STAR:i<4?adventurer?new Material[]{Material.ENCHANTED_BOOK,Material.IRON_SWORD,Material.SHIELD,Material.EMERALD}[i]
+                    :i==0?skillMaterial(skill):branchMaterial(i):new Material[]{Material.AMETHYST_SHARD,Material.GOLD_INGOT,Material.HEART_OF_THE_SEA}[i-4];
+                button(menu,card.slot(),icon,"<"+color+">"+card.name()+" "+card.rank()+"/"+card.maximum()+"</"+color+">",card.lore(),card.state()==SkillTreePresentation.State.AVAILABLE?target->{
+                    pendingTalents.put(target.getUniqueId(),card.nextId()); open(target,View.CONFIRM_TALENT);
+                }:ignored->{});
+                menu.inventory().getItem(card.slot()).editMeta(meta->meta.setEnchantmentGlintOverride(card.rank()>0));
+            }
+            button(menu,47,Material.BOOK,"<gold>Read the Tree</gold>",List.of("<gray>Each icon holds one or three ranks.</gray>","<gray>Gold = learned • Green = ready • Gray = locked.</gray>",
+                "<gray>Rank II opens connected shared talents.</gray>","<gray>Two shared talents lead to the capstone.</gray>","<gray>Hover for exact requirements and effects.</gray>"),ignored->{});
+            if(!adventurer) {
+                Skill[] skills=Skill.values(); int index=skill.ordinal();
+                button(menu,45,Material.ARROW,"<yellow>← "+skills[Math.floorMod(index-1,skills.length)].displayName()+"</yellow>",List.of(),p->openSkillTree(p,skills[Math.floorMod(index-1,skills.length)]));
+                button(menu,53,Material.ARROW,"<yellow>"+skills[(index+1)%skills.length].displayName()+" →</yellow>",List.of(),p->openSkillTree(p,skills[(index+1)%skills.length]));
+                button(menu,51,Material.NETHER_STAR,"<light_purple>Adventurer Tree</light_purple>",List.of("<gray>A separate tree for your whole journey.</gray>"),this::openAdventurerTree);
+            }
+            backButton(menu,MenuKit.backSlot(54),view); rawButton(menu,MenuKit.closeSlot(54),MenuKit.close(),Player::closeInventory); open(player,menu.inventory());
         }));
     }
 
@@ -489,7 +606,7 @@ public final class MenuManager implements Listener, AutoCloseable {
                 + "</bold></light_purple>", List.of(
                     "<gray>Adventurer Level</gray> <aqua>" + progress.level() + "/100</aqua>",
                     adventurerProgress(progress, 14),
-                    "<dark_gray>Combined XP from all nine skills.</dark_gray>"
+                    "<dark_gray>Combined XP from all " + Skill.values().length + " skills.</dark_gray>"
                 ), ignored -> { });
             int[] rankSlots = {10, 12, 14, 16, 34, 32, 30, 28};
             int[] connectorSlots = {11, 13, 15, 25, 33, 31, 29};
@@ -510,6 +627,7 @@ public final class MenuManager implements Listener, AutoCloseable {
                         : Material.GRAY_STAINED_GLASS_PANE, "<dark_gray> </dark_gray>", List.of(), ignored -> { });
                 }
             }
+            button(menu,51,Material.ENCHANTED_BOOK,"<gold>Adventurer Talent Tree</gold>",List.of("<gray>Spend your personal Adventurer points.</gray>"),this::openAdventurerTree);
             backButton(menu, StationLayout.BACK, View.ADVENTURER_RANKS);
             rawButton(menu, StationLayout.CLOSE, MenuKit.close(), Player::closeInventory);
             open(player, menu.inventory());
@@ -521,42 +639,29 @@ public final class MenuManager implements Listener, AutoCloseable {
     }
 
     private void openTalentConfirmation(Player player) {
-        String talentId = pendingTalents.get(player.getUniqueId());
-        SkillTreeCatalog.TalentNode node = SkillTreeCatalog.node(talentId).orElse(null);
-        if (node == null) {
-            open(player, View.SKILLS);
-            return;
-        }
-        MenuInventory menu = menu(View.CONFIRM_TALENT, 27, "<yellow><bold>Spend a Talent Point?</bold></yellow>");
-        decorate(menu.inventory());
-        button(menu, 11, Material.ARROW, "<gray>Go Back</gray>", List.of(), target -> openSkillTree(target, node.skill()));
-        button(menu, 15, Material.LIME_DYE, "<green>Unlock " + node.name() + "</green>", List.of(
-            "<white>" + node.effect() + "</white>",
-            "<gray>Costs one " + node.skill().displayName() + " talent point.</gray>",
-            "<gold>This choice lasts for the season.</gold>",
-            "<gray>Mastery respecs do not refund talent points.</gray>",
-            "<yellow>Click again to confirm.</yellow>"
-        ), target -> unlockTalent(target, node));
-        open(player, menu.inventory());
+        String id=net.nerdsmp.api.model.TalentRules.canonicalId(pendingTalents.get(player.getUniqueId()));
+        if(id==null) { open(player,View.SKILLS); return; }
+        var node=SkillTreeCatalog.node(id).orElse(null); String currency=node==null?"Adventurer":node.skill().displayName();
+        MenuInventory menu=menu(View.CONFIRM_TALENT,27,"<yellow><bold>Spend a Talent Point?</bold></yellow>"); decorate(menu.inventory());
+        button(menu,11,Material.ARROW,"<gray>Go Back</gray>",List.of(),target->{ if(node==null) openAdventurerTree(target); else openSkillTree(target,node.skill()); });
+        button(menu,15,Material.LIME_DYE,"<green>Learn "+TalentTreePresentation.name(id)+"</green>",List.of("<white>"+TalentTreePresentation.effect(id)+"</white>",
+            "<gray>Costs one "+currency+" talent point.</gray>","<gold>This choice lasts for the season.</gold>","<gray>Mastery respecs do not refund talent points.</gray>","<yellow>Click again to confirm.</yellow>"),target->unlockTalent(target,id));
+        open(player,menu.inventory());
     }
-
-    private void unlockTalent(Player player, SkillTreeCatalog.TalentNode node) {
-        var account = account(player);
-        if (account == null) {
-            return;
-        }
-        plugin.progression().unlockTalent(account, node.id()).thenAccept(result -> sync(() -> {
+    private void unlockTalent(Player player, String id) {
+        var account=account(player); if(account==null) return;
+        plugin.progression().unlockTalent(account,id).thenAccept(result->sync(()->{
             pendingTalents.remove(player.getUniqueId());
-            player.sendRichMessage(switch (result) {
-                case UNLOCKED -> "<green>Unlocked " + node.name() + ".</green>";
-                case ALREADY_UNLOCKED -> "<gray>That talent is already unlocked.</gray>";
-                case LEVEL_TOO_LOW -> "<red>Your " + node.skill().displayName() + " level is too low.</red>";
-                case PREREQUISITE_MISSING -> "<red>Unlock the previous node first.</red>";
-                case NO_POINTS_AVAILABLE -> "<red>You do not have a talent point to spend.</red>";
-                case UNKNOWN_TALENT -> "<red>That talent no longer exists.</red>";
-            });
-            plugin.presentation().refresh(player);
-            openSkillTree(player, node.skill());
+            if(!player.isOnline() || !plugin.sessions().account(player.getUniqueId()).filter(account::equals).isPresent()) return;
+            player.sendRichMessage(switch(result) {
+                case UNLOCKED->"<green>Learned "+TalentTreePresentation.name(id)+".</green>";
+                case ALREADY_UNLOCKED->"<gray>That rank is already learned.</gray>";
+                case LEVEL_TOO_LOW->"<red>Your level is too low for this talent.</red>";
+                case PREREQUISITE_MISSING->"<red>Learn the required connected ranks first.</red>";
+                case NO_POINTS_AVAILABLE->"<red>You do not have a point in this tree to spend.</red>";
+                case UNKNOWN_TALENT->"<red>That talent no longer exists.</red>";
+            }); plugin.presentation().refresh(player);
+            var node=SkillTreeCatalog.node(id).orElse(null); if(node==null) openAdventurerTree(player); else openSkillTree(player,node.skill());
         }));
     }
 
@@ -880,6 +985,9 @@ public final class MenuManager implements Listener, AutoCloseable {
             "<gray>for 4 Arcane Dust.</gray>",
             "<gray>Recovery: I 8 | II 12 | III 16 | IV 20 Dust</gray>",
             "<gray>Keep room in your inventory for the gem.</gray>"), ignored -> { });
+        button(menu, 41, Material.NAME_TAG, "<gold>Nickname</gold>", List.of(
+            "<gray>Give the gear in the left input a name of your own.</gray>",
+            "<gray>A Name Tag and some Marks. Click to name it.</gray>"), target -> plugin.nicknames().nameForgeItem(target, holder.inventory, ForgeSlotPolicy.PRIMARY_SLOT));
         button(menu, 43, Material.GRAY_DYE, "<gray>Cancel Review</gray>", List.of(
             "<gray>Your items stay in the inputs.</gray>"), target -> { clearForgeReview(holder); renderForge(holder, target); });
         button(menu, 47, Material.COMPASS, "<aqua>Auto Detect</aqua>", List.of("<gray>Show every method and use the current catalyst.</gray>"),
@@ -1574,6 +1682,9 @@ public final class MenuManager implements Listener, AutoCloseable {
                         "<yellow>Click to " + (enabled ? "disable" : "enable") + ".</yellow>"
                     ), target -> {
                         plugin.settings().toggle(target.getUniqueId(), option);
+                        if (option == net.nerdsmp.paper.player.PlayerSettingsService.Setting.MOB_HEALTH_BARS) {
+                            plugin.mobHealthBars().refreshViewer(target);
+                        }
                         if (option == net.nerdsmp.paper.player.PlayerSettingsService.Setting.OTHERS_COSMETICS) {
                             plugin.cosmetics().updateVisibility(target);
                         }
@@ -1601,7 +1712,7 @@ public final class MenuManager implements Listener, AutoCloseable {
             case PARTY_REQUESTS -> "<gray>Allow players to invite you to a party.</gray>";
             case COOP_INVITES -> "<gray>Allow invitations to share an island.</gray>";
             case TELEPORT_REQUESTS -> "<gray>Allow /tpa and /tpahere requests.</gray>";
-            case MOB_HEALTH_BARS -> "<gray>Show health bars for enemies you engage.</gray>";
+            case MOB_HEALTH_BARS -> "<gray>Show nearby MMORPG enemy names and combat health bars.</gray>";
             case ISLAND_DISPLAYS -> "<gray>Show nearby island centerpieces and progress labels.</gray>";
             case ISLAND_EFFECTS -> "<gray>Show chapter reveals, particles and celebration sounds.</gray>";
             case TREE_FELLING -> "<gray>Fell eligible trees with an axe. Sneak for individual logs.</gray>";
@@ -1633,7 +1744,8 @@ public final class MenuManager implements Listener, AutoCloseable {
     static View parent(View view) {
         return switch (view) {
             case SKILL_TREE -> View.SKILLS;
-            case PROFILE, SKILLS, ADVENTURER_RANKS, RELICS, COSMETICS -> View.CHARACTER;
+            case ADVENTURER_TREE -> View.CHARACTER;
+            case PROFILE, STATS, SKILLS, ADVENTURER_RANKS, RELICS, COSMETICS -> View.CHARACTER;
             case JOBS, QUESTS, CAMPAIGN -> View.ADVENTURE;
             case ORDERS -> View.JOBS;
             case FORGE, ENCHANTMENTS -> View.WORKSHOP;
@@ -2014,9 +2126,11 @@ public final class MenuManager implements Listener, AutoCloseable {
         WORLD,
         COMMUNITY,
         PROFILE,
+        STATS,
         SKILLS,
         SKILL_TREE,
         ADVENTURER_RANKS,
+        ADVENTURER_TREE,
         JOBS,
         ORDERS,
         RELICS,

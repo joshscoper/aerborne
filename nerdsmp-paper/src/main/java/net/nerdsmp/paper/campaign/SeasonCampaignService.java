@@ -215,7 +215,7 @@ public final class SeasonCampaignService implements CampaignService, Listener, A
             long applied = ledger.add(account.get().toString(), goal.id(), points, today, cap);
             counted |= applied > 0;
             if (applied < points && capNotices.add(account.get() + "|" + goal.id() + "|" + today)) {
-                player.sendActionBar(Chat.render("<yellow>You've reached today's limit for " + Chat.escape(goal.title()) + ".</yellow>"));
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<yellow>You've reached today's limit for " + Chat.escape(goal.title()) + ".</yellow>"));
             }
         }
         if (counted) {

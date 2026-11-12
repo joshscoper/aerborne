@@ -68,6 +68,7 @@ public final class ZoneSpawner implements Listener, AutoCloseable {
     /** Consult before directly applying ability effects, not just for ordinary attack events. */
     public boolean canFight(Entity source,Entity target) {
         if(source==null || target==null) return false;
+        if(plugin.spirits()!=null&&(plugin.spirits().ghost(actor(source).getUniqueId())||plugin.spirits().ghost(target.getUniqueId()))) return false;
         Optional<String> sourceZone=zoneId(source),targetZone=zoneId(target);
         if(sourceZone.isEmpty() && targetZone.isEmpty()) return true;
         if(sourceZone.isPresent() && targetZone.isPresent() && !sourceZone.get().equals(targetZone.get())) return false;
@@ -102,7 +103,7 @@ public final class ZoneSpawner implements Listener, AutoCloseable {
                 despawnZone(zone.id(),now); continue;
             }
             List<Player> players=world==null?List.of():world.getPlayers().stream()
-                .filter(ZoneSpawner::adventuring)
+                .filter(this::adventuring)
                 .filter(p->plugin.sessions().account(p.getUniqueId()).isPresent())
                 .filter(p->inside(zone,p)).toList();
             active.put(zone.id(),players);
@@ -219,8 +220,8 @@ public final class ZoneSpawner implements Listener, AutoCloseable {
             default -> true;
         };
     }
-    private static boolean adventuring(Player p) {
-        return p.isOnline()&&!p.isDead()&&(p.getGameMode()==GameMode.SURVIVAL||p.getGameMode()==GameMode.ADVENTURE);
+    private boolean adventuring(Player p) {
+        return p.isOnline()&&!p.isDead()&&(plugin.spirits()==null||!plugin.spirits().ghost(p.getUniqueId()))&&(p.getGameMode()==GameMode.SURVIVAL||p.getGameMode()==GameMode.ADVENTURE);
     }
     private void stamp(Entity entity,String id) {
         entity.getPersistentDataContainer().set(zoneKey,PersistentDataType.STRING,id);

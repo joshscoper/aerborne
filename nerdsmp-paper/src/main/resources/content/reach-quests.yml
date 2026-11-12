@@ -18,11 +18,12 @@ quests:
       - "So you're the one Wren brought in. Good. I need people who can fly and fight."
     turn-in: reach_steward_aldric
     objectives:
-      - {type: talk, targets: [reach_steward_aldric], description: Climb to the keep and meet Steward Aldric}
+      - {type: talk, targets: [reach_steward_aldric], description: Climb to the keep and meet Steward Aldric, dialogue: ["Wren chose well. The grain carts have stopped, and I cannot send an untested recruit beyond the gate. Earn your Charter on First Flight, then we will talk about the Vale."]}
     rewards:
-      marks: 30
+      marks: 100
+      xp: {hunting: 100}
       reputation: {frontier_wardens: 10}
-      items: ["material:bread 6"]
+      items: ["material:bread 8","material:compass 1","material:experience_bottle 2"]
 
   reach_the_guild_test:
     chain: reach_prologue
@@ -32,15 +33,17 @@ quests:
     requires: [reach_report_to_steward]
     offer:
       - "Before I send anyone into the Vale, the Skyfarers' Guild tests them on the Wardens' Road."
-      - "Fly First Flight with Captain Wren at the docks. Come back with the Old Sentinel's blessing."
+      - "At the docks, look for the red and white signal pennants on the east tower. Captain Wren signs crews on for First Flight there."
+      - "Bring me the Old Sentinel's blessing when you return."
     complete:
       - "Wren says you didn't fall off once. Well, not more than once. Here's your Charter."
     objectives:
       - {type: clear, targets: [first_flight], description: Fly First Flight with Captain Wren}
     rewards:
-      marks: 80
-      xp: {hunting: 120}
-      reputation: {frontier_wardens: 20}
+      marks: 350
+      xp: {hunting: 400}
+      reputation: {frontier_wardens: 25}
+      items: [{"item":"material:shield 1","name":"Skyfarer's Charter Shield","lore":["Issued by Aldric after the First Flight."]},"item:watchmans_sword 1","material:experience_bottle 4"]
 
   reach_through_the_kingsgate:
     chain: reach_prologue
@@ -51,15 +54,17 @@ quests:
     offer:
       - "Goldenreach Vale has fed this city for nine hundred years. Two weeks ago its grain carts stopped."
       - "Go north through the Kingsgate and over the Kingsbridge. Warden Hale holds the post at the far end."
+      - "Follow the gold trail on the ground; the light over his post marks where he stands."
     complete:
       - "The Steward sent you? Good. I've been asking for hands since the carts stopped."
     turn-in: warden_hale
     objectives:
-      - {type: visit, zone: reach_kingsgate_fields, description: Cross the Kingsbridge into Goldenreach Vale}
-      - {type: talk, targets: [warden_hale], description: Report to Warden Hale at his post}
+      - {type: talk, targets: [warden_hale], description: Cross the Kingsbridge and report to Warden Hale, dialogue: ["The near fields are crawling with gnawers; the boars have broken the fences. Clear a path toward Millbrook and tell Reeve Hollis the Kingsgate still stands."]}
     rewards:
-      marks: 40
+      marks: 150
+      xp: {hunting: 200}
       reputation: {frontier_wardens: 10}
+      items: ["material:cooked_beef 8","material:experience_bottle 2"]
 
   # ------------------------------------------------------------------ Act I: The Rot in the Fields
   quiet_fields_close_to_the_gate:
@@ -76,10 +81,12 @@ quests:
     objectives:
       - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 6, description: Thin the Field Gnawers}
       - {type: kill, targets: ["custom:bristle_boar"], zone: reach_kingsgate_fields, count: 2, description: Drive off Bristle Boars}
+      - {type: talk, targets: [millbrook_watch], description: Tell the Millbrook watch the road is open, dialogue: ["The Kingsgate road, open? Then the carts can run again. The Reeve is in the hall by the green."]}
     rewards:
-      marks: 50
-      xp: {hunting: 120}
-      items: ["material:bread 4"]
+      marks: 220
+      xp: {hunting: 450}
+      reputation: {frontier_wardens: 10}
+      items: ["item:copperfield_buckler 1","material:bread 6","material:experience_bottle 2"]
 
   quiet_fields_wrong_scarecrows:
     chain: quiet_fields
@@ -95,9 +102,11 @@ quests:
     turn-in: garth_ploughwright
     objectives:
       - {type: kill, targets: ["custom:straw_scarecrow"], zone: reach_goldwater_terraces, count: 6, description: Topple walking scarecrows on the terraces}
+      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_goldwater_terraces, count: 4, description: Clear the gnawers nesting in the straw}
     rewards:
-      marks: 60
-      xp: {hunting: 160}
+      marks: 220
+      xp: {hunting: 550, mining: 200}
+      items: ["item:cobblebreak_pickaxe 1","material:iron_ingot 6"]
 
   quiet_fields_warm_coal:
     chain: quiet_fields
@@ -114,10 +123,12 @@ quests:
     objectives:
       - {type: visit, zone: reach_windmill_ridge, description: Climb to Windmill Ridge}
       - {type: kill, targets: ["custom:choir_initiate"], zone: reach_windmill_ridge, count: 3, description: Stop the singers at the burned mill}
+      - {type: kill, targets: ["custom:straw_scarecrow"], zone: reach_windmill_ridge, count: 3, description: Break the scarecrows guarding the ridge path}
     rewards:
-      marks: 70
-      xp: {hunting: 200}
+      marks: 260
+      xp: {hunting: 1000, excavation: 200}
       reputation: {frontier_wardens: 15}
+      items: ["item:surveyors_shovel 1","material:experience_bottle 3","material:torch 16"]
 
   quiet_fields_three_marks_a_wheel:
     chain: quiet_fields
@@ -131,11 +142,14 @@ quests:
     complete:
       - "That's a lot of bandits for a toll. Someone's paying them more than tolls ever would."
     objectives:
-      - {type: kill, targets: ["custom:tollkeeper_cutthroat"], zone: reach_tollroad, count: 6, description: Defeat Tollkeeper Cutthroats}
-      - {type: kill, targets: ["custom:tollkeeper_bowman"], zone: reach_tollroad, count: 4, description: Defeat Tollkeeper Bowmen}
+      - {type: kill, targets: ["custom:tollkeeper_cutthroat"], zone: reach_tollroad, count: 4, description: Defeat Tollkeeper Cutthroats}
+      - {type: kill, targets: ["custom:tollkeeper_bowman"], zone: reach_tollroad, count: 3, description: Defeat Tollkeeper Bowmen}
+      - {type: talk, targets: [jory_fenn], description: Ask Jory Fenn who rows the Tollkeepers' pay upriver, dialogue: ["Robed folk, at night, with heavy chests. They never haggle over the fare.","Whatever they carry, it clinks like old coin. And their captain counts every piece himself."]}
     rewards:
-      marks: 90
-      xp: {hunting: 260}
+      marks: 320
+      xp: {hunting: 1500}
+      reputation: {frontier_wardens: 15}
+      items: ["item:coppersight_crossbow 1","material:arrow 32","material:experience_bottle 2"]
 
   quiet_fields_the_toll_captain:
     chain: quiet_fields
@@ -151,9 +165,10 @@ quests:
     objectives:
       - {type: kill, targets: ["custom:toll_captain_brask"], count: 1, description: Defeat Toll-Captain Brask}
     rewards:
-      marks: 120
-      xp: {hunting: 320}
+      marks: 450
+      xp: {hunting: 1200}
       reputation: {frontier_wardens: 25}
+      items: ["item:quarryward_coat 1","material:gold_nugget 9","material:experience_bottle 4"]
 
   quiet_fields_the_black_granary:
     chain: quiet_fields
@@ -170,11 +185,13 @@ quests:
     turn-in: brother_tobin
     objectives:
       - {type: visit, zone: reach_black_granary, description: Approach the Black Granary}
-      - {type: kill, targets: ["custom:choir_initiate"], zone: reach_black_granary, count: 6, description: Defeat Choir Initiates}
+      - {type: kill, targets: ["custom:choir_initiate"], zone: reach_black_granary, count: 4, description: Defeat Choir Initiates}
       - {type: kill, targets: ["custom:choir_cantor"], zone: reach_black_granary, count: 2, description: Silence Choir Cantors}
     rewards:
-      marks: 120
-      xp: {hunting: 340}
+      marks: 380
+      xp: {hunting: 1300}
+      reputation: {rift_scholars: 10}
+      items: ["item:miners_lantern_helm 1","material:golden_carrot 8","material:experience_bottle 3"]
 
   quiet_fields_down_the_grain_stair:
     chain: quiet_fields
@@ -194,10 +211,10 @@ quests:
       - {type: kill, targets: ["custom:ember_scarecrow"], zone: reach_granary_cellars, count: 5, description: Destroy Ember-Hatched Scarecrows}
       - {type: kill, targets: ["custom:scarecrow_king"], zone: reach_granary_cellars, count: 1, description: Defeat the Scarecrow King}
     rewards:
-      marks: 200
-      xp: {hunting: 600}
+      marks: 800
+      xp: {hunting: 2500}
       reputation: {frontier_wardens: 40}
-      items: ["material:golden_apple 1"]
+      items: [{"item":"material:diamond_boots 1","name":"Grain-Stair Treads","lore":["You walked into the coals and came back."]},"item:mossstep_boots 1","material:golden_apple 3","material:experience_bottle 6"]
 
   quiet_fields_the_sower_went_west:
     chain: quiet_fields
@@ -211,10 +228,12 @@ quests:
       - "A flame inside a closed eye. I've seen it on the barrow stones. Whatever you found under that granary, it's one piece of something much bigger."
     turn-in: maren_ashdown
     objectives:
-      - {type: talk, targets: [maren_ashdown], description: Find Maren Ashdown on the Hollow Road}
+      - {type: talk, targets: [maren_ashdown], description: Find Maren Ashdown on the Hollow Road, dialogue: ["That closed eye is carved into the barrow stones too. A mark older than the roads, turning up on fresh coal? Someone is waking things that should stay buried."]}
     rewards:
-      marks: 80
+      marks: 250
+      xp: {hunting: 400}
       reputation: {frontier_wardens: 20}
+      items: ["material:cooked_beef 12","material:experience_bottle 3"]
 
   # ------------------------------------------------------------------ Side chains
   tams_gone_walking:
@@ -226,14 +245,14 @@ quests:
     offer:
       - "My Tam walked out singing three nights ago. Someone saw a lad up on Windmill Ridge. Please, bring him home."
     complete:
-      - "Oh, Tam. You're freezing. Thank you, thank you."
+      - "He's alive, and you know where he is? I'll have Hale send a cart before nightfall. Thank you. Take something warm for the road."
     objectives:
       - {type: visit, zone: reach_windmill_ridge, description: Search Windmill Ridge for Tam}
-      - {type: talk, targets: [tam_thistle], description: Find Tam at the burned mill}
+      - {type: talk, targets: [tam_thistle], description: Find Tam at the burned mill, dialogue: ["Bess sent you? I followed the singing up here, and then I couldn't remember the way home.","They kept singing, 'The embers sleep beneath the field.' Please tell Mum I'm alive. I can wait here for Hale's cart."]}
     rewards:
-      marks: 50
+      marks: 180
       reputation: {frontier_wardens: 10}
-      items: ["material:pumpkin_pie 4"]
+      items: ["material:pumpkin_pie 6","material:experience_bottle 2"]
 
   what_tam_heard:
     chain: thistle_farm
@@ -247,10 +266,13 @@ quests:
       - "That isn't a hymn I know. It's older than the chapel, and it isn't sung to anything kind."
     turn-in: brother_tobin
     objectives:
-      - {type: talk, targets: [brother_tobin], description: Ask Brother Tobin about Tam's song}
+      - {type: talk, targets: [brother_tobin], description: Ask Brother Tobin about Tam's song, dialogue: ["The embers sleep beneath the field? That is no harvest hymn. Those words were sealed away after the Sundering.","Tell Bess to keep Tam away from the ridge. If the singers return, look beneath the Black Granary."]}
+      - {type: talk, targets: [tam_thistle], description: Tell Tam what Brother Tobin said, dialogue: ["So it wasn't a song for the harvest. I'll stay away from the ridge. But I still hear it when the wind's from the granary."]}
     rewards:
-      marks: 40
+      marks: 160
+      xp: {alchemy: 150}
       reputation: {rift_scholars: 15}
+      items: ["material:experience_bottle 3","material:glistering_melon_slice 2"]
 
   sweet_trouble:
     chain: brindle_orchards
@@ -264,10 +286,11 @@ quests:
       - "Hear that? Happy bees. Take a bottle; it's last year's best."
     objectives:
       - {type: kill, targets: ["custom:bristle_boar"], zone: reach_brindle_orchards, count: 6, description: Drive the boars out of the orchard}
+      - {type: deliver, targets: [SWEET_BERRIES, GLOW_BERRIES], count: 8, description: Bring Pip 8 berries to coax the bees back}
     rewards:
-      marks: 60
-      xp: {hunting: 140}
-      items: ["material:honey_bottle 3"]
+      marks: 200
+      xp: {hunting: 350, farming: 100}
+      items: ["material:honey_bottle 4","material:golden_carrot 4","material:experience_bottle 1"]
 
   old_grizzlehide:
     chain: brindle_orchards
@@ -278,12 +301,13 @@ quests:
     offer:
       - "There's one boar older and meaner than the rest. Old Grizzlehide. Tusks like ploughshares. He comes back every few seasons."
     complete:
-      - "You got him! Keep the tusk. Every farmer in the Vale will buy you a drink when they see it."
+      - "You got him! Take my hunting bow. I'd rather see it keeping someone safe than hanging over my hearth."
     objectives:
       - {type: kill, targets: ["custom:old_grizzlehide"], zone: reach_brindle_orchards, count: 1, description: Hunt down Old Grizzlehide}
     rewards:
-      marks: 100
-      xp: {hunting: 260}
+      marks: 420
+      xp: {hunting: 900}
+      items: ["item:rangers_crossbow 1","material:arrow 48","material:experience_bottle 3"]
 
   grist_for_the_mill:
     chain: millbrook_mill
@@ -292,15 +316,15 @@ quests:
     level: 1
     requires: [reach_through_the_kingsgate]
     offer:
-      - "Gnawers in my grain, gnawers in my stones, gnawers in my hat once. Clear the fields between here and the bridge, would you?"
+      - "The millstones are turning again, but the grain bins are empty. Bring me twelve wheat from your island or the fields; I'll bake road rations for you."
     complete:
       - "Bless you. Bread's on me for a week."
     objectives:
-      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 8, description: Clear gnawers from the fields}
+      - {type: deliver, targets: [WHEAT], count: 12, description: Bring Ada 12 wheat to restart the mill}
     rewards:
-      marks: 45
-      xp: {hunting: 100}
-      items: ["material:bread 8"]
+      marks: 160
+      xp: {farming: 300, cooking: 150}
+      items: ["item:furrowkeeper_hoe 1","material:bread 12","material:bone_meal 16"]
 
   # ------------------------------------------------------------------ Dailies
   vale_daily_gnawers:
@@ -317,8 +341,8 @@ quests:
     objectives:
       - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 10, description: Cull Field Gnawers}
     rewards:
-      marks: 40
-      xp: {hunting: 90}
+      marks: 120
+      xp: {hunting: 220}
 
   vale_daily_scarecrows:
     chain: vale_dailies
@@ -334,5 +358,164 @@ quests:
     objectives:
       - {type: kill, targets: ["custom:straw_scarecrow"], zone: reach_goldwater_terraces, count: 8, description: Topple walking scarecrows}
     rewards:
-      marks: 55
-      xp: {hunting: 130}
+      marks: 150
+      xp: {hunting: 300}
+
+  # ------------------------------------------------------------------ Rares and the folk of Millbrook
+  gilt_tooth_bounty:
+    chain: vale_bounties
+    title: Bounty on Gilt-Tooth
+    giver: warden_hale
+    level: 3
+    requires: [quiet_fields_close_to_the_gate]
+    offer:
+      - "There's a gnawer out there the size of a calf, with a gold tooth she took off a dead Warden. The others follow her."
+      - "Find Gilt-Tooth in Kingsgate Fields. Her nest is the reason the near fields never stay clear."
+    complete:
+      - "That's the tooth. Keep the bounty; I'll keep the tooth for the Warden she took it from."
+    objectives:
+      - {type: kill, targets: ["custom:field_gnawer"], zone: reach_kingsgate_fields, count: 8, description: Thin her brood to draw her out}
+      - {type: kill, targets: ["custom:gilt_tooth"], count: 1, description: "Slay Gilt-Tooth, queen of the gnawers"}
+    rewards:
+      marks: 400
+      xp: {hunting: 900}
+      reputation: {frontier_wardens: 20}
+      items: ["item:prospectors_pickaxe 1","material:gold_ingot 4","material:experience_bottle 3"]
+
+  hollow_jack_lantern:
+    chain: vale_bounties
+    title: The Lantern on the Ridge
+    giver: brother_tobin
+    level: 5
+    requires: [quiet_fields_warm_coal]
+    offer:
+      - "After dark a lantern walks Windmill Ridge with no one holding it. The children call him Hollow Jack."
+      - "The singers woke him. He only walks at night, {player}. Put his light out for good."
+    complete:
+      - "The lantern's cold. Ring the chapel bell twice on your way past; the children will sleep tonight."
+    objectives:
+      - {type: visit, zone: reach_windmill_ridge, description: Wait on Windmill Ridge for nightfall}
+      - {type: kill, targets: ["custom:hollow_jack"], count: 1, description: Put out Hollow Jack's lantern}
+    rewards:
+      marks: 500
+      xp: {hunting: 1400}
+      reputation: {rift_scholars: 20}
+      items: ["item:venomthorn_sword 1","material:jack_o_lantern 1","material:experience_bottle 4"]
+
+  stew_for_the_watch:
+    chain: millbrook_inn
+    title: Stew for the Watch
+    giver: wenna_marr
+    level: 2
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "The watch has been on bread and water since the carts stopped. I've a pot and a fire and nothing to put in it."
+      - "Bring me potatoes and carrots from your island, and I'll feed every Warden on the green."
+    complete:
+      - "Smell that! Hale's lot will march twice as far on this. Take a bowl and a bit for your trouble."
+    turn-in: wenna_marr
+    objectives:
+      - {type: deliver, targets: [POTATO], count: 16, description: Bring Wenna 16 potatoes}
+      - {type: deliver, targets: [CARROT], count: 16, description: Bring Wenna 16 carrots}
+      - {type: talk, targets: [millbrook_watch], description: Carry the first pot to the Millbrook watch, dialogue: ["Hot food? Tell Wenna she's a saint. We'll hold the green another week on this."]}
+    rewards:
+      marks: 240
+      xp: {cooking: 400, farming: 250}
+      reputation: {frontier_wardens: 10}
+      items: ["material:rabbit_stew 4","material:golden_carrot 6","material:experience_bottle 2"]
+
+  the_forge_runs_cold:
+    chain: millbrook_smithy
+    title: The Forge Runs Cold
+    giver: garth_ploughwright
+    level: 2
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "No carts, no coal, no iron. A smith with nothing to strike is just a man standing by a fire."
+      - "Bring me iron and coal from your island's generator and I'll show you what a Millbrook blade looks like."
+    complete:
+      - "There. Feel the balance? Copper-clad haft, iron head. It'll bite oak like it's butter."
+    objectives:
+      - {type: deliver, targets: [IRON_INGOT], count: 8, description: Bring Garth 8 iron ingots}
+      - {type: deliver, targets: [COAL], count: 16, description: Bring Garth 16 coal}
+    rewards:
+      marks: 200
+      xp: {smithing: 500, mining: 200}
+      items: ["item:rootcut_hatchet 1","material:iron_nugget 18","material:experience_bottle 2"]
+
+  gleaners_plots:
+    chain: millbrook_gleaners
+    title: The Gleaner's Plots
+    giver: millbrook_folk_gleaner
+    level: 1
+    requires: [reach_through_the_kingsgate]
+    offer:
+      - "The boars tore up the gleaning plots. The old diggings at the edge of the Vale still turn up seed-stores from before the roads."
+      - "Dig a little, at a dig site or on your own island. Bring back what you learn about the soil."
+    complete:
+      - "That's good dark earth you've got under your nails. We'll plant again by the new moon."
+    objectives:
+      - {type: dig, count: 12, description: Dig 12 blocks of soil at a dig site or on your island}
+      - {type: deliver, targets: [WHEAT_SEEDS], count: 16, description: Bring 16 wheat seeds for the plots}
+    rewards:
+      marks: 180
+      xp: {excavation: 400, farming: 150}
+      items: ["item:surveyors_shovel 1","material:bone_meal 24","material:experience_bottle 2"]
+
+  wheels_on_the_road:
+    chain: millbrook_carters
+    title: Wheels on the Road
+    giver: millbrook_folk_carter
+    level: 5
+    requires: [quiet_fields_three_marks_a_wheel]
+    offer:
+      - "With the Tollkeepers broken, I could take a cart west. But the Hollow Road still has stragglers and boars."
+      - "Clear it, and the first load of grain to Highcrown carries your name."
+    complete:
+      - "First cart's loaded. The city will eat Millbrook bread by the week's end. Here, I had these made for the road."
+    objectives:
+      - {type: visit, zone: reach_hollow_road, description: Walk the Hollow Road}
+      - {type: kill, targets: ["custom:tollkeeper_cutthroat"], zone: reach_hollow_road, count: 5, description: Rout the last Tollkeeper stragglers}
+      - {type: kill, targets: ["custom:bristle_boar"], zone: reach_hollow_road, count: 4, description: Drive the boars off the road}
+    rewards:
+      marks: 380
+      xp: {hunting: 1300}
+      reputation: {frontier_wardens: 20}
+      items: ["item:forgehand_boots 1","material:bread 16","material:experience_bottle 3"]
+
+  what_the_barrow_remembers:
+    chain: millbrook_elder
+    title: What the Barrow Remembers
+    giver: millbrook_folk_elder
+    level: 6
+    requires: [quiet_fields_the_sower_went_west]
+    offer:
+      - "My grandmother's grandmother saw the Sundering. She said the Huntsman sealed the first fire in his barrow, and that the seal had an eye on it."
+      - "Talk to the Warden on the Hollow Road, then go down into the barrow. If the seal is broken, we need to know."
+    complete:
+      - "Broken, then. And the Sower has been there before you. Take this; it was my grandmother's, and it has turned more than one blade."
+    objectives:
+      - {type: talk, targets: [maren_ashdown], description: Ask Maren about the Huntsman's seal, dialogue: ["The Huntsman's Barrow is down the road. The grate's been forced from the inside. Bring friends."]}
+      - {type: clear, targets: [hollow_barrow], description: Clear the Hollow Barrow}
+    rewards:
+      marks: 900
+      xp: {hunting: 3000}
+      reputation: {frontier_wardens: 40, rift_scholars: 20}
+      items: ["item:counterweight_shield 1","material:golden_apple 2","material:experience_bottle 6"]
+
+  vale_daily_tollroad:
+    chain: vale_dailies
+    title: "Daily: Tollroad Watch"
+    giver: millbrook_folk_carter
+    level: 5
+    repeat: daily
+    requires: [wheels_on_the_road]
+    offer:
+      - "Stragglers keep drifting back to the old camp. Run them off and the carts keep rolling."
+    complete:
+      - "Road's clear. The carts thank you; so do I."
+    objectives:
+      - {type: kill, targets: ["custom:tollkeeper_cutthroat", "custom:tollkeeper_bowman"], zone: reach_tollroad, count: 8, description: Clear the Tollkeeper camp}
+    rewards:
+      marks: 200
+      xp: {hunting: 450}

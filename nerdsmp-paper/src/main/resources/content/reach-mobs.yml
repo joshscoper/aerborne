@@ -127,3 +127,22 @@ mobs:
     ability: none
     mark-reward: 16
     hunting-experience: 80
+
+  # ------------------------------------------------------------------ World boss (WorldBossService)
+  # Comes to the Stone Rings every two hours. Its health grows with every player fighting it (mobs.scaling.boss-*);
+  # rewards are paid by share of damage, so its own mark-reward stays small.
+  thunderhide:
+    rank: elite
+    boss: true
+    name: "<gradient:#74b9ff:#0984e3><bold>Thunderhide, the Storm Ram</bold></gradient>"
+    type: ravager
+    health: 900
+    attack-damage: 12
+    scale: 1.5
+    speed: 0.26
+    ability: pulse
+    ability-radius: 6
+    ability-damage: 7
+    ability-cooldown-seconds: 8
+    mark-reward: 10
+    hunting-experience: 300

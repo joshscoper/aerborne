@@ -86,6 +86,7 @@ public final class ChannelChatManager implements Listener {
         if (args.length > 1) sendIsland(player, selection, Component.text(String.join(" ", Arrays.copyOfRange(args, 1, args.length))));
         else {
             settings.channel(player.getUniqueId(), ChatChannel.ISLAND.id()); islandChannels.put(player.getUniqueId(), selection);
+            plugin.support().leave(player);
             Chat.success(player, "Chat set to <white>" + Chat.escape(island.name()) + "</white>. Only your co-op can hear you.");
             Chat.info(player, "Leave with " + Chat.command("channel global") + ".");
         }
@@ -116,6 +117,7 @@ public final class ChannelChatManager implements Listener {
             homesteadChannels.remove(player.getUniqueId());
             settings.channel(player.getUniqueId(), ChatChannel.HOMESTEAD.id());
             homesteadChannels.put(player.getUniqueId(), selection);
+            plugin.support().leave(player);
             Chat.success(player, "Chat set to <white>" + Chat.escape(home.name()) + "</white>.");
             Chat.info(player, "Leave with " + Chat.command("channel global") + ".");
         } else {
@@ -133,10 +135,16 @@ public final class ChannelChatManager implements Listener {
         }
         if (args.length == 0) {
             ChatChannel selected = selected(player);
+            if (plugin.support().privateChat(player.getUniqueId())) { Chat.info(player, "Active channel: <aqua>Private support</aqua>. " + Chat.command("support leave") + " returns to your previous channel."); return true; }
             Chat.send(player, "<gray>Active channel</gray> " + selected.tag() + " <white>" + selected.displayName() + "</white>");
-            Chat.usage(player, "/channel [global|local|trade|party|" + (plugin.skyblockEnabled() ? "island" : "homestead") + "|staff] [message]");
+            Chat.usage(player, "/channel [global|local|trade|party|" + (plugin.skyblockEnabled() ? "island" : "homestead") + "|staff|support] [message]");
             if (selected == ChatChannel.HOMESTEAD) Chat.usage(player, "/claim chat <owner>");
             return true;
+        }
+        if (args[0].equalsIgnoreCase("support")) {
+            if (args.length == 1) return plugin.support().handle(sender, "support", new String[]{"chat"});
+            String[] reply = Arrays.copyOf(args, args.length); reply[0] = "reply";
+            return plugin.support().handle(sender, "support", reply);
         }
         ChatChannel channel = ChatChannel.parse(args[0]);
         if (channel == null || !allowed(player, channel)) {
@@ -146,6 +154,7 @@ public final class ChannelChatManager implements Listener {
         if (args.length == 1) {
             if (channel == ChatChannel.ISLAND) return handleIsland(sender, new String[0]);
             settings.channel(player.getUniqueId(), channel.id());
+            plugin.support().leave(player);
             Chat.success(player, "Chat channel set to <white>" + channel.displayName() + "</white>.");
             return true;
         }
@@ -161,6 +170,7 @@ public final class ChannelChatManager implements Listener {
         if (!allowed(player, channel)) { Chat.error(player, "That channel is not available to you."); return true; }
         if (args.length == 0) {
             settings.channel(player.getUniqueId(), channel.id());
+            plugin.support().leave(player);
             Chat.success(player, "Chat channel set to <white>" + channel.displayName() + "</white>.");
             return true;
         }
@@ -170,7 +180,7 @@ public final class ChannelChatManager implements Listener {
 
     public List<String> tabComplete(String command, String[] args) {
         if (command.equalsIgnoreCase("channel") && args.length == 1) {
-            return Arrays.stream(ChatChannel.values()).filter(c -> c != (plugin.skyblockEnabled() ? ChatChannel.HOMESTEAD : ChatChannel.ISLAND)).map(ChatChannel::id).toList();
+            return java.util.stream.Stream.concat(Arrays.stream(ChatChannel.values()).filter(c -> c != (plugin.skyblockEnabled() ? ChatChannel.HOMESTEAD : ChatChannel.ISLAND)).map(ChatChannel::id), java.util.stream.Stream.of("support")).toList();
         }
         return List.of();
     }

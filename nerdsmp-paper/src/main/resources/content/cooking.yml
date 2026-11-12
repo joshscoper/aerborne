@@ -1,5 +1,6 @@
 schema-version: 2
-# One serving per craft. Normal hunger/saturation values and bowl returns are retained.
+# One serving per craft. Native consumption, effects and bowl returns are retained.
+# Hunger is disabled by food-and-recovery; all food can be eaten while full and grants Well Fed.
 # Cooking raises the quality of prepared meals. Eating never awards XP, Marks or extra items.
 meals:
   orchard_loaf:

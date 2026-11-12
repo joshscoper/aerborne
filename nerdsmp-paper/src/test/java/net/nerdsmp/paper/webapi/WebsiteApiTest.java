@@ -103,4 +103,34 @@ class WebsiteApiTest {
             assertFalse(WebLinkCodes.valid(bad), String.valueOf(bad));
         }
     }
+
+    @Test void expandedBoardsAndProfileStandingsFitTheirSeparateBudgets() {
+        var rankings = new java.util.EnumMap<LeaderboardService.Board, List<LeaderboardService.Entry>>(LeaderboardService.Board.class);
+        var entries = new java.util.ArrayList<LeaderboardService.Entry>();
+        var profiles = new java.util.HashMap<AccountId, LeaderboardService.Profile>();
+        for (int index = 0; index < 26; index++) {
+            var account = AccountId.random();
+            String name = "Player%010d".formatted(index);
+            var scores = new java.util.EnumMap<LeaderboardService.Board, Long>(LeaderboardService.Board.class);
+            for (var board : LeaderboardService.Board.values()) scores.put(board, Long.MAX_VALUE - index);
+            entries.add(new LeaderboardService.Entry(account, name, scores));
+            profiles.put(account, new LeaderboardService.Profile(name, 100, "Mythic", Map.of()));
+        }
+        for (var board : LeaderboardService.Board.values()) rankings.put(board, LeaderboardService.rank(entries, board));
+        var updated = Instant.parse("2026-10-21T12:00:00Z");
+        String body = ApiSnapshots.leaderboardJson(rankings, updated);
+        var json = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+        assertEquals(16, json.getAsJsonObject("boards").size());
+        for (var board : LeaderboardService.Board.values()) {
+            var published = json.getAsJsonObject("boards").getAsJsonObject(ApiSnapshots.key(board));
+            assertEquals(26, published.get("players").getAsInt());
+            assertEquals(25, published.getAsJsonArray("top").size());
+            assertEquals(Long.MAX_VALUE, published.getAsJsonArray("top").get(0).getAsJsonObject().get("score").getAsLong());
+        }
+        var playerJson = ApiSnapshots.profileJson(rankings, profiles, updated);
+        assertEquals(16, com.google.gson.JsonParser.parseString(playerJson.get("player0000000000")).getAsJsonObject().getAsJsonObject("boards").size());
+        assertDoesNotThrow(() -> new ApiSnapshot(1, "{}", "{}", "{}", body, playerJson));
+        assertThrows(IllegalArgumentException.class, () -> new ApiSnapshot(1, "{}", "{}", "{}", "x".repeat(ApiSnapshot.MAX_LEADERBOARD_BYTES + 1), Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new ApiSnapshot(1, "x".repeat(ApiSnapshot.MAX_RESPONSE_BYTES + 1), "{}", "{}", body, Map.of()));
+    }
 }

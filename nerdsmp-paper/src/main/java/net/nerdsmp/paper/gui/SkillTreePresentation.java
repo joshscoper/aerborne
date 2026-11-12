@@ -42,7 +42,7 @@ public final class SkillTreePresentation {
             lore.add("<gray>" + String.format(Locale.ROOT, "%,d", remaining) + " skill XP to go.</gray>");
         } else lore.add("<gold>All eight talent points earned.</gold>");
         lore.add("");
-        lore.add("<gray>Eight points. Twelve talents. Build your path.</gray>");
+        lore.add("<gray>Eight points. Sixteen ranks. Build your path.</gray>");
         lore.add("<dark_gray>Each talent costs one point for this skill.</dark_gray>");
         if(skill==Skill.FORESTRY) {
             lore.add("");
@@ -85,13 +85,13 @@ public final class SkillTreePresentation {
         var progress = snapshot.skills().getOrDefault(node.skill(), new ProgressionService.SkillProgress(0, 0));
         boolean owned = snapshot.talents().contains(node.id());
         boolean level = progress.level() >= node.requiredLevel();
-        boolean prerequisite = node.previousId() == null || snapshot.talents().contains(node.previousId());
+        boolean prerequisite = node.requirement().met(snapshot.talents());
         State state = owned ? State.UNLOCKED : !level ? State.LEVEL_LOCKED : !prerequisite ? State.PATH_LOCKED
             : snapshot.talentPointsAvailable(node.skill()) > 0 ? State.AVAILABLE : State.NO_POINTS;
-        TalentBranch branch = tree(node.skill()).branches().stream().filter(b -> b.id().equals(node.branchId())).findFirst().orElseThrow();
+        TalentBranch branch = tree(node.skill()).branches().stream().filter(b -> b.id().equals(node.branchId())).findFirst().orElse(null);
         List<String> lore = new ArrayList<>();
         lore.add("<white>" + node.effect() + "</white>");
-        lore.add("<gray>Path total at this tier</gray> <aqua>+" + shown(branch.valueThrough(node.tier())) + "%</aqua>");
+        if (branch != null) lore.add("<gray>Path total at this tier</gray> <aqua>+" + shown(branch.valueThrough(node.tier())) + "%</aqua>");
         lore.add("");
         lore.add("<gray>Cost</gray> <yellow>1 " + node.skill().displayName() + " point</yellow>");
         lore.add((level ? "<green>" : "<red>") + node.skill().displayName() + " " + node.requiredLevel()
@@ -99,6 +99,10 @@ public final class SkillTreePresentation {
         if (node.previousId() != null) {
             String previous = SkillTreeCatalog.node(node.previousId()).orElseThrow().name();
             lore.add((prerequisite ? "<green>" : "<red>") + previous + (prerequisite ? " learned</green>" : " required</red>"));
+        }
+        else if (node.requirement().minimum() > 0) {
+            lore.add("<gray>Requires any " + node.requirement().minimum() + " connected ranks:</gray>");
+            node.requirement().options().forEach(id -> lore.add("<gray>" + TalentTreePresentation.name(id) + "</gray>"));
         }
         boolean cappedXp = node.stat().equals("skill-xp-percent") && progress.level() >= 50;
         if (cappedXp) lore.add("<yellow>Level 50: this skill no longer gains XP.</yellow>");

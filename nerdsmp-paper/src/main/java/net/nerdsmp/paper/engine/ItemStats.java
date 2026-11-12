@@ -11,7 +11,7 @@ public final class ItemStats {
         "excavation-power", "skill-xp-percent", "durability-save-percent", "poison-potency-percent",
         "execute-damage-percent", "life-steal-percent", "fishing-luck-percent", "treasure-find-percent",
         "excavation-find-percent", "geode-find-percent", "harvest-extra-percent", "job-marks-percent",
-        "bleed-percent", "vein-size", "chain-harvest");
+        "bleed-percent", "vein-size", "chain-harvest", "max-health", "max-health-percent");
     private ItemStats() { }
     public static Set<String> allowed() { return ALLOWED; }
     public static Set<String> setBonusAllowed() {
@@ -24,7 +24,7 @@ public final class ItemStats {
         Map<String, Double> result = new TreeMap<>();
         stats.forEach((id, value) -> {
             double maximum = id != null && (id.equals("damage") || id.equals("projectile-damage")
-                || id.equals("defense") || id.equals("damage-flat")) ? 1_000 : 100;
+                || id.equals("defense") || id.equals("damage-flat") || id.equals("max-health")) ? 1_000 : 100;
             if (id == null || !allowed.contains(id) || value == null || !Double.isFinite(value) || value < 0 || value > maximum)
                 throw new IllegalArgumentException("Unsupported or out-of-range stat: " + id + ".");
             if (value != 0) result.put(id, value);

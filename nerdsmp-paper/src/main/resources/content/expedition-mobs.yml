@@ -5,8 +5,10 @@
 # Extra keys beyond content/mobs.yml's: scale (size, 1 = normal), speed (movement speed attribute),
 # equipment ({head, chest, legs, feet, hand, off-hand}: item ids), and ability: none for creatures
 # whose attacks come from the expedition ability kit instead of the built-in pulse.
+# Rank is explicit so ordinary waves do not inherit the legacy elite default and random elite abilities.
 mobs:
   old_sentinel:
+    rank: normal
     name: "<gradient:#a4b0be:#57606f><bold>The Old Sentinel</bold></gradient>"
     type: iron_golem
     boss: true
@@ -19,6 +21,7 @@ mobs:
 
   # The Hollow Barrow
   barrow_warden:
+    rank: elite
     name: "<gradient:#b2bec3:#636e72>Barrow Warden</gradient>"
     type: skeleton
     health: 120
@@ -88,6 +91,7 @@ mobs:
     mark-reward: 60
     equipment: {head: leather_helmet, chest: leather_chestplate, hand: bow}
   thornheart_shaman:
+    rank: normal
     name: "<gradient:#badc58:#218c74><bold>The Thornheart Shaman</bold></gradient>"
     type: evoker
     boss: true
@@ -99,6 +103,7 @@ mobs:
 
   # The Sunken Aqueduct
   sluice_keeper:
+    rank: elite
     name: "<dark_aqua>Sluice Keeper</dark_aqua>"
     type: drowned
     health: 50
@@ -142,6 +147,7 @@ mobs:
     ability: none
     mark-reward: 110
   tidewarden:
+    rank: normal
     name: "<gradient:#7ed6df:#130f40><bold>The Tidewarden</bold></gradient>"
     type: iron_golem
     boss: true
@@ -154,6 +160,7 @@ mobs:
 
   # Gloomforge Mines
   gloom_miner:
+    rank: normal
     name: "<gray>Gloom Miner</gray>"
     type: zombie
     health: 30
@@ -162,6 +169,7 @@ mobs:
     mark-reward: 2
     equipment: {head: iron_helmet, hand: iron_pickaxe}
   grell_overseer:
+    rank: normal
     name: "<gradient:#e17055:#2d3436>Overseer Grell</gradient>"
     type: vindicator
     boss: true
@@ -172,6 +180,7 @@ mobs:
     mark-reward: 20
     equipment: {head: iron_helmet, hand: iron_axe}
   blastmaster:
+    rank: normal
     name: "<gradient:#fdcb6e:#d63031>The Blastmaster</gradient>"
     type: pillager
     boss: true
@@ -182,6 +191,7 @@ mobs:
     mark-reward: 20
     equipment: {head: leather_helmet, hand: crossbow}
   slag_hound:
+    rank: normal
     name: "<gradient:#ff7675:#2d3436>Slag Hound</gradient>"
     type: ravager
     boss: true
@@ -191,6 +201,7 @@ mobs:
     ability: none
     mark-reward: 20
   deep_foreman:
+    rank: normal
     name: "<gradient:#fab1a0:#2d3436><bold>The Deep Foreman</bold></gradient>"
     type: zombie
     boss: true
@@ -262,6 +273,7 @@ mobs:
     ability: none
     mark-reward: 320
   ember_warden:
+    rank: normal
     name: "<gradient:#ffbe76:#eb4d4b><bold>The Ember Warden</bold></gradient>"
     type: blaze
     boss: true
@@ -271,6 +283,7 @@ mobs:
     ability: none
     mark-reward: 120
   frost_warden:
+    rank: normal
     name: "<gradient:#dff9fb:#22a6b3><bold>The Frost Warden</bold></gradient>"
     type: stray
     boss: true
@@ -281,6 +294,7 @@ mobs:
     mark-reward: 120
     equipment: {head: blue_ice, hand: bow}
   stone_warden:
+    rank: normal
     name: "<gradient:#b8e994:#3c6382><bold>The Stone Warden</bold></gradient>"
     type: vindicator
     boss: true
@@ -294,6 +308,7 @@ mobs:
 
   # Cinder Keep (raid)
   gorrak_kilnbreaker:
+    rank: normal
     name: "<gradient:#ff9f43:#c0392b><bold>Gorrak the Kilnbreaker</bold></gradient>"
     type: ravager
     boss: true
@@ -352,6 +367,7 @@ mobs:
     mark-reward: 10
     equipment: {head: golden_helmet, chest: netherite_chestplate, legs: golden_leggings, hand: golden_axe}
   ember_hound:
+    rank: normal
     name: "<gold>Ember Hound</gold>"
     type: hoglin
     health: 40
@@ -360,6 +376,7 @@ mobs:
     ability: none
     mark-reward: 4
   skarn:
+    rank: normal
     name: "<gradient:#bdc3c7:#7f8c8d><bold>Skarn, the Ash Hound</bold></gradient>"
     type: hoglin
     boss: true
@@ -369,6 +386,7 @@ mobs:
     ability: none
     mark-reward: 40
   vesh:
+    rank: normal
     name: "<gradient:#ffb142:#ff5252><bold>Vesh, the Ember Hound</bold></gradient>"
     type: hoglin
     boss: true
@@ -378,6 +396,7 @@ mobs:
     ability: none
     mark-reward: 40
   lava_brute:
+    rank: elite
     name: "<red>Lava Brute</red>"
     type: piglin_brute
     health: 90
@@ -387,6 +406,7 @@ mobs:
     mark-reward: 8
     equipment: {chest: golden_chestplate, hand: golden_axe}
   flamewaker:
+    rank: normal
     name: "<gold>Flamewaker</gold>"
     type: wither_skeleton
     health: 50
@@ -395,6 +415,7 @@ mobs:
     mark-reward: 5
     equipment: {head: golden_helmet, hand: golden_sword}
   rune_warden:
+    rank: elite
     name: "<gradient:#f6e58d:#e17055>Rune Warden</gradient>"
     type: wither_skeleton
     health: 110
@@ -404,6 +425,7 @@ mobs:
     mark-reward: 10
     equipment: {head: netherite_helmet, chest: golden_chestplate, hand: netherite_sword}
   firesworn:
+    rank: normal
     name: "<yellow>Firesworn</yellow>"
     type: blaze
     health: 36
@@ -411,6 +433,7 @@ mobs:
     ability: none
     mark-reward: 4
   vael_slag_priest:
+    rank: normal
     name: "<gradient:#a29bfe:#e17055><bold>Vael, the Slag Priest</bold></gradient>"
     type: witch
     boss: true
@@ -420,6 +443,7 @@ mobs:
     ability: none
     mark-reward: 60
   steward_ashkar:
+    rank: normal
     name: "<gradient:#fdcb6e:#d63031><bold>Steward Ashkar</bold></gradient>"
     type: piglin_brute
     boss: true
@@ -430,6 +454,7 @@ mobs:
     mark-reward: 60
     equipment: {head: golden_helmet, chest: netherite_chestplate, hand: golden_axe}
   flamewaker_guard:
+    rank: normal
     name: "<gold><bold>Flamewaker Guard</bold></gold>"
     type: wither_skeleton
     boss: true
@@ -440,6 +465,7 @@ mobs:
     mark-reward: 20
     equipment: {head: golden_helmet, chest: golden_chestplate, hand: netherite_sword}
   flamewaker_priest:
+    rank: normal
     name: "<gold><bold>Flamewaker Priest</bold></gold>"
     type: wither_skeleton
     boss: true
@@ -450,6 +476,7 @@ mobs:
     mark-reward: 20
     equipment: {head: golden_helmet, hand: blaze_rod}
   pyrrhax:
+    rank: normal
     name: "<gradient:#ffeaa7:#ff7675:#d63031><bold>Pyrrhax, the Ashen Sovereign</bold></gradient>"
     type: iron_golem
     boss: true
@@ -460,6 +487,7 @@ mobs:
     ability: none
     mark-reward: 400
   son_of_flame:
+    rank: elite
     name: "<gradient:#ff7675:#fdcb6e>Son of Flame</gradient>"
     type: magma_cube
     health: 70
@@ -470,6 +498,7 @@ mobs:
 
   # Themed regulars: every expedition's rank and file, in place of plain vanilla mobs.
   gale_raider:
+    rank: elite
     name: "<white>Gale Raider</white>"
     type: husk
     health: 22
@@ -478,6 +507,7 @@ mobs:
     mark-reward: 2
     equipment: {head: leather_helmet, chest: leather_chestplate, hand: wooden_sword}
   skyway_brigand:
+    rank: normal
     name: "<white>Skyway Brigand</white>"
     type: zombie
     health: 22
@@ -486,6 +516,7 @@ mobs:
     mark-reward: 2
     equipment: {head: chainmail_helmet, hand: stone_axe}
   cloudline_archer:
+    rank: normal
     name: "<white>Cloudline Archer</white>"
     type: skeleton
     health: 20
@@ -494,6 +525,7 @@ mobs:
     mark-reward: 2
     equipment: {head: leather_helmet, hand: bow}
   barrow_thrall:
+    rank: normal
     name: "<gray>Barrow Thrall</gray>"
     type: zombie
     health: 28
@@ -502,6 +534,7 @@ mobs:
     mark-reward: 3
     equipment: {head: chainmail_helmet, chest: chainmail_chestplate, hand: iron_shovel}
   crypt_archer:
+    rank: normal
     name: "<gray>Crypt Archer</gray>"
     type: skeleton
     health: 24
@@ -510,6 +543,7 @@ mobs:
     mark-reward: 3
     equipment: {head: chainmail_helmet, hand: bow}
   canopy_stalker:
+    rank: normal
     name: "<dark_green>Canopy Stalker</dark_green>"
     type: spider
     health: 24
@@ -518,6 +552,7 @@ mobs:
     ability: none
     mark-reward: 3
   thornling:
+    rank: normal
     name: "<green>Thornling</green>"
     type: cave_spider
     health: 16
@@ -550,6 +585,7 @@ mobs:
     ability: none
     mark-reward: 0
   bough_sniper:
+    rank: normal
     name: "<dark_green>Bough Sniper</dark_green>"
     type: skeleton
     health: 26
@@ -613,6 +649,7 @@ mobs:
     ability: none
     mark-reward: 3
   sluicehand:
+    rank: normal
     name: "<dark_aqua>Drowned Sluicehand</dark_aqua>"
     type: drowned
     health: 30
@@ -664,6 +701,7 @@ mobs:
     mark-reward: 3
     equipment: {hand: iron_shovel}
   powder_sapper:
+    rank: normal
     name: "<gold>Powder Sapper</gold>"
     type: pillager
     health: 30
@@ -672,6 +710,7 @@ mobs:
     mark-reward: 4
     equipment: {head: iron_helmet, hand: crossbow}
   ember_wisp:
+    rank: normal
     name: "<gold>Ember Wisp</gold>"
     type: blaze
     health: 30
@@ -679,6 +718,7 @@ mobs:
     ability: none
     mark-reward: 4
   stonemite:
+    rank: normal
     name: "<gray>Stonemite</gray>"
     type: silverfish
     health: 14
@@ -687,6 +727,7 @@ mobs:
     ability: none
     mark-reward: 2
   archive_sentry:
+    rank: normal
     name: "<white>Archive Sentry</white>"
     type: vindicator
     health: 36
@@ -870,6 +911,7 @@ mobs:
     mark-reward: 7
     equipment: {head: netherite_helmet, hand: netherite_sword}
   cinder_thrall:
+    rank: normal
     name: "<red>Cinder Thrall</red>"
     type: wither_skeleton
     health: 40

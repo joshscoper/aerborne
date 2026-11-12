@@ -46,4 +46,17 @@ final class ObservedEconomyServiceTest {
         assertEquals(EconomyService.TransactionResult.Status.APPLIED,
             economy.credit(AccountId.random(), 1, REASON, "k").toCompletableFuture().join().status());
     }
+
+    @Test void metricMovementsAreIndependentOfBalanceListenersAndOnlyReportAppliedOperations() {
+        var economy=new ObservedEconomyService(new FakeEconomy());
+        List<ObservedEconomyService.Movement> movements=new ArrayList<>();economy.onMovement(movements::add);
+        economy.onChange(account->{throw new IllegalStateException("display failure");});
+        var a=AccountId.random();var b=AccountId.random();
+        economy.credit(a,20,REASON,"one").toCompletableFuture().join();
+        economy.debit(a,5,REASON,"two").toCompletableFuture().join();
+        economy.transfer(a,b,7,REASON,"three").toCompletableFuture().join();
+        assertEquals(List.of(new ObservedEconomyService.Movement("credit",20,"test"),new ObservedEconomyService.Movement("transfer",7,"test")),movements);
+        economy.onMovement(m->{throw new IllegalStateException("metrics failure");});
+        assertEquals(EconomyService.TransactionResult.Status.APPLIED,economy.credit(a,1,REASON,"four").toCompletableFuture().join().status());
+    }
 }

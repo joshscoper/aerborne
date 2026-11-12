@@ -44,6 +44,8 @@ public final class GearSetService implements Listener {
     private final AttackCooldownTracker attackCooldowns = new AttackCooldownTracker();
     private final Set<java.util.UUID> pendingRefresh = new HashSet<>();
     private final double criticalHitMultiplier;
+    private Function<Player, Map<CharacterEquipmentSlot, ItemStack>> accessories = ignored -> Map.of();
+    public void accessories(Function<Player, Map<CharacterEquipmentSlot, ItemStack>> source) { accessories=java.util.Objects.requireNonNull(source); }
 
     public GearSetService(
         JavaPlugin plugin,
@@ -62,6 +64,10 @@ public final class GearSetService implements Listener {
     }
 
     public GearProfile profile(Player player, ItemStack mainHand) {
+        return withTalents(player,profile(nativeEquipment(player,mainHand),accessories.apply(player)));
+    }
+
+    private EnumMap<EquipmentSlot,ItemStack> nativeEquipment(Player player, ItemStack mainHand) {
         EnumMap<EquipmentSlot, ItemStack> equipped = new EnumMap<>(EquipmentSlot.class);
         equipped.put(EquipmentSlot.HAND, mainHand);
         equipped.put(EquipmentSlot.OFF_HAND, player.getInventory().getItemInOffHand());
@@ -69,7 +75,25 @@ public final class GearSetService implements Listener {
         equipped.put(EquipmentSlot.CHEST, player.getInventory().getChestplate());
         equipped.put(EquipmentSlot.LEGS, player.getInventory().getLeggings());
         equipped.put(EquipmentSlot.FEET, player.getInventory().getBoots());
-        GearProfile equipment = profile(equipped);
+        return equipped;
+    }
+
+    /** A read-only projection of the same two slot changes made by the equipment transaction. */
+    public GearProfile projectedProfile(Player player, CharacterEquipmentSlot target, ItemStack incoming, int bagSlot) {
+        var nativeGear=nativeEquipment(player,player.getInventory().getItemInMainHand());
+        Map<CharacterEquipmentSlot,ItemStack> extra=new EnumMap<>(CharacterEquipmentSlot.class);extra.putAll(accessories.apply(player));
+        EquipmentSlot nativeSlot=switch(target.type()) {
+            case HEAD->EquipmentSlot.HEAD;case CHEST->EquipmentSlot.CHEST;case LEGS->EquipmentSlot.LEGS;case FEET->EquipmentSlot.FEET;
+            case MAIN_HAND->EquipmentSlot.HAND;case OFF_HAND->EquipmentSlot.OFF_HAND;default->null;
+        };
+        ItemStack previous=target.accessory()?extra.get(target):nativeGear.get(nativeSlot);
+        if(bagSlot==player.getInventory().getHeldItemSlot()&&nativeSlot!=EquipmentSlot.HAND) nativeGear.put(EquipmentSlot.HAND,previous);
+        if(target.accessory()) {if(incoming==null) extra.remove(target);else extra.put(target,incoming);}
+        else nativeGear.put(nativeSlot,incoming);
+        return withTalents(player,profile(nativeGear,extra));
+    }
+
+    private GearProfile withTalents(Player player, GearProfile equipment) {
         Map<String, Double> stats = new HashMap<>(equipment.stats());
         var training = progression.apply(player);
         PassiveTalentStats.resolve(training.talents()).forEach((stat, value) -> stats.merge(stat, value, Double::sum));
@@ -77,6 +101,10 @@ public final class GearSetService implements Listener {
     }
 
     public GearProfile profile(Map<EquipmentSlot, ItemStack> equipped) {
+        return profile(equipped, Map.of());
+    }
+
+    public GearProfile profile(Map<EquipmentSlot, ItemStack> equipped, Map<CharacterEquipmentSlot, ItemStack> accessories) {
         Map<String, Double> stats = new HashMap<>();
         Map<String, Set<ItemId>> pieces = new HashMap<>();
 
@@ -88,6 +116,12 @@ public final class GearSetService implements Listener {
             if (gear.setId() != null) {
                 pieces.computeIfAbsent(gear.setId(), ignored -> new HashSet<>()).add(gear.itemId());
             }
+        }));
+        Set<ItemId> accessoryIds = new HashSet<>();
+        accessories.forEach((slot, item) -> items.gear(item).ifPresent(gear -> {
+            if (!slot.accessory() || gear.slot() != slot.type() || item.getAmount() != 1 || !accessoryIds.add(gear.itemId())) return;
+            gear.stats().forEach((stat, value) -> stats.merge(stat, value, Double::sum));
+            if (gear.setId() != null) pieces.computeIfAbsent(gear.setId(), ignored -> new HashSet<>()).add(gear.itemId());
         }));
 
         Map<String, Integer> pieceCounts = new HashMap<>();
@@ -116,6 +150,7 @@ public final class GearSetService implements Listener {
     public Optional<DamageBreakdown> damageBreakdown(Player player) {
         return damageBreakdown(player, player.getAttackCooldown());
     }
+    public Optional<DamageBreakdown> fullChargeDamage(Player player) { return damageBreakdown(player, 1); }
 
     private Optional<DamageBreakdown> damageBreakdown(Player player, double attackCooldown) {
         return damageBreakdown(player, player.getInventory().getItemInMainHand(), "damage", attackCooldown, 0.0D);

@@ -79,13 +79,13 @@ final class IslandDevelopmentTest {
         for(var talent:IslandTalent.values()) { assertTrue(occupied.add(talent.menuSlot())); assertTrue(talent.menuSlot()<45); }
         assertEquals(16,IslandTalent.values().length); assertEquals(48,IslandTalent.values().length*IslandTalent.MAX_RANK);
         var legacy=new IslandDevelopment.Progress(IslandDevelopment.experienceForLevel(50),day.get(),0,Map.of(IslandTalent.STACKING,3,IslandTalent.LOGISTICS,3));
-        assertEquals(19,legacy.availablePoints()); assertEquals(16,legacy.stackLimit()); assertEquals(8,legacy.hopperLimit());
+        assertEquals(19,legacy.availablePoints()); assertEquals(16,legacy.stackLimit()); assertEquals(8 + 2,legacy.hopperLimit()); // +2 from the level 35 reward
     }
     @Test void newTalentsRequireLevelAndHaveRuntimeEffectsThatSurviveRestart() {
         setup();seed(50);var service=new IslandDevelopment(data,islands,"test",day::get);
         for(var talent:List.of(IslandTalent.STACKING,IslandTalent.LOGISTICS,IslandTalent.WORKSHOP,IslandTalent.STORAGE_NETWORK))
             for(int rank=0;rank<3;rank++) service.learn(owner,owner,talent,rank);
-        var progress=service.progress(owner); assertEquals(14,progress.hopperLimit());assertEquals(112,progress.hopperBatch()); assertEquals(7,progress.machineCycleSeconds(10));
+        var progress=service.progress(owner); assertEquals(14 + 2,progress.hopperLimit());assertEquals(112 + 16,progress.hopperBatch()); assertEquals(7,progress.machineCycleSeconds(10));
         assertEquals(progress,new IslandDevelopment(data,islands,"test",day::get).progress(owner));
     }
     @Test void generatorPreferenceNeverCreatesAnOreOutsideItsRolls() {
@@ -93,5 +93,23 @@ final class IslandDevelopmentTest {
             var first = GeneratorLoot.roll(tier, a); var second = GeneratorLoot.roll(tier, b); var selected = GeneratorLoot.rarer(first, second);
             assertTrue(selected == first || selected == second);
         }
+    }
+
+    @Test void eitherIslandForkCanReachItsCapstoneAndSavedLegacyChainsRemainValid() {
+        setup(); seed(50); var service=new IslandDevelopment(data,islands,"test",day::get);
+        for(var talent:List.of(IslandTalent.STACKING,IslandTalent.WORKSHOP))
+            for(int rank=0;rank<2;rank++) service.learn(owner,owner,talent,rank);
+        assertEquals(0,service.progress(owner).rank(IslandTalent.LOGISTICS));
+        service.learn(owner,owner,IslandTalent.STORAGE_NETWORK,0);
+        assertEquals(2 + 2,service.progress(owner).hopperLimit());
+        assertEquals(24 + 16,service.progress(owner).hopperBatch());
+        assertEquals(8,service.progress(owner).machineCycleSeconds(10));
+        assertEquals(service.progress(owner),new IslandDevelopment(data,islands,"test",day::get).progress(owner));
+        for(var talent:List.of(IslandTalent.PROSPECTING,IslandTalent.MINING_GUILD))
+            for(int rank=0;rank<2;rank++) service.learn(owner,owner,talent,rank);
+        assertEquals(0,service.progress(owner).rank(IslandTalent.RICH_SEAMS));
+        service.learn(owner,owner,IslandTalent.ORE_MASTERY,0);
+        assertEquals(16 + 15,service.progress(owner).skillBonus(Skill.MINING)); // +15 from the level 50 reward
+        assertThrows(IllegalArgumentException.class,()->service.learn(member,owner,IslandTalent.ORE_MASTERY,1));
     }
 }

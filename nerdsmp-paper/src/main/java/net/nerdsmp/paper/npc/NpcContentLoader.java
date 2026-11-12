@@ -33,7 +33,7 @@ public final class NpcContentLoader {
         "menu", "quickstart", "settings", "profile", "adventurer", "skills", "mastery",
         "jobs", "daily", "playtime", "campaign", "warps", "party", "social", "duel",
         "cosmetics", "relics", "recipes", "fishing",
-        "excavation", "claim", "market", "shops", "grave", "reputation", "journal", "digsite", "expedition"
+        "excavation", "claim", "market", "shops", "grave", "spirit", "reputation", "journal", "digsite", "expedition"
     );
 
     private final JavaPlugin plugin;
@@ -220,6 +220,8 @@ public final class NpcContentLoader {
             if (text.isEmpty() && section.isString("text")) {
                 text = List.of(section.getString("text", ""));
             }
+            text = text.stream().map(line -> line.equals("Your grave holds for twenty-four hours. Walking back is free. The shortcut is not.")
+                ? "Death keeps your gear and experience. Return to your body as a spirit, or ask the Spirit Healer at your sanctuary to bring you back." : line).toList();
             result.put(nodeId, new NpcContent.DialogueNode(nodeId, text, choices));
         }
         return result;

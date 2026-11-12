@@ -1,0 +1,42 @@
+# What's New: shown once to each player after an update, and any time with /whatsnew.
+# Bump "version" for each release; players who haven't seen it get a nudge when they join.
+# Each page is a short heading and a few lines (MiniMessage). A book page fits about 12 short lines.
+version: "2026-11-12b"
+title: "The Bazaar, Collections & the Council"
+pages:
+  - heading: "<dark_aqua><b>What's New</b></dark_aqua>"
+    lines:
+      - "<black>A market for bulk goods, collections for everything you gather, companion bonds, festivals and a council to vote for.</black>"
+      - ""
+      - "<dark_gray>Turn the page for each one.</dark_gray>"
+  - heading: "<dark_green><b>The Bazaar</b></dark_green>"
+    lines:
+      - "<black>Buy and sell crops, ore, logs, fish and drops instantly, or post your own buy orders and sell offers.</black>"
+      - ""
+      - "<black>Prices are on the website too.</black>"
+      - ""
+      - "<dark_gray>/bazaar</dark_gray>"
+  - heading: "<gold><b>Collections</b></gold>"
+    lines:
+      - "<black>Natural ore, logs, fish and beasts all count. Every tier pays Marks, skill XP and Favour.</black>"
+      - ""
+      - "<black>A whole category at tier III earns a title.</black>"
+      - ""
+      - "<dark_gray>/collections</dark_gray>"
+  - heading: "<dark_purple><b>Companion bonds</b></dark_purple>"
+    lines:
+      - "<black>Companions grow closer the more time you spend together: a name, tricks, sparkles and a glow.</black>"
+      - ""
+      - "<black>Just for looks, never stats.</black>"
+      - ""
+      - "<dark_gray>/companion bond</dark_gray>"
+  - heading: "<dark_red><b>Calendar & Council</b></dark_red>"
+    lines:
+      - "<black>Each month brings a festival with its own title. Vote in the first five days for the Wardens' Council: the winner's perk helps everyone.</black>"
+      - ""
+      - "<dark_gray>/calendar · /council</dark_gray>"
+  - heading: "<dark_green><b>Still new</b></dark_green>"
+    lines:
+      - "<black>Island visitors, the Visitor's Stall, the Farmstead, farming contests and nicknames from the last update.</black>"
+      - ""
+      - "<dark_gray>/island guests · /island farm</dark_gray>"

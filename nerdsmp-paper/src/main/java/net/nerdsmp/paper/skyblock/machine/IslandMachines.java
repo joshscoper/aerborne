@@ -271,7 +271,7 @@ public final class IslandMachines implements Listener, AutoCloseable {
         }
     }
     private static boolean allows(MachineKind kind, int slot, ItemStack item) {
-        if (slot < 0 || slot >= 6 || item.hasItemMeta()) return false;
+        if (slot < 0 || slot >= 6 || !net.nerdsmp.paper.item.FoodItems.ordinary(item)) return false;
         return slot < 3 ? MachineRecipes.acceptsInput(kind, item.getType()) : MachineRecipes.fuel(item.getType());
     }
     private boolean currentView(Player player, Inventory top, MachineView view) {
@@ -347,14 +347,14 @@ public final class IslandMachines implements Listener, AutoCloseable {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPrepare(PrepareItemCraftEvent event) {
         if (!(event.getRecipe() instanceof Keyed keyed) || !recipeKeys.contains(keyed.getKey())) return;
-        for (ItemStack item : event.getInventory().getMatrix()) if (item != null && !item.getType().isAir() && item.hasItemMeta()) {
+        for (ItemStack item : event.getInventory().getMatrix()) if (item != null && !item.getType().isAir() && !net.nerdsmp.paper.item.FoodItems.ordinary(item)) {
             event.getInventory().setResult(null); return;
         }
     }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (!(event.getRecipe() instanceof Keyed keyed) || !recipeKeys.contains(keyed.getKey())) return;
-        for (ItemStack item : event.getInventory().getMatrix()) if (item != null && !item.getType().isAir() && item.hasItemMeta()) {
+        for (ItemStack item : event.getInventory().getMatrix()) if (item != null && !item.getType().isAir() && !net.nerdsmp.paper.item.FoodItems.ordinary(item)) {
             event.setCancelled(true); return;
         }
     }
@@ -381,7 +381,7 @@ public final class IslandMachines implements Listener, AutoCloseable {
                 Inventory inventory = dropper.getInventory(); ItemStack[] current = inventory.getContents();
                 List<MachineRecipes.Stack> stacks = new ArrayList<>(9);
                 for (ItemStack item : current) stacks.add(item == null || item.getType().isAir() ? null
-                    : new MachineRecipes.Stack(item.getType(), item.getAmount(), !item.hasItemMeta()));
+                    : new MachineRecipes.Stack(item.getType(), item.getAmount(), net.nerdsmp.paper.item.FoodItems.ordinary(item)));
                 var planned = MachineRecipes.plan(entry.kind(), unlocked, stacks);
                 if (planned.isEmpty()) continue;
                 ItemStack[] next = new ItemStack[9];
@@ -391,6 +391,7 @@ public final class IslandMachines implements Listener, AutoCloseable {
                     ItemStack before = current[slot];
                     next[slot] = before != null && before.getType() == after.material() ? before.clone() : new ItemStack(after.material());
                     next[slot].setAmount(after.amount());
+                    next[slot] = net.nerdsmp.paper.item.ItemUpdater.current(next[slot]);
                 }
                 inventory.setContents(next); // One local container mutation; no economy/XP or cross-file item grants.
                 readyAt.put(entry.id(), now + sky.development().progress(entry.owner()).machineCycleSeconds(entry.kind().seconds()) * 1_000_000_000L);

@@ -87,6 +87,23 @@
       </div>
     </section>
 
+    <section class="view" data-view="metrics" hidden>
+      <div class="toolbar metrics-toolbar">
+        <div class="segmented" id="metrics-focus" role="tablist" aria-label="Metric category">
+          <button type="button" data-value="audience" aria-selected="true">Players &amp; retention</button>
+          <button type="button" data-value="gameplay">Gameplay</button>
+          <button type="button" data-value="economy">Economy</button>
+        </div>
+        <div class="metrics-range-actions">
+          <label class="field"><span class="visually-hidden">Metrics date range</span><select id="metrics-range"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label>
+          <button type="button" class="secondary" id="metrics-export">Export CSV</button>
+        </div>
+      </div>
+      <div id="metrics-coverage" class="metrics-coverage" role="status"></div>
+      <div id="metrics-kpis" class="kpis metrics-kpis"></div>
+      <div id="metrics-content"></div>
+    </section>
+
     <section class="view" data-view="players" hidden>
       <div class="toolbar">
         <div class="segmented" id="players-scope" role="tablist">

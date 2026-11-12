@@ -259,6 +259,11 @@ public final class EngagementService implements Listener, AutoCloseable {
         }
     }
 
+    public boolean recentlyActive(UUID player, long now) {
+        Long last = lastActiveAt.get(player);
+        return last != null && now - last <= activeTimeoutMillis;
+    }
+
     private void sample(Player player, long now) {
         AccountId account = sessions.account(player.getUniqueId()).orElse(null);
         Long previousSample = lastSampleAt.put(player.getUniqueId(), now);

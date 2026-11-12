@@ -1,4 +1,4 @@
-schema-version: 4
+schema-version: 5
 recipes:
   forester_axe:
     introduced: 4
@@ -351,3 +351,83 @@ recipes:
     level: 30
     shape: ["D D", "A A"]
     ingredients: {A: amethyst_shard, D: diamond}
+
+  travelers_pendant:
+    introduced: 5
+    result: travelers_pendant
+    skill: smithing
+    level: 5
+    shape: [" S ", "SAS", " C "]
+    ingredients: {S: string, A: amethyst_shard, C: copper_ingot}
+
+  trail_shoulders:
+    introduced: 5
+    result: trail_shoulders
+    skill: smithing
+    level: 5
+    shape: ["L L", " S ", "   "]
+    ingredients: {L: leather, S: string}
+
+  trail_cloak:
+    introduced: 5
+    result: trail_cloak
+    skill: smithing
+    level: 5
+    shape: ["S S", "WWW", " W "]
+    ingredients: {S: string, W: white_wool}
+
+  copper_bracers:
+    introduced: 5
+    result: copper_bracers
+    skill: smithing
+    level: 5
+    shape: ["C C", "S S", "   "]
+    ingredients: {C: copper_ingot, S: string}
+
+  leather_handguards:
+    introduced: 5
+    result: leather_handguards
+    skill: smithing
+    level: 5
+    shape: ["L L", "S S", "   "]
+    ingredients: {L: leather, S: string}
+
+  trail_belt:
+    introduced: 5
+    result: trail_belt
+    skill: smithing
+    level: 5
+    shape: ["   ", "LCL", "   "]
+    ingredients: {L: leather, C: copper_ingot}
+
+  copper_band:
+    introduced: 5
+    result: copper_band
+    skill: smithing
+    level: 5
+    shape: [" C ", "C C", " C "]
+    ingredients: {C: copper_ingot}
+
+  amethyst_band:
+    introduced: 5
+    result: amethyst_band
+    skill: smithing
+    level: 10
+    shape: [" C ", "CAC", " C "]
+    ingredients: {C: copper_ingot, A: amethyst_shard}
+
+  surveyors_charm:
+    introduced: 5
+    result: surveyors_charm
+    skill: smithing
+    level: 10
+    shape: [" S ", "FAF", " C "]
+    ingredients: {S: string, F: flint, A: amethyst_shard, C: copper_ingot}
+
+  tide_charm:
+    introduced: 5
+    result: tide_charm
+    skill: smithing
+    level: 10
+    shape: [" S ", "ANA", " C "]
+    ingredients: {S: string, A: amethyst_shard, N: nautilus_shell, C: copper_ingot}

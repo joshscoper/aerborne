@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-/** Verified native furnace output only: machines and collected vanilla XP are not smelting work. */
+/** Verified native ore/refining/cooking output only; taking inserted items or banked vanilla XP earns nothing. */
 public final class OreSmeltingService implements Listener, AutoCloseable {
     private static final int MAX_PENDING = 2048;
     private final NerdSmpPlugin plugin;
@@ -57,19 +57,18 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
         if (furnace == null) return;
         Cell cell = Cell.of(event.getBlock());
         finish(cell);
-        Material output = outputFor(event.getSource().getType());
+        Work output = work(event.getSource(), event.getResult());
         ItemStack source = furnace.getInventory().getSmelting();
         ItemStack result = event.getResult();
-        if (output == null || !plain(event.getSource()) || !plain(source)
-            || !event.getSource().isSimilar(source) || result.getType() != output
-            || result.getAmount() != 1 || !plain(result) || pending.size() >= MAX_PENDING) return;
+        if (output == null || source == null || !event.getSource().isSimilar(source)
+            || result.getAmount() != 1 || pending.size() >= MAX_PENDING) return;
         ItemStack existing = furnace.getInventory().getResult();
         int before = count(existing);
-        if (before > 0 && (existing.getType() != output || !plain(existing)) || before >= 64) return;
-        OreSmeltCredits ledger = read(furnace, output.name(), before).reconcile(output.name(), before);
+        if (before > 0 && !existing.isSimilar(result) || before >= 64) return;
+        OreSmeltCredits ledger = read(furnace, output.id(), before).reconcile(output.id(), before);
         write(furnace, ledger);
-        PendingSmelt work = new PendingSmelt(event, ledger.furnaceId(), output,
-            source.getType(), source.getAmount(), before);
+        PendingSmelt work = new PendingSmelt(event, ledger.furnaceId(), output.id(), result.clone(),
+            source.clone(), source.getAmount(), before);
         pending.put(cell, work);
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (pending.get(cell) == work) finish(cell);
@@ -89,18 +88,18 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
         OreSmeltCredits ledger = existing(furnace);
         if (ledger == null || !ledger.furnaceId().equals(work.furnaceId())) return;
         boolean consumed = work.beforeInput() == 1 ? count(source) == 0
-            : plain(source) && source.getType() == work.input() && source.getAmount() == work.beforeInput() - 1;
+            : source != null && source.isSimilar(work.input()) && source.getAmount() == work.beforeInput() - 1;
         int after = count(result);
-        boolean matchingOutput = after == 0 || plain(result) && result.getType() == work.output();
-        if (extraction != null && plain(extraction.getItemStack()) && extraction.getItemType() == work.output()
+        boolean matchingOutput = after == 0 || result.isSimilar(work.output());
+        if (extraction != null && extraction.getItemStack().isSimilar(work.output())
             && extraction.getItemAmount() > 0 && extraction.getItemAmount() <= 64)
             after += extraction.getItemAmount();
         // Paper exposes the source as a live mirror of the native stack. Successful smelting
         // shrinks it after listeners return, so a one-item source may now report AIR/count 0.
         // Validate the captured input against the actual consumed slot, not that stale mirror.
-        if (consumed && matchingOutput && after == work.beforeOutput() + 1 && plain(finalResult)
-            && finalResult.getType() == work.output() && finalResult.getAmount() == 1)
-            write(furnace, ledger.smelt(work.output().name(), work.beforeOutput(), after));
+        if (consumed && matchingOutput && after == work.beforeOutput() + 1
+            && finalResult.isSimilar(work.output()) && finalResult.getAmount() == 1)
+            write(furnace, ledger.smelt(work.outputId(), work.beforeOutput(), after));
         else write(furnace, ledger.unverified(type(result), count(result)));
     }
 
@@ -117,19 +116,20 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
         if (ledger == null) return;
         ItemStack remaining = furnace.getInventory().getResult();
         ItemStack extracted = event.getItemStack();
-        if (moving.containsKey(cell) || !plain(extracted)
-            || count(remaining) > 0 && (!plain(remaining) || remaining.getType() != event.getItemType())) {
+        Work work = outputWork(extracted);
+        if (moving.containsKey(cell) || work == null
+            || count(remaining) > 0 && !remaining.isSimilar(extracted)) {
             write(furnace, ledger.unverified(type(remaining), count(remaining)));
             return;
         }
-        OreSmeltCredits.Withdrawal withdrawal = ledger.extract(event.getItemType().name(), event.getItemAmount(), count(remaining));
+        OreSmeltCredits.Withdrawal withdrawal = ledger.extract(work.id(), event.getItemAmount(), count(remaining));
         write(furnace, withdrawal.next()); // Retire work before any asynchronous award or callback.
         Player player = event.getPlayer();
         AccountId account = plugin.sessions().account(player.getUniqueId()).orElse(null);
         if (withdrawal.creditedItems() <= 0 || account == null || !authorized(player, account, furnace)) return;
-        long perItem = experience(event.getItemType());
+        long perItem = work.experience();
         if (perItem <= 0) return;
-        skills.awardActivity(player, Skill.SMITHING, perItem * withdrawal.creditedItems(),
+        skills.awardActivity(player, work.skill(), perItem * withdrawal.creditedItems(),
             "ore-smelt:" + cell.world() + ":" + cell.x() + ":" + cell.y() + ":" + cell.z()
                 + ":" + ledger.furnaceId() + ":" + withdrawal.operationSequence());
     }
@@ -139,7 +139,7 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
         if (closed || !seen.add(event) || !(event.getSource() instanceof FurnaceInventory inventory)
             || !(inventory.getHolder(false) instanceof Furnace owner)) return;
         Furnace furnace = live(owner.getBlock());
-        if (furnace == null || existing(furnace) == null || !OreSmeltCredits.metalOutput(event.getItem().getType().name())) return;
+        if (furnace == null || existing(furnace) == null || outputWork(event.getItem()) == null) return;
         Cell cell = Cell.of(owner.getBlock());
         // Event entry can be before OR after the native source slot removal. Fence claims
         // until final counts are available; canceled/full-destination transfers lose no work.
@@ -158,7 +158,7 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
             OreSmeltCredits ledger = existing(current);
             if (ledger == null) return;
             ItemStack output = current.getInventory().getResult();
-            write(current, plain(output) ? ledger.reconcile(type(output), count(output))
+            write(current, outputWork(output) != null ? ledger.reconcile(type(output), count(output))
                 : ledger.unverified(type(output), count(output)));
         });
     }
@@ -199,6 +199,38 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
         return metal.isEmpty() ? 0 : Math.clamp(plugin.getConfig().getLong("progression.xp.smithing-smelt-" + metal, fallback), 0, 1000);
     }
 
+    private Work work(ItemStack source, ItemStack result) {
+        var custom = plugin.recipes().refiningWork(source, result);
+        if (custom.isPresent()) return new Work("item:" + custom.get().result().value(), Skill.SMITHING, custom.get().experience());
+        Material metal = outputFor(source.getType());
+        if (metal != null && plain(source) && plain(result) && result.getType() == metal)
+            return new Work(metal.name(), Skill.SMITHING, experience(metal));
+        Material cooked = cookedOutputFor(source.getType());
+        return cooked != null && net.nerdsmp.paper.item.CustomRecipeService.ordinaryIngredient(source)
+            && net.nerdsmp.paper.item.CustomRecipeService.ordinaryIngredient(result) && result.getType() == cooked
+            ? new Work(cooked.name(), Skill.COOKING, Math.clamp(plugin.getConfig().getLong("progression.xp.cooking-smelt", 6), 1, 1000)) : null;
+    }
+
+    private Work outputWork(ItemStack result) {
+        if (count(result) == 0) return null;
+        var custom = plugin.recipes().refiningOutput(result);
+        if (custom.isPresent()) return new Work("item:" + custom.get().result().value(), Skill.SMITHING, custom.get().experience());
+        if (plain(result) && OreSmeltCredits.metalOutput(result.getType().name()))
+            return new Work(result.getType().name(), Skill.SMITHING, experience(result.getType()));
+        return net.nerdsmp.paper.item.CustomRecipeService.ordinaryIngredient(result) && OreSmeltCredits.validOutput(result.getType().name())
+            ? new Work(result.getType().name(), Skill.COOKING, Math.clamp(plugin.getConfig().getLong("progression.xp.cooking-smelt", 6), 1, 1000)) : null;
+    }
+
+    public static Material cookedOutputFor(Material source) {
+        return switch (source) {
+            case BEEF -> Material.COOKED_BEEF; case PORKCHOP -> Material.COOKED_PORKCHOP;
+            case CHICKEN -> Material.COOKED_CHICKEN; case RABBIT -> Material.COOKED_RABBIT;
+            case MUTTON -> Material.COOKED_MUTTON; case COD -> Material.COOKED_COD;
+            case SALMON -> Material.COOKED_SALMON; case POTATO -> Material.BAKED_POTATO;
+            case KELP -> Material.DRIED_KELP; default -> null;
+        };
+    }
+
     public static Material outputFor(Material source) {
         return switch (source) {
             case RAW_IRON, IRON_ORE, DEEPSLATE_IRON_ORE -> Material.IRON_INGOT;
@@ -232,7 +264,7 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
 
     private Furnace live(Block block) {
         if (closed || !block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)
-            || block.getType() != Material.FURNACE && block.getType() != Material.BLAST_FURNACE) return null;
+            || block.getType() != Material.FURNACE && block.getType() != Material.BLAST_FURNACE && block.getType() != Material.SMOKER) return null;
         return block.getState(false) instanceof Furnace furnace && !furnace.isSnapshot() ? furnace : null;
     }
 
@@ -242,14 +274,15 @@ public final class OreSmeltingService implements Listener, AutoCloseable {
             ? live(world.getBlockAt(cell.x(), cell.y(), cell.z())) : null;
     }
 
-    private static boolean plain(ItemStack item) { return item != null && !item.getType().isAir() && !item.hasItemMeta(); }
+    private static boolean plain(ItemStack item) { return item != null && !item.getType().isAir() && net.nerdsmp.paper.item.FoodItems.ordinary(item); }
     private static int count(ItemStack item) { return item == null || item.getType().isAir() ? 0 : item.getAmount(); }
-    private static String type(ItemStack item) { return item == null || item.getType().isAir() ? "" : item.getType().name(); }
+    private String type(ItemStack item) { Work work = outputWork(item); return work == null ? "" : work.id(); }
 
     @Override public void close() { closed = true; pending.clear(); moving.clear(); seen.clear(); }
     private record Cell(UUID world, int x, int y, int z) {
         static Cell of(Block block) { return new Cell(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ()); }
     }
-    private record PendingSmelt(FurnaceSmeltEvent event, UUID furnaceId, Material output,
-                                Material input, int beforeInput, int beforeOutput) { }
+    private record PendingSmelt(FurnaceSmeltEvent event, UUID furnaceId, String outputId, ItemStack output,
+                                ItemStack input, int beforeInput, int beforeOutput) { }
+    private record Work(String id, Skill skill, long experience) { }
 }

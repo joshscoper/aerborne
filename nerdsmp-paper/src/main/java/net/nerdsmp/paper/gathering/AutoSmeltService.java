@@ -237,7 +237,7 @@ public final class AutoSmeltService implements Listener, AutoCloseable {
         return copy;
     }
     private static boolean plain(ItemStack item) {
-        return item != null && !item.getType().isAir() && !item.hasItemMeta();
+        return item != null && !item.getType().isAir() && net.nerdsmp.paper.item.FoodItems.ordinary(item);
     }
     private void refuse(Pending work) {
         pending.remove(Cell.of(work.event.getBlock()), work);

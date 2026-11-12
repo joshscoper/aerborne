@@ -61,10 +61,17 @@ public record QuestDefinition(
      * CLEAR (finish a run of that expedition on any tier). {@code zone}
      * restricts where the objective counts; VISIT needs it.
      */
-    public record Objective(Type type, Set<String> targets, String zone, int count, String description) {
+    public record Objective(Type type, Set<String> targets, String zone, int count, String description, List<String> dialogue) {
+        public Objective(Type type, Set<String> targets, String zone, int count, String description) {
+            this(type, targets, zone, count, description, List.of());
+        }
         public Objective {
             Objects.requireNonNull(type, "type");
             targets = Set.copyOf(targets);
+            dialogue = List.copyOf(dialogue);
+            if (!dialogue.isEmpty() && type != Type.TALK) throw new IllegalArgumentException("Only talk objectives have dialogue");
+            if (dialogue.size() > 3) throw new IllegalArgumentException("Talk objectives support at most three dialogue lines");
+            dialogue.forEach(line -> checkLine("talk objective", line));
             if (zone != null && !validId(zone)) throw new IllegalArgumentException("Invalid objective zone " + zone);
             if (count < 1 || count > 500) throw new IllegalArgumentException("Objective counts must be 1-500");
             if (description == null || description.isBlank() || description.length() > 80)
@@ -103,11 +110,18 @@ public record QuestDefinition(
         }
     }
 
-    public record ItemReward(String kind, String id, int amount) {
+    public record ItemReward(String kind, String id, int amount, String name, List<String> lore) {
+        public ItemReward(String kind, String id, int amount) { this(kind, id, amount, null, List.of()); }
         public ItemReward {
             if (!kind.equals("material") && !kind.equals("item")) throw new IllegalArgumentException("Reward items are material:<name> or item:<id>");
             if (id == null || !id.matches("[a-z0-9_]{1,64}")) throw new IllegalArgumentException("Invalid reward item " + id);
             if (amount < 1 || amount > 64) throw new IllegalArgumentException("Reward stacks hold 1-64 items");
+            lore = List.copyOf(lore);
+            if (name != null) checkLine("reward name", name);
+            if (lore.size() > 4) throw new IllegalArgumentException("Reward items support at most four lore lines");
+            lore.forEach(line -> checkLine("reward lore", line));
+            if (kind.equals("item") && (name != null || !lore.isEmpty()))
+                throw new IllegalArgumentException("Custom items keep their catalog name and lore");
         }
     }
 }

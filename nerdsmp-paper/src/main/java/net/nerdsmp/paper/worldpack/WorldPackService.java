@@ -62,13 +62,65 @@ public final class WorldPackService implements org.bukkit.event.Listener {
         packs.removeIf(existing -> existing.id().equals(pack.id()));
         packs.add(pack);
     }
+    public boolean adventureWorld(World world) { return matched.containsValue(world.getName()); }
 
     /** Runs once the worlds and every content service are ready. */
     public void start() {
         if (!plugin.getConfig().getBoolean("world-packs.enabled", true)) return;
         Bukkit.getPluginManager().registerEvents(fence, plugin);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> applyAll(false, null), 40L);
+        Bukkit.getScheduler().runTaskLater(plugin, this::prepareStartupChunks, 40L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::maintainDifficulty, 100L, 100L);
         Bukkit.getScheduler().runTaskTimer(plugin, this::respawnMissingBodies, 640L, 600L);
+    }
+
+    /** Chunk I/O for pack NPCs must not all block the same server tick on a fresh map. */
+    private void prepareStartupChunks() {
+        var locations = new LinkedHashMap<String, Location>();
+        for (WorldPack pack : packs) for (World world : Bukkit.getWorlds()) {
+            if (!matches(pack, world)) continue;
+            for (WorldPack.Anchor anchor : pack.npcs().values()) {
+                Location at = location(world, anchor.point());
+                locations.putIfAbsent(world.getUID() + ":" + (at.getBlockX() >> 4) + ":" + (at.getBlockZ() >> 4), at);
+            }
+        }
+        prepareNextChunk(new java.util.ArrayDeque<>(locations.values()), new java.util.HashSet<>());
+    }
+
+    private void prepareNextChunk(java.util.ArrayDeque<Location> queue, java.util.Set<org.bukkit.Chunk> tickets) {
+        if (!plugin.isEnabled()) return;
+        Location at = queue.poll();
+        if (at == null) {
+            try { applyAll(false, null); }
+            finally {
+                // NPCs use the same plugin tickets. Leave their owned chunks ticketed.
+                for (org.bukkit.Chunk chunk : tickets)
+                    if (!plugin.npcs().usesChunk(chunk)) chunk.removePluginChunkTicket(plugin);
+            }
+            return;
+        }
+        at.getWorld().getChunkAtAsync(at.getBlockX() >> 4, at.getBlockZ() >> 4, true).whenComplete((chunk, failure) -> {
+            if (!plugin.isEnabled()) return;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (failure != null) {
+                    plugin.getLogger().log(Level.SEVERE, "World pack startup could not load NPC chunk " + at + "; apply was deferred.", failure);
+                    for (org.bukkit.Chunk held : tickets) if (!plugin.npcs().usesChunk(held)) held.removePluginChunkTicket(plugin);
+                    return;
+                }
+                chunk.addPluginChunkTicket(plugin);
+                tickets.add(chunk);
+                prepareNextChunk(queue, tickets);
+            });
+        });
+    }
+
+    /** Keep a matched adventure map spawnable if a world loader restores its saved Peaceful difficulty. */
+    private void maintainDifficulty() {
+        if (!plugin.getConfig().getBoolean("world-packs.maintain-combat-difficulty", true)) return;
+        for (WorldPack pack : packs) {
+            String name = matched.get(pack.id());
+            World world = name == null ? null : Bukkit.getWorld(name);
+            if (world != null) ensureDifficulty(pack, world);
+        }
     }
 
     private boolean alwaysPlaceNpcs(World world) {
@@ -183,21 +235,22 @@ public final class WorldPackService implements org.bukkit.event.Listener {
     }
 
     /**
-     * Zone encounters cannot spawn on Peaceful, and a map keeps the difficulty it was saved with. Raise a
-     * Peaceful map once; if staff choose Peaceful again later, that choice stands.
+     * Peaceful prevents hostile encounters. A persisted migration flag must not permanently disable
+     * recovery when a world manager restores the map's original difficulty.
      */
     private void ensureDifficulty(WorldPack pack, World world) {
         if (pack.difficulty() == null || world.getDifficulty() != org.bukkit.Difficulty.PEACEFUL) return;
         YamlConfiguration state = YamlConfiguration.loadConfiguration(stateFile);
         String key = "packs." + pack.id() + "." + world.getUID() + ".difficulty-raised";
-        if (state.getBoolean(key)) return;
+        if (state.getBoolean(key) && !plugin.getConfig().getBoolean("world-packs.maintain-combat-difficulty", true)) return;
         org.bukkit.Difficulty target = org.bukkit.Difficulty.valueOf(pack.difficulty().toUpperCase(java.util.Locale.ROOT));
         world.setDifficulty(target);
         state.set(key, true);
         try { AtomicYamlFiles.save(state, stateFile); }
         catch (IOException failure) { plugin.getLogger().log(Level.WARNING, "Could not record the world pack difficulty change", failure); }
         plugin.getLogger().warning("World " + world.getName() + " was saved on Peaceful, where " + pack.title()
-            + "'s zone creatures cannot spawn. Difficulty set to " + target.name().toLowerCase(java.util.Locale.ROOT) + " (use /difficulty to change it).");
+            + "'s hostile zone creatures cannot spawn. Difficulty set to " + target.name().toLowerCase(java.util.Locale.ROOT)
+            + ". To keep Peaceful intentionally, disable world-packs.maintain-combat-difficulty.");
     }
 
     boolean matches(WorldPack pack, World world) {
@@ -239,8 +292,31 @@ public final class WorldPackService implements org.bukkit.event.Listener {
             try { wanted = zone(spec, world); }
             catch (IllegalArgumentException invalid) { plugin.getLogger().warning("Pack zone " + spec.id() + " skipped: " + invalid.getMessage()); skipped++; continue; }
             Optional<ZoneDefinition> existing = plugin.zones().find(spec.id());
+            // A zone left pointing at a world that no longer exists (the map was recreated) can never spawn anything:
+            // it belongs to this pack's world, so move it here, keeping its points and creatures.
+            if (existing.isPresent() && Bukkit.getWorld(existing.get().worldId()) == null) {
+                ZoneDefinition old = existing.get();
+                try {
+                    ZoneDefinition moved = new ZoneDefinition(old.id(), old.title(), world.getUID(), old.bounds(), old.enabled(), old.safe(),
+                        old.cap(), old.respawnSeconds(), old.activationRadius(), old.points(), old.mobs());
+                    plugin.zones().put(moved);
+                    existing = Optional.of(moved);
+                    plugin.getLogger().info("Zone " + spec.id() + " pointed at a world that no longer exists; moved it to " + world.getName() + ".");
+                } catch (IllegalArgumentException conflict) {
+                    plugin.getLogger().warning("Zone " + spec.id() + " could not be moved to " + world.getName() + ": " + conflict.getMessage());
+                }
+            }
             if (existing.isPresent() && !fingerprint(existing.get()).equals(before.get(key))) {
                 if (existing.get().equals(wanted)) { after.put(key, fingerprint(wanted)); continue; }
+                ZoneDefinition retuned = retuned(existing.get(), wanted);
+                if (retuned != null) {
+                    plugin.zones().put(retuned);
+                    after.put(key, fingerprint(retuned));
+                    plugin.getLogger().info("Zone " + spec.id() + " kept its points and creatures but took the pack's new density"
+                        + " (cap " + retuned.cap() + ", respawn " + retuned.respawnSeconds() + "s, range " + retuned.activationRadius() + ").");
+                    zones++;
+                    continue;
+                }
                 plugin.getLogger().info("Zone " + spec.id() + " was edited by staff; the pack left it unchanged.");
                 kept++;
                 continue;
@@ -386,6 +462,19 @@ public final class WorldPackService implements org.bukkit.event.Listener {
 
     private static Location location(World world, WorldPack.Point point) {
         return new Location(world, point.x(), point.y(), point.z(), point.yaw(), 0F);
+    }
+
+    /**
+     * A zone the pack thinks staff edited, but whose respawn and range still hold the pack's original defaults
+     * (30 seconds, 48 blocks): staff never touched its density, so it takes the pack's new cap, respawn and range and
+     * keeps everything else (points, creatures, bounds). Null when the zone's density was set by hand, or nothing changes.
+     */
+    static ZoneDefinition retuned(ZoneDefinition existing, ZoneDefinition wanted) {
+        if (existing.safe() || existing.respawnSeconds() != 30 || existing.activationRadius() != 48) return null;
+        if (existing.cap() == wanted.cap() && existing.respawnSeconds() == wanted.respawnSeconds()
+            && existing.activationRadius() == wanted.activationRadius()) return null;
+        return new ZoneDefinition(existing.id(), existing.title(), existing.worldId(), existing.bounds(), existing.enabled(), existing.safe(),
+            Math.max(existing.cap(), wanted.cap()), wanted.respawnSeconds(), wanted.activationRadius(), existing.points(), existing.mobs());
     }
 
     private static String fingerprint(ZoneDefinition zone) {

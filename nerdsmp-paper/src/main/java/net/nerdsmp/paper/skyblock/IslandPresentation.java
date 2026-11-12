@@ -117,7 +117,9 @@ public final class IslandPresentation implements AutoCloseable {
     private void update(Anchor anchor, IslandService.Island island) {
         var showcase = island.showcase();
         int level = plugin.skyblock().development().progress(island.owner()).level();
+        int stars = plugin.skyblock().development().stars(island.owner());
         anchor.text.text(Component.text(island.name(), showcase.color(), TextDecoration.BOLD)
+            .append(stars > 0 ? Component.text(" " + "★".repeat(stars), NamedTextColor.GOLD) : Component.empty())
             .append(Component.text("\nLevel " + level + "  |  " + showcase.title(), NamedTextColor.WHITE))
             .append(Component.text("\n" + IslandShowcase.progress(island), NamedTextColor.GRAY))
             .append(Component.text("\nRight-click the landing • /island", NamedTextColor.DARK_GRAY)));
@@ -128,7 +130,7 @@ public final class IslandPresentation implements AutoCloseable {
     /** Called only after a chapter's durable, non-replayed completion. Pure presentation. */
     public void celebrate(IslandService.Island island) {
         if (task == null || !world.isChunkLoaded(IslandGrid.chunkX(island.slot()), IslandGrid.chunkZ(island.slot()))) return;
-        IslandShowcase unlocked = Arrays.stream(IslandShowcase.values()).filter(s -> s.chapter() == island.tier()).findFirst().orElseThrow();
+        IslandShowcase unlocked = Arrays.stream(IslandShowcase.values()).filter(s -> s.kind() == IslandShowcase.Kind.CHAPTER && s.chapter() == island.tier()).findFirst().orElseThrow();
         for (Player player : world.getPlayers()) {
             if (!eligible(player, island) || !island.member(account(player))
                 || !plugin.settings().enabled(player.getUniqueId(), Setting.ISLAND_EFFECTS)) continue;

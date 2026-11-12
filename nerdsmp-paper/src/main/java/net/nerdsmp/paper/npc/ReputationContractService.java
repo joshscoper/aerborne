@@ -301,7 +301,7 @@ public final class ReputationContractService implements Listener, AutoCloseable 
                         + "</white> <gray>Return to the " + escape(contract.factionId().value().replace('_', ' '))
                         + " quest giver to claim it.</gray>");
                 } else if ((previous * 4L) / contract.target() < (progress.amount * 4L) / contract.target()) {
-                    player.sendActionBar(miniMessage.deserialize("<aqua>" + escape(contract.title()) + "</aqua>"
+                    net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize("<aqua>" + escape(contract.title()) + "</aqua>"
                         + " <gray>" + progress.amount + "/" + contract.target() + "</gray>"));
                 }
             }

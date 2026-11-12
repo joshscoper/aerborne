@@ -622,13 +622,18 @@ final class GoldenreachVale {
         for (int h = 0; h < 24; h++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             double d = Math.hypot(dx, dz);
             if (d > r + 0.4 || d < r - 0.7) { if (d < r - 0.7) canvas.set(gx + dx, gy + h, gz + dz, Material.AIR); continue; }
-            // Broken crown: the wall stops at a ragged height.
-            double crown = 17 + 6 * terrain.patch(gx + dx * 3, gz + dz * 3, 0.3);
+            // The fire took the southeast quarter of the loft. One standing crescent and two
+            // broken shoulders are legible from the fields even when the windows are out of view.
+            double fireFace = (dx + dz) / (r * Math.sqrt(2));
+            double crown = 19 - 5 * fireFace + terrain.patch(gx + dx, gz + dz, 0.13) * 1.5;
             if (h > crown) continue;
-            double burn = terrain.patch(gx + dx + h * 0.8, gz + dz - h * 0.4, 0.22);
-            Material m = burn > 0.35 ? (burn > 0.6 ? Material.BLACKSTONE : Material.POLISHED_BASALT)
-                : h < 2 ? Material.MOSSY_STONE_BRICKS : terrain.grain(gx + dx, gz + dz + h, 0.4) > 0.5 ? Material.CRACKED_STONE_BRICKS : Material.STONE_BRICKS;
-            canvas.set(gx + dx, gy + h, gz + dz, m, m == Material.POLISHED_BASALT ? "axis=y" : "");
+            boolean vent = h >= 10 && h <= 12 && (Math.abs(dx) == 0 || Math.abs(dz) == 0);
+            if (vent) { canvas.set(gx + dx, gy + h, gz + dz, Material.AIR); continue; }
+            // The fire's mark in broad bands: soot climbing from the burned side, deepest under the broken crown.
+            double burn = fireFace * 0.6 + (h - 8) * 0.06;
+            Material m = burn > 0.75 ? Material.BLACKSTONE : burn > 0.5 ? Material.POLISHED_BLACKSTONE_BRICKS : burn > 0.32 ? Material.CRACKED_STONE_BRICKS
+                : h == 8 || h == 13 ? Material.POLISHED_ANDESITE : h < 2 ? Material.MOSSY_STONE_BRICKS : Material.STONE_BRICKS;
+            canvas.set(gx + dx, gy + h, gz + dz, m);
         }
         // The doorway on the south and charred beams fallen across.
         for (int h = 0; h < 4; h++) for (int dx = -1; dx <= 1; dx++) canvas.set(gx + dx, gy + h, gz + r, Material.AIR);
@@ -654,6 +659,7 @@ final class GoldenreachVale {
         spot("choir_camp", cs[0] + 3, campFloor, cs[1] + 3, 0F);
         spot("chest_tier3_granary", lx, gy + 12, lz, 0F);
         cellars(gx, gy, gz);
+        granaryLoadingBay(gx, gy, gz + r);
         granaryBarn(gx + r + 1, gy, gz);
     }
 
@@ -714,6 +720,40 @@ final class GoldenreachVale {
         for (int z = z1 - 3; z <= z1 - 1; z++) canvas.set(x1 - 1, gy, z, Material.BARREL, "facing=up");
         for (int x = x0 + 1; x <= mid - 2; x++) canvas.set(x, gy, gz + (x % 3) - 1, (x % 4 == 0) ? Material.STRIPPED_DARK_OAK_LOG : Material.GRAY_CONCRETE_POWDER, (x % 4 == 0) ? "axis=x" : "");
         canvas.set(mid - 1, gy, gz, Material.COAL_BLOCK);
+    }
+
+    /** The last intact grain hoist frames the burned south door. Its load lane continues to the cellar stair. */
+    private void granaryLoadingBay(int gx, int floor, int doorZ) {
+        for (int side : new int[] {-1, 1}) {
+            int post = gx + side * 3;
+            for (int z = doorZ; z <= doorZ + 2; z++) {
+                int bed = terrain.column(post, z).top();
+                for (int y = Math.min(bed, floor - 1); y < floor + 1; y++)
+                    canvas.set(post, y, z, Material.STONE_BRICKS);
+            }
+            for (int h = 1; h <= 7; h++)
+                canvas.set(post, floor + h, doorZ + 2, Material.STRIPPED_DARK_OAK_LOG, "axis=y");
+            canvas.set(post, floor + 5, doorZ + 3, Material.LANTERN, "hanging=true");
+            canvas.set(post, floor + 6, doorZ + 3, Material.DARK_OAK_STAIRS, "half=top,facing=north");
+        }
+        for (int dx = -4; dx <= 4; dx++)
+            canvas.set(gx + dx, floor + 7, doorZ + 2, Material.STRIPPED_DARK_OAK_LOG, "axis=x");
+        for (int z = doorZ - 1; z <= doorZ + 4; z++)
+            canvas.set(gx + 2, floor + 8, z, Material.STRIPPED_DARK_OAK_LOG, "axis=z");
+        canvas.set(gx + 2, floor + 7, doorZ + 4, Material.GRINDSTONE, "face=ceiling,facing=east");
+        for (int h = 4; h <= 6; h++) canvas.set(gx + 2, floor + h, doorZ + 4, Material.IRON_CHAIN, "axis=y");
+        canvas.set(gx + 2, floor + 3, doorZ + 4, Material.BARREL, "facing=up");
+        canvas.set(gx, floor + 7, doorZ + 3, Material.SPRUCE_WALL_SIGN, "facing=south");
+        canvas.text(gx, floor + 7, doorZ + 3, "MILLBROOK", "Grain Reserve", "Lower Stores", "Receiving");
+        // Keep the width beneath the lintel open, including where the hill rises into the landing.
+        for (int dz = 0; dz <= 3; dz++) for (int dx = -1; dx <= 1; dx++) {
+            int x = gx + dx, z = doorZ + dz;
+            int surface = dz == 3 ? terrain.column(gx, z).top() : floor - 1;
+            int bed = terrain.column(x, z).top();
+            for (int y = bed; y < surface; y++) canvas.set(x, y, z, Material.STONE_BRICKS);
+            canvas.set(x, surface, z, dx == 0 ? Material.PACKED_MUD : Material.STONE_BRICKS);
+            for (int y = surface + 1; y <= Math.max(bed + 1, surface + 4); y++) canvas.set(x, y, z, Material.AIR);
+        }
     }
 
     /**

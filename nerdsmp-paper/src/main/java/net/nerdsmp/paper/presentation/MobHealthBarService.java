@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Locale;
+import java.util.Comparator;
 
 public final class MobHealthBarService implements Listener, AutoCloseable {
     private static final TextColor HEALTHY = TextColor.color(0x55E58A);
@@ -55,6 +57,7 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     private final CustomMobManager mobs;
     private final PlayerSettingsService settings;
     private final NamespacedKey activePoisonTypesKey;
+    private final NamespacedKey npcInstanceKey;
     private final Map<UUID, OverheadIndicator> overhead = new LinkedHashMap<>();
     private final Map<UUID, BossIndicator> bosses = new HashMap<>();
     private final boolean enabled;
@@ -65,6 +68,11 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     private final double overheadViewerRangeSquared;
     private final double bossViewerRangeSquared;
     private final float displayViewRange;
+    private final Set<String> nameplateWorlds;
+    private final double nameplateRange;
+    private final int nameplatesPerViewer;
+    private long nextNameplateScan;
+    private static final int NAMEPLATE_SCAN_TICKS = 10;
     private long clock;
     private BukkitTask updateTask;
 
@@ -73,6 +81,7 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
         this.mobs = mobs;
         this.settings = settings;
         activePoisonTypesKey = new NamespacedKey(plugin, "active_poison_types");
+        npcInstanceKey = new NamespacedKey(plugin, "npc_instance");
         enabled = plugin.getConfig().getBoolean("presentation.mob-health-bars.enabled", true);
         updateIntervalTicks = Math.max(1, Math.min(10,
             plugin.getConfig().getInt("presentation.mob-health-bars.update-interval-ticks", 2)));
@@ -90,6 +99,13 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
         bossViewerRangeSquared = bossViewerRange * bossViewerRange;
         displayViewRange = (float) Math.max(0.25D, Math.min(2.0D,
             plugin.getConfig().getDouble("presentation.mob-health-bars.display-view-range", 0.75D)));
+        String worldPath = "presentation.mob-health-bars.nameplate-worlds";
+        nameplateWorlds = new HashSet<>();
+        for (String world : plugin.getConfig().contains(worldPath)
+            ? plugin.getConfig().getStringList(worldPath) : List.of("MMORPG"))
+            nameplateWorlds.add(world.toLowerCase(Locale.ROOT));
+        nameplateRange = Math.clamp(plugin.getConfig().getDouble("presentation.mob-health-bars.nameplate-range", 24), 8, Math.sqrt(overheadViewerRangeSquared));
+        nameplatesPerViewer = Math.clamp(plugin.getConfig().getInt("presentation.mob-health-bars.nameplates-per-viewer", 24), 1, maximumOverheadBars);
     }
 
     public void start() {
@@ -175,12 +191,24 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     }
 
     private void showOverhead(LivingEntity target, double health, Player viewer) {
+        // The Aerborne client draws its own nameplates from the list discoverNameplates sends it.
+        if (ClientFeeds.listens(viewer, ClientFeeds.PLATES)) return;
         if (!canView(viewer, target, overheadViewerRangeSquared)) {
             return;
         }
+        OverheadIndicator current = ensureOverhead(target, false);
+        current.combatUntil = clock + overheadLifetimeTicks;
+        current.viewers().put(viewer.getUniqueId(), clock + overheadLifetimeTicks);
+        viewer.showEntity(plugin, current.display());
+        updateOverhead(current, health);
+    }
+
+    private OverheadIndicator ensureOverhead(LivingEntity target, boolean passive) {
         OverheadIndicator current = overhead.get(target.getUniqueId());
         if (current == null || !current.display().isValid()) {
             removeOverhead(target.getUniqueId());
+            // Ambient names share the existing display pool, but cannot evict a combat indicator.
+            if (passive && overhead.size() >= maximumOverheadBars) return null;
             while (overhead.size() >= maximumOverheadBars) {
                 UUID oldest = overhead.keySet().iterator().next();
                 removeOverhead(oldest);
@@ -189,9 +217,105 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
             current = new OverheadIndicator(target, display);
             overhead.put(target.getUniqueId(), current);
         }
-        current.viewers().put(viewer.getUniqueId(), clock + overheadLifetimeTicks);
-        viewer.showEntity(plugin, current.display());
-        updateOverhead(current, health);
+        return current;
+    }
+
+    /** Only scans already-loaded nearby entities; no world-wide scan or chunk tickets. */
+    private void discoverNameplates(Player viewer) {
+        if (enabled && viewer.isOnline() && ClientFeeds.listens(viewer, ClientFeeds.PLATES)) {
+            clientNameplates(viewer);
+            return;
+        }
+        if (!enabled || !viewer.isOnline() || !nameplateWorld(viewer.getWorld())
+            || !settings.enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.MOB_HEALTH_BARS)) return;
+        Location origin = viewer.getLocation();
+        var candidates = viewer.getNearbyEntities(nameplateRange, nameplateRange, nameplateRange).stream()
+            .filter(entity -> entity instanceof LivingEntity living && eligible(living))
+            .map(entity -> (LivingEntity) entity)
+            .filter(entity -> entity.getLocation().distanceSquared(origin) <= nameplateRange * nameplateRange)
+            .sorted(Comparator.comparingDouble(entity -> entity.getLocation().distanceSquared(origin)))
+            .filter(entity -> canView(viewer, entity, nameplateRange * nameplateRange))
+            .limit(nameplatesPerViewer)
+            .toList();
+        Set<UUID> selected = new HashSet<>();
+        candidates.forEach(target -> selected.add(target.getUniqueId()));
+        var previousEntries = overhead.entrySet().iterator();
+        while (previousEntries.hasNext()) {
+            OverheadIndicator indicator = previousEntries.next().getValue();
+            if (clock >= indicator.combatUntil && !selected.contains(indicator.target().getUniqueId())
+                && indicator.viewers().remove(viewer.getUniqueId()) != null) {
+                viewer.hideEntity(plugin, indicator.display());
+                if (indicator.viewers().isEmpty()) { removeDisplay(indicator.display()); previousEntries.remove(); }
+            }
+        }
+        for (LivingEntity target : candidates) {
+            OverheadIndicator indicator = ensureOverhead(target, true);
+            if (indicator == null) continue;
+            Long previous = indicator.viewers().putIfAbsent(viewer.getUniqueId(), 0L);
+            indicator.viewers().merge(viewer.getUniqueId(), clock + NAMEPLATE_SCAN_TICKS + updateIntervalTicks + 1, Math::max);
+            if (previous == null) viewer.showEntity(plugin, indicator.display());
+            updateOverhead(indicator, target.getHealth());
+        }
+    }
+
+    /** For the Aerborne client: hide the floating text from this viewer and send the names to draw instead. */
+    private void clientNameplates(Player viewer) {
+        var entries = overhead.entrySet().iterator();
+        while (entries.hasNext()) {
+            OverheadIndicator indicator = entries.next().getValue();
+            if (indicator.viewers().remove(viewer.getUniqueId()) != null) {
+                viewer.hideEntity(plugin, indicator.display());
+                if (indicator.viewers().isEmpty()) { removeDisplay(indicator.display()); entries.remove(); }
+            }
+        }
+        List<LivingEntity> targets = List.of();
+        if (settings.enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.MOB_HEALTH_BARS)) {
+            Location origin = viewer.getLocation();
+            double range = nameplateRange * nameplateRange;
+            targets = viewer.getNearbyEntities(nameplateRange, nameplateRange, nameplateRange).stream()
+                .filter(entity -> entity instanceof LivingEntity living && eligible(living))
+                .map(entity -> (LivingEntity) entity)
+                .filter(entity -> entity.getLocation().distanceSquared(origin) <= range && viewer.canSee(entity))
+                .sorted(Comparator.comparingDouble(entity -> entity.getLocation().distanceSquared(origin)))
+                .limit(nameplatesPerViewer)
+                .toList();
+        }
+        // The companion's target frame also names what the player looks at (out to 32 blocks, past the plate range)
+        // and nearby townsfolk, so it never falls back to a bare "Vindicator" or "Fisherman".
+        List<LivingEntity> named = new java.util.ArrayList<>(targets);
+        Entity looked = viewer.getTargetEntity(32, false);
+        if (looked instanceof LivingEntity living && !named.contains(living) && (eligible(living) || npcLabel(living) != null)) named.add(living);
+        Location here = viewer.getLocation();
+        viewer.getNearbyEntities(16, 8, 16).stream()
+            .filter(entity -> entity instanceof LivingEntity living && !named.contains(living) && npcLabel(living) != null)
+            .sorted(Comparator.comparingDouble(entity -> entity.getLocation().distanceSquared(here)))
+            .limit(16)
+            .forEach(entity -> named.add((LivingEntity) entity));
+        // Only true elites are flagged: a zone's ordinary custom creatures are plain foes, not gold "ELITE" plates.
+        ClientFeeds.plates(viewer, named, this::plateName, mobs::isBoss, mobs::isElite, living -> npcLabel(living) != null);
+        ClientFeeds.effects(viewer, targets);
+    }
+
+    private boolean nameplateWorld(org.bukkit.World world) {
+        return nameplateWorlds.contains(world.getName().toLowerCase(Locale.ROOT));
+    }
+
+    /** Apply a settings change immediately, independently for this viewer. Main thread only. */
+    public void refreshViewer(Player viewer) {
+        var entries = overhead.entrySet().iterator();
+        while (entries.hasNext()) {
+            OverheadIndicator indicator = entries.next().getValue();
+            if (indicator.viewers().containsKey(viewer.getUniqueId()) && !canView(viewer, indicator.target(), overheadViewerRangeSquared)) {
+                viewer.hideEntity(plugin, indicator.display());
+                indicator.viewers().remove(viewer.getUniqueId());
+                if (indicator.viewers().isEmpty()) { removeDisplay(indicator.display()); entries.remove(); }
+            }
+        }
+        for (BossIndicator indicator : bosses.values()) {
+            if (!canView(viewer, indicator.target(), bossViewerRangeSquared) && indicator.viewers().remove(viewer.getUniqueId()))
+                viewer.hideBossBar(indicator.bar());
+        }
+        discoverNameplates(viewer);
     }
 
     private TextDisplay spawnDisplay(LivingEntity target) {
@@ -272,6 +396,10 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
                 bossEntries.remove();
             }
         }
+        if (clock >= nextNameplateScan) {
+            nextNameplateScan = clock + NAMEPLATE_SCAN_TICKS;
+            for (Player viewer : Bukkit.getOnlinePlayers()) discoverNameplates(viewer);
+        }
     }
 
     private void pruneOverheadViewers(OverheadIndicator indicator) {
@@ -290,6 +418,7 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     }
 
     private void refreshOverheadViewers(OverheadIndicator indicator) {
+        indicator.combatUntil = clock + overheadLifetimeTicks;
         for (Map.Entry<UUID, Long> entry : indicator.viewers().entrySet()) {
             Player viewer = Bukkit.getPlayer(entry.getKey());
             if (canView(viewer, indicator.target(), overheadViewerRangeSquared)) {
@@ -299,8 +428,13 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     }
 
     private void updateOverhead(OverheadIndicator indicator, double health) {
-        indicator.display().teleport(displayLocation(indicator.target()));
-        indicator.display().text(overheadText(indicator.target(), health));
+        Location location = displayLocation(indicator.target());
+        if (!indicator.display().getWorld().equals(location.getWorld())
+            || indicator.display().getLocation().distanceSquared(location) > 0.0001D)
+            indicator.display().teleport(location);
+        Component text = nameplateWorld(indicator.target().getWorld()) && (clock >= indicator.combatUntil || mobs.isBoss(indicator.target()))
+            ? mobName(indicator.target()) : overheadText(indicator.target(), health);
+        if (!text.equals(indicator.display().text())) indicator.display().text(text);
     }
 
     private void updateBoss(BossIndicator indicator, double health) {
@@ -387,6 +521,23 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
         return mobs.displayName(target);
     }
 
+    /** An NPC's name and title, or null when the entity isn't a townsperson. */
+    private String npcLabel(LivingEntity target) {
+        if (!target.getPersistentDataContainer().has(npcInstanceKey)) {
+            // Island visitors are townsfolk too: named, never health-barred.
+            if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core && core.skyblock() != null && core.skyblock().guests() != null)
+                return core.skyblock().guests().label(target);
+            return null;
+        }
+        if (!(plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core) || core.npcs() == null) return null;
+        return core.npcs().label(target).orElse(null);
+    }
+
+    private Component plateName(LivingEntity target) {
+        String npc = npcLabel(target);
+        return npc != null ? Component.text(npc) : mobName(target);
+    }
+
     private TextColor healthColor(float progress) {
         if (progress > 0.50F) {
             return HEALTHY;
@@ -395,13 +546,18 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
     }
 
     private boolean eligible(LivingEntity target) {
-        return target instanceof Enemy || mobs.isCustomMob(target) || mobs.isBoss(target);
+        return target.isValid() && !target.isDead()
+            && !target.getPersistentDataContainer().has(npcInstanceKey)
+            && !mobs.isMechanicObjective(target)
+            && !(target instanceof Tameable tameable && tameable.isTamed())
+            && (target instanceof Enemy || mobs.isCustomMob(target) || mobs.isBoss(target));
     }
 
     private boolean canView(Player viewer, LivingEntity target, double rangeSquared) {
         return viewer != null && viewer.isOnline()
             && settings.enabled(viewer.getUniqueId(), PlayerSettingsService.Setting.MOB_HEALTH_BARS)
             && viewer.getWorld().equals(target.getWorld())
+            && viewer.canSee(target)
             && viewer.getLocation().distanceSquared(target.getLocation()) <= rangeSquared
             && viewer.hasLineOfSight(target);
     }
@@ -493,6 +649,7 @@ public final class MobHealthBarService implements Listener, AutoCloseable {
         private final LivingEntity target;
         private final TextDisplay display;
         private final Map<UUID, Long> viewers = new HashMap<>();
+        private long combatUntil;
 
         private OverheadIndicator(LivingEntity target, TextDisplay display) {
             this.target = target;

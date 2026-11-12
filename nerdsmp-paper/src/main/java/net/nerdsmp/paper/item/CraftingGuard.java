@@ -13,21 +13,27 @@ import org.bukkit.inventory.ItemStack;
 
 /** Material-based recipes must never consume a gem, sealed gear, token or machine as its vanilla base. */
 public final class CraftingGuard implements Listener {
+    private final CustomRecipeService recipes;
+    public CraftingGuard() { this(null); }
+    CraftingGuard(CustomRecipeService recipes) { this.recipes = recipes; }
     public static boolean protectedIngredient(ItemStack item) {
+        item = ItemPresentation.original(item);
         return item != null && !item.getType().isAir() && item.hasItemMeta()
             && item.getItemMeta().getPersistentDataContainer().getKeys().stream().anyMatch(key -> key.getNamespace().equals("nerdsmp"))
-            && !KitchenService.isStaple(item);
+            && !KitchenService.isStaple(item) && !FoodItems.ordinary(item);
     }
     public static boolean blocked(ItemStack[] matrix) {
         return java.util.Arrays.stream(matrix).anyMatch(CraftingGuard::protectedIngredient);
     }
     @EventHandler(priority = EventPriority.HIGHEST)
     public void prepare(PrepareItemCraftEvent event) {
-        if (blocked(event.getInventory().getMatrix())) event.getInventory().setResult(null);
+        if (blocked(event.getInventory().getMatrix()) && (recipes == null
+            || !recipes.acceptsCustomCraft(event.getRecipe(), event.getInventory().getMatrix()))) event.getInventory().setResult(null);
     }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void craft(CraftItemEvent event) {
-        if (blocked(event.getInventory().getMatrix())) {
+        if (blocked(event.getInventory().getMatrix()) && (recipes == null
+            || !recipes.acceptsCustomCraft(event.getRecipe(), event.getInventory().getMatrix()))) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage("Use ordinary materials here. Gems and special items belong at their own stations.");
         }
@@ -37,7 +43,10 @@ public final class CraftingGuard implements Listener {
         if (event.getBlock().getState() instanceof Crafter crafter && blocked(crafter.getInventory().getContents())) event.setCancelled(true);
     }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void smelt(FurnaceSmeltEvent event) { if (protectedIngredient(event.getSource())) event.setCancelled(true); }
+    public void smelt(FurnaceSmeltEvent event) {
+        if (recipes != null && recipes.handleSmelt(event)) return;
+        if (protectedIngredient(event.getSource()) || protectedIngredient(event.getResult())) event.setCancelled(true);
+    }
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void burn(FurnaceBurnEvent event) { if (protectedIngredient(event.getFuel())) event.setCancelled(true); }
     @EventHandler(priority = EventPriority.HIGHEST)

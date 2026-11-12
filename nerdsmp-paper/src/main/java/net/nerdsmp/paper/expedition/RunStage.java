@@ -181,7 +181,7 @@ final class RunStage {
             for (Player player : host.online()) {
                 if (player.isDead() || player.getLocation().distanceSquared(at) > REST_RADIUS * REST_RADIUS) continue;
                 if (host.fighting() || host.inCombat(player, now)) {
-                    player.sendActionBar(Chat.render("<gray>You can't rest while fighting.</gray>"));
+                    net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gray>You can't rest while fighting.</gray>"));
                     continue;
                 }
                 var max = player.getAttribute(Attribute.MAX_HEALTH);
@@ -193,7 +193,7 @@ final class RunStage {
                 if (player.getFoodLevel() < 20) player.setFoodLevel(Math.min(20, player.getFoodLevel() + 1));
                 player.setSaturation(Math.min(10, player.getSaturation() + 1));
                 player.setFireTicks(0);
-                player.sendActionBar(Chat.render("<gold>♨</gold> <gray>Resting by the " + Chat.escape(fire.title()) + "</gray>"));
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gold>♨</gold> <gray>Resting by the " + Chat.escape(fire.title()) + "</gray>"));
             }
         }
     }

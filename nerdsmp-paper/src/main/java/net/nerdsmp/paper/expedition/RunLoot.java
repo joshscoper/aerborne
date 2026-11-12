@@ -157,7 +157,7 @@ final class RunLoot {
     void enemyDied(ExpeditionDefinition.Role role, Location at) {
         List<ItemStack> drops = stacks(ExpeditionLoot.roll(table, source(role), luck, ThreadLocalRandom.current()), null);
         Location spot = reachable(at);
-        for (ItemStack drop : drops) spot.getWorld().dropItemNaturally(spot, drop);
+        for (ItemStack drop : net.nerdsmp.paper.loot.DropStacks.compact(drops)) spot.getWorld().dropItemNaturally(spot, drop);
         if (role == ExpeditionDefinition.Role.BOSS && !drops.isEmpty())
             at.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 30, .5, .6, .5, .2);
     }
@@ -225,7 +225,7 @@ final class RunLoot {
         // A running booster raises the award as it's stored, so say what actually lands.
         double boost = plugin.boosters() == null ? 1D : plugin.boosters().multiplier();
         Chat.success(player, "You learned from the run: <green>+" + Math.round(experience * boost) + " Hunting XP</green>"
-            + (boost > 1D ? " <gold>(XP booster +50%)</gold>" : "") + ".");
+            + (boost > 1D ? " <gold>(" + plugin.boosters().label() + ")</gold>" : "") + ".");
     }
 
     private static ExpeditionLoot.Source source(ExpeditionDefinition.Role role) {

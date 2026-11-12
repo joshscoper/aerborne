@@ -18,7 +18,8 @@ import java.util.logging.Level;
 /** Reusable editor templates and live, identity-compatible staff items. No resource pack is required. */
 public final class ItemEngine {
     private static final List<String> TEMPLATES = List.of("sword", "axe", "spear", "bow", "crossbow", "trident", "mace", "tool",
-        "shovel", "hoe", "fishing_rod", "brush", "shears", "helmet", "chestplate", "leggings", "boots", "focus", "material");
+        "shovel", "hoe", "fishing_rod", "brush", "shears", "helmet", "chestplate", "leggings", "boots", "focus", "material",
+        "necklace", "shoulders", "back", "wrists", "hands", "belt", "ring", "trinket");
     private final JavaPlugin plugin;
     private final PaperItemService items;
     private final ItemBlueprintStore store;
@@ -34,6 +35,18 @@ public final class ItemEngine {
     public List<String> templates() { return TEMPLATES; }
     public ItemBlueprint draft(String id, String template) {
         ItemBlueprint.identifier(id);
+        var accessory=switch(template) {
+            case "necklace" -> PaperItemService.GearSlot.NECK;
+            case "shoulders" -> PaperItemService.GearSlot.SHOULDERS;
+            case "back" -> PaperItemService.GearSlot.BACK;
+            case "wrists" -> PaperItemService.GearSlot.WRISTS;
+            case "hands" -> PaperItemService.GearSlot.HANDS;
+            case "belt" -> PaperItemService.GearSlot.WAIST;
+            case "ring" -> PaperItemService.GearSlot.RING;
+            case "trinket" -> PaperItemService.GearSlot.TRINKET;
+            default -> PaperItemService.GearSlot.NONE;
+        };
+        if(accessory.accessory()) return new ItemBlueprint(id,title(id),Material.AMETHYST_SHARD,"COMMON",1,1,null,List.of(),Map.of("defense",1D),accessory);
         Material material;
         Map<String, Double> stats;
         switch (template) {

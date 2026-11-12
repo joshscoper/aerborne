@@ -27,8 +27,8 @@ quests:
     complete:
       - "Good. Now you know your way around. The Master-at-Arms has been asking about you."
     objectives:
-      - {type: talk, targets: [cassia_dawn], description: Meet Cassia Dawn the City Guide}
-      - {type: talk, targets: [orin_ledger], description: Visit Orin Ledger the banker}
+      - {type: talk, targets: [cassia_dawn], description: Meet Cassia Dawn the City Guide, dialogue: ["The market is your first stop; Orin keeps the bank nearby. Once you know your way around, Corwin can help you prepare for the fields."]}
+      - {type: talk, targets: [orin_ledger], description: Visit Orin Ledger the banker, dialogue: ["Your Marks are recorded in your account. Come back whenever you need the bank; you needn't carry your whole fortune into the fields."]}
       - {type: visit, zone: highcrown_town, description: Walk to the Highcrown market}
     rewards:
       marks: 40
@@ -106,10 +106,10 @@ quests:
       - {type: kill, targets: ["custom:straw_scarecrow"], zone: goldenreach_fields, count: 6, description: Put the Straw Scarecrows to rest}
       - {type: deliver, targets: [WHEAT], count: 8, description: Bring 8 wheat for the mill}
     rewards:
-      marks: 90
+      marks: 120
       xp: {hunting: 150, farming: 120}
       reputation: {frontier_wardens: 20}
-      items: ["material:golden_carrot 4"]
+      items: [{"item":"material:iron_helmet 1","name":"Harvest Warden's Helm","lore":["Odo remembers the night the fields fell quiet."]},"material:golden_carrot 6","material:experience_bottle 1"]
 
   # ------------------------------------------------------------------ Gullwater Harbour and the gardens
   trouble_on_the_shore:
@@ -165,7 +165,7 @@ quests:
       - "Brenna sent you? Good. Those cutthroats will think twice now."
     objectives:
       - {type: kill, targets: ["custom:vale_brigand"], zone: wildwood_vale, count: 6, description: Defeat Kingsroad Brigands in the Wildwood Vale}
-      - {type: talk, targets: [waywarden_garet], description: Report to Waywarden Garet at the crossroads}
+      - {type: talk, targets: [waywarden_garet], description: Report to Waywarden Garet at the crossroads, dialogue: ["Brenna's recruit? Watch the hedges. The crossbowmen let the cutthroats draw you into the road, then fire from cover."]}
     rewards:
       marks: 90
       xp: {hunting: 200}
@@ -200,13 +200,13 @@ quests:
     complete:
       - "The Kingsroad is safe end to end for the first time in a year. The Wardens won't forget it."
     objectives:
-      - {type: talk, targets: [tobin_peddler], description: Find Tobin the peddler on the western road}
+      - {type: talk, targets: [tobin_peddler], description: Find Tobin the peddler on the western road, dialogue: ["I saw their fires beyond Mossfall. Follow the western road to the meadows, and don't walk straight into the middle of their camp."]}
       - {type: kill, targets: ["custom:vale_brigand", "custom:brigand_crossbow"], zone: kingsroad_meadows, count: 8, description: Break the brigand camp in the Kingsroad Meadows}
     rewards:
-      marks: 150
+      marks: 180
       xp: {hunting: 300}
       reputation: {frontier_wardens: 40}
-      items: ["material:iron_chestplate 1"]
+      items: [{"item":"material:iron_chestplate 1","name":"Kingsroad Defender's Coat","lore":["For a road made safe from end to end."]},"material:experience_bottle 2"]
 
   # ------------------------------------------------------------------ Gloomroot Taiga (levels 8-13)
   howls_in_the_pines:
@@ -280,7 +280,7 @@ quests:
       marks: 200
       xp: {hunting: 400, forestry: 150}
       reputation: {rift_scholars: 30}
-      items: ["material:golden_apple 1"]
+      items: ["material:golden_apple 2","material:experience_bottle 2"]
 
   # ------------------------------------------------------------------ Mossfall Ruins (levels 10-15)
   echoes_of_mossfall:
@@ -786,7 +786,7 @@ quests:
     complete:
       - "Tobin owes me money, Dren owes me a favour, and Magda says I owe her both. Welcome to the Delvers, more or less."
     objectives:
-      - {type: talk, targets: [tobin_peddler], description: Meet Tobin on the western road}
+      - {type: talk, targets: [tobin_peddler], description: Meet Tobin on the western road, dialogue: ["I saw their fires beyond Mossfall. Follow the western road to the meadows, and don't walk straight into the middle of their camp."]}
       - {type: talk, targets: [scout_dren], description: Meet Scout Dren above the canyons}
       - {type: talk, targets: [prospector_hale], description: Meet Magda Hale at the mine}
     rewards:

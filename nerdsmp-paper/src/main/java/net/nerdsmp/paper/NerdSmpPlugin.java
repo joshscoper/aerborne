@@ -111,12 +111,16 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private AuctionController auctionController;
     private PaperItemService items;
     private GearSetService gearSets;
+    private net.nerdsmp.paper.item.CharacterEquipmentService equipment;
+    public net.nerdsmp.paper.item.CharacterEquipmentService equipment() { return equipment; }
     private net.nerdsmp.paper.economy.PaymentController payments;
     private net.nerdsmp.paper.leaderboard.LeaderboardService leaderboards;
     public net.nerdsmp.paper.economy.PaymentController payments() { return payments; }
     public net.nerdsmp.paper.leaderboard.LeaderboardService leaderboards() { return leaderboards; }
     private CustomRecipeService recipes;
     private EngagementService engagement;
+    private net.nerdsmp.paper.metrics.MetricsService metrics;
+    public net.nerdsmp.paper.metrics.MetricsService metrics() { return metrics; }
     private ReputationContractService reputationContracts;
     private StarterKitService starterKit;
     private SessionRegistry sessions;
@@ -128,9 +132,12 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private CustomMobManager mobs;
     private VanillaBossMechanicsService bossMechanics;
     private PlayerPresentationService presentation;
+    private net.nerdsmp.paper.item.PlayerStatsService playerStats;
     private net.nerdsmp.paper.presentation.ClientHudFeed clientHud;
+    public net.nerdsmp.paper.item.PlayerStatsService playerStats() { return playerStats; }
     private DamageDisplayService damageDisplays;
     private MobHealthBarService mobHealthBars;
+    public MobHealthBarService mobHealthBars() { return mobHealthBars; }
     private MenuManager menus;
     private ArcaneForgeService forge;
     private NpcManager npcs;
@@ -139,12 +146,25 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private SocialManager social;
     private net.nerdsmp.paper.cosmetic.CosmeticService cosmetics;
     private net.nerdsmp.paper.booster.BoosterService boosters;
+    private net.nerdsmp.paper.naming.Nicknames nicknames;
+    private net.nerdsmp.paper.release.WhatsNew whatsNew;
+    private net.nerdsmp.paper.collection.Collections itemCollections;
+    private net.nerdsmp.paper.bazaar.Bazaar bazaar;
+    private net.nerdsmp.paper.calendar.Festivals festivals;
+    private net.nerdsmp.paper.calendar.WardensCouncil council;
+    private net.nerdsmp.paper.calendar.ReachCalendar calendar;
     private net.nerdsmp.paper.vote.VoteService votes;
     private ChannelChatManager chat;
     private TradeManager trade;
     private TravelManager travel;
     private PlayerGuideService guide;
+    private net.nerdsmp.paper.player.TutorialService tutorial;
+    private net.nerdsmp.paper.player.FirstStepsService firstSteps;
+    private net.nerdsmp.paper.support.SupportService support;
+    private net.nerdsmp.paper.death.SpiritService spirits;
+    private net.nerdsmp.paper.item.RecoveryService recovery;
     private RewardDropService rewardDrops;
+    private net.nerdsmp.paper.loot.DropStackingService dropStacking;
     private net.nerdsmp.paper.loot.profile.MobLootCommand mobLootCommands;
     private net.nerdsmp.paper.engine.ItemEngine itemEngine;
     private net.nerdsmp.paper.engine.mob.MobEngine mobEngine;
@@ -194,6 +214,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private net.nerdsmp.paper.activity.CollectionMasteryService collections;
     private WatchdogService watchdog;
     private net.nerdsmp.paper.anticheat.ConnectionLog connections;
+    private net.nerdsmp.paper.anticheat.ClientProbe clientProbe;
     private IdentificationService identification;
     private BankService bank;
     private RepairService repairs;
@@ -269,6 +290,11 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (recovery != null) recovery.close();
+        if (equipment != null) equipment.close();
+        if (dropStacking != null) dropStacking.close();
+        if (clientHud != null) clientHud.close();
+        if (playerStats != null) playerStats.close();
         if (itemUpdater != null) itemUpdater.close();
         if (websiteRewards != null) websiteRewards.close();
         if (websiteSocial != null) websiteSocial.close();
@@ -309,13 +335,17 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (enchanting != null) {
             enchanting.close();
         }
+        if (clientProbe != null) clientProbe.close();
         if (connections != null) connections.close();
         if (watchdog != null) {
             watchdog.close();
         }
         if (guide != null) {
             guide.close();
+            if (firstSteps != null) firstSteps.close();
         }
+        if (support != null) support.close();
+        if (spirits != null) spirits.close();
         if (trade != null) {
             trade.close();
         }
@@ -326,6 +356,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
             cosmetics.close();
         }
         if (boosters != null) boosters.close();
+        if (bazaar != null) bazaar.close();
+        if (council != null) council.close();
         if (votes != null) votes.close();
         if (social != null) {
             social.close();
@@ -342,6 +374,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         if (bank != null) {
             bank.close();
         }
+        if (metrics != null) metrics.close();
         if (engagement != null) {
             engagement.close();
         }
@@ -361,7 +394,6 @@ public final class NerdSmpPlugin extends JavaPlugin {
             bossMechanics.close();
         }
         if (presentation != null) {
-            if (clientHud != null) clientHud.close();
             presentation.close();
         }
         if (reputation instanceof AutoCloseable closeable) {
@@ -379,6 +411,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
     private void initializeServices() throws Exception {
         String storageMode = getConfig().getString("storage.mode", "yaml").toLowerCase(Locale.ROOT);
         playerData = new PlayerDataStore(getDataFolder(), getLogger());
+        metrics = new net.nerdsmp.paper.metrics.MetricsService(this);
         staffPermissions = new net.nerdsmp.paper.permission.StaffPermissions(this);
         if (storageMode.equals("postgres")) {
             database = new PostgresDatabase(
@@ -414,6 +447,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         // Server-wide XP boosters raise every award, whichever store keeps it.
         progression = new net.nerdsmp.paper.booster.BoostedProgressionService(progression, () -> boosters == null ? 1D : boosters.multiplier());
         economy = new net.nerdsmp.paper.economy.ObservedEconomyService(economy);
+        ((net.nerdsmp.paper.economy.ObservedEconomyService)economy).onMovement(m -> metrics.economy(m.kind(),m.reason(),m.marks()));
+        progression = new net.nerdsmp.paper.metrics.ObservedProgressionService(progression,metrics::progression);
 
         var regionPolicy = new net.nerdsmp.paper.claim.ClaimRegionPolicy(getConfig(), getServer().getWorlds());
         claims = new InMemoryClaimService(
@@ -447,6 +482,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         recipes = new CustomRecipeService(this, items);
         starterKit = new StarterKitService(this, items);
         sessions = new SessionRegistry();
+        equipment = new net.nerdsmp.paper.item.CharacterEquipmentService(this);
+        gearSets.accessories(equipment::accessories);
         resources = new net.nerdsmp.paper.resource.ResourceProvenanceService(this, sessions);
         reputationContracts = new ReputationContractService(this, sessions, economy, reputation);
         engagement = new EngagementService(this, sessions, economy, reputationContracts, resources);
@@ -459,6 +496,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         orders = new ServerOrderService(this, economy);
         identities = new IdentityProvider();
         presentation = new PlayerPresentationService(this);
+        playerStats = new net.nerdsmp.paper.item.PlayerStatsService(this);
         damageDisplays = new DamageDisplayService(this);
         settings = new PlayerSettingsService(this, playerData);
         mobs = new CustomMobManager(
@@ -511,6 +549,13 @@ public final class NerdSmpPlugin extends JavaPlugin {
         social = new SocialManager(this, settings);
         cosmetics = new net.nerdsmp.paper.cosmetic.CosmeticService(this);
         boosters = new net.nerdsmp.paper.booster.BoosterService(this);
+        nicknames = new net.nerdsmp.paper.naming.Nicknames(this);
+        whatsNew = new net.nerdsmp.paper.release.WhatsNew(this);
+        itemCollections = new net.nerdsmp.paper.collection.Collections(this, getConfig().getString("season.id", "season-1"));
+        bazaar = new net.nerdsmp.paper.bazaar.Bazaar(this);
+        festivals = new net.nerdsmp.paper.calendar.Festivals(this);
+        council = new net.nerdsmp.paper.calendar.WardensCouncil(this);
+        calendar = new net.nerdsmp.paper.calendar.ReachCalendar(this);
         votes = new net.nerdsmp.paper.vote.VoteService(this);
         chat = new ChannelChatManager(this, settings, social, presentation, sessions);
         trade = new TradeManager(this, settings, social);
@@ -531,6 +576,11 @@ public final class NerdSmpPlugin extends JavaPlugin {
         worldPacks = new net.nerdsmp.paper.worldpack.WorldPackService(this);
         reach = new net.nerdsmp.paper.reach.ReachService(this);
         guide = new PlayerGuideService(this, settings);
+        tutorial = new net.nerdsmp.paper.player.TutorialService(this);
+        firstSteps = new net.nerdsmp.paper.player.FirstStepsService(this);
+        support = new net.nerdsmp.paper.support.SupportService(this);
+        spirits = new net.nerdsmp.paper.death.SpiritService(this);
+        recovery = new net.nerdsmp.paper.item.RecoveryService(this);
         rewardDrops = new RewardDropService(this, mobs, forge, items, sessions, economy);
         expansionLoot = new net.nerdsmp.paper.loot.ExpansionLootService(this);
         mobEngine = new net.nerdsmp.paper.engine.mob.MobEngine(this,mobs);
@@ -557,6 +607,7 @@ public final class NerdSmpPlugin extends JavaPlugin {
         studioUi.setHome(developerStudio::open);
         watchdog = new WatchdogService(this);
         connections = new net.nerdsmp.paper.anticheat.ConnectionLog(this);
+        clientProbe = new net.nerdsmp.paper.anticheat.ClientProbe(this);
         partyManager = new net.nerdsmp.paper.party.PartyManager(this, partyRoster);
         partyMenu = new net.nerdsmp.paper.party.PartyMenu(this, partyManager);
         partyManager.attach(partyMenu);
@@ -570,6 +621,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     private void registerListeners() {
         PluginManager plugins = getServer().getPluginManager();
+        plugins.registerEvents(spirits, this);
+        plugins.registerEvents(support, this);
+        plugins.registerEvents(tutorial, this);
+        plugins.registerEvents(firstSteps, this);
         plugins.registerEvents(identities, this);
         plugins.registerEvents(new SessionListener(
             this,
@@ -618,6 +673,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(bank, this);
         plugins.registerEvents(repairs, this);
         plugins.registerEvents(gearSets, this);
+        plugins.registerEvents(equipment, this);
+        equipment.start();
         plugins.registerEvents(bossMechanics, this);
         plugins.registerEvents(recipes, this);
         plugins.registerEvents(engagement, this);
@@ -628,6 +685,13 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(cosmetics, this);
         cosmetics.start();
         plugins.registerEvents(boosters, this);
+        plugins.registerEvents(nicknames, this);
+        plugins.registerEvents(whatsNew, this);
+        plugins.registerEvents(itemCollections, this);
+        plugins.registerEvents(bazaar, this);
+        plugins.registerEvents(festivals, this);
+        plugins.registerEvents(council, this);
+        plugins.registerEvents(calendar, this);
         boosters.start();
         plugins.registerEvents(votes, this);
         votes.start();
@@ -650,7 +714,8 @@ public final class NerdSmpPlugin extends JavaPlugin {
             event -> zoneSpawner != null && zoneSpawner.zoneId(event.getEntity()).isPresent()
                 && event.getDamageSource().getCausingEntity() instanceof org.bukkit.entity.Player attacker
                 && zoneSpawner.canFight(attacker,event.getEntity())
-                || expeditions() != null && expeditions().enemy(event.getEntity())), this);
+                || expeditions() != null && expeditions().enemy(event.getEntity()),
+            event -> expeditions() != null && expeditions().mayUsePuzzle(event)), this);
         plugins.registerEvents(skillListener, this);
         plugins.registerEvents(new net.nerdsmp.paper.gathering.LivestockService(this), this);
         skillLamps = new net.nerdsmp.paper.item.SkillLampService(this);
@@ -663,9 +728,12 @@ public final class NerdSmpPlugin extends JavaPlugin {
         itemUpdater = new net.nerdsmp.paper.item.ItemUpdater(items, forge);
         itemUpdater.lamps(skillLamps);
         plugins.registerEvents(itemUpdater, this);
+        itemUpdater.start(this);
         plugins.registerEvents(hoeHarvest, this);
         plugins.registerEvents(oreSmelting, this);
         plugins.registerEvents(autoSmelt, this);
+        dropStacking = new net.nerdsmp.paper.loot.DropStackingService(this);
+        dropStacking.start();
         plugins.registerEvents(forestry, this);
         if (expeditionRoutes != null) plugins.registerEvents(expeditionRoutes, this);
         plugins.registerEvents(expeditions, this);
@@ -675,8 +743,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
         plugins.registerEvents(expeditionMenu, this);
         plugins.registerEvents(expeditions.forge(), this);
         presentation.start();
+        playerStats.start();
         clientHud = new net.nerdsmp.paper.presentation.ClientHudFeed(this);
         clientHud.start();
+        metrics.start();
         damageDisplays.start();
         mobHealthBars.start();
         bossMechanics.start();
@@ -688,11 +758,15 @@ public final class NerdSmpPlugin extends JavaPlugin {
         engagement.start();
         npcs.start();
         guide.start();
+        firstSteps.start();
+        spirits.start();
+        recovery.start();
         campaign.start();
         marketController.start();
         staffPermissions.start();
         connections.start();
         watchdog.start();
+        clientProbe.start();
         try { watchdogPanel = net.nerdsmp.paper.anticheat.WatchdogPanel.start(this); }
         catch (Exception failure) { getLogger().log(java.util.logging.Level.SEVERE, "Watchdog panel unavailable; no HTTP listener enabled", failure); }
         auctionController.start();
@@ -741,13 +815,14 @@ public final class NerdSmpPlugin extends JavaPlugin {
         CommandRouter router = new CommandRouter(this);
         List<String> names = List.of(
             "permissions", "island", "marks", "pay", "leaderboard", "weblink", "cooking", "skills", "adventurer", "mastery", "jobs", "market", "ah", "store", "shops", "claim", "party", "partychat", "relics",
-            "campaign", "grave", "duel", "cosmetics", "menu", "profile", "hud", "expedition", "zone", "digsite", "mobloot", "itemengine", "mobengine", "studio", "lootstudio", "worldstudio", "npcstudio", "recipestudio",
+            "campaign", "grave", "duel", "cosmetics", "menu", "profile", "stats", "equipment", "hud", "expedition", "zone", "digsite", "mobloot", "itemengine", "mobengine", "studio", "lootstudio", "worldstudio", "npcstudio", "recipestudio",
             "forge", "enchants", "recipes", "daily", "playtime", "npc", "reputation", "nerdadmin", "staff", "report",
             "settings", "social", "friends", "ignore", "unignore", "msg", "reply", "channel", "globalchat",
             "localchat", "tradechat", "staffchat", "trade", "spawn", "warp", "warps", "setwarp", "delwarp",
-            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips", "checkpoint", "booster", "vote"
+            "setspawn", "tpa", "tpahere", "tpaccept", "tpdeny", "tpcancel", "back", "quickstart", "tips",
+            "tutorial", "website", "support", "helpme", "spirit", "checkpoint", "booster", "vote"
             , "alchemy", "fishing", "excavation", "achievements", "watchdog", "identify", "bank", "repairall",
-            "companion", "trail", "emote", "journal", "worldpack", "reach", "dev"
+            "companion", "trail", "emote", "journal", "worldpack", "reach", "dev", "worldboss", "whatsnew", "collections", "bazaar", "calendar", "council"
         );
         for (String name : names) {
             PluginCommand command = getCommand(name);
@@ -958,6 +1033,17 @@ public final class NerdSmpPlugin extends JavaPlugin {
         return cosmetics;
     }
 
+    public net.nerdsmp.paper.naming.Nicknames nicknames() { return nicknames; }
+    public net.nerdsmp.paper.release.WhatsNew whatsNew() { return whatsNew; }
+    /** Gathering collections (counts of what players mine, fell, catch and slay); the turn-in journal is {@link #collections()}. */
+    public net.nerdsmp.paper.collection.Collections itemCollections() { return itemCollections; }
+    public net.nerdsmp.paper.bazaar.Bazaar bazaar() { return bazaar; }
+    public net.nerdsmp.paper.calendar.Festivals festivals() { return festivals; }
+    public net.nerdsmp.paper.calendar.WardensCouncil council() { return council; }
+    public net.nerdsmp.paper.calendar.ReachCalendar calendar() { return calendar; }
+    /** Whether the seated councillor's perk is in force. */
+    public boolean perk(net.nerdsmp.paper.calendar.WardensCouncil.Perk perk) { return council != null && council.active(perk); }
+
     public net.nerdsmp.paper.booster.BoosterService boosters() {
         return boosters;
     }
@@ -982,6 +1068,12 @@ public final class NerdSmpPlugin extends JavaPlugin {
         return guide;
     }
 
+    public net.nerdsmp.paper.player.TutorialService tutorial() { return tutorial; }
+    public net.nerdsmp.paper.player.FirstStepsService firstSteps() { return firstSteps; }
+    public net.nerdsmp.paper.support.SupportService support() { return support; }
+    public net.nerdsmp.paper.death.SpiritService spirits() { return spirits; }
+    public net.nerdsmp.paper.item.RecoveryService recovery() { return recovery; }
+
     public AlchemyService alchemy() {
         return alchemy;
     }
@@ -1000,6 +1092,10 @@ public final class NerdSmpPlugin extends JavaPlugin {
 
     public AchievementService achievements() {
         return achievements;
+    }
+
+    public net.nerdsmp.paper.anticheat.ClientProbe clientProbe() {
+        return clientProbe;
     }
 
     public WatchdogService watchdog() {

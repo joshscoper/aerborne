@@ -27,7 +27,8 @@ public final class PlayerGuideService implements AutoCloseable {
         this.settings = settings;
         List<String> configured = plugin.getConfig().getStringList(plugin.skyblockEnabled() ? "skyblock.tips" : "tips.messages");
         List<String> selected = configured.isEmpty() ? (plugin.skyblockEnabled() ? skyblockTips() : defaultTips()) : configured;
-        tips = selected.stream().map(PlayerGuideService::publicTip).toList();
+        tips = currentTips(selected, plugin.getConfig().getBoolean("tips.include-feature-updates", true),
+            plugin.getConfig().getBoolean("website.promotion-in-tips", true));
     }
 
     public void start() {
@@ -36,11 +37,19 @@ public final class PlayerGuideService implements AutoCloseable {
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::broadcastNext, initial, period);
     }
 
-    public boolean handleQuickstart(CommandSender sender) {
+    /** {@code /quickstart} (or {@code /start}) opens First Steps; {@code /quickstart commands} lists the main commands. */
+    public boolean handleQuickstart(CommandSender sender, String[] args) {
         Player player = player(sender);
         if (player == null) {
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("commands") || plugin.firstSteps() == null) commandList(player);
+        else plugin.firstSteps().open(player);
+        return true;
+    }
+
+    /** The handful of commands worth knowing, in chat. */
+    public void commandList(Player player) {
         player.sendRichMessage(net.nerdsmp.paper.presentation.BrandPalette.title(plugin.displayName() + " Quickstart"));
         List<String> steps = plugin.skyblockEnabled() ? List.of(
             Chat.command("island create") + " starts your home. " + Chat.command("island home") + " takes you back.",
@@ -66,8 +75,30 @@ public final class PlayerGuideService implements AutoCloseable {
         }
         player.sendRichMessage("<gray>Everything else is in " + Chat.command("menu") + ". Turn tips on or off with "
             + Chat.command("tips") + ".</gray>");
+        Chat.info(player, "Follow " + Chat.command("tutorial") + " for equipment and talent lessons. " + Chat.command("support help") + " explains private staff support. " + Chat.command("website") + " opens our website link.");
+    }
+
+    public boolean handleWebsite(CommandSender sender) {
+        sender.sendRichMessage("<gold><bold>Aerborne online</bold></gold> <click:open_url:'https://www.aerborne.net'><hover:show_text:'Open the official Aerborne website'><aqua><underlined>www.aerborne.net</underlined></aqua></hover></click>");
         return true;
     }
+
+    /** Add current onboarding tips to old installations without replacing custom operator messages. */
+    public static List<String> currentTips(List<String> configured, boolean featureUpdates, boolean website) {
+        List<String> values = new ArrayList<>(configured.stream().map(PlayerGuideService::publicTip).toList());
+        if (featureUpdates) {
+            addTip(values, "Well Fed", "<gray>Hunger stays full. Health recovers after combat; eating grants <gold>Well Fed</gold> for faster rest recovery. <white>/cooking</white> meals add useful buffs.</gray>");
+            addTip(values, "/tutorial", "<gray>New to Aerborne? <white>/tutorial</white> has eight short lessons with saved progress. Return whenever you like.</gray>");
+            addTip(values, "Shift-click accessories", "<gray>Equip armor normally. Shift-click accessories in E; Sneak + F opens all equipment slots, and F closes the screen.</gray>");
+            addTip(values, "/adventurer", "<gray>Plan connected profession trees in <white>/skills</white>, and character-wide talents in <white>/adventurer</white>. Preview before spending.</gray>");
+            addTip(values, "/helpme", "<gray>Need staff help? <white>/helpme [what you need]</white> saves a private request. <white>/support chat</white> starts a private conversation; <white>/support leave</white> returns.</gray>");
+            addTip(values, "/spirit", "<gray>Death keeps your gear and XP. In adventure worlds, return to your body as a spirit or choose the Spirit Healer with <white>/spirit</white>.</gray>");
+        }
+        if (website) addTip(values, "https://www.aerborne.net", "<gray>Visit Aerborne online: <click:open_url:'https://www.aerborne.net'><hover:show_text:'Open the official Aerborne website'><aqua><underlined>www.aerborne.net</underlined></aqua></hover></click>. Get this link anytime with <white>/website</white>.</gray>");
+        return List.copyOf(values);
+    }
+
+    private static void addTip(List<String> values, String marker, String tip) { if (values.stream().noneMatch(value -> value.contains(marker))) values.add(tip); }
 
     public boolean handleTips(CommandSender sender, String[] args) {
         Player player = player(sender);
@@ -140,7 +171,9 @@ public final class PlayerGuideService implements AutoCloseable {
 
     private void broadcastNext() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (settings.enabled(player.getUniqueId(), PlayerSettingsService.Setting.TIPS)) {
+            // A player on First Steps already has one thing to do; tips wait until they've finished.
+            if (settings.enabled(player.getUniqueId(), PlayerSettingsService.Setting.TIPS)
+                && (plugin.firstSteps() == null || !plugin.firstSteps().active(player))) {
                 sendNext(player);
             }
         }
@@ -158,7 +191,7 @@ public final class PlayerGuideService implements AutoCloseable {
     private List<String> defaultTips() {
         List<String> values = new ArrayList<>();
         values.add("<gray>Choose two skill masteries after level 25. Open <white>/skills</white> to plan ahead.</gray>");
-        values.add("<gray>Physical grave recovery is free. <white>/grave recover</white> is the paid shortcut.</gray>");
+        values.add("<gray>Death keeps your inventory and XP. In adventure worlds, <white>/spirit</white> guides you back to your body or the Spirit Healer.</gray>");
         values.add("<gray>Geodes can hold socket gems. Hold matching gems and open <white>/forge</white> to merge them.</gray>");
         values.add("<gray>Local chat only reaches nearby players. Switch with <white>/channel local</white>.</gray>");
         values.add("<gray>Claim the chunk beneath your base with <white>/claim create</white>.</gray>");
@@ -170,6 +203,7 @@ public final class PlayerGuideService implements AutoCloseable {
         values.add("<gray>Catch streaks improve fishing rewards. Track yours with <white>/fishing</white>.</gray>");
         values.add("<gray>Quick excavation chains improve buried finds. Player-placed blocks never count.</gray>");
         values.add("<gray>Unidentified loot grants no stats until Nyra reveals it with <white>/identify</white>.</gray>");
+        values.add("<gray>Shift-click accessories in E to equip them. Sneak + F opens your full equipment; F closes it.</gray>");
         values.add("<gray>Your account bank starts with nine slots. Open it with <white>/bank</white>.</gray>");
         values.add("<gray>Prismatic Gems are exceptionally strong and exceptionally rare. Luminous geodes offer the best chance.</gray>");
         values.add("<gray>Elian exchanges pottery sherds, Relic records, and sniffer eggs for Rift Scholar reputation.</gray>");
@@ -213,7 +247,10 @@ public final class PlayerGuideService implements AutoCloseable {
 
     /** Correct only known obsolete stock wording; saved operator tip lists are not overwritten. */
     public static String publicTip(String message) {
+        if (message.contains("Physical grave recovery is free.") || message.contains("/grave recover") && message.contains("paid shortcut"))
+            return "<gray>Death keeps your inventory and XP. In adventure worlds, <white>/spirit</white> guides you back to your body or the Spirit Healer.</gray>";
         return message.replace("Every five island levels earns a talent point.", "Every two island levels earns a talent point.")
+            .replace("Read each column in", "Follow connected branches in")
             .replace("and open-water fishing.", "and fishing.")
             .replace("<white>/expedition</white> leads to renewable veins, timber, excavation finds and fishing.",
                 "<white>/expedition</white> takes up to five friends on a private adventure with a boss and loot. It's also the way into the Nether and the End.")

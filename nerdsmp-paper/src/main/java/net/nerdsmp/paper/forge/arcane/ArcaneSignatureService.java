@@ -111,7 +111,7 @@ public final class ArcaneSignatureService implements Listener {
             return;
         }
         if (!step.released()) {
-            player.sendActionBar(Chat.render("<aqua>Static Charge " + step.counter().value() + "/" + numbers.threshold() + "</aqua>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<aqua>Static Charge " + step.counter().value() + "/" + numbers.threshold() + "</aqua>"));
             return;
         }
         double hit = event.getFinalDamage();
@@ -210,14 +210,14 @@ public final class ArcaneSignatureService implements Listener {
             if (!step.counted()) return;
             if (!step.released()) {
                 if (step.counter().value() % 8 == 0) {
-                    player.sendActionBar(Chat.render("<gold>Resonance " + step.counter().value() + "/" + numbers.threshold() + "</gold>"));
+                    net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gold>Resonance " + step.counter().value() + "/" + numbers.threshold() + "</gold>"));
                 }
                 return;
             }
-            for (ItemStack drop : drops) location.getWorld().dropItemNaturally(location, drop.clone());
+            for (ItemStack drop : net.nerdsmp.paper.loot.DropStacks.compact(drops)) location.getWorld().dropItemNaturally(location, drop);
             location.getWorld().spawnParticle(Particle.WAX_ON, location, Math.max(0, numbers.particles()), 0.3, 0.3, 0.3, 0.0);
             player.playSound(location, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 0.8F);
-            player.sendActionBar(Chat.render("<gold>Heart of the Mountain: the ore yields twice.</gold>"));
+            net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gold>Heart of the Mountain: the ore yields twice.</gold>"));
             forge.telemetry().increment(ArcaneTelemetry.Metric.MOUNTAIN_RELEASES);
         });
     }
@@ -274,7 +274,7 @@ public final class ArcaneSignatureService implements Listener {
                 if (numbers.protectionSeconds() > 0) {
                     player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, ticks, 1, false, true, true));
                 }
-                player.sendActionBar(Chat.render("<gold>Last Bastion held. Ready again in "
+                net.nerdsmp.paper.item.PlayerStatsService.message(player, Chat.render("<gold>Last Bastion held. Ready again in "
                     + Chat.duration(java.time.Duration.ofMillis(cooldown)) + ".</gold>"));
             } catch (RuntimeException failure) {
                 plugin.getLogger().log(Level.WARNING, "Last Bastion follow-up failed for " + player.getUniqueId(), failure);

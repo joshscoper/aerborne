@@ -14,6 +14,6 @@ final class ShopItems {
                 : new ItemStack(product.material()));
         if (units > item.getMaxStackSize()) throw new IllegalArgumentException("That item cannot be bought in this quantity");
         item.setAmount(units);
-        return item;
+        return net.nerdsmp.paper.item.ItemUpdater.current(net.nerdsmp.paper.item.FoodItems.upgrade(item).orElse(item));
     }
 }

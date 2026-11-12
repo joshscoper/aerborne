@@ -49,13 +49,15 @@ import java.util.logging.Level;
  */
 public final class ReachGameplay implements Listener {
     /** A named place: discovered once per player by walking within {@code radius} of it. */
-    record Place(String spot, String title, double radius) { }
+    record Place(String spot, String title, double radius, String arrivalLine) {
+        Place(String spot, String title, double radius) { this(spot, title, radius, "Place discovered"); }
+    }
 
     /** A creature that appears at a spot on its own timer: rares and dungeon bosses. */
     record Encounter(String mob, String spot, int respawnSeconds, boolean nightOnly, String notice) { }
 
     static final List<Place> PLACES = List.of(
-        new Place("highcrown.arrival_1", "The Sky Docks", 22),
+        new Place("highcrown.arrival_1", "The Sky Docks", 22, "Wren flies the red and white pennants."),
         new Place("highcrown.plaza", "Kingsgate Plaza", 24),
         new Place("highcrown.keep_hall", "Highcrown Keep", 20),
         new Place("highcrown.fane", "The Lantern Fane", 14),
@@ -63,30 +65,30 @@ public final class ReachGameplay implements Listener {
         new Place("highcrown.exchequer", "The Highcrown Exchequer", 12),
         new Place("highcrown.tethered_gull", "The Tethered Gull", 10),
         new Place("highcrown.crafter_0", "Crafters' Row", 18),
-        new Place("highcrown.kingsbridge", "The Kingsbridge", 18),
+        new Place("highcrown.kingsbridge", "The Kingsbridge", 18, "Six Wardens stand watch over the grain road."),
         new Place("goldenreach.warden_post", "The Warden's Post", 12),
         new Place("goldenreach.kingsgate_fields", "Kingsgate Fields", 30),
-        new Place("goldenreach.green", "Millbrook", 30),
+        new Place("goldenreach.green", "Millbrook", 30, "Garth’s hammer rings across the green."),
         new Place("goldenreach.windmill_ridge", "Windmill Ridge", 30),
         new Place("goldenreach.thistle_yard", "Thistle Farm", 20),
         new Place("goldenreach.orchard", "Brindle Orchards", 30),
         new Place("goldenreach.tollkeeper_camp", "The Tollroad", 25),
-        new Place("goldenreach.granary", "The Black Granary", 25),
-        new Place("goldenreach.cellars_entrance", "The Old Granary Cellars", 6),
+        new Place("goldenreach.granary", "The Black Granary", 25, "The receiving beam still bears Millbrook’s name."),
+        new Place("goldenreach.cellars_entrance", "The Old Granary Cellars", 6, "Brother Tobin remembers when these stairs were a refuge."),
         new Place("goldenreach.hollow_road", "The Hollow Road", 25),
-        new Place("huntsmans_barrow.place", "The Huntsman's Barrow", 26),
+        new Place("huntsmans_barrow.place", "The Huntsman's Barrow", 26, "Someone still lights the candles nearest the grate."),
         new Place("stone_rings.place", "The Stone Rings", 16),
         new Place("stonewatch.place", "Stonewatch", 14),
-        new Place("heart_tree.place", "The Heart Tree", 26),
-        new Place("great_aqueduct.place", "The Great Aqueduct", 30),
-        new Place("headframe.place", "The Deep Foreman's Headframe", 22),
+        new Place("heart_tree.place", "The Heart Tree", 26, "Black thorn climbs the living trunk."),
+        new Place("great_aqueduct.place", "The Great Aqueduct", 30, "Follow the water east toward the Ironspine."),
+        new Place("headframe.place", "The Deep Foreman's Headframe", 22, "The night shift’s lamps are still checked out."),
         new Place("sunscar_arch.place", "The Sunscar Arch", 30),
         new Place("ember_gate.place", "The Ember Gate", 20),
-        new Place("seal_spire.place", "The Seal Spire", 22)
+        new Place("seal_spire.place", "The Seal Spire", 22, "Three settings on the archive door. One is empty.")
     );
 
     static final List<Encounter> ENCOUNTERS = List.of(
-        new Encounter("toll_captain_brask", "goldenreach.toll_captain", 300, false, null),
+        new Encounter("toll_captain_brask", "goldenreach.toll_captain", 900, false, null),
         new Encounter("scarecrow_king", "goldenreach.scarecrow_king", 720, false, "Straw rustles on the threshing floor. The Scarecrow King stands up."),
         new Encounter("old_grizzlehide", "goldenreach.rare_grizzlehide", 1800, false, "A huge boar crashes through the orchard: Old Grizzlehide."),
         new Encounter("hollow_jack", "goldenreach.windmill_ridge", 2400, true, "A lantern lights itself on Windmill Ridge. Hollow Jack walks."),
@@ -142,6 +144,8 @@ public final class ReachGameplay implements Listener {
         if (world == null) return;
         for (Player player : world.getPlayers()) {
             Location at = player.getLocation();
+            Place nearest = null;
+            double nearestDistance = Double.POSITIVE_INFINITY;
             for (Place place : PLACES) {
                 ReachFeatures.Spot s = spots.get(place.spot());
                 if (s == null) continue;
@@ -153,10 +157,18 @@ public final class ReachGameplay implements Listener {
                 found.add(place.spot());
                 state.set(path, found);
                 dirty = true;
-                player.showTitle(Title.title(Component.text("Discovered", NamedTextColor.GOLD), Component.text(place.title(), NamedTextColor.WHITE),
-                    Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(2), Duration.ofMillis(600))));
-                player.playSound(at, org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6F, 1.4F);
+                double distance = dx * dx + dy * dy + dz * dz;
+                if (distance < nearestDistance) {
+                    nearest = place;
+                    nearestDistance = distance;
+                }
                 credit(player, 10, "reach.discovery", place.title(), "reach:place:" + place.spot());
+            }
+            // Keep every discovery and reward. Show one arrival when neighboring areas overlap.
+            if (nearest != null) {
+                player.showTitle(Title.title(Component.text(nearest.title(), NamedTextColor.GOLD), Component.text(nearest.arrivalLine(), NamedTextColor.GRAY),
+                    Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(850))));
+                player.playSound(at, org.bukkit.Sound.BLOCK_AMETHYST_BLOCK_CHIME, org.bukkit.SoundCategory.AMBIENT, 0.32F, 0.86F);
             }
         }
     }

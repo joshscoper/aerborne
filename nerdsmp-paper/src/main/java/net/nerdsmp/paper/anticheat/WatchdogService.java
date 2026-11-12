@@ -409,6 +409,7 @@ public final class WatchdogService implements Listener, AutoCloseable {
         for (double[] step : path.steps()) {
             float yaw = Double.isNaN(step[4]) ? to.getYaw() : (float) step[4];
             MovementSimulator.Result result = simulator.step(blocks, profile, step[0], step[1], step[2], yaw, (int) step[3]);
+            if (blocks.overBudget) { resetMovement(state); return new int[]{0, 0}; }
             if (!result.evaluated()) continue;
             if (!result.flagged()) {
                 clean(state, Check.SPEED, 0.05D);
@@ -551,7 +552,7 @@ public final class WatchdogService implements Listener, AutoCloseable {
         private final Map<Long, Integer> recent;
         private final int changedSince;
         private final Map<Long, List<MovementSimulator.Collider>> cells = new HashMap<>();
-        private boolean uncertain;
+        private boolean uncertain, overBudget;
 
         WorldBlocks(World world, Map<Long, Integer> recent, int changedSince) {
             this.world = world;
@@ -565,8 +566,12 @@ public final class WatchdogService implements Listener, AutoCloseable {
 
         @Override
         public void collect(MovementSimulator.Box area, List<MovementSimulator.Collider> out) {
+            if (!CollisionWorkBudget.allows(area, world.getMinHeight(), world.getMaxHeight(), cells.size())) {
+                uncertain = true; overBudget = true; return;
+            }
             int minY = Math.max(world.getMinHeight(), (int) Math.floor(area.minY()) - 1); // fences and walls reach up from the block below
             int maxY = Math.min(world.getMaxHeight() - 1, (int) Math.floor(area.maxY()));
+            if (minY > maxY) return;
             for (int x = (int) Math.floor(area.minX()); x <= (int) Math.floor(area.maxX()); x++) {
                 for (int z = (int) Math.floor(area.minZ()); z <= (int) Math.floor(area.maxZ()); z++) {
                     for (int y = minY; y <= maxY; y++) {
@@ -577,9 +582,11 @@ public final class WatchdogService implements Listener, AutoCloseable {
         }
 
         private List<MovementSimulator.Collider> cell(int x, int y, int z) {
+            if (overBudget) return List.of();
             long key = blockKey(x, y, z);
             List<MovementSimulator.Collider> cached = cells.get(key);
             if (cached != null) return cached;
+            if (cells.size() >= CollisionWorkBudget.CACHED_CELLS) { uncertain = true; overBudget = true; return List.of(); }
             List<MovementSimulator.Collider> shapes = List.of();
             if (!world.isChunkLoaded(x >> 4, z >> 4)) {
                 uncertain = true;
@@ -924,6 +931,16 @@ public final class WatchdogService implements Listener, AutoCloseable {
         return autonomous && state.score >= setbackScore;
     }
 
+    /**
+     * A signal from the companion client's integrity probe (ClientProbe): a forged or tampered client, a flagged mod,
+     * or a client setting no legitimate player has. Scored and alerted exactly like a rule check so it stacks with
+     * movement and combat evidence instead of living in its own silo.
+     */
+    public void clientSignal(Player player, double weight, String detail) {
+        if (player.hasPermission("nerdsmp.anticheat.bypass")) return;
+        flag(player, Check.CLIENT, weight, detail);
+    }
+
     /** Records an action the combat model took or would take, with the same alerting as rule checks. */
     public void recordModelAction(UUID playerId, String name, double probability, String action, String detail) {
         Evidence entry = new Evidence(Instant.now(), playerId, name, Check.MODEL, detail, probability * 100.0D, 0, false, action);
@@ -1187,7 +1204,7 @@ public final class WatchdogService implements Listener, AutoCloseable {
 
     /** Saved names are part of the evidence file format: append only. COMBAT_RATE remains for old evidence. */
     enum Check {
-        SPEED, FLIGHT, REACH, COMBAT_RATE, FAST_BREAK, TIMER, BAD_PACKETS, AUTOCLICKER, HITBOX, MODEL
+        SPEED, FLIGHT, REACH, COMBAT_RATE, FAST_BREAK, TIMER, BAD_PACKETS, AUTOCLICKER, HITBOX, MODEL, CLIENT
     }
 
     private record PendingFlag(UUID playerId, Check check, double weight, String detail) { }

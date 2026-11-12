@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,13 +135,17 @@ public final class ItemBlueprintStore {
             ConfigurationSection itemNodes = section(yaml, "items");
             for (String id : itemNodes.getKeys(false)) {
                 ConfigurationSection item = section(itemNodes, id);
-                exact(item.getValues(false), Set.of("name", "material", "rarity", "sockets", "item-level", "set", "lore", "stats"), "item " + id);
+                Set<String> fields=new HashSet<>(Set.of("name", "material", "rarity", "sockets", "item-level", "set", "lore", "stats"));
+                if(item.contains("slot")) fields.add("slot");
+                exact(item.getValues(false), fields, "item " + id);
                 String set = string(item.get("set"), "set");
                 Object rawLore = item.get("lore"); if (!(rawLore instanceof List<?> list)) throw new IllegalArgumentException("Lore must be a list.");
                 List<String> lore = new ArrayList<>(); for (Object line : list) lore.add(string(line, "lore"));
                 items.put(id, new ItemBlueprint(id, string(item.get("name"), "name"), Material.valueOf(string(item.get("material"), "material")),
                     string(item.get("rarity"), "rarity"), integer(item.get("sockets"), "sockets"), integer(item.get("item-level"), "item-level"),
-                    set.isEmpty() ? null : set, lore, stats(section(item, "stats"))));
+                    set.isEmpty() ? null : set, lore, stats(section(item, "stats")), item.contains("slot")
+                        ? net.nerdsmp.paper.item.PaperItemService.GearSlot.valueOf(string(item.get("slot"),"slot"))
+                        : net.nerdsmp.paper.item.EquipmentMaterials.slot(Material.valueOf(string(item.get("material"),"material")))));
             }
             Snapshot next = new Snapshot(items, sets); validate(next); return next;
         } catch (InvalidConfigurationException | IllegalArgumentException | NullPointerException | YAMLException error) {
@@ -161,6 +166,7 @@ public final class ItemBlueprintStore {
         new TreeMap<>(snapshot.items).forEach((id, item) -> {
             var entry = items.createSection(id); entry.set("name", item.name()); entry.set("material", item.material().name());
             entry.set("rarity", item.rarity()); entry.set("sockets", item.sockets()); entry.set("item-level", item.itemLevel());
+            entry.set("slot",item.slot().name());
             entry.set("set", item.setId() == null ? "" : item.setId()); entry.set("lore", item.lore());
             entry.createSection("stats", new TreeMap<>(item.stats()));
         });

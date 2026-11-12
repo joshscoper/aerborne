@@ -263,7 +263,7 @@ public final class VanillaBossMechanicsService implements Listener, AutoCloseabl
             case WARDEN -> "<dark_aqua>Echo Rupture—get outside the ring!</dark_aqua>";
         };
         List<Player> players = nearbyPlayers(boss, ENCOUNTER_RADIUS);
-        players.forEach(player -> player.sendActionBar(miniMessage.deserialize(warning)));
+        players.forEach(player -> net.nerdsmp.paper.item.PlayerStatsService.message(player, miniMessage.deserialize(warning)));
         Location origin = encounter.kind == VanillaBossKind.ENDER_DRAGON
             ? nearestPlayer(boss).map(player -> player.getLocation().clone()).orElse(boss.getLocation().clone())
             : boss.getLocation().clone();
@@ -392,6 +392,7 @@ public final class VanillaBossMechanicsService implements Listener, AutoCloseabl
         double radiusSquared = radius * radius;
         return boss.getWorld().getPlayers().stream()
             .filter(player -> player.isOnline() && !player.isDead() && !player.getGameMode().isInvulnerable())
+            .filter(player -> !(plugin instanceof net.nerdsmp.paper.NerdSmpPlugin core) || core.spirits()==null || !core.spirits().ghost(player.getUniqueId()))
             .filter(player -> player.getLocation().distanceSquared(boss.getLocation()) <= radiusSquared)
             .toList();
     }

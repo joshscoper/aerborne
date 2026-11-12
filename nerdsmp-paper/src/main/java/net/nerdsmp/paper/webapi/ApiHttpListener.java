@@ -56,7 +56,7 @@ final class ApiHttpListener implements AutoCloseable {
     static final int MAX_CONNECTIONS = 64;
     private static final int SOCKET_SECONDS = 5;
     private static final Set<String> PUBLIC = Set.of("/api/v1/status", "/api/v1/health", "/api/v1/leaderboards",
-        "/api/v1/expeditions", "/api/v1/campaign");
+        "/api/v1/expeditions", "/api/v1/campaign", "/api/v1/world");
     private static final String PLAYERS = "/api/v1/players/";
     private static final String LINKS = "/api/v1/links/";
     private static final Set<String> PRIVATE = Set.of("/api/v1/telemetry", "/api/v1/catalog");
@@ -209,6 +209,7 @@ final class ApiHttpListener implements AutoCloseable {
                 case "/api/v1/leaderboards" -> current.leaderboards();
                 case "/api/v1/expeditions" -> current.expeditions();
                 case "/api/v1/campaign" -> current.campaign();
+                case "/api/v1/world" -> current.world();
                 default -> throw new IllegalStateException("Unsupported API route");
             };
             send(context, 200, json, origin);

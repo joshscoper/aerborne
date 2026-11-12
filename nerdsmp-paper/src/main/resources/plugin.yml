@@ -8,13 +8,17 @@ load: POSTWORLD
 softdepend: [Nexo, LuckPerms, CoreProtect, GrimAC]
 
 commands:
+  equipment:
+    description: Manage armor, weapons and MMO accessory slots.
+    usage: /equipment
+    aliases: [equip, gear]
   pay:
     description: Send earned Marks to another online player, with a durable receipt.
     usage: /pay [status|<player> <amount>]
   leaderboard:
     description: Browse offline-inclusive player and island rankings.
     aliases: [leaderboards, top, baltop]
-    usage: /leaderboard [marks|adventurer|skills|island|achievements|cooking]
+    usage: /leaderboard [category]
   weblink:
     description: Get a one-time code to link your Minecraft account on the Aerborne website.
     aliases: [linkweb]
@@ -100,7 +104,7 @@ commands:
     description: View use-based skill progression.
     usage: /skills
   adventurer:
-    description: View your Adventurer Level and rank path.
+    description: Choose Adventurer talents and view your rank perks.
     usage: /adventurer
   mastery:
     description: Select or respec a seasonal mastery.
@@ -141,8 +145,12 @@ commands:
     description: The season campaign's goals, milestones, buffs and rewards.
     usage: /campaign [progress|claim|contribute [goal] [amount]|top [goal]]
   grave:
-    description: Locate or remotely recover your latest grave.
+    description: Recover a legacy grave from before inventory retention.
     usage: /grave <locate|recover>
+  spirit:
+    description: Return to your body or visit the Spirit Healer after an adventure-world death.
+    usage: /spirit [resurrect|healer|return|locate]
+    aliases: [soul, resurrect]
   duel:
     description: Opt into or out of consensual PvP.
     usage: /duel <on|off|status>
@@ -160,7 +168,7 @@ commands:
     aliases: [votes]
   companion:
     description: Summon or send home one of your companions.
-    usage: /companion [list|dismiss|<name>]
+    usage: /companion [list|dismiss|bond|name|trick <spin|hop|twirl>|<name>]
     aliases: [companions, pet, pets]
   trail:
     description: Wear one of your particle trails.
@@ -180,6 +188,9 @@ commands:
   hud:
     description: Show or hide your sidebar.
     usage: /hud
+  stats:
+    description: View health, defense, damage and active player bonuses.
+    usage: /stats
   forge:
     description: Socket gems and apply Arcane enchantments.
     usage: /forge
@@ -311,10 +322,48 @@ commands:
   back:
     description: Return to your previous travel or death location.
     usage: /back
+  calendar:
+    description: "Everything on the server's schedule: weekends, contests, the world boss, festivals and the council vote."
+    usage: /calendar
+    aliases: [events, schedule]
+  council:
+    description: "The Wardens' Council: who holds the seat, and the monthly vote."
+    usage: /council
+    aliases: [mayor]
+  collections:
+    description: Your collections, tiers and rewards.
+    usage: /collections
+    aliases: [collection, col]
+  bazaar:
+    description: Buy and sell bulk goods with buy orders and sell offers.
+    usage: /bazaar [orders]
+    aliases: [bz]
+  whatsnew:
+    description: Read what's new in the latest update.
+    usage: /whatsnew
+    aliases: [news, changelog, updates]
+  worldboss:
+    description: When Thunderhide comes to the Stone Rings, and how to join the fight.
+    usage: /worldboss [go|status]
   quickstart:
-    description: Learn the basics and find useful commands.
+    description: Your first steps on the server, and the main commands.
+    aliases: [start, firststeps]
     usage: /quickstart
-    aliases: [helpme]
+  tutorial:
+    description: Follow the saved Aerborne tutorial or revisit a lesson.
+    usage: /tutorial [1-8|pause|resume|restart]
+    aliases: [guide]
+  website:
+    description: Get the official Aerborne website link.
+    usage: /website
+    aliases: [web]
+  helpme:
+    description: Open a private, saved request for staff help.
+    usage: /helpme <what you need>
+    aliases: [helpop]
+  support:
+    description: Read and reply to private staff help requests.
+    usage: /support [help|new|read|reply|chat|leave|close|history]
   tips:
     description: Manage or preview automated feature tips.
     usage: /tips [on|off|next]
@@ -396,6 +445,7 @@ permissions:
       nerdsmp.zone.admin: true
       nerdsmp.npc.admin: true
       nerdsmp.travel.admin: true
+      nerdsmp.death.admin: true
       nerdsmp.expedition.admin: true
   nerdsmp.studio.designer:
     description: Content-design bundle with direct publishing; does not grant player moderation.
@@ -468,9 +518,22 @@ permissions:
   nerdsmp.staff:
     description: Inspect players, reports, histories, and the staff audit trail.
     default: op
+    children:
+      nerdsmp.support.staff: true
+  nerdsmp.support.staff:
+    description: Read the private help queue, claim requests, and respond to players.
+    default: op
+  nerdsmp.support.manage:
+    description: Release another staff member's help request for reassignment.
+    default: op
+  nerdsmp.death.admin:
+    description: Manage spirit sanctuaries and safely restore stuck spirit players.
+    default: op
   nerdsmp.staff.moderate:
     description: Add notes and warnings, mute, freeze, resolve reports, and kick players.
     default: op
+    children:
+      nerdsmp.support.manage: true
   nerdsmp.store.fulfill:
     description: Allows idempotent store entitlement lifecycle commands.
     default: op

@@ -89,14 +89,12 @@ public final class SessionListener implements Listener {
             sessions.join(player.getUniqueId(), accountId);
             if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin nerdSmp) {
                 if (!nerdSmp.trade().recover(player)) return;
+                if (!nerdSmp.equipment().recover(player)) return;
                 nerdSmp.settings().invalidate(player.getUniqueId());
                 try { nerdSmp.social().ready(player); }
                 catch (RuntimeException failure) { plugin.getLogger().log(java.util.logging.Level.SEVERE, "Social profile failed to load", failure); player.kick(net.kyori.adventure.text.Component.text("Your social profile could not be loaded. Please contact staff.")); return; }
                 player.sendMessage(nerdSmp.branding().welcome());
             }
-            net.nerdsmp.paper.presentation.Chat.info(player,
-                "Start with " + net.nerdsmp.paper.presentation.Chat.command("quickstart")
-                    + ". Your shortcuts are in " + net.nerdsmp.paper.presentation.Chat.command("menu") + ".");
             try {
                 if (starterKit.grantIfNeeded(accountId, player) == StarterKitService.GrantResult.GRANTED) {
                     if (plugin instanceof net.nerdsmp.paper.NerdSmpPlugin nerdSmp) player.sendMessage(nerdSmp.branding().firstSteps());
@@ -116,6 +114,10 @@ public final class SessionListener implements Listener {
                 nerdSmp.marketController().onSessionReady(player);
                 if (nerdSmp.partyManager() != null) nerdSmp.partyManager().ready(player);
                 if (nerdSmp.skyblock() != null) nerdSmp.skyblock().ready(player);
+                // One line about what to do next, instead of the old quickstart, island and tutorial lines.
+                if (nerdSmp.firstSteps() != null) nerdSmp.firstSteps().greet(player);
+                nerdSmp.support().ready(player);
+                nerdSmp.spirits().ready(player);
             }
     }
 

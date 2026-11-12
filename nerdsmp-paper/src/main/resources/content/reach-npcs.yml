@@ -440,7 +440,7 @@ dialogues:
   tobin_granary:
     text:
       - "Millbrook's great granary. The cellars ran under the whole hill. When the Sundering came, people hid in them, and the fire came down the stair after them."
-      - "We never rebuilt it. Some places you leave to remember."
+      - "You'll know the south door by the grain hoist. We used to lower sacks through there. If you hear the Choir, that's the stair they went down."
     choices:
       back:
         text: "I see."

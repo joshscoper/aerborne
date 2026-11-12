@@ -23,6 +23,10 @@ import org.bukkit.plugin.Plugin;
  * <p>{@value #PLATES}, version 1: count (int), then per creature its entity id (int), name (string, legacy colours)
  * and flags (byte: 1 boss, 2 named/elite creature). Health comes from the entity itself on the client.
  *
+ * <p>{@value #EFFECTS}, version 1: count (int), then per labelled creature that has effects its entity id (int) and
+ * effect count (byte), and per effect its key (string, e.g. {@code minecraft:poison}), amplifier (byte) and remaining
+ * ticks (int, -1 for no end). Sent when the effects change and every few seconds to resync the client's countdown.
+ *
  * <p>{@value #DIALOGUE}, version 1: reply token (string; a page with an empty name closes the conversation with that
  * token), NPC name, title (strings), body paragraphs (int count, strings), replies (int count; per reply its text,
  * available and highlighted booleans, and detail lines as an int count and strings). Replies go back as
@@ -35,6 +39,12 @@ public final class ClientFeeds {
     public static final String PLATES = "aerborne:plates";
     public static final String DIALOGUE = "aerborne:dialogue";
     public static final String MENU = "aerborne:menu";
+    public static final String EFFECTS = "aerborne:effects";
+    private static final int EFFECTS_PER_CREATURE = 8;
+    private static final long EFFECTS_RESYNC_MILLIS = 3000;
+    private static final Map<UUID, EffectsSent> lastEffects = new ConcurrentHashMap<>();
+
+    private record EffectsSent(String signature, long at) { }
     private static final int VERSION = 1;
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final Map<UUID, byte[]> lastPlates = new ConcurrentHashMap<>();
@@ -47,12 +57,13 @@ public final class ClientFeeds {
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, PLATES);
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, DIALOGUE);
         owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, MENU);
-        for (String channel : List.of(PARTY, TOAST, QUESTS)) owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, channel);
+        owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, EFFECTS);
+        for (String channel : List.of(PARTY, TOAST, QUESTS, SKILLS, TRACKER, SOCIAL, FLIGHT)) owner.getServer().getMessenger().registerOutgoingPluginChannel(owner, channel);
     }
 
-    static void stop() { plugin = null; lastPlates.clear(); lastParty.clear(); }
+    static void stop() { plugin = null; lastPlates.clear(); lastParty.clear(); lastEffects.clear(); }
 
-    static void forget(UUID player) { lastPlates.remove(player); lastParty.remove(player); }
+    static void forget(UUID player) { lastPlates.remove(player); lastParty.remove(player); lastTracker.remove(player); lastEffects.remove(player); }
 
     public static boolean listens(Player player, String channel) {
         return plugin != null && player != null && player.getListeningPluginChannels().contains(channel);
@@ -61,6 +72,16 @@ public final class ClientFeeds {
     /** Sends the creatures this player's client should label, only when the list has changed. */
     public static void plates(Player viewer, List<LivingEntity> targets, java.util.function.Function<LivingEntity, Component> name,
                               java.util.function.Predicate<LivingEntity> boss, java.util.function.Predicate<LivingEntity> elite) {
+        plates(viewer, targets, name, boss, elite, target -> false);
+    }
+
+    /**
+     * Plates for these creatures. Flags: 1 boss, 2 elite, 4 a townsperson (NPC): the companion names it in the target
+     * frame but draws no health plate over it, since NPCs already wear their own name.
+     */
+    public static void plates(Player viewer, List<LivingEntity> targets, java.util.function.Function<LivingEntity, Component> name,
+                              java.util.function.Predicate<LivingEntity> boss, java.util.function.Predicate<LivingEntity> elite,
+                              java.util.function.Predicate<LivingEntity> npc) {
         Plugin owner = plugin;
         if (owner == null) return;
         try {
@@ -73,13 +94,53 @@ public final class ClientFeeds {
                 String label = LEGACY.serialize(name.apply(target));
                 // Gradient names carry a colour code per letter; the client accepts up to 2048 characters.
                 writeString(out, label.length() > 2000 ? label.substring(0, 2000) : label);
-                out.writeByte((boss.test(target) ? 1 : 0) | (elite.test(target) ? 2 : 0));
+                out.writeByte((boss.test(target) ? 1 : 0) | (elite.test(target) ? 2 : 0) | (npc.test(target) ? 4 : 0));
             }
             byte[] encoded = bytes.toByteArray();
             byte[] previous = lastPlates.get(viewer.getUniqueId());
             if (previous != null && Arrays.equals(previous, encoded)) return;
             lastPlates.put(viewer.getUniqueId(), encoded);
             viewer.sendPluginMessage(owner, PLATES, encoded);
+        } catch (IOException | RuntimeException ignored) { }
+    }
+
+    /**
+     * Sends the status effects on the creatures this player's client labels, so its nameplates and target frame can
+     * show them (a client only sees other creatures' effect particles, not the effects). Sent when the set of effects
+     * changes, and otherwise every few seconds so the client's countdown stays true.
+     */
+    public static void effects(Player viewer, List<LivingEntity> targets) {
+        Plugin owner = plugin;
+        if (owner == null || !listens(viewer, EFFECTS)) return;
+        try {
+            StringBuilder signature = new StringBuilder();
+            List<LivingEntity> affected = targets.stream().filter(target -> !target.getActivePotionEffects().isEmpty()).toList();
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(16 + affected.size() * 64);
+            DataOutputStream out = new DataOutputStream(bytes);
+            out.writeInt(VERSION);
+            out.writeInt(affected.size());
+            for (LivingEntity target : affected) {
+                List<org.bukkit.potion.PotionEffect> active = target.getActivePotionEffects().stream()
+                    .limit(EFFECTS_PER_CREATURE).toList();
+                out.writeInt(target.getEntityId());
+                out.writeByte(active.size());
+                signature.append(target.getEntityId()).append(':');
+                for (org.bukkit.potion.PotionEffect effect : active) {
+                    String key = effect.getType().getKey().toString();
+                    writeString(out, key);
+                    out.writeByte(Math.clamp(effect.getAmplifier(), 0, 127));
+                    out.writeInt(effect.isInfinite() ? -1 : effect.getDuration());
+                    signature.append(key).append('/').append(effect.getAmplifier()).append(',');
+                }
+                signature.append(';');
+            }
+            long now = System.currentTimeMillis();
+            EffectsSent previous = lastEffects.get(viewer.getUniqueId());
+            String sig = signature.toString();
+            if (previous != null && previous.signature().equals(sig)
+                && (sig.isEmpty() || now - previous.at() < EFFECTS_RESYNC_MILLIS)) return;
+            lastEffects.put(viewer.getUniqueId(), new EffectsSent(sig, now));
+            viewer.sendPluginMessage(owner, EFFECTS, bytes.toByteArray());
         } catch (IOException | RuntimeException ignored) { }
     }
 
@@ -120,6 +181,34 @@ public final class ClientFeeds {
     public static final String PARTY = "aerborne:party";
     public static final String TOAST = "aerborne:toast";
     public static final String QUESTS = "aerborne:quests";
+    /** The Skills screen (MenuManager.sendSkills): see that method for the format. */
+    public static final String SKILLS = "aerborne:skills";
+    /** The tracked quest with its next target (QuestGuide.sendTracker). */
+    public static final String TRACKER = "aerborne:tracker";
+    /** The Social screen (SocialManager.sendSocial). */
+    public static final String SOCIAL = "aerborne:social";
+    /**
+     * A flight between roosts (ReachFlights), version 1: active (boolean); when active the destination (string),
+     * distance flown and total distance (floats, blocks) and seconds left (float). Sent as the flight starts, once a
+     * second while it lasts, and with active false when it ends; the client eases the timer between updates.
+     */
+    public static final String FLIGHT = "aerborne:flight";
+
+    public static void flight(Player player, String destination, double travelled, double total, double secondsLeft) {
+        if (!listens(player, FLIGHT)) return;
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(64);
+            DataOutputStream out = new DataOutputStream(bytes);
+            out.writeInt(1);
+            out.writeBoolean(destination != null);
+            if (destination != null) {
+                writeString(out, clean(destination));
+                out.writeFloat((float) travelled); out.writeFloat((float) total); out.writeFloat((float) Math.max(0, secondsLeft));
+            }
+            send(player, FLIGHT, bytes.toByteArray());
+        } catch (IOException ignored) { }
+    }
+    private static final Map<UUID, byte[]> lastTracker = new ConcurrentHashMap<>();
     private static final Map<UUID, byte[]> lastParty = new ConcurrentHashMap<>();
 
     /** One party member as the party frames show them. {@code distance} is -1 when offline or in another world. */
@@ -173,6 +262,21 @@ public final class ClientFeeds {
         } catch (IOException | RuntimeException failure) {
             return false;
         }
+    }
+
+    /** Sends the encoded tracker only when it has changed since the last one. */
+    public static void tracker(Player player, byte[] encoded) {
+        byte[] previous = lastTracker.get(player.getUniqueId());
+        if (previous != null && Arrays.equals(previous, encoded)) return;
+        if (send(player, TRACKER, encoded)) lastTracker.put(player.getUniqueId(), encoded);
+    }
+
+    /** Sends an already encoded feed on a channel; false when this player's client does not listen on it. */
+    public static boolean send(Player player, String channel, byte[] encoded) {
+        Plugin owner = plugin;
+        if (owner == null || !listens(player, channel)) return false;
+        player.sendPluginMessage(owner, channel, encoded);
+        return true;
     }
 
     /** Sends an already encoded quest book (see QuestService.sendBook); false when the client has no quest book. */

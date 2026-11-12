@@ -146,7 +146,7 @@ public final class PlayerSettingsService implements AutoCloseable {
         PARTY_REQUESTS("party-requests", true, "Party invitations"),
         COOP_INVITES("coop-invites", true, "Co-op invitations"),
         TELEPORT_REQUESTS("teleport-requests", true, "Teleport requests"),
-        MOB_HEALTH_BARS("mob-health-bars", true, "Mob health bars"),
+        MOB_HEALTH_BARS("mob-health-bars", true, "Mob nameplates & health bars"),
         ISLAND_DISPLAYS("island-displays", true, "Island showcases"),
         ISLAND_EFFECTS("island-effects", true, "Island celebration effects"),
         TREE_FELLING("tree-felling", true, "Tree felling"),
