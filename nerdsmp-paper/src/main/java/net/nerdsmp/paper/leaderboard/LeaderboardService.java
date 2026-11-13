@@ -54,8 +54,47 @@ public final class LeaderboardService implements Listener, AutoCloseable {
         public long score(Board board) { return scores.getOrDefault(board, 0L); }
     }
     /** Public profile facts shown by the website: the same numbers players already see in /leaderboard. */
-    public record Profile(String name, int adventurerLevel, String rank, Map<Skill, Integer> skillLevels) {
-        public Profile { Objects.requireNonNull(name); Objects.requireNonNull(rank); skillLevels = Map.copyOf(skillLevels); }
+    public record Profile(String name, int adventurerLevel, String rank, Map<Skill, Integer> skillLevels, Journey journey) {
+        public Profile { Objects.requireNonNull(name); Objects.requireNonNull(rank); skillLevels = Map.copyOf(skillLevels); journey = journey == null ? Journey.NONE : journey; }
+        public Profile(String name, int adventurerLevel, String rank, Map<Skill, Integer> skillLevels) { this(name, adventurerLevel, rank, skillLevels, Journey.NONE); }
+    }
+
+    /** What a profile page shows beyond levels: the player's island, collections and contest medals. */
+    public record Journey(String islandName, int islandLevel, int stars, int visitorsMet, int collectionTiers, int bronze, int silver, int gold,
+                          String showcase, int coop, int visitorsWaiting, int benches, int workers, int cropTier) {
+        public static final Journey NONE = new Journey("", 0, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0);
+        public Journey { islandName = islandName == null ? "" : islandName; showcase = showcase == null ? "" : showcase; }
+    }
+
+    private Journey journey(AccountId account) {
+        String islandName = "";
+        int level = 0, stars = 0, met = 0, tiers = 0, bronze = 0, silver = 0, gold = 0, coop = 0, waiting = 0, benches = 0, workers = 0, crops = 0;
+        String showcase = "";
+        var skyblock = plugin.skyblock();
+        if (skyblock != null) {
+            var island = skyblock.islands().owned(account).or(() -> skyblock.islands().homes(account).stream().findFirst()).orElse(null);
+            if (island != null) {
+                islandName = island.name();
+                level = skyblock.development().progress(island.owner()).level();
+                stars = skyblock.development().stars(island.owner());
+                if (skyblock.guests() != null) {
+                    met = skyblock.guests().unique(island.owner());
+                    waiting = skyblock.guests().waiting(island.owner());
+                    benches = skyblock.guests().benches(island.owner());
+                }
+                if (skyblock.workers() != null) workers = skyblock.workers().hired(island.owner());
+                if (island.showcase() != null) showcase = island.showcase().title();
+                coop = 1 + island.members().size();
+            }
+            if (skyblock.farmstead() != null) crops = skyblock.farmstead().bestTier(account);
+            if (skyblock.contests() != null) {
+                bronze = skyblock.contests().medals(account, net.nerdsmp.paper.skyblock.FarmingContests.Medal.BRONZE);
+                silver = skyblock.contests().medals(account, net.nerdsmp.paper.skyblock.FarmingContests.Medal.SILVER);
+                gold = skyblock.contests().medals(account, net.nerdsmp.paper.skyblock.FarmingContests.Medal.GOLD);
+            }
+        }
+        if (plugin.itemCollections() != null) tiers = plugin.itemCollections().totalTiers(account);
+        return new Journey(islandName, level, stars, met, tiers, bronze, silver, gold, showcase, coop, waiting, benches, workers, crops);
     }
     private record Collected(EnumMap<Board, Long> scores, int adventurerLevel, String rank, Map<Skill, Integer> skillLevels) {}
     public static List<Entry> rank(Collection<Entry> entries, Board board) {
@@ -107,7 +146,9 @@ public final class LeaderboardService implements Listener, AutoCloseable {
                             long islandXp = plugin.skyblock() == null || plugin.skyblock().islands().owned(account).isEmpty() ? 0 : plugin.skyblock().development().progress(account).xp();
                             scores.put(Board.ISLAND, islandXp);
                             collecting.put(account, new Entry(account, name, scores));
-                            collectingProfiles.put(account, new Profile(name, collected.adventurerLevel(), collected.rank(), collected.skillLevels()));
+                            Journey journey;
+                            try { journey = journey(account); } catch (RuntimeException unreadable) { journey = Journey.NONE; }
+                            collectingProfiles.put(account, new Profile(name, collected.adventurerLevel(), collected.rank(), collected.skillLevels(), journey));
                         } catch (RuntimeException unavailable) { failed = true; }
                         finally { inFlight--; }
                     });

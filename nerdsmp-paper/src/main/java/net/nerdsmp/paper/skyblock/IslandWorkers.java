@@ -139,6 +139,8 @@ public final class IslandWorkers implements Listener {
 
     /** Different worker tiers this co-op has ever reached, for lodge room and showcases. */
     public int unlocks(AccountId owner) { return read(owner).unlocks().size(); }
+    /** Workers hired at the lodge now. */
+    public int hired(AccountId owner) { return read(owner).workers().size(); }
 
     private State caughtUp(AccountId owner) {
         State state = read(owner);

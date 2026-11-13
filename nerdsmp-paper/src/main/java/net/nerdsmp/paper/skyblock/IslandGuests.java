@@ -517,6 +517,9 @@ public final class IslandGuests implements Listener, AutoCloseable {
 
     public int served(AccountId owner) { return read(owner).served(); }
     public int unique(AccountId owner) { return log(owner).size(); }
+    /** Visitors waiting right now, and benches for them, without letting anyone new arrive. */
+    public int waiting(AccountId owner) { return read(owner).guests().size(); }
+    public int benches(AccountId owner) { return slotsFor(owner); }
     /** A visitor body's plate text ("Name · Rare Visitor"), or null when the entity isn't one. */
     public String label(org.bukkit.entity.Entity entity) { return crowd.label(entity); }
 

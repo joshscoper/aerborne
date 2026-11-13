@@ -218,6 +218,31 @@ final class ApiSnapshots implements AutoCloseable {
                 standing.add(key(board), row);
             }
             json.add("boards", standing);
+            var journey = profile.getValue().journey();
+            if (!journey.equals(LeaderboardService.Journey.NONE)) {
+                JsonObject trip = new JsonObject();
+                if (!journey.islandName().isBlank()) {
+                    JsonObject island = new JsonObject();
+                    island.addProperty("name", journey.islandName().length() > 32 ? journey.islandName().substring(0, 32) : journey.islandName());
+                    island.addProperty("level", journey.islandLevel());
+                    island.addProperty("stars", journey.stars());
+                    island.addProperty("visitorsMet", journey.visitorsMet());
+                    island.addProperty("visitorsWaiting", journey.visitorsWaiting());
+                    island.addProperty("benches", journey.benches());
+                    island.addProperty("workers", journey.workers());
+                    island.addProperty("coop", journey.coop());
+                    if (!journey.showcase().isBlank()) island.addProperty("showcase", journey.showcase());
+                    trip.add("island", island);
+                }
+                trip.addProperty("collectionTiers", journey.collectionTiers());
+                trip.addProperty("cropTier", journey.cropTier());
+                JsonObject medals = new JsonObject();
+                medals.addProperty("bronze", journey.bronze());
+                medals.addProperty("silver", journey.silver());
+                medals.addProperty("gold", journey.gold());
+                trip.add("medals", medals);
+                json.add("journey", trip);
+            }
             // Two accounts can share a last-known name after a rename; the first one wins.
             out.putIfAbsent(name.toLowerCase(Locale.ROOT), json.toString());
         }
