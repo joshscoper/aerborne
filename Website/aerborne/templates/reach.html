@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}The Wardens' Reach map{% endblock %}
+{% block body_class %}reference-page reach-page{% endblock %}
+{% block description %}An interactive map of the Wardens' Reach: regions and levels, quest givers, flight roosts, expedition doors, rare beasts, dig sites and Thunderhide's Stone Rings.{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/reference.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/reach-map.css', v='5') }}"><script src="{{ url_for('static', filename='js/reach-map.js', v='5') }}" defer></script>{% endblock %}
+{% macro glyph(kind) -%}
+{%- if kind == 'quest' %}<path d="M-1.6-6h3.2l-.6 7h-2zM0 3.200a1.700 1.700 0 1 1 0 3.400 1.700 1.700 0 0 1 0-3.400z"/>
+{%- elif kind == 'flight' %}<path d="M-6 3c3-6 7-8 11-9-1 4-3 8-9 11l2-4z"/>
+{%- elif kind == 'door' %}<path d="M-5 6V-1a5 5 0 0 1 10 0v7h-2.400V-1a2.600 2.600 0 0 0-5.200 0v7z"/>
+{%- elif kind == 'beast' or kind == 'boss' %}<path d="M0-6c-4 0-6 2.600-6 6 0 2.200 1.100 3.600 2.600 4.400V6.500h2V5h2.800v1.500h2V4.400C4.900 3.600 6 2.200 6 0c0-3.400-2-6-6-6zm-2.800 7.400a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3zm5.600 0a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3z"/>
+{%- elif kind == 'dig' %}<path d="M-6-3c3-3 9-3 12 0l-1 1C2.500-4 .500-4.200-1-4l6.500 9.500-1.500 1L-2.500-3.500C-4-3-5-2.600-5-2z"/>
+{%- elif kind == 'npc' %}<circle r="2.400" cy="-2.400"/><path d="M-4 5.500C-4 2-2 .800 0 .800S4 2 4 5.500z"/>
+{%- else %}<path d="M0-5.500 5.500 0 0 5.500-5.500 0z"/>
+{%- endif %}
+{%- endmacro %}
+{% block content %}
+<header class="page-head reference-head"><div class="wrap"><p class="eyebrow">The world · Interactive map</p><h1>The Wardens' Reach</h1><p class="lede">The central world, from Highcrown's Sky Docks to the Ashen Scar.</p></div></header>
+{% set group = 'world' %}{% include "partials/subnav.html" %}
+<div class="wrap reach-wrap" id="reach-map">
+  <div class="reach-bar">
+    <label class="reach-search"><span class="sr-only">Find a place, person or beast</span><input type="search" placeholder="Find a place, person or beast…" autocomplete="off" data-reach-search></label>
+    <fieldset class="reach-chips"><legend class="sr-only">Show on the map</legend>
+      {% for key, label in layers %}<label class="reach-chip is-{{ key }}"><input type="checkbox" data-layer-toggle="{{ key }}"{% if key in ('regions', 'quests', 'flights', 'doors', 'beasts') %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+    </fieldset>
+  </div>
+  <figure class="reach-map" data-min-x="{{ map.minX }}" data-min-z="{{ map.minZ }}" data-width="{{ map.width }}" data-height="{{ map.height }}">
+    <svg viewBox="{{ map.minX }} {{ map.minZ }} {{ map.width }} {{ map.height }}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="reach-map-title" tabindex="0">
+      <title id="reach-map-title">Relief map of the Wardens' Reach with its regions and points of interest</title>
+      <image href="{{ url_for('static', filename='img/maps/reach.webp', v='1') }}" x="{{ map.minX }}" y="{{ map.minZ }}" width="{{ map.width }}" height="{{ map.height }}" preserveAspectRatio="none"/>
+      <g class="reach-zones" data-layer="zones">{% for zone in map.zones %}<rect x="{{ zone.x }}" y="{{ zone.z }}" width="{{ zone.w }}" height="{{ zone.h }}"><title>{{ zone.title }}{% if zone.levels %} · levels {{ zone.levels }}{% endif %}</title></rect>{% endfor %}</g>
+      <g class="reach-regions" data-layer="regions">{% for region in map.regions %}<g class="reach-region" data-select="region-{{ region.id }}" data-x="{{ region.x }}" data-z="{{ region.z }}" transform="translate({{ region.x }} {{ region.z }}) scale(3.5)"><text class="name">{{ region.name }}</text>{% if region.levels %}<text class="levels" y="15">Levels {{ region.levels }}</text>{% endif %}</g>{% endfor %}</g>
+      {% for key, label in layers if key not in ('regions', 'zones') %}<g class="reach-layer" data-layer="{{ key }}">{% for m in map.markers if m.layer == key %}<g class="reach-marker is-{{ m.kind }}" data-select="{{ m.id }}" data-x="{{ m.x }}" data-z="{{ m.z }}" transform="translate({{ m.x }} {{ m.z }}) scale(3.5)" tabindex="-1"><circle class="halo" r="12"/><circle class="disc" r="9"/><g class="glyph">{{ glyph(m.kind) }}</g><text class="label" y="22">{{ m.name }}</text><title>{{ m.name }}</title></g>{% endfor %}</g>{% endfor %}
+    </svg>
+    <div class="reach-map-tools" role="group" aria-label="Map controls" hidden>
+      <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+      <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+      <button type="button" data-zoom="reset" aria-label="Show the whole Reach">⤢</button>
+    </div>
+    <p class="reach-wheel-hint" data-wheel-hint hidden>Hold Ctrl (⌘ on a Mac) and scroll to zoom</p>
+    <section class="reach-detail" aria-live="polite" data-reach-detail hidden>
+      <button type="button" class="reach-detail-close" data-detail-close aria-label="Close">×</button>
+      <p class="eyebrow" data-detail-sub></p>
+      <h2 data-detail-name></h2>
+      <p data-detail-about></p>
+      <p class="reach-coords" data-detail-where></p>
+      <a class="text-link" data-detail-link hidden href="#">Read more →</a>
+    </section>
+    <figcaption>Drag to move, pinch or Ctrl-scroll to zoom, and pick anything for details. North is up; coordinates are X, Z.</figcaption>
+  </figure>
+  <details class="reach-index">
+    <summary>Everything on the map, region by region</summary>
+    <div class="reach-index-grid">{% for region in map.regions %}<article class="reach-index-region" id="region-{{ region.id }}"><h3><button type="button" class="reach-link" data-select="region-{{ region.id }}">{{ region.name }}</button></h3>{% if region.levels %}<p class="reach-levels">Levels {{ region.levels }}</p>{% endif %}<ul>{% for m in region.markers %}<li data-search="{{ (m.name ~ ' ' ~ m.sub ~ ' ' ~ region.name) | lower }}"><button type="button" class="reach-link is-{{ m.kind }}" data-select="{{ m.id }}">{{ m.name }}</button><small>{{ m.sub }}</small></li>{% else %}<li><small>Open country.</small></li>{% endfor %}</ul></article>{% endfor %}</div>
+  </details>
+</div>
+<script type="application/json" id="reach-data">{{ {'markers': map.markers, 'regions': region_rows} | tojson }}</script>
+{% endblock %}

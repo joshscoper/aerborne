@@ -1,0 +1,36 @@
+/* The Live pages: the Bazaar, the Reach Calendar and the Wardens' Council (templates/live/). */
+.live-content { padding-block: 1.5rem 3rem; }
+.live-updated { color: var(--stone); font-size: 0.88rem; margin: 0 0 1.25rem; }
+.live-more { margin-top: 2rem; }
+.live-subhead { margin: 1.5rem 0 0.75rem; }
+
+.live-jump { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+.live-jump a { padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--line-dark); color: var(--cloud); font-size: 0.88rem; font-weight: 700; text-decoration: none; }
+.live-jump a:hover, .live-jump a:focus-visible { border-color: var(--gold); color: var(--gold); }
+
+.live-market { margin-bottom: 2rem; }
+.live-market h2 { margin: 0 0 0.6rem; font-size: 1.35rem; }
+.live-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.live-table th, .live-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line-dark); text-align: right; }
+.live-table th[scope="row"], .live-table thead th:first-child { text-align: left; font-weight: 700; }
+.live-table thead th { color: var(--stone); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.live-table tbody tr:hover { background: rgba(244, 249, 255, 0.04); }
+@media (max-width: 640px) { .live-table th:nth-child(4), .live-table td:nth-child(4) { display: none; } }
+
+.live-events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.8rem; }
+.live-event { padding: 1rem 1.2rem; border-radius: var(--radius); border: 1px solid var(--line-dark); background: var(--twilight); }
+.live-event.is-live { border-color: rgba(112, 219, 195, 0.6); }
+.live-event h2 { margin: 0.15rem 0 0.35rem; font-size: 1.25rem; }
+.live-event p { margin: 0; }
+.live-when { color: var(--stone); font-size: 0.85rem; font-weight: 700; }
+.live-event.is-live .live-when { color: var(--mint); }
+
+.live-seat { padding: 1.2rem 1.4rem; border-radius: var(--radius); background: var(--twilight); border: 1px solid rgba(244, 199, 107, 0.5); margin-bottom: 1rem; }
+.live-seat h2 { margin: 0.15rem 0 0.35rem; color: var(--gold); }
+.live-seat p { margin: 0; }
+.live-candidates { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; }
+.live-candidates li { padding: 1rem 1.2rem; border-radius: var(--radius); border: 1px solid var(--line-dark); }
+.live-candidates h3 { margin: 0 0 0.2rem; }
+.live-candidates p { margin: 0 0 0.4rem; }
+.live-perk { color: var(--gold); font-weight: 700; }
+.live-votes { color: var(--stone); font-size: 0.88rem; }

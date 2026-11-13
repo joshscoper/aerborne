@@ -49,6 +49,7 @@
         {% if current_user.role in ('admin', 'editor') %}<li><a href="{{ url_for('admin.audit_log') }}"{% if request.endpoint == 'admin.audit_log' %} aria-current="page"{% endif %}>Audit log</a></li>{% endif %}
         {% if current_user.role == 'admin' %}
         <li><a href="{{ url_for('admin.settings') }}"{% if request.endpoint == 'admin.settings' %} aria-current="page"{% endif %}>Settings</a></li>
+        <li><a href="{{ url_for('admin.client_jar') }}"{% if request.endpoint == 'admin.client_jar' %} aria-current="page"{% endif %}>Client download</a></li>
         <li><a href="{{ url_for('admin.users') }}"{% if request.endpoint == 'admin.users' %} aria-current="page"{% endif %}>Staff accounts</a></li>
         <li><a href="{{ url_for('admin.team_applications') }}"{% if request.endpoint in ('admin.team_applications', 'admin.team_application') %} aria-current="page"{% endif %}>Team applications</a></li>
         <li><a href="{{ url_for('admin.creator_applications') }}"{% if (request.endpoint or '').startswith('admin.creator') %} aria-current="page"{% endif %}>Creator program</a></li>

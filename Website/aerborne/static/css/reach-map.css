@@ -1,0 +1,204 @@
+/* The Wardens' Reach map (templates/reach.html, js/reach-map.js). */
+.reach-wrap { padding-block: 1.25rem 2.5rem; display: grid; gap: 0.9rem; }
+
+/* One slim bar: search, then the layers as chips. */
+.reach-bar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.reach-search { flex: 0 1 18rem; }
+.reach-search input {
+  width: 100%;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-dark);
+  background: rgba(244, 249, 255, 0.06);
+  color: var(--cloud);
+  font: inherit;
+}
+.reach-search input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.reach-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+.reach-chip { position: relative; cursor: pointer; }
+.reach-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.reach-chip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-dark);
+  color: var(--stone);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.reach-chip span::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--stone); opacity: 0.45; }
+.reach-chip input:checked + span { color: var(--cloud); border-color: rgba(244, 249, 255, 0.4); background: rgba(244, 249, 255, 0.08); }
+.reach-chip input:checked + span::before { opacity: 1; }
+.reach-chip input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 1px; }
+.reach-chip.is-places span::before { background: var(--paper); }
+.reach-chip.is-quests span::before { background: var(--gold); }
+.reach-chip.is-flights span::before { background: var(--sky); }
+.reach-chip.is-doors span::before { background: var(--lavender); }
+.reach-chip.is-beasts span::before { background: var(--peach); }
+.reach-chip.is-digs span::before { background: var(--mint); }
+.reach-chip.is-zones span::before { background: #c65642; border-radius: 2px; }
+.reach-chip.is-regions span::before { background: transparent; border: 1px solid var(--cloud); border-radius: 2px; }
+
+.reach-map {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #78c0ec;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line-dark);
+}
+.reach-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  /* Never taller than the screen: a wide window gets a centred map, not one you have to scroll through. */
+  max-width: calc(80vh * 4 / 3);
+  margin-inline: auto;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.reach-map svg:active { cursor: grabbing; }
+.reach-map svg:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+.reach-map figcaption {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--stone);
+  background: rgba(23, 36, 59, 0.92);
+}
+
+.reach-map-tools {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.reach-map-tools button {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(244, 249, 255, 0.35);
+  background: rgba(23, 36, 59, 0.85);
+  color: var(--cloud);
+  font: 700 1.15rem/1 var(--body);
+  cursor: pointer;
+}
+.reach-map-tools button:hover, .reach-map-tools button:focus-visible { background: var(--twilight); border-color: var(--gold); }
+
+.is-hidden { display: none; }
+
+/* Hunting grounds: where creatures roam, by level. */
+.reach-zones rect { fill: rgba(198, 86, 66, 0.16); stroke: rgba(198, 86, 66, 0.75); stroke-width: 4; stroke-dasharray: 14 10; }
+
+/* Region names: big, lettered on the land like an atlas. */
+.reach-region text {
+  text-anchor: middle;
+  font-family: var(--display);
+  paint-order: stroke;
+  stroke: rgba(23, 36, 59, 0.85);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  fill: var(--cloud);
+  cursor: pointer;
+}
+.reach-region .name { font-size: 22px; font-weight: 700; letter-spacing: 0.04em; }
+.reach-region .levels { font: 700 12px var(--body); fill: var(--gold); }
+.reach-map.is-close .reach-region { opacity: 0.55; }
+
+/* Markers: a coloured disc with a glyph, labelled once you're close enough to read them. */
+.reach-marker { cursor: pointer; }
+.reach-marker .halo { fill: transparent; }
+.reach-marker .disc { stroke: var(--midnight); stroke-width: 2; fill: var(--cloud); }
+.reach-marker .glyph { fill: var(--midnight); }
+.reach-marker .label {
+  text-anchor: middle;
+  font: 700 11px var(--body);
+  paint-order: stroke;
+  stroke: rgba(23, 36, 59, 0.9);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  fill: var(--cloud);
+  opacity: 0;
+  pointer-events: none;
+}
+.reach-map.is-close .reach-marker:is(.is-door, .is-boss, .is-flight) .label,
+.reach-marker:hover .label,
+.reach-marker.is-selected .label,
+.reach-marker.is-match .label { opacity: 1; }
+.reach-marker:hover .halo, .reach-marker.is-match .halo { fill: rgba(244, 199, 107, 0.45); }
+.reach-marker.is-selected .halo { fill: rgba(244, 199, 107, 0.85); }
+.reach-marker.is-selected .disc { stroke: var(--gold); stroke-width: 3; }
+
+.reach-marker.is-place .disc { fill: var(--paper); }
+.reach-marker.is-quest .disc { fill: var(--gold); }
+.reach-marker.is-npc .disc { fill: var(--stone); }
+.reach-marker.is-npc { opacity: 0.9; }
+.reach-marker.is-flight .disc { fill: var(--sky); }
+.reach-marker.is-door .disc { fill: var(--lavender); }
+.reach-marker.is-beast .disc { fill: var(--peach); }
+.reach-marker.is-boss .disc { fill: #e5534b; }
+.reach-marker.is-boss .glyph { fill: var(--cloud); }
+.reach-marker.is-dig .disc { fill: var(--mint); }
+
+/* The details card floats over the map's corner. */
+.reach-detail {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 2.9rem;
+  width: min(20rem, calc(100% - 1.5rem));
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius);
+  background: rgba(40, 55, 82, 0.96);
+  border: 1px solid var(--line-dark);
+  box-shadow: var(--shadow);
+}
+.reach-detail h2 { margin: 0.1rem 0 0.4rem; font-size: 1.2rem; }
+.reach-detail p { margin: 0 0 0.5rem; font-size: 0.92rem; }
+.reach-detail .eyebrow { margin: 0; padding-right: 1.5rem; }
+.reach-detail-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--stone);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.reach-detail-close:hover, .reach-detail-close:focus-visible { color: var(--cloud); background: rgba(244, 249, 255, 0.1); }
+.reach-coords { font: 0.8rem var(--mono); color: var(--stone); }
+
+/* The full index, folded away under the map. */
+.reach-index { border: 1px solid var(--line-dark); border-radius: var(--radius); padding: 0.2rem 1rem; }
+.reach-index summary { padding: 0.7rem 0; font-weight: 700; cursor: pointer; }
+.reach-index[open] summary { margin-bottom: 0.6rem; }
+.reach-index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; padding-bottom: 1rem; }
+.reach-index-region { padding: 0.9rem 1rem; border: 1px solid var(--line-dark); border-radius: var(--radius); }
+.reach-index-region h3 { margin: 0; }
+.reach-levels { margin: 0.15rem 0 0.6rem; color: var(--gold); font-size: 0.85rem; font-weight: 700; }
+.reach-index-region ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.reach-index-region li { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.reach-index-region small { color: var(--stone); text-align: right; }
+.reach-link { padding: 0; border: 0; background: none; color: var(--cloud); font: inherit; text-align: left; cursor: pointer; }
+.reach-index-region h3 .reach-link { font-family: var(--display); font-size: 1.15rem; font-weight: 700; }
+.reach-link:hover, .reach-link:focus-visible { color: var(--gold); text-decoration: underline; }
+
+.reach-wheel-hint {
+  position: absolute;
+  inset: 0 0 auto;
+  margin: 0;
+  padding: 0.6rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--cloud);
+  background: rgba(23, 36, 59, 0.78);
+  pointer-events: none;
+}

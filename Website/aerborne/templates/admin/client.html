@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block title %}Client download{% endblock %}
+{% block content %}
+<h1>Client download</h1>
+<div class="card">
+  {% if file %}
+  <p><strong>Players get:</strong> aerborne-client.jar{% if file.version %} (version {{ file.version }}){% endif %}, {{ file.size }} MB{% if not file.uploaded %}, the copy shipped with the site{% endif %}.</p>
+  <p class="fine">SHA-256 <code>{{ file.sha256 }}</code></p>
+  <p><a href="{{ url_for('public.client') }}">See the client page ↗</a></p>
+  {% else %}
+  <p>There's no client to download yet, so the client page says "Download coming soon".</p>
+  {% endif %}
+</div>
+<form class="card upload" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>New client jar <input type="file" name="file" accept=".jar,application/java-archive" required></label>
+  <button class="btn" type="submit">Upload and replace</button>
+  <p class="fine">Upload the built <code>aerborne-client-*.jar</code> (not the sources jar). It's checked to be the Aerborne Fabric mod before it replaces the download, and the jar it replaces is kept as a backup. Players always download it as aerborne-client.jar, and the page shows its new checksum.</p>
+</form>
+{% endblock %}

@@ -7,7 +7,7 @@
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/progression.css', v='4') }}"><script src="{{ url_for('static', filename='js/progression.js', v='1') }}" defer></script>{% endblock %}
 {% block content %}
 <header class="page-head ranking-head"><div class="wrap ranking-head-inner"><div><p class="eyebrow">The hall of adventurers</p><h1>Leaderboards</h1><p class="lede">Builders, explorers and masters of their craft. See who leads Aerborne—and find your next goal.</p><p class="ranking-head-note">Online and offline accounts are included.</p></div><div class="ranking-emblem"><img class="ranking-mascot" src="{{ url_for('static', filename='img/brand/leaderboard-mascot-960.webp') }}" srcset="{{ url_for('static', filename='img/brand/leaderboard-mascot-480.webp') }} 480w, {{ url_for('static', filename='img/brand/leaderboard-mascot-960.webp') }} 960w" sizes="(max-width: 580px) 180px, (max-width: 800px) 240px, 360px" width="960" height="850" alt="Aerborne’s crowned cloud mascot lifting a golden trophy above a winners’ podium" decoding="async" fetchpriority="high"></div></div></header>
-{% set group = 'community' %}{% include "partials/subnav.html" %}
+{% set group = 'live' %}{% include "partials/subnav.html" %}
 <div class="wrap journey-content rankings-content">{{ c.flashes() }}
 <nav class="ranking-categories" aria-label="Leaderboard categories">
 <div class="ranking-category-heading"><h2>Choose your category</h2><span>{{ boards|length }} rankings</span></div>

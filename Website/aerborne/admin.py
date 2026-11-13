@@ -470,6 +470,30 @@ def media():
     return render_template("admin/media.html", items=items)
 
 
+@bp.route("/client", methods=["GET", "POST"])
+@auth.role_required("admin")
+def client_jar():
+    """Replace the Aerborne client players download from /client: one checked upload, the old jar kept as a backup."""
+    from . import client_download
+    conn = get_db()
+    if request.method == "POST":
+        upload = request.files.get("file")
+        try:
+            data = upload.read(client_download.MAX_BYTES + 1) if upload and upload.filename else b""
+            if upload and upload.filename and not upload.filename.lower().endswith(".jar"):
+                raise client_download.ClientUploadError("Upload the client's .jar file.")
+            version = client_download.check(data)
+        except client_download.ClientUploadError as exc:
+            flash(str(exc), "error")
+        else:
+            client_download.store(data)
+            audit(conn, g.user, "update", "client", None, "Uploaded the Aerborne client %s" % (version or "(no version)"))
+            conn.commit()
+            flash("The client download is updated%s." % (" to " + version if version else ""))
+        return redirect(url_for("admin.client_jar"))
+    return render_template("admin/client.html", file=client_download.info())
+
+
 @bp.route("/media/<int:media_id>/delete", methods=["POST"])
 @auth.role_required("admin", "editor")
 def media_delete(media_id):

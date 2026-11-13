@@ -6,7 +6,7 @@ slug is free, and drafts are only replaced while they still hold the original pl
 from .content_types import get_type
 from .db import audit, now_str, set_setting
 
-LATEST = 31
+LATEST = 32
 C = "static:img/companions/"
 
 
@@ -84,6 +84,8 @@ def apply(conn):
         _rev30(conn)
     if current < 31:
         _rev31(conn)
+    if current < 32:
+        _rev32(conn)
     set_setting(conn, "seed_rev", str(LATEST))
     audit(conn, None, "seed", "", None, "Added content revision %d" % LATEST)
     conn.commit()
@@ -392,6 +394,28 @@ def _rev31(conn):
     # New items go in only where their slug is free, as upcoming until Tebex sync links each to its package.
     for product in REV31_PRODUCTS:
         _insert(conn, "products", product)
+
+
+def _rev32(conn):
+    # The Wardens' Reach, the island and economy systems that came with it, and patch notes (release_content.py).
+    # New pages go in only where their slug is free; existing ones change only where staff haven't edited them.
+    from . import release_content as rc
+    _insert(conn, "regions", rc.REACH_REGION)
+    stamp = now_str()
+    conn.execute("UPDATE regions SET status = 'draft', updated_at = ? WHERE slug = 'arcane-city' AND updated_by = 'starter content'", (stamp,))
+    conn.execute("UPDATE regions SET body = ?, updated_at = ? WHERE slug = 'your-island' AND updated_by = 'starter content'",
+                 (_body(rc.YOUR_ISLAND_BODY), stamp))
+    conn.execute("UPDATE guides SET body = ?, updated_at = ? WHERE slug = 'world-overview' AND updated_by = 'starter content'",
+                 (_body(rc.WORLD_OVERVIEW_BODY), stamp))
+    for guide in rc.GUIDES:
+        _insert(conn, "guides", dict(guide, body=_body(guide["body"])))
+    for post in rc.NEWS:
+        _insert(conn, "news", dict(post, body=_body(post["body"])))
+
+
+def _body(text):
+    """Stored bodies are trimmed and end with one newline, like the starter content."""
+    return text.strip() + chr(10)
 
 
 def _rev18(conn):

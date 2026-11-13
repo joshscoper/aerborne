@@ -6,9 +6,9 @@ import hashlib
 from pathlib import Path
 
 from flask import (Blueprint, Response, abort, current_app, g, redirect, render_template, request,
-                   send_from_directory, url_for, jsonify)
+                   send_from_directory, send_file, url_for, jsonify)
 
-from . import content, gameapi, tebex
+from . import client_download, content, gameapi, tebex
 from .content import lines, published, published_one, related_links
 from .content_types import ASPECTS, GUIDE_CATEGORIES, NEWS_CATEGORIES, STORE_CATEGORIES, get_type
 from .db import get_db, now_str, parse_time, utcnow
@@ -89,6 +89,26 @@ def count_view(response):
 
 # --- Home and play ---------------------------------------------------------------------------
 
+def _right_now():
+    """Up to four tiles for the homepage from the game's world feed: what's on now, then what's next."""
+    data, _problem = gameapi.world()
+    if not data:
+        return []
+    events = [e for e in (data.get("calendar") or {}).get("events") or [] if isinstance(e, dict) and e.get("title")]
+    tiles = []
+    for event in events:
+        if event.get("kind") == "race" or (event.get("kind") == "contest" and not event.get("live")):
+            continue
+        tiles.append(dict(kind=event.get("kind", ""), title=event.get("title", ""), about=event.get("about", ""), live=bool(event.get("live")),
+                          when=(event.get("end") if event.get("live") else event.get("start")) or ""))
+    seat = (data.get("council") or {}).get("seated")
+    if isinstance(seat, dict) and seat.get("name"):
+        tiles.append(dict(kind="seat", title=seat.get("name"), about=str(seat.get("perk", "")) + ": " + str(seat.get("about", "")),
+                          live=True, when=""))
+    tiles.sort(key=lambda t: (not t["live"], t["when"] or "~"))
+    return tiles[:4]
+
+
 @bp.route("/")
 def index():
     news = published("news", order_by="featured DESC, COALESCE(publish_at, created_at) DESC", limit=3)
@@ -96,6 +116,7 @@ def index():
         "index.html",
         news=news,
         showcases=published("showcases", limit=3),
+        right_now=_right_now(),
     )
 
 
@@ -103,6 +124,32 @@ def index():
 def play():
     faqs = published("faqs", "category = ? AND slug NOT IN ('whitelist', 'which-version', 'bedrock')", ("connecting",))
     return render_template("play.html", faqs=faqs)
+
+
+CLIENT_FEATURES = (
+    ("A real RPG HUD", "Health, Defense, Marks, Adventurer XP and your tracked quest, laid out how you like with the HUD editor (H to hide it)."),
+    ("Target frames and nameplates", "See an enemy's health, level and elite or boss rank, and a townsperson's name and title, at a glance."),
+    ("Card menus", "Every server menu as clean cards with search and pages: islands, visitors, the Bazaar, collections and more."),
+    ("The talent trees, drawn", "Skill and island talent trees laid out as branching paths, with your ranks lit up."),
+    ("Quest book and dialogue", "A proper quest book and NPC conversations, instead of chat."),
+    ("Minimap, compass and waypoints", "A minimap and compass on your HUD, and up to 32 personal waypoints (J)."),
+    ("Party frames and toasts", "Your party's health beside you, and toasts for level-ups, achievements and rare finds."),
+    ("Themes and options", "Sky, Relic and Celestial themes, HUD size and side, and every overlay can be switched off."),
+)
+
+
+@bp.route("/client")
+def client():
+    configured = current_app.config.get("CLIENT_DOWNLOAD_URL") or ""
+    file = None if configured else client_download.info()
+    download = configured or (url_for("public.client_jar") if file else "")
+    return render_template("client.html", features=CLIENT_FEATURES, download=download, file=file)
+
+
+@bp.route("/client/download")
+def client_jar():
+    path = client_download.current_path() or abort(404)
+    return send_file(path, mimetype="application/java-archive", as_attachment=True, download_name="aerborne-client.jar", max_age=300)
 
 
 @bp.route("/status")
@@ -124,9 +171,48 @@ def region(slug):
     return render_region(item)
 
 
+def _my_island():
+    """The signed-in player's own island, for the Your Island page: from their linked Minecraft account's game profile."""
+    member = getattr(g, "member", None)
+    if not member:
+        return dict(state="guest")
+    name = member["mc_name"] if "mc_name" in member.keys() else None
+    if not name:
+        return dict(state="unlinked")
+    data, problem = gameapi.player(name)
+    if problem or not data:
+        return dict(state="offline", name=name)
+    trip = data.get("journey") if isinstance(data.get("journey"), dict) else {}
+    island = trip.get("island") if isinstance(trip.get("island"), dict) else None
+    if not island:
+        return dict(state="none", name=name)
+    num = lambda key, src=island: int(src.get(key) or 0) if str(src.get(key) or 0).isdigit() else 0
+    level, waiting, benches, workers = num("level"), num("visitorsWaiting"), num("benches"), num("workers")
+    steps = []
+    if waiting:
+        steps.append(("%d visitor%s waiting" % (waiting, "" if waiting == 1 else "s"),
+                      "Every bench is full, so no one else can come until you serve or refuse someone." if benches and waiting >= benches
+                      else "They're at your island spawn with offers for you.", "/island guests", "island-visitors"))
+    if not workers:
+        steps.append(("Hire your first worker", "Workers gather while you're away. Start one at the Workers' Lodge.", "/island workers", "island-resources"))
+    if num("cropTier", trip) == 0:
+        steps.append(("Your first crop milestone", "Harvest 100 ripe crops of one kind for an extra-crop chance and Favour.", "/island crops", "the-farmstead"))
+    for at, what in ((5, "Rare visitors"), (10, "A third visitor bench"), (15, "Legendary visitors"), (25, "A fourth visitor bench"),
+                     (30, "Mythic visitors"), (40, "A fifth visitor bench")):
+        if level < at:
+            steps.append(("Reach island level %d" % at, what + " come with it.", "/island level", "island-resources"))
+            break
+    if not island.get("showcase"):
+        steps.append(("Set a showcase", "Show off what you've done above your island.", "/island showcase", "island-coop"))
+    if num("collectionTiers", trip) == 0:
+        steps.append(("Start your collections", "Mine, fell, fish and fight: every tier pays Marks, XP and Favour.", "/collections", "collections"))
+    return dict(state="ok", name=name, island=island, collection_tiers=num("collectionTiers", trip), crop_tier=num("cropTier", trip),
+                steps=steps[:4], updated=data.get("updatedAt"))
+
+
 def render_region(item, preview=False):
     g.edit_target = ("regions", item["id"])
-    return render_template("region.html", item=item, preview=preview,
+    return render_template("region.html", item=item, preview=preview, mine=_my_island() if item["slug"] == "your-island" and not preview else None,
                            activities=lines(item["activities"]),
                            places=lines(item["points_of_interest"]),
                            others=published("regions", "id != ?", (item["id"],), limit=3))
@@ -219,21 +305,124 @@ def campaign():
                            buffs=[b for b in season.get("buffs") or [] if isinstance(b, dict)], top=top, problem=problem)
 
 
-@bp.route("/world")
-def world():
+def _world():
+    """The game's world feed, split into what each Live page needs."""
     data, problem = gameapi.world()
     feed = data or {}
     bazaar = feed.get("bazaar") or {}
-    products = [p for p in bazaar.get("products") or [] if isinstance(p, dict) and p.get("name")]
     categories = {}
-    for product in products:
-        categories.setdefault(str(product.get("category") or "Other"), []).append(product)
-    calendar = [e for e in (feed.get("calendar") or {}).get("events") or [] if isinstance(e, dict) and e.get("title")]
+    for product in bazaar.get("products") or []:
+        if isinstance(product, dict) and product.get("name"):
+            categories.setdefault(str(product.get("category") or "Other"), []).append(product)
+    calendar = feed.get("calendar") or {}
     council = feed.get("council") or {}
-    return render_template("world.html", categories=categories, tax=bazaar.get("taxPercent"), events=calendar,
-                           festival=(feed.get("calendar") or {}).get("festival"), council=council,
-                           candidates=[c for c in council.get("candidates") or [] if isinstance(c, dict)],
-                           sampled=feed.get("sampledAt"), problem=problem)
+    return dict(problem=problem, sampled=feed.get("sampledAt"), categories=categories, tax=bazaar.get("taxPercent"),
+                events=[e for e in calendar.get("events") or [] if isinstance(e, dict) and e.get("title")],
+                festival=calendar.get("festival"), council=council,
+                candidates=[c for c in council.get("candidates") or [] if isinstance(c, dict)])
+
+
+@bp.route("/world")
+def world():
+    return redirect(url_for("public.market"), 301)
+
+
+@bp.route("/market")
+def market():
+    return render_template("live/market.html", **_world())
+
+
+@bp.route("/calendar")
+def calendar():
+    return render_template("live/calendar.html", **_world())
+
+
+@bp.route("/council")
+def council():
+    return render_template("live/council.html", **_world())
+
+
+# --- The Wardens' Reach map -------------------------------------------------------------------
+
+REACH_LAYERS = (("regions", "Regions"), ("places", "Places"), ("quests", "Quest givers"), ("townsfolk", "Townsfolk"),
+                ("flights", "Flight roosts"), ("doors", "Expedition doors"), ("beasts", "Rare beasts"), ("digs", "Dig sites"),
+                ("zones", "Hunting grounds"))
+
+
+def _reach_map():
+    """The Reach as the plugin's map export describes it (see ReachMapExport): markers, regions and hunting grounds."""
+    path = Path(current_app.static_folder) / "img" / "maps" / "reach-world.json"
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    b = raw.get("bounds") or {}
+    if not all(isinstance(b.get(k), int) for k in ("minX", "minZ", "maxX", "maxZ")):
+        return None
+    regions = {r["id"]: r for r in raw.get("regions") or [] if isinstance(r, dict) and r.get("id")}
+
+    def rows(key):
+        return [r for r in raw.get(key) or [] if isinstance(r, dict) and isinstance(r.get("x"), (int, float)) and isinstance(r.get("z"), (int, float))]
+
+    markers = []
+
+    def add(layer, kind, row, name, sub, about, link=None):
+        markers.append(dict(id=f"{kind}-{row.get('id', len(markers))}", layer=layer, kind=kind, name=name, sub=sub, about=about,
+                            x=round(row["x"]), z=round(row["z"]), link=link,
+                            area=regions.get(row.get("region"), {}).get("title", "")))
+
+    for row in rows("places"):
+        add("places", "place", row, row.get("title", ""), "Place", row.get("line") or "Discover it to add it to your map in game.")
+    for row in rows("npcs"):
+        quests = bool(row.get("quests"))
+        add("quests" if quests else "townsfolk", "quest" if quests else "npc", row, row.get("name", ""), row.get("title", ""),
+            "Has quests for you. Look for the [!] when you talk to them." if quests else "One of the Reach's townsfolk.")
+    for row in rows("flights"):
+        add("flights", "flight", row, row.get("title", ""), "Flight roost",
+            "Find the roost once and you can fly here from any other roost you know. /reach flights")
+    for row in rows("doors"):
+        slug = str(row.get("id", ""))
+        link = url_for("public.expedition", slug=slug) if re.fullmatch(r"[a-z0-9_]+", slug) else None
+        add("doors", "door", row, row.get("title", ""), "Expedition door", "The way into " + str(row.get("title", "this expedition")) + ".", link)
+    for row in rows("beasts"):
+        if row.get("worldBoss"):
+            add("beasts", "boss", row, row.get("title", ""), "World boss",
+                "Comes to the Stone Rings every two hours. Everyone who joins the fight shares the reward. /worldboss go")
+        else:
+            minutes = row.get("respawnMinutes")
+            add("beasts", "beast", row, row.get("title", ""), "Rare beast" + (" · at night" if row.get("night") else ""),
+                "A named beast that returns about every " + str(minutes) + " minutes after it falls." if minutes else "A named beast.")
+    for row in rows("digs"):
+        add("digs", "dig", row, row.get("title", ""), "Dig site",
+            ("Ore in the walls of the cut." if row.get("ore") else "Dig here for finds.") + " Nodes refill after a short wait.")
+    zones = []
+    for row in raw.get("zones") or []:
+        if not isinstance(row, dict) or row.get("safe") or not all(isinstance(row.get(k), int) for k in ("x0", "z0", "x1", "z1")):
+            continue
+        zones.append(dict(title=row.get("title", ""), levels=row.get("levels", ""), x=row["x0"], z=row["z0"],
+                          w=row["x1"] - row["x0"], h=row["z1"] - row["z0"]))
+    region_list = []
+    for region in regions.values():
+        if not isinstance(region.get("x"), (int, float)):
+            continue
+        inside = [m for m in markers if m["area"] == region.get("title")]
+        region_list.append(dict(id=region["id"], name=region.get("title", ""), levels=region.get("levels", ""),
+                                x=round(region["x"]), z=round(region["z"]), markers=inside))
+    return dict(minX=b["minX"], minZ=b["minZ"], width=b["maxX"] - b["minX"], height=b["maxZ"] - b["minZ"],
+                markers=markers, zones=zones, regions=region_list)
+
+
+@bp.route("/reach")
+def reach():
+    data = _reach_map()
+    if data is None:
+        abort(404)
+    counts = {key: sum(1 for m in data["markers"] if m["layer"] == key) for key, _label in REACH_LAYERS}
+    counts["regions"] = len(data["regions"])
+    counts["zones"] = len(data["zones"])
+    region_rows = [dict(id="region-" + r["id"], name=r["name"], levels=r["levels"], x=r["x"], z=r["z"], count=len(r["markers"]))
+                   for r in data["regions"]]
+    return render_template("reach.html", map=data, layers=REACH_LAYERS, counts=counts, region_rows=region_rows)
 
 
 # --- Game guide and codex --------------------------------------------------------------------
@@ -561,7 +750,7 @@ def robots():
 def sitemap():
     base = current_app.config["SITE_URL"] or request.url_root.rstrip("/")
     paths = [url_for("public." + name) for name in (
-        "index", "play", "status_page", "explore", "expeditions", "campaign", "world", "guide", "codex", "companions", "news", "store",
+        "index", "play", "client", "status_page", "explore", "reach", "expeditions", "campaign", "market", "calendar", "council", "guide", "codex", "companions", "news", "store",
         "community", "streamers", "support")]
     data, _problem = gameapi.expeditions()
     paths += [url_for("public.expedition", slug=raw["id"]) for raw in (data or {}).get("expeditions") or []

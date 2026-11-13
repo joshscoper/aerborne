@@ -39,19 +39,33 @@ class SiteTest(unittest.TestCase):
         status.clear_cache()
 
     def test_world_page_shows_prices_calendar_and_council(self):
-        offline = self.client.get("/world")
+        self.assertEqual(self.client.get("/world").status_code, 301)
+        offline = self.client.get("/market")
         self.assertEqual(offline.status_code, 200)
-        self.assertIn(b"Live data is offline", offline.data)
+        self.assertIn(b"Prices are offline", offline.data)
         feed = {"apiVersion": 1, "ready": True, "sampledAt": "2026-11-12T20:00:00Z",
                 "bazaar": {"taxPercent": 1.25, "products": [{"id": "wheat", "name": "Wheat", "category": "Farming", "buy": 3, "sell": 2, "last": 3, "volume24h": 640}]},
                 "calendar": {"events": [{"kind": "boss", "title": "Thunderhide", "start": "2026-11-12T22:00:00Z", "live": False, "about": "The world boss."}]},
                 "council": {"voting": False, "changesAt": "2026-12-01T07:00:00Z", "seated": {"name": "Guildmistress Ada", "perk": "Bountiful Fields", "about": "Doubled."},
                             "candidates": [{"name": "Tilly Miller", "perk": "Open Doors", "about": "Sooner.", "votes": 3}]}}
         with mock.patch("aerborne.gameapi.world", return_value=(feed, None)):
-            page = self.client.get("/world")
+            pages = {path: self.client.get(path) for path in ("/market", "/calendar", "/council", "/")}
+        for path, page in pages.items():
+            self.assertEqual(page.status_code, 200, path)
+        for path, text in (("/market", b"Wheat"), ("/market", b"640"), ("/calendar", b"Thunderhide"),
+                           ("/council", b"Guildmistress Ada holds the seat"), ("/council", b"Open Doors"), ("/", b"Right now")):
+            self.assertIn(text, pages[path].data, path)
+
+    def test_reach_map_and_client_download(self):
+        page = self.client.get("/reach")
         self.assertEqual(page.status_code, 200)
-        for text in (b"Wheat", b"640", b"Thunderhide", b"Guildmistress Ada holds the seat", b"Open Doors"):
+        for text in (b"Warden Hale", b"Thunderhide", b"The Hollow Barrow", b"reach-data"):
             self.assertIn(text, page.data)
+        client = self.client.get("/client")
+        self.assertIn(b"Download the Client", client.data)
+        jar = self.client.get("/client/download")
+        self.assertEqual(jar.status_code, 200)
+        self.assertIn("aerborne-client.jar", jar.headers.get("Content-Disposition", ""))
 
     def tearDown(self):
         os.environ.pop("AERBORNE_DATA_DIR", None)
@@ -1599,3 +1613,27 @@ class StatusTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MyIslandTest(SocialHelpers):
+    """The Your Island page shows the signed-in player's own island from their game profile."""
+
+    def test_guests_unlinked_and_linked_players_see_the_right_panel(self):
+        self.assertIn(b"Sign in and link your Minecraft account", self.client.get("/explore/your-island").data)
+        self.member("Ava", linked=False)
+        self.assertIn(b"Link your Minecraft account", self.client.get("/explore/your-island").data)
+        self.member("Bjorn")
+        with mock.patch("aerborne.gameapi.player", return_value=({"name": "Bjorn", "journey": {"collectionTiers": 0}}, None)):
+            self.assertIn(b"You don't have an island yet", self.client.get("/explore/your-island").data)
+        profile = {"name": "Bjorn", "updatedAt": "2026-11-12T20:00:00Z", "journey": {
+            "collectionTiers": 7, "cropTier": 0, "medals": {"bronze": 0, "silver": 0, "gold": 0},
+            "island": {"name": "Skyhold", "level": 12, "stars": 2, "visitorsMet": 9, "visitorsWaiting": 3, "benches": 3,
+                       "workers": 0, "coop": 2, "showcase": "Welcome Bell"}}}
+        with mock.patch("aerborne.gameapi.player", return_value=(profile, None)):
+            page = self.client.get("/explore/your-island").get_data(as_text=True)
+        for text in ("Skyhold", "Level 12", "★★", "a co-op of 2", "Welcome Bell", "3 visitors waiting", "Every bench is full",
+                     "Hire your first worker", "Reach island level 15"):
+            self.assertIn(text, page)
+        self.assertNotIn("Your island will be back soon", page)
+        other = self.client.get("/explore/wardens-reach").get_data(as_text=True)
+        self.assertNotIn("my-island", other)

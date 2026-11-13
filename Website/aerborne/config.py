@@ -134,6 +134,8 @@ def load_config():
 
         # Public community destinations. Admin settings override these defaults.
         "DISCORD_URL": _env("AERBORNE_DISCORD_URL", 'https://discord.gg/AUvpKyemCj'),
+        # Where players download the Aerborne client mod; empty shows "coming soon" on the client page.
+        "CLIENT_DOWNLOAD_URL": _env("AERBORNE_CLIENT_DOWNLOAD_URL", ""),
         "DISCORD_SERVER_ID": _env("AERBORNE_DISCORD_SERVER_ID", '1562150950045491370'),
         "STORE_URL": _env("AERBORNE_STORE_URL"),
         "CONTACT_EMAIL": _env("AERBORNE_CONTACT_EMAIL", 'support@aerborne.net') or 'support@aerborne.net',

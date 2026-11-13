@@ -9,7 +9,7 @@
 <header class="page-head reference-head journey-head"><div class="wrap"><p class="crumbs"><a href="{{ url_for('public.expeditions') }}">Expeditions</a> / Field guide</p>
 {% if e %}<p class="eyebrow">{{ {'nether':'The Nether','end':'The End'}.get(e.dimension, 'Overworld') }} expedition{% if e.difficulty %} · {{ e.difficulty.label }}{% endif %}</p><h1>{{ e.title }}</h1><p class="lede">{{ (e.guide.overview if e.guide and e.guide.overview) or e.description }}</p>{% if e.sealedBy %}<p class="journey-status is-locked">Sealed until {{ e.sealedBy }} <a href="{{ url_for('public.campaign') }}">View campaign →</a></p>{% endif %}
 {% else %}<h1>Expedition guide</h1>{% endif %}</div></header>
-{% set group = 'explore' %}{% include "partials/subnav.html" %}
+{% set group = 'world' %}{% include "partials/subnav.html" %}
 <div class="wrap journey-content">
 {% if problem %}<div class="notice notice-warn" role="status"><strong>This guide is offline right now.</strong> Current expedition data is unavailable. Use <code>/expedition guide {{ slug }}</code> in game.</div>
 {% else %}

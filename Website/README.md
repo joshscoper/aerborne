@@ -545,3 +545,23 @@ exports are preserved under `static/img/store/ranks/`. Re-import with
 `python tools/import_store_ranks.py path/to/Aerborne_Supporter_Rank_Icons.zip` using Pillow.
 Content revision 13 replaces the original rank product tiles and clears their concept-art label,
 preserving custom product artwork and other product settings. Profile frames and badges are separate.
+
+## The Wardens' Reach map
+
+`/reach` draws the Reach from two files the plugin exports: `aerborne/static/img/maps/reach.webp` (the relief) and
+`aerborne/static/img/maps/reach-world.json` (regions, hunting grounds, places, townsfolk, flight roosts, dig sites, rare
+beasts and expedition doors, in world coordinates). After the Reach's layout changes, export them again from the plugin
+checkout, with no server needed:
+
+```powershell
+$env:REACH_MAP_DIR = "$PWD\reach-map"; .\gradlew :nerdsmp-paper:test --tests '*ReachMapExport*' --rerun
+```
+
+Then save `reach-map\reach.png` as `reach.webp` (quality about 84) and copy `reach-map\reach.json` to `reach-world.json`.
+
+## The client download
+
+`/client/download` serves `instance/client/aerborne-client.jar` once an admin uploads one under **Dashboard → Client
+download**, and the jar shipped in `aerborne/static/downloads/` until then. Uploads are checked to be the Aerborne Fabric
+mod; the replaced jar is kept as `aerborne-client.previous.jar`. Set `AERBORNE_CLIENT_DOWNLOAD_URL` to link somewhere
+else instead (Modrinth, say).

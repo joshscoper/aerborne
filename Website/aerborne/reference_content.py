@@ -919,3 +919,9 @@ CODEX_NOTES = {
     'heart-of-the-mountain': 'Preview Signature. Natural-ore eligibility applies. One Signature per compatible item; the recipe is intentionally undisclosed.',
     'last-bastion': 'Preview Signature. A triggered survival effect with a cooldown, not permanent invulnerability. One Signature per compatible item; the recipe is intentionally undisclosed.',
 }
+
+# The travel guide was rewritten for the Wardens' Reach (seed revision 32); the reviewed copy follows it.
+from .release_content import WORLD_OVERVIEW_BODY as _WORLD_OVERVIEW_BODY  # noqa: E402
+for _g in GUIDES:
+    if _g['slug'] == 'world-overview':
+        _g['body'] = _WORLD_OVERVIEW_BODY.strip() + '\n'

@@ -1,0 +1,12 @@
+/* The Aerborne client page (templates/client.html). */
+.client-features { list-style: none; margin: 0 0 1.25rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; }
+.client-features li { padding: 1.1rem 1.2rem; border-radius: var(--radius); border: 1px solid var(--line-dark); background: var(--twilight); }
+.client-features h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+.client-features p { margin: 0; color: var(--text); }
+.client-steps { margin: 0 0 1rem; padding-left: 1.4rem; display: grid; gap: 0.75rem; }
+.client-steps li { padding-left: 0.3rem; }
+.client-page kbd { padding: 0.05rem 0.4rem; border-radius: 4px; border: 1px solid var(--line-dark); background: rgba(244, 249, 255, 0.08); font: 700 0.85em var(--mono); }
+.client-page .reference-section { margin-block: 2rem; }
+.btn.is-disabled { opacity: 0.6; cursor: default; pointer-events: none; }
+.client-file { margin: 1rem 0 0; font-size: 0.85rem; color: var(--stone); }
+.client-file code { font-size: 0.78rem; word-break: break-all; }

@@ -8,6 +8,7 @@
     <p class="lede">Live from the server, refreshed every minute.</p>
   </div>
 </header>
+{% set group = 'play' %}{% include "partials/subnav.html" %}
 <div class="wrap status-layout">
   {% if settings.maintenance == '1' %}
   <div class="notice notice-warn" role="status">

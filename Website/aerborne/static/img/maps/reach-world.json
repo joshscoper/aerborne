@@ -1,0 +1,882 @@
+{
+  "bounds": {
+    "minX": -1300,
+    "minZ": -1200,
+    "maxX": 1900,
+    "maxZ": 1200
+  },
+  "width": 1600,
+  "height": 1200,
+  "revision": 1,
+  "regions": [
+    {
+      "region": "highcrown",
+      "x": 0,
+      "z": 915,
+      "id": "highcrown",
+      "title": "Highcrown",
+      "levels": ""
+    },
+    {
+      "region": "goldenreach",
+      "x": 55,
+      "z": 566,
+      "id": "goldenreach",
+      "title": "Goldenreach Vale",
+      "levels": "1-7"
+    },
+    {
+      "region": "barrowdowns",
+      "x": -654,
+      "z": 403,
+      "id": "barrowdowns",
+      "title": "The Barrowdowns",
+      "levels": "6-11"
+    },
+    {
+      "region": "thornwood",
+      "x": -755,
+      "z": -293,
+      "id": "thornwood",
+      "title": "Thornwood",
+      "levels": "10-15"
+    },
+    {
+      "region": "mistmere",
+      "x": -206,
+      "z": -783,
+      "id": "mistmere",
+      "title": "Mistmere",
+      "levels": "14-19"
+    },
+    {
+      "region": "ironspine",
+      "x": 570,
+      "z": -563,
+      "id": "ironspine",
+      "title": "Ironspine Highlands",
+      "levels": "18-23"
+    },
+    {
+      "region": "sunscar",
+      "x": 764,
+      "z": 219,
+      "id": "sunscar",
+      "title": "Sunscar Breaks",
+      "levels": "21-25"
+    },
+    {
+      "region": "sky",
+      "x": 0,
+      "z": -139,
+      "id": "ashen_scar",
+      "title": "The Ashen Scar",
+      "levels": "25-30"
+    },
+    {
+      "region": "archive_isle",
+      "x": 1521,
+      "z": -83,
+      "id": "archive_isle",
+      "title": "The Archive Isle",
+      "levels": "22-26"
+    }
+  ],
+  "zones": [
+    {
+      "id": "reach_highcrown",
+      "title": "Highcrown",
+      "levels": "",
+      "safe": true,
+      "x0": -190,
+      "z0": 760,
+      "x1": 190,
+      "z1": 1040
+    },
+    {
+      "id": "reach_sky_docks",
+      "title": "The Sky Docks",
+      "levels": "",
+      "safe": true,
+      "x0": -190,
+      "z0": 1041,
+      "x1": 190,
+      "z1": 1175
+    },
+    {
+      "id": "reach_millbrook",
+      "title": "Millbrook",
+      "levels": "",
+      "safe": true,
+      "x0": -25,
+      "z0": 495,
+      "x1": 105,
+      "z1": 625
+    },
+    {
+      "id": "reach_thistle_farm",
+      "title": "Thistle Farm",
+      "levels": "",
+      "safe": true,
+      "x0": -191,
+      "z0": 545,
+      "x1": -143,
+      "z1": 589
+    },
+    {
+      "id": "reach_kingsgate_fields",
+      "title": "Kingsgate Fields",
+      "levels": "1-2",
+      "safe": false,
+      "x0": -20,
+      "z0": 626,
+      "x1": 105,
+      "z1": 759
+    },
+    {
+      "id": "reach_brindle_orchards",
+      "title": "Brindle Orchards",
+      "levels": "2-4",
+      "safe": false,
+      "x0": -230,
+      "z0": 600,
+      "x1": -26,
+      "z1": 759
+    },
+    {
+      "id": "reach_goldwater_terraces",
+      "title": "Goldwater Terraces",
+      "levels": "2-4",
+      "safe": false,
+      "x0": 106,
+      "z0": 380,
+      "x1": 330,
+      "z1": 759
+    },
+    {
+      "id": "reach_windmill_ridge",
+      "title": "Windmill Ridge",
+      "levels": "3-5",
+      "safe": false,
+      "x0": -100,
+      "z0": 330,
+      "x1": 105,
+      "z1": 470
+    },
+    {
+      "id": "reach_black_granary",
+      "title": "The Black Granary",
+      "levels": "5-7",
+      "safe": false,
+      "x0": -260,
+      "z0": 330,
+      "x1": -101,
+      "z1": 470
+    },
+    {
+      "id": "reach_tollroad",
+      "title": "The Tollroad",
+      "levels": "4-6",
+      "safe": false,
+      "x0": -340,
+      "z0": 360,
+      "x1": -261,
+      "z1": 520
+    },
+    {
+      "id": "reach_hollow_road",
+      "title": "The Hollow Road",
+      "levels": "6-7",
+      "safe": false,
+      "x0": -445,
+      "z0": 380,
+      "x1": -341,
+      "z1": 520
+    },
+    {
+      "id": "reach_granary_cellars",
+      "title": "The Old Granary Cellars",
+      "levels": "6-7",
+      "safe": false,
+      "x0": -181,
+      "z0": 294,
+      "x1": -149,
+      "z1": 416
+    }
+  ],
+  "npcs": [
+    {
+      "region": "highcrown",
+      "x": 45,
+      "z": 1080,
+      "id": "captain_wren",
+      "name": "Captain Wren",
+      "title": "Skyfarers\u0027 Guild",
+      "quests": true
+    },
+    {
+      "region": "highcrown",
+      "x": -43,
+      "z": 1080,
+      "id": "dockmaster_ebb",
+      "name": "Dockmaster Ebb Tallis",
+      "title": "Sky Docks",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 41,
+      "z": 1004,
+      "id": "gull_innkeeper",
+      "name": "Marla Tethers",
+      "title": "The Tethered Gull",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 69,
+      "z": 930,
+      "id": "highcrown_folk_baker",
+      "name": "Hesper Crumb",
+      "title": "Baker",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": -13,
+      "z": 1078,
+      "id": "highcrown_folk_porter",
+      "name": "Dunn Halyard",
+      "title": "Dock Porter",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 6,
+      "z": 964,
+      "id": "highcrown_folk_widow",
+      "name": "Old Maudie",
+      "title": "Flower Seller",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 4,
+      "z": 951,
+      "id": "highcrown_folk_urchin",
+      "name": "Nettle",
+      "title": "Errand Runner",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 115,
+      "z": 842,
+      "id": "reach_steward_aldric",
+      "name": "Steward Aldric",
+      "title": "Steward of Highcrown",
+      "quests": true
+    },
+    {
+      "region": "highcrown",
+      "x": 24,
+      "z": 937,
+      "id": "highcrown_folk_clerk_a",
+      "name": "Tallis Penwright",
+      "title": "Counting Clerk",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 32,
+      "z": 956,
+      "id": "highcrown_folk_clerk_b",
+      "name": "Mirabel Quoin",
+      "title": "Vault Clerk",
+      "quests": false
+    },
+    {
+      "region": "highcrown",
+      "x": 1,
+      "z": 837,
+      "id": "highcrown_watch",
+      "name": "Watch Guard",
+      "title": "Highcrown Watch",
+      "quests": false
+    },
+    {
+      "region": "goldenreach",
+      "x": 26,
+      "z": 559,
+      "id": "reeve_hollis",
+      "name": "Reeve Hollis Marr",
+      "title": "Reeve of Millbrook",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 37,
+      "z": 578,
+      "id": "wenna_marr",
+      "name": "Wenna Marr",
+      "title": "The Sheaf \u0026 Sickle",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 52,
+      "z": 583,
+      "id": "garth_ploughwright",
+      "name": "Garth Ploughwright",
+      "title": "Millbrook Smith",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 71,
+      "z": 615,
+      "id": "ada_miller",
+      "name": "Old Ada",
+      "title": "Miller",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 28,
+      "z": 545,
+      "id": "brother_tobin",
+      "name": "Brother Tobin",
+      "title": "Keeper of the Chapel",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 44,
+      "z": 566,
+      "id": "jory_fenn",
+      "name": "Jory Fenn",
+      "title": "Skiff Master",
+      "quests": false
+    },
+    {
+      "region": "goldenreach",
+      "x": -171,
+      "z": 560,
+      "id": "bess_thistle",
+      "name": "Bess Thistle",
+      "title": "Thistle Farm",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": -99,
+      "z": 354,
+      "id": "tam_thistle",
+      "name": "Tam Thistle",
+      "title": "Farmhand",
+      "quests": false
+    },
+    {
+      "region": "goldenreach",
+      "x": -128,
+      "z": 621,
+      "id": "pip_brindle",
+      "name": "Pip Brindle",
+      "title": "Cider-Maker",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 9,
+      "z": 750,
+      "id": "warden_hale",
+      "name": "Warden Hale",
+      "title": "Frontier Warden",
+      "quests": true
+    },
+    {
+      "region": "barrowdowns",
+      "x": -391,
+      "z": 414,
+      "id": "maren_ashdown",
+      "name": "Maren Ashdown",
+      "title": "Frontier Warden Scout",
+      "quests": false
+    },
+    {
+      "region": "goldenreach",
+      "x": 13,
+      "z": 534,
+      "id": "millbrook_folk_carter",
+      "name": "Will Carter",
+      "title": "Carter",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 0,
+      "z": 539,
+      "id": "millbrook_folk_gleaner",
+      "name": "Agnes Gleave",
+      "title": "Gleaner",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 14,
+      "z": 603,
+      "id": "millbrook_folk_elder",
+      "name": "Grandfather Oake",
+      "title": "Oldest in Millbrook",
+      "quests": true
+    },
+    {
+      "region": "goldenreach",
+      "x": 41,
+      "z": 564,
+      "id": "millbrook_watch",
+      "name": "Millbrook Watch",
+      "title": "Village Watch",
+      "quests": false
+    }
+  ],
+  "places": [
+    {
+      "region": "highcrown",
+      "x": 1,
+      "z": 1031,
+      "id": "highcrown.arrival_1",
+      "title": "The Sky Docks",
+      "line": "Wren flies the red and white pennants."
+    },
+    {
+      "region": "highcrown",
+      "x": 1,
+      "z": 859,
+      "id": "highcrown.plaza",
+      "title": "Kingsgate Plaza",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 116,
+      "z": 846,
+      "id": "highcrown.keep_hall",
+      "title": "Highcrown Keep",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 10,
+      "z": 893,
+      "id": "highcrown.fane",
+      "title": "The Lantern Fane",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 1,
+      "z": 949,
+      "id": "highcrown.market",
+      "title": "The Market Ward",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 11,
+      "z": 947,
+      "id": "highcrown.exchequer",
+      "title": "The Highcrown Exchequer",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 31,
+      "z": 1010,
+      "id": "highcrown.tethered_gull",
+      "title": "The Tethered Gull",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": -38,
+      "z": 901,
+      "id": "highcrown.crafter_0",
+      "title": "Crafters\u0027 Row",
+      "line": "Place discovered"
+    },
+    {
+      "region": "highcrown",
+      "x": 1,
+      "z": 791,
+      "id": "highcrown.kingsbridge",
+      "title": "The Kingsbridge",
+      "line": "Six Wardens stand watch over the grain road."
+    },
+    {
+      "region": "goldenreach",
+      "x": 9,
+      "z": 750,
+      "id": "goldenreach.warden_post",
+      "title": "The Warden\u0027s Post",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": -20,
+      "z": 713,
+      "id": "goldenreach.kingsgate_fields",
+      "title": "Kingsgate Fields",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": 41,
+      "z": 564,
+      "id": "goldenreach.green",
+      "title": "Millbrook",
+      "line": "Garth’s hammer rings across the green."
+    },
+    {
+      "region": "goldenreach",
+      "x": -103,
+      "z": 415,
+      "id": "goldenreach.windmill_ridge",
+      "title": "Windmill Ridge",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": -167,
+      "z": 563,
+      "id": "goldenreach.thistle_yard",
+      "title": "Thistle Farm",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": -109,
+      "z": 651,
+      "id": "goldenreach.orchard",
+      "title": "Brindle Orchards",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": -314,
+      "z": 412,
+      "id": "goldenreach.tollkeeper_camp",
+      "title": "The Tollroad",
+      "line": "Place discovered"
+    },
+    {
+      "region": "goldenreach",
+      "x": -165,
+      "z": 415,
+      "id": "goldenreach.granary",
+      "title": "The Black Granary",
+      "line": "The receiving beam still bears Millbrook’s name."
+    },
+    {
+      "region": "goldenreach",
+      "x": -165,
+      "z": 404,
+      "id": "goldenreach.cellars_entrance",
+      "title": "The Old Granary Cellars",
+      "line": "Brother Tobin remembers when these stairs were a refuge."
+    },
+    {
+      "region": "barrowdowns",
+      "x": -329,
+      "z": 453,
+      "id": "goldenreach.hollow_road",
+      "title": "The Hollow Road",
+      "line": "Place discovered"
+    },
+    {
+      "region": "barrowdowns",
+      "x": -533,
+      "z": 390,
+      "id": "huntsmans_barrow.place",
+      "title": "The Huntsman\u0027s Barrow",
+      "line": "Someone still lights the candles nearest the grate."
+    },
+    {
+      "region": "barrowdowns",
+      "x": -697,
+      "z": 512,
+      "id": "stone_rings.place",
+      "title": "The Stone Rings",
+      "line": "Place discovered"
+    },
+    {
+      "region": "barrowdowns",
+      "x": -869,
+      "z": 193,
+      "id": "stonewatch.place",
+      "title": "Stonewatch",
+      "line": "Place discovered"
+    },
+    {
+      "region": "thornwood",
+      "x": -691,
+      "z": -284,
+      "id": "heart_tree.place",
+      "title": "The Heart Tree",
+      "line": "Black thorn climbs the living trunk."
+    },
+    {
+      "region": "ironspine",
+      "x": 172,
+      "z": -724,
+      "id": "great_aqueduct.place",
+      "title": "The Great Aqueduct",
+      "line": "Follow the water east toward the Ironspine."
+    },
+    {
+      "region": "ironspine",
+      "x": 603,
+      "z": -706,
+      "id": "headframe.place",
+      "title": "The Deep Foreman\u0027s Headframe",
+      "line": "The night shift’s lamps are still checked out."
+    },
+    {
+      "region": "sunscar",
+      "x": 851,
+      "z": 369,
+      "id": "sunscar_arch.place",
+      "title": "The Sunscar Arch",
+      "line": "Place discovered"
+    },
+    {
+      "region": "ashen_scar",
+      "x": -15,
+      "z": -49,
+      "id": "ember_gate.place",
+      "title": "The Ember Gate",
+      "line": "Place discovered"
+    },
+    {
+      "region": "archive_isle",
+      "x": 1531,
+      "z": -52,
+      "id": "seal_spire.place",
+      "title": "The Seal Spire",
+      "line": "Three settings on the archive door. One is empty."
+    }
+  ],
+  "flights": [
+    {
+      "region": "highcrown",
+      "x": -20,
+      "z": 859,
+      "id": "highcrown",
+      "title": "Highcrown"
+    },
+    {
+      "region": "goldenreach",
+      "x": 38,
+      "z": 551,
+      "id": "millbrook",
+      "title": "Millbrook"
+    },
+    {
+      "region": "barrowdowns",
+      "x": -543,
+      "z": 396,
+      "id": "barrow",
+      "title": "The Huntsman\u0027s Barrow"
+    },
+    {
+      "region": "thornwood",
+      "x": -684,
+      "z": -280,
+      "id": "heart_tree",
+      "title": "The Heart Tree"
+    },
+    {
+      "region": "ironspine",
+      "x": 180,
+      "z": -723,
+      "id": "aqueduct",
+      "title": "The Great Aqueduct"
+    },
+    {
+      "region": "ironspine",
+      "x": 595,
+      "z": -711,
+      "id": "headframe",
+      "title": "The Headframe"
+    },
+    {
+      "region": "sunscar",
+      "x": 859,
+      "z": 374,
+      "id": "sunscar",
+      "title": "The Sunscar Arch"
+    },
+    {
+      "region": "ashen_scar",
+      "x": -4,
+      "z": -48,
+      "id": "ember_gate",
+      "title": "The Ember Gate"
+    },
+    {
+      "region": "sunscar",
+      "x": 1146,
+      "z": 14,
+      "id": "wardens_bridge",
+      "title": "The Wardens\u0027 Bridge"
+    },
+    {
+      "region": "archive_isle",
+      "x": 1311,
+      "z": -31,
+      "id": "archive_isle",
+      "title": "The Archive Isle"
+    }
+  ],
+  "digs": [
+    {
+      "region": "barrowdowns",
+      "x": -595,
+      "z": 292,
+      "id": "goldwater_clay",
+      "title": "Goldwater Clay Pits",
+      "ore": false
+    },
+    {
+      "region": "barrowdowns",
+      "x": -439,
+      "z": 311,
+      "id": "barrow_diggings",
+      "title": "The Barrow Diggings",
+      "ore": false
+    },
+    {
+      "region": "ironspine",
+      "x": 571,
+      "z": -665,
+      "id": "foremans_cut",
+      "title": "The Foreman\u0027s Open Cut",
+      "ore": true
+    },
+    {
+      "region": "sunscar",
+      "x": 903,
+      "z": 55,
+      "id": "redsand_diggings",
+      "title": "Redsand Diggings",
+      "ore": false
+    },
+    {
+      "region": "mistmere",
+      "x": -59,
+      "z": -555,
+      "id": "mistmere_mudflats",
+      "title": "Mistmere Mudflats",
+      "ore": false
+    }
+  ],
+  "beasts": [
+    {
+      "region": "goldenreach",
+      "x": -315,
+      "z": 417,
+      "id": "toll_captain_brask",
+      "title": "Toll-Captain Brask",
+      "night": false,
+      "respawnMinutes": 15
+    },
+    {
+      "region": "goldenreach",
+      "x": -165,
+      "z": 303,
+      "id": "scarecrow_king",
+      "title": "The Scarecrow King",
+      "night": false,
+      "respawnMinutes": 12
+    },
+    {
+      "region": "goldenreach",
+      "x": -89,
+      "z": 661,
+      "id": "old_grizzlehide",
+      "title": "Old Grizzlehide",
+      "night": false,
+      "respawnMinutes": 30
+    },
+    {
+      "region": "goldenreach",
+      "x": -103,
+      "z": 415,
+      "id": "hollow_jack",
+      "title": "Hollow Jack",
+      "night": true,
+      "respawnMinutes": 40
+    },
+    {
+      "region": "goldenreach",
+      "x": -20,
+      "z": 713,
+      "id": "gilt_tooth",
+      "title": "Gilt-Tooth",
+      "night": false,
+      "respawnMinutes": 25
+    },
+    {
+      "region": "barrowdowns",
+      "x": -697,
+      "z": 512,
+      "id": "thunderhide",
+      "title": "Thunderhide",
+      "worldBoss": true
+    }
+  ],
+  "doors": [
+    {
+      "region": "barrowdowns",
+      "x": -533,
+      "z": 387,
+      "id": "hollow_barrow",
+      "title": "The Hollow Barrow"
+    },
+    {
+      "region": "thornwood",
+      "x": -691,
+      "z": -289,
+      "id": "thornwood_canopy",
+      "title": "Thornwood Canopy"
+    },
+    {
+      "region": "ironspine",
+      "x": 172,
+      "z": -732,
+      "id": "sunken_aqueduct",
+      "title": "The Sunken Aqueduct"
+    },
+    {
+      "region": "ironspine",
+      "x": 603,
+      "z": -691,
+      "id": "gloomforge_mines",
+      "title": "Gloomforge Mines"
+    },
+    {
+      "region": "ashen_scar",
+      "x": -15,
+      "z": -71,
+      "id": "cinder_keep",
+      "title": "Cinder Keep"
+    },
+    {
+      "region": "archive_isle",
+      "x": 1531,
+      "z": -56,
+      "id": "hall_of_wardens",
+      "title": "The Hall of the Three Wardens"
+    }
+  ]
+}

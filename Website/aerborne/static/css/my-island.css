@@ -1,0 +1,17 @@
+/* The player's own island on the Your Island page (templates/partials/my_island.html). */
+.my-island { margin: 0 0 2rem; padding: 1.4rem 1.5rem; border-radius: var(--radius); background: var(--twilight); border: 1px solid rgba(244, 199, 107, 0.45); box-shadow: var(--shadow); }
+.my-island h2 { margin: 0.1rem 0 0.2rem; font-size: 1.8rem; }
+.my-island > p { max-width: 42rem; }
+.my-island-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 0.75rem; }
+.my-island-level { margin: 0; color: var(--stone); font-weight: 700; }
+.my-island-stars { color: var(--gold); letter-spacing: 0.08em; }
+.my-island-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.75rem; margin: 1.2rem 0 0; }
+.my-island-stats > div { padding: 0.8rem 1rem; border-radius: var(--radius-sm); background: rgba(23, 36, 59, 0.55); }
+.my-island-stats dt { color: var(--stone); font-size: 0.82rem; }
+.my-island-stats dd { margin: 0.15rem 0 0; font-size: 1.6rem; font-weight: 800; color: var(--gold); }
+.my-island-stats dd small { display: block; font-size: 0.78rem; font-weight: 700; color: var(--stone); }
+.my-island-subhead { margin: 1.4rem 0 0.6rem; font-size: 1.1rem; }
+.my-island-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; }
+.my-island-steps li { display: grid; gap: 0.25rem; padding: 0.8rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--line-dark); }
+.my-island-how { font-size: 0.85rem; color: var(--stone); }
+.my-island-note { margin: 1rem 0 0; font-size: 0.82rem; color: var(--stone); }

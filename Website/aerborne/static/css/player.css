@@ -49,3 +49,5 @@
 .player-standing-group > summary { padding:.9rem 0; cursor:pointer; font-size:.85rem; font-weight:800; color:#d9e7f7; }
 .player-standing-group > summary span { color:#afc3dd; margin-left:.4rem; font-weight:400; font-size:.75rem; }
 .player-standing-group > summary::marker { color:#8dcdf2; }
+.player-journey { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.player-journey dd small { display: block; font-size: .8rem; font-weight: 700; color: #bdcce1; }

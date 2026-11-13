@@ -235,3 +235,14 @@
   .intro-pending .home-intro-skip { display: none; }
   .intro-pending .home-hero-art, .intro-pending .home-hero-copy > *, .intro-pending .home-join, .intro-pending .home-scroll-cue { animation: none; }
 }
+
+/* Right now: live tiles from the game's world feed. */
+.home-now { padding-block: 2.5rem 1rem; }
+.home-now-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 1rem; }
+.home-now-tile { padding: 1.1rem 1.2rem; border-radius: var(--radius); border: 1px solid var(--line-dark); background: var(--twilight); display: grid; gap: 0.35rem; align-content: start; }
+.home-now-tile small { font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.72rem; color: var(--stone); }
+.home-now-tile.is-live small { color: var(--mint); }
+.home-now-tile.is-seat small { color: var(--gold); }
+.home-now-tile h3 { margin: 0; font-size: 1.15rem; }
+.home-now-tile p { margin: 0; font-size: 0.92rem; }
+.home-now-tile time { font-size: 0.82rem; color: var(--stone); }

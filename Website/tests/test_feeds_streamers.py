@@ -24,8 +24,10 @@ class FeedTest(SiteTest):
         self.assertEqual(response.content_type, 'application/rss+xml; charset=utf-8')
         root = ET.fromstring(response.data)
         channel = root.find('channel')
-        entries = channel.findall('item')
-        self.assertEqual(len(entries), 1)
+        # The starter welcome post and the shipped update notes; drafts and future posts stay out.
+        entries = [e for e in channel.findall('item') if e.findtext('guid', '').endswith('/news/welcome')]
+        self.assertEqual(len(channel.findall('item')), 3)
+        self.assertFalse([e for e in channel.findall('item') if 'feed-post' in e.findtext('guid', '')])
         self.assertEqual(entries[0].findtext('title'), 'Sky & stone <news> ☁')
         self.assertEqual(entries[0].findtext('description'), 'Fish & chips <3 builds')
         self.assertEqual(entries[0].findtext('guid'), 'https://aerborne.example/news/welcome')

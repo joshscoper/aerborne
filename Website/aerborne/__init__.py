@@ -20,13 +20,24 @@ from .seed import ensure_default_settings, seed_default_admin, seed_forum, seed_
 
 # Top navigation. A group opens a small menu; the first link in a group is its overview page.
 NAV = [
-    {"label": "Explore", "id": "explore", "links": [
-        ("public.explore", "Explore the skies", "Your island, the hub and beyond"),
-        ("public.expeditions", "Expeditions", "Party adventures open right now"),
-        ("public.campaign", "Season campaign", "Server-wide goals and rewards"),
-        ("public.world", "Market & calendar", "Bazaar prices, events and the council"),
+    {"label": "Play", "id": "play", "links": [
+        ("public.play", "Join the server", "The address, and three easy steps"),
+        ("public.client", "Aerborne client", "The optional mod: HUD, menus and maps"),
+        ("public.status_page", "Server status", "Who's online and how it's running"),
     ]},
-    {"label": "Game Guide", "id": "guide", "links": [
+    {"label": "The World", "id": "world", "links": [
+        ("public.reach", "The Wardens' Reach", "Interactive map of the central world"),
+        ("public.explore", "Your island and beyond", "Islands, visitors, the Farmstead and more"),
+        ("public.expeditions", "Expeditions", "Party adventures open right now"),
+    ]},
+    {"label": "Live", "id": "live", "links": [
+        ("public.market", "The Bazaar", "Live prices for bulk goods"),
+        ("public.calendar", "Reach Calendar", "Weekends, contests, festivals and the world boss"),
+        ("public.council", "Wardens' Council", "Who holds the seat, and the monthly vote"),
+        ("public.campaign", "Season campaign", "Server-wide goals and rewards"),
+        ("community.leaderboards", "Leaderboards", "Top adventurers and islands"),
+    ]},
+    {"label": "Handbook", "id": "guide", "links": [
         ("public.guide", "Adventurer's Handbook", "Guides from your first island onwards"),
         ("public.codex", "Arcane Codex", "Every public enchantment and Aspect"),
         ("public.companions", "Companions", "Meet the companion characters"),
@@ -47,6 +58,7 @@ NAV = [
 def create_app(overrides=None):
     # Older host MIME databases (including Windows) may not recognise WebP assets.
     mimetypes.add_type('image/webp', '.webp')
+    mimetypes.add_type('application/java-archive', '.jar')
     app = Flask(__name__)
     app.config.from_mapping(load_config())
     if overrides:
